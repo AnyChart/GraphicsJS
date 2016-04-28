@@ -1,0 +1,6 @@
+[submodule "contrib/closure-library"]
+	path = contrib/closure-library
+	url = git@github.com:google/closure-library.git
+[submodule "contrib/closure-linter-wrapper"]
+	path = contrib/closure-linter-wrapper
+	url = git@github.com:AnyChart/closure-linter-wrapper.git

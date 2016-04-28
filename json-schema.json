@@ -1,0 +1,589 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "description": "Graphics JSON schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "clip": {
+      "$ref": "#/definitions/clip"
+    },
+    "children": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {"$ref": "#/definitions/primitive"},
+          {"$ref": "#/definitions/element"},
+          {"$ref": "#/definitions/shape"}
+        ]
+      }
+    },
+    "width": {"type": "number"},
+    "height": {"type": "number"}
+  },
+  "required": ["children", "width", "height"],
+  "definitions": {
+    "element": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string"},
+        "transformation": {
+          "type": "array",
+          "items": {"type": "number"}
+        },
+        "clip": {
+          "$ref": "#/definitions/clip"
+        },
+        "cursor": {
+          "enum": [
+            "default",
+            "crosshair",
+            "pointer",
+            "move",
+            "text",
+            "wait",
+            "help",
+            "n-resize",
+            "ne-resize",
+            "e-resize",
+            "se-resize",
+            "s-resize",
+            "sw-resize",
+            "w-resize",
+            "nw-resize"
+          ]
+        },
+        "drag": {
+          "type": ["boolean", "object"],
+          "oneOf": [{"$ref": "#/definitions/acgraph.math.Rect"}]
+        }
+      }
+    },
+    "shape": {
+      "type": "object",
+      "properties": {
+        "fill": {"$ref": "#/definitions/fill"},
+        "stroke": {"$ref": "#/definitions/stroke"}
+      }
+    },
+    "primitive": {
+      "type": "object",
+      "oneOf": [
+        {"$ref": "#/definitions/path"},
+        {"$ref": "#/definitions/rect"},
+        {"$ref": "#/definitions/circle"},
+        {"$ref": "#/definitions/ellipse"},
+        {"$ref": "#/definitions/text"},
+        {"$ref": "#/definitions/image"},
+        {"$ref": "#/definitions/layer"}
+      ]
+    },
+    "fill": {
+      "type": ["string", "object"],
+      "oneOf": [
+        {"$ref": "#/definitions/linearGradientFill"},
+        {"$ref": "#/definitions/radialGradientFill"},
+        {"$ref": "#/definitions/solidFill"},
+        {"$ref": "#/definitions/pattern"},
+        {"$ref": "#/definitions/hatchFill"}
+      ]
+    },
+    "stroke": {
+      "type": ["string", "object"],
+      "oneOf": [
+        {"$ref": "#/definitions/solidStroke"},
+        {"$ref": "#/definitions/linearGradientStroke"},
+        {"$ref": "#/definitions/radialGradientStroke"}
+      ]
+    },
+    "path": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": ["path"]
+        },
+        "closePoint": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minItems": 0,
+            "maxItems": 2
+          }
+        },
+        "currentPoint": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minItems": 0,
+            "maxItems": 2
+          }
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "count": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      },
+      "required": ["type", "closePoint", "currentPoint", "segments", "count", "arguments"]
+    },
+    "rect": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": ["rect"]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "cornerTypes": {
+          "type": "string"
+        },
+        "cornerSizes": {
+          "type": "string"
+        }
+      },
+      "required": ["type"]
+    },
+    "ellipse": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": ["ellipse"]
+        },
+        "cx": {
+          "type": "number"
+        },
+        "cy": {
+          "type": "number"
+        },
+        "rx": {
+          "type": "number"
+        },
+        "ry": {
+          "type": "number"
+        }
+      },
+      "required": ["type", "cx", "cy", "rx", "ry"]
+    },
+    "circle": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": ["circle"]
+        },
+        "cx": {
+          "type": "number"
+        },
+        "cy": {
+          "type": "number"
+        },
+        "radius": {
+          "type": "number"
+        }
+      },
+      "required": ["type", "cx", "cy", "radius"]
+    },
+    "layer": {
+      "type": "object",
+      "properties": {
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/primitive"
+          }
+        },
+        "type": {
+          "enum": ["layer"]
+        }
+      },
+      "required": ["type"]
+    },
+    "text": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": ["text"]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "html": {
+          "type": "boolean"
+        },
+        "text": {
+          "type": "string"
+        },
+        "style": {
+          "type": "object",
+          "properties": {
+            "fontSize": {
+              "type": ["string" , "number"]
+            },
+            "color": {
+              "type": ["string", "null"]
+            },
+            "fontFamily": {
+              "type": ["string", "null"]
+            },
+            "direction": {
+              "enum": ["ltr", "rtl", "null"]
+            },
+            "selectable": {
+              "type": ["boolean", "null"]
+            },
+            "hAlign": {
+              "enum": ["left", "start", "center", "end", "right" , "null"]
+            },
+            "textWrap": {
+              "enum": ["noWrap" , "byLetter", "null"]
+            },
+            "width": {
+              "type": ["string" , "number" , "null"]
+            },
+            "height": {
+              "type": ["string" , "number" , "null"]
+            },
+            "fontStyle": {
+              "enum": ["normal", "italic", "oblique", "null"]
+            },
+            "fontVariant": {
+              "enum": ["normal", "small-caps", "null"]
+            },
+            "fontWeight": {
+              "type": ["string" , "number", "null"]
+            },
+            "letterSpacing": {
+              "type": ["string" , "number", "null"]
+            },
+            "decoration": {
+              "enum": ["blink", "line-through", "overline", "underline", "none", "null"]
+            },
+            "vAlign": {
+              "enum": ["top", "middle", "bottom", "null"]
+            },
+            "opacity": {
+              "type": ["number", "null"],
+              "minimum": 0,
+              "maximum": 1
+            },
+            "textIndent": {
+              "type": ["number", "null"]
+            },
+            "lineHeight": {
+              "type": ["string" , "number", "null"]
+            },
+            "textOverflow": {
+              "type": ["string", "null"]
+            }
+          }
+        }
+      },
+      "required": ["type", "x", "y", "html", "text", "style"]
+    },
+    "image": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": ["image"]
+        },
+        "src": {
+          "type": "string"
+        },
+        "align": {
+          "enum": [
+            "none",
+            "xMinYMin",
+            "xMidYMin",
+            "xMaxYMin",
+            "xMinYMid",
+            "xMidYMid",
+            "xMaxYMid",
+            "xMinYMax",
+            "xMidYMax",
+            "xMaxYMax"
+          ]
+        },
+        "fittingMode": {
+          "enum": ["meet", "slice"]
+        },
+        "bounds": {
+          "$ref": "#/definitions/acgraph.math.Rect"
+        }
+      }
+    },
+    "hatchFill": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": ["hatchFill"]
+        },
+        "hatchType": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 31
+        },
+        "color": {
+          "type": "string"
+        },
+        "thickness": {
+          "type": "number"
+        },
+        "size": {
+          "type": "number"
+        }
+      },
+      "required": ["type", "hatchType", "color", "thickness", "size"]
+    },
+    "pattern": {
+      "type": "object",
+      "properties": {
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/primitive"
+          }
+        },
+        "bounds": {
+          "$ref": "#/definitions/acgraph.math.Rect"
+        },
+        "type": {
+          "enum": ["pattern"]
+        }
+      },
+      "required": ["type", "children", "bounds"]
+    },
+    "solidFill": {
+      "type": ["string", "object"],
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": ["color", "opacity"]
+    },
+    "solidStroke": {
+      "type": ["string", "object"],
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "thickness": {
+          "type": "number"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "dash": {
+          "type": "string"
+        },
+        "linejoin": {
+          "enum": ["miter", "round", "bevel"]
+        },
+        "linecap": {
+          "enum": ["butt", "round", "square"]
+        }
+      },
+      "required": ["color"]
+    },
+    "radialGradientFill": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": ["RadialGradientFill"]
+        },
+        "keys": {
+          "$ref": "#/definitions/gradientKeys"
+        },
+        "cx": {
+          "type": "number"
+        },
+        "cy": {
+          "type": "number"
+        },
+        "fx": {
+          "type": "number"
+        },
+        "fy": {
+          "type": "number"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": ["cx", "cy", "keys"]
+    },
+    "linearGradientFill": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": ["LinearGradientFill"]
+        },
+        "keys": {
+          "$ref": "#/definitions/gradientKeys"
+        },
+        "angle": {
+          "type": ["number"]
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": ["keys"]
+    },
+    "radialGradientStroke": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": ["RadialGradientStroke"]
+        },
+        "keys": {
+          "$ref": "#/definitions/gradientKeys"
+        },
+        "cx": {
+          "type": "number"
+        },
+        "cy": {
+          "type": "number"
+        },
+        "mode": {
+          "$ref": "#/definitions/acgraph.math.Rect"
+        },
+        "fx": {
+          "type": "number"
+        },
+        "fy": {
+          "type": "number"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "dash": {
+          "type": "string"
+        },
+        "linejoin": {
+          "enum": ["miter", "round", "bevel"]
+        },
+        "linecap": {
+          "enum": ["butt", "round", "square"]
+        },
+        "thickness": {
+          "type": "number"
+        }
+      },
+      "required": ["keys", "cx", "cy"]
+    },
+    "linearGradientStroke": {
+      "type": "object",
+      "properties": {
+        "keys": {
+          "$ref": "#/definitions/gradientKeys"
+        },
+        "type": {
+          "enum": ["LinearGradientStroke"]
+        },
+        "angle": {
+          "type": ["number"]
+        },
+        "mode": {
+          "type": ["boolean", "object"],
+          "oneOf": [{"$ref": "#/definitions/acgraph.math.Rect"}]
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "dash": {
+          "type": "string"
+        },
+        "linejoin": {
+          "enum": ["miter", "round", "bevel"]
+        },
+        "linecap": {
+          "enum": ["butt", "round", "square"]
+        },
+        "thickness": {
+          "type": "number"
+        }
+      },
+      "required": ["keys"]
+    },
+    "gradientKeys": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "number"
+          },
+          "color": {
+            "type": "string"
+          },
+          "opacity": {
+            "type": ["number"],
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": ["color"]
+      }
+    },
+    "clip": {
+      "type": "object",
+      "oneOf": [
+        {"$ref": "#/definitions/path"},
+        {"$ref": "#/definitions/rect"},
+        {"$ref": "#/definitions/circle"},
+        {"$ref": "#/definitions/ellipse"}
+      ]
+    },
+    "acgraph.math.Rect": {
+      "properties": {
+        "left": {"type": "number"},
+        "top": {"type": "number"},
+        "width": {"type": "number"},
+        "height": {"type": "number"}
+      },
+      "required": ["left", "top", "width", "height"]
+    }
+  }
+}
