@@ -4,7 +4,6 @@ goog.require('acgraph.utils.IdGenerator');
 goog.require('acgraph.vector.Renderer');
 goog.require('goog.dom');
 goog.require('goog.math.Line');
-goog.require('goog.net.ImageLoader');
 goog.require('goog.object');
 goog.require('goog.userAgent');
 
@@ -72,6 +71,14 @@ acgraph.vector.svg.Renderer.prototype.measurementText_ = null;
  * @private
  */
 acgraph.vector.svg.Renderer.prototype.measurementTextNode_ = null;
+
+
+/**
+ * Element for svg node measuring.
+ * @type {Element}
+ * @private
+ */
+acgraph.vector.svg.Renderer.prototype.measurementGroupNode_ = null;
 
 
 /**
@@ -168,6 +175,9 @@ acgraph.vector.svg.Renderer.prototype.createMeasurement_ = function() {
 
   //We need set 'display: block' for <svg> element to prevent scrollbar on 100% height of parent container (see DVF-620)
   this.setAttributes_(this.measurement_, {'display': 'block', 'width': 0, 'height': 0});
+
+  this.measurementGroupNode_ = this.createLayerElement();
+  goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
 };
 
 
@@ -239,13 +249,33 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
 
 
 /**
+ * Measure any svg nodes.
+ * @param {string|Node} element .
+ * @return {acgraph.math.Rect} .
+ */
+acgraph.vector.svg.Renderer.prototype.measureElement = function(element) {
+  if (!this.measurement_) this.createMeasurement_();
+
+  if (goog.isString(element)) {
+    this.measurementGroupNode_.innerHTML = element;
+  } else {
+    goog.dom.appendChild(this.measurementGroupNode_, element.cloneNode(true));
+  }
+  var bbox = this.measurementGroupNode_['getBBox']();
+  goog.dom.removeChildren(this.measurementGroupNode_);
+
+  return new acgraph.math.Rect(bbox.x, bbox.y, bbox.width, bbox.height);
+};
+
+
+/**
  * Measures the bounds of an image.
  * @param {string} src The URI of the image.
  * @param {Function} callback The Callback function to which the measured bounds of the image will be sent.
  */
 acgraph.vector.svg.Renderer.prototype.measuringImage = function(src, callback) {
-  if (!this.imageLoader_) {
-    this.imageLoader_ = new goog.net.ImageLoader();
+  if (!this.imageMap_) {
+    this.getImageLoader();
     this.imageMap_ = {};
 
     goog.events.listen(this.imageLoader_, goog.net.EventType.COMPLETE, function(e) {
@@ -290,12 +320,6 @@ acgraph.vector.svg.Renderer.prototype.isImageLoading = function() {
 };
 
 
-/** @inheritDoc */
-acgraph.vector.svg.Renderer.prototype.getImageLoader = function() {
-  return this.imageLoader_;
-};
-
-
 //----------------------------------------------------------------------------------------------------------------------
 //
 //  Path
@@ -309,21 +333,21 @@ acgraph.vector.svg.Renderer.prototype.getImageLoader = function() {
  */
 acgraph.vector.svg.Renderer.prototype.getSvgPath_ = function(path) {
   if (path.isEmpty()) return null;
-  /** @type {!Array.<string>} */
+  /** @type {!Array.<string|number>} */
   var list = [];
   path.forEachSegment(function(segment, args) {
     switch (segment) {
       case acgraph.vector.PathBase.Segment.MOVETO:
         list.push('M');
-        acgraph.utils.arrayPush(list, args);
+        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, args, list);
         break;
       case acgraph.vector.PathBase.Segment.LINETO:
         list.push('L');
-        acgraph.utils.arrayPush(list, args);
+        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, args, list);
         break;
       case acgraph.vector.PathBase.Segment.CURVETO:
         list.push('C');
-        acgraph.utils.arrayPush(list, args);
+        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, args, list);
         break;
       case acgraph.vector.PathBase.Segment.ARCTO:
         /** @type {number} */
@@ -591,12 +615,10 @@ acgraph.vector.svg.Renderer.prototype.setImageProperties = function(element) {
 
 
 /** @inheritDoc */
-acgraph.vector.svg.Renderer.prototype.setCursorProperties = function(domElement, cursor) {
-  if (goog.isNull(cursor)) {
-    domElement.style['cursor'] = '';
-  } else {
-    domElement.style['cursor'] = cursor;
-  }
+acgraph.vector.svg.Renderer.prototype.setCursorProperties = function(element, cursor) {
+  var domElement = element.domElement();
+  if (domElement)
+    domElement.style['cursor'] = cursor || '';
 };
 
 
@@ -817,10 +839,10 @@ acgraph.vector.svg.Renderer.prototype.createClipElement = function() {
  * @return {string} The identifier of the rendered radial gradient.
  */
 acgraph.vector.svg.Renderer.prototype.renderRadialGradient = function(fill, defs) {
-  var gradient = defs.getRadialGradient(fill['keys'], fill['cx'], fill['cy'], fill['fx'], fill['fy'], fill['opacity'], fill['mode']);
+  var gradient = defs.getRadialGradient(fill['keys'], fill['cx'], fill['cy'], fill['fx'], fill['fy'], fill['opacity'], fill['mode'], fill['transform']);
   if (!gradient.rendered) {
     var fillDomElement = this.createRadialGradientElement();
-    this.setId(fillDomElement, gradient.id());
+    this.setIdInternal(fillDomElement, gradient.id());
     this.appendChild(defs.domElement(), fillDomElement);
     gradient.defs = defs;
     gradient.rendered = true;
@@ -854,6 +876,9 @@ acgraph.vector.svg.Renderer.prototype.renderRadialGradient = function(fill, defs
         'gradientUnits': 'objectBoundingBox'
       });
     }
+    if (gradient.transform) {
+      this.setAttribute_(fillDomElement, 'gradientTransform', gradient.transform.toString());
+    }
   }
 
   return gradient.id();
@@ -871,10 +896,10 @@ acgraph.vector.svg.Renderer.prototype.renderLinearGradient = function(fill, defs
   var angle = (fill['mode'] === true) ?
       this.saveGradientAngle(fill['angle'], elementBounds) :
       fill['angle'];
-  var gradient = defs.getLinearGradient(fill['keys'], fill['opacity'], angle, fill['mode']);
+  var gradient = defs.getLinearGradient(fill['keys'], fill['opacity'], angle, fill['mode'], fill['transform']);
   if (!gradient.rendered) {
     var fillDomElement = this.createLinearGradientElement();
-    this.setId(fillDomElement, gradient.id());
+    this.setIdInternal(fillDomElement, gradient.id());
     this.appendChild(defs.domElement(), fillDomElement);
     gradient.defs = defs;
     gradient.rendered = true;
@@ -910,6 +935,9 @@ acgraph.vector.svg.Renderer.prototype.renderLinearGradient = function(fill, defs
         'gradientUnits': 'objectBoundingBox'
       });
     }
+    if (gradient.transform) {
+      this.setAttribute_(fillDomElement, 'gradientTransform', gradient.transform.toString());
+    }
   }
   return gradient.id();
 };
@@ -932,8 +960,8 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
     this.removeAttribute_(element.domElement(), 'fill-opacity');
   } else if (goog.isArray(fill['keys'])) {
     if (!element.getBounds()) return;
-    this.setAttribute_(element.domElement(), 'fill', pathPrefix + this.renderLinearGradient(
-        /** @type {acgraph.vector.LinearGradientFill} */(fill), defs, element.getBounds()) + ')');
+    this.setAttribute_(element.domElement(), 'fill',
+        pathPrefix + this.renderLinearGradient(/** @type {acgraph.vector.LinearGradientFill} */(fill), defs, element.getBounds()) + ')');
     this.removeAttribute_(element.domElement(), 'fill-opacity');
   } else if (fill['src']) {
     var b = element.getBoundsWithoutTransform();
@@ -1000,8 +1028,8 @@ acgraph.vector.svg.Renderer.prototype.applyStroke = function(element) {
         this.renderRadialGradient(/** @type {acgraph.vector.RadialGradientFill} */(stroke), defs) + ')');
   } else if (goog.isArray(stroke['keys'])) {
     if (!element.getBounds()) return;
-    this.setAttribute_(domElement, 'stroke', pathPrefix + this.renderLinearGradient(
-        /** @type {acgraph.vector.LinearGradientFill} */(stroke), defs, element.getBounds()) + ')');
+    this.setAttribute_(domElement, 'stroke',
+        pathPrefix + this.renderLinearGradient(/** @type {acgraph.vector.LinearGradientFill} */(stroke), defs, element.getBounds()) + ')');
   } else {
     this.setAttribute_(domElement, 'stroke', stroke['color']);
   }
@@ -1110,19 +1138,94 @@ acgraph.vector.svg.Renderer.prototype.setStageSize = function(el, width, height)
 
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setId = function(element, id) {
-  if (id)
-    this.setAttribute_(element, 'id', id);
-  else
-    this.removeAttribute_(element, 'id');
+  this.setIdInternal(element.domElement(), id);
+};
+
+
+/**
+ * Sets id to element.
+ * @param {?Element} element - Element.
+ * @param {string} id - ID to be set.
+ */
+acgraph.vector.svg.Renderer.prototype.setIdInternal = function(element, id) {
+  if (element) {
+    if (id)
+      this.setAttribute_(element, 'id', id);
+    else
+      this.removeAttribute_(element, 'id');
+  }
+};
+
+
+/** @inheritDoc */
+acgraph.vector.svg.Renderer.prototype.setTitle = function(element, title) {
+  var domElement = element.domElement();
+  if (domElement) {
+    if (goog.isDefAndNotNull(title)) { //Set new value
+      if (!element.titleElement) {
+        element.titleElement = this.createSVGElement_('title');
+        this.setAttribute_(element.titleElement, 'aria-label', '');
+      }
+      if (!goog.dom.getParentElement(element.titleElement))
+        goog.dom.insertChildAt(domElement, element.titleElement, 0);
+      element.titleElement.innerHTML = title;
+    } else if (element.titleElement) { //remove node
+      domElement.removeChild(element.titleElement);
+    }
+  }
+};
+
+
+/** @inheritDoc */
+acgraph.vector.svg.Renderer.prototype.setDesc = function(element, desc) {
+  var domElement = element.domElement();
+  if (domElement) {
+    if (goog.isDefAndNotNull(desc)) { //Set new value
+      if (!element.descElement) {
+        element.descElement = this.createSVGElement_('desc');
+        this.setAttribute_(element.descElement, 'aria-label', '');
+      }
+      if (!goog.dom.getParentElement(element.descElement))
+        goog.dom.insertChildAt(domElement, element.descElement, 0);
+      element.descElement.innerHTML = desc;
+    } else if (element.descElement) { //remove node
+      domElement.removeChild(element.descElement);
+    }
+  }
+};
+
+
+/** @inheritDoc */
+acgraph.vector.svg.Renderer.prototype.setAttributes = function(element, attrs) {
+  var domElement = element.domElement();
+  if (domElement && goog.isObject(attrs)) {
+    for (var key in attrs) {
+      var value = attrs[key];
+      if (goog.isNull(value)) {
+        this.removeAttribute_(domElement, key);
+      } else {
+        this.setAttribute_(domElement, key, /** @type {(string|number)} */ (value));
+      }
+    }
+  }
+};
+
+
+/** @inheritDoc */
+acgraph.vector.svg.Renderer.prototype.getAttribute = function(element, key) {
+  return element ? element.getAttribute(key) : void 0;
 };
 
 
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setDisableStrokeScaling = function(element, isDisabled) {
-  if (isDisabled)
-    this.setAttribute_(element, 'vector-effect', 'non-scaling-stroke');
-  else
-    this.removeAttribute_(element, 'vector-effect');
+  var domElement = element.domElement();
+  if (domElement) {
+    if (isDisabled)
+      this.setAttribute_(domElement, 'vector-effect', 'non-scaling-stroke');
+    else
+      this.removeAttribute_(domElement, 'vector-effect');
+  }
 };
 
 
@@ -1190,14 +1293,15 @@ acgraph.vector.svg.Renderer.prototype.createClip_ = function(element, clipElemen
   var clipShapeElement;
   if (goog.dom.getParentElement(clipDomElement) != defs.domElement()) {
     this.setAttribute_(clipDomElement, 'clip-rule', 'nonzero');
-    this.setId(clipDomElement, id);
-    clipElement.stage(element.getStage());
-    clipElement.id(id);
-
-    var clipShape = clipElement.shape();
-    clipShape.render();
-    clipShapeElement = clipShape.domElement();
+    this.setIdInternal(clipDomElement, id);
   }
+
+  clipElement.stage(element.getStage());
+  clipElement.id(id);
+
+  var clipShape = clipElement.shape();
+  clipShape.render();
+  clipShapeElement = clipShape.domElement();
 
   if (clipShapeElement) {
     this.appendChild(clipDomElement, clipShapeElement);

@@ -17,6 +17,7 @@ goog.require('acgraph.vector.PatternFill');
 goog.require('acgraph.vector.Rect');
 goog.require('acgraph.vector.Renderer');
 goog.require('acgraph.vector.Text');
+goog.require('acgraph.vector.UnmanagedLayer');
 goog.require('acgraph.vector.primitives');
 goog.require('acgraph.vector.svg.Renderer');
 goog.require('acgraph.vector.svg.Stage');
@@ -432,6 +433,16 @@ acgraph.clip = function(opt_leftOrShape, opt_top, opt_width, opt_height) {
   return (acgraph.type_ == acgraph.StageType.VML) ?
       new acgraph.vector.vml.Clip(null, opt_leftOrShape, opt_top, opt_width, opt_height) :
       new acgraph.vector.Clip(null, opt_leftOrShape, opt_top, opt_width, opt_height);
+};
+
+
+/**
+ * Creates an instance ot the {@link acgraph.vector.UnmanagedLayer} class.
+ * @param {string|Element=} opt_content Layer content.
+ * @return {acgraph.vector.UnmanagedLayer} The instance of the {@link acgraph.vector.UnmanagedLayer} class.
+ */
+acgraph.unmanagedLayer = function(opt_content) {
+  return new acgraph.vector.UnmanagedLayer(opt_content);
 };
 
 

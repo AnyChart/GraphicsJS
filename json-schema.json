@@ -206,6 +206,14 @@
       },
       "required": ["type", "cx", "cy", "radius"]
     },
+    "unmanageableLayer": {
+      "type": "object",
+      "properties": {
+        "content": { "type": "string" },
+        "type": { "enum": ["unmanageablelayer"] }
+      },
+      "required": ["type"]
+    },
     "layer": {
       "type": "object",
       "properties": {

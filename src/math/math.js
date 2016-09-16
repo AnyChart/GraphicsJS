@@ -284,10 +284,10 @@ acgraph.math.round = function(num, opt_digitsCount) {
  */
 acgraph.math.angleBetweenVectors = function(ux, uy, vx, vy) {
   var sign = ux * vy - uy * vx; // sign determining
-  var result = goog.math.toDegrees(Math.acos(
-      (ux * vx + uy * vy) / // vector multiplication
-      (Math.sqrt(ux * ux + uy * uy) * Math.sqrt(vx * vx + vy * vy)) // multiplication of vector lengths
-      ));
+  var cos = (ux * vx + uy * vy) / // vector multiplication
+      (Math.sqrt(ux * ux + uy * uy) * Math.sqrt(vx * vx + vy * vy)); // multiplication of vector lengths
+  cos = goog.math.clamp(cos, -1, 1);
+  var result = goog.math.toDegrees(Math.acos(cos));
   return sign > 0 ? result : -result;
 };
 

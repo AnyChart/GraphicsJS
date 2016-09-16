@@ -14,7 +14,8 @@ import time
 #=======================================================================================================================
 PROJECT_PATH = os.path.abspath(os.path.dirname(__file__))
 CONTRIB_PATH = os.path.join(PROJECT_PATH, 'contrib')
-COMPILER_PATH = os.path.join(CONTRIB_PATH, 'compiler', 'compiler.jar')
+COMPILER_VERSION = '20160911'
+COMPILER_PATH = os.path.join(CONTRIB_PATH, 'compiler', 'closure-compiler-v%s.jar' % COMPILER_VERSION)
 SRC_PATH = os.path.join(PROJECT_PATH, 'src')
 OUT_PATH = os.path.join(PROJECT_PATH, 'out')
 CLOSURE_LIBRARY_PATH = os.path.join(CONTRIB_PATH, 'closure-library')
@@ -27,6 +28,7 @@ EXTERNS_PATH = os.path.join(PROJECT_PATH, 'externs.js')
 PYTHON = 'python'
 if not (platform.system() == 'Windows'):
     PYTHON = 'python2.7'
+
 
 #=======================================================================================================================
 #                            Synchronize contributions.
@@ -44,16 +46,16 @@ def __has_closure_linter_wrapper():
 
 
 def __has_closure_linter():
-    hasLint = True
+    has_lint = True
     try:
         subprocess.Popen(['gjslint'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except StandardError:
-        hasLint = False
+        has_lint = False
 
-    return hasLint
+    return has_lint
 
 
-def __ensureDirExists(path):
+def __ensure_dir_exists(path):
     if not os.path.exists(path):
         os.mkdir(path)
 
@@ -67,35 +69,35 @@ def __need_sync_contrib():
 
 def __sync_contrib():
     t = time.time()
-    __ensureDirExists(CONTRIB_PATH)
+    __ensure_dir_exists(CONTRIB_PATH)
 
     subprocess.call(['git', 'submodule', 'init'])
     subprocess.call(['git', 'submodule', 'update'])
 
     #Download closure compiler
     if not os.path.exists(COMPILER_PATH):
-        print 'Downloading Google Closure Compiler v.20151216'
+        print 'Downloading Google Closure Compiler v.' + COMPILER_VERSION
         try:
             __download_and_unzip_from_http(
-                'http://dl.google.com/closure-compiler/compiler-20151216.zip',
+                'http://dl.google.com/closure-compiler/compiler-%s.zip' % COMPILER_VERSION,
                 'compiler'
             )
         except StandardError as e:
             print e
             print 'Failed'
-            return False;
+            return False
 
     #Install closure linter
     if not __has_closure_linter():
         if not __install_closure_linter():
-            return False;
+            return False
 
     print 'Environment ready. Time spent: {:.3f}s\n'.format(time.time() - t)
     return True
 
 
-def __download_and_unzip_from_http(from_url, dri_name):
-    z_obj_path = os.path.join(CONTRIB_PATH, dri_name + '.zip')
+def __download_and_unzip_from_http(from_url, dir_name):
+    z_obj_path = os.path.join(CONTRIB_PATH, dir_name + '.zip')
 
     # download zip archive from url
     if not os.path.exists(z_obj_path):
@@ -105,8 +107,8 @@ def __download_and_unzip_from_http(from_url, dri_name):
         )
 
     # extract zip archive
-    target_path = os.path.join(CONTRIB_PATH, dri_name)
-    __ensureDirExists(target_path)
+    target_path = os.path.join(CONTRIB_PATH, dir_name)
+    __ensure_dir_exists(target_path)
     z_obj = zipfile.ZipFile(z_obj_path)
     z_obj.extractall(path=target_path)
     z_obj.close()
@@ -151,30 +153,26 @@ def __getNotOptimizedCompilerArgs():
 
 def __getOptimizedCompilerArgs():
     compilerArgs = [
-        '--compilation_level ADVANCED_OPTIMIZATIONS',
+        '--compilation_level ADVANCED',
+        '--env BROWSER',
         '--warning_level VERBOSE',
         '--jscomp_warning accessControls',
         '--jscomp_warning ambiguousFunctionDecl',
-        '--jscomp_warning checkDebuggerStatement',
         '--jscomp_warning checkEventfulObjectDisposal',
         '--jscomp_warning checkRegExp',
         '--jscomp_warning checkTypes',
         '--jscomp_warning checkVars',
-        '--jscomp_warning closureDepMethodUsageChecks',
         '--jscomp_warning conformanceViolations',
         '--jscomp_warning const',
         '--jscomp_warning constantProperty',
         '--jscomp_warning deprecated',
         '--jscomp_warning deprecatedAnnotations',
-        '--jscomp_warning duplicate',
         '--jscomp_warning duplicateMessage',
         '--jscomp_warning es3',
         '--jscomp_warning es5Strict',
         '--jscomp_warning externsValidation',
-        '--jscomp_warning extraRequire',
         '--jscomp_warning fileoverviewTags',
         '--jscomp_warning globalThis',
-        '--jscomp_warning inferredConstCheck',
         '--jscomp_warning internetExplorerChecks',
         '--jscomp_warning invalidCasts',
         '--jscomp_warning misplacedTypeAnnotation',
@@ -183,22 +181,24 @@ def __getOptimizedCompilerArgs():
         '--jscomp_warning missingProvide',
         '--jscomp_warning missingRequire',
         '--jscomp_warning missingReturn',
+        '--jscomp_warning msgDescriptions',
         '--jscomp_warning newCheckTypes',
-        #'--jscomp_warning msgDescriptionsNewCheckTypes',
         '--jscomp_warning nonStandardJsDocs',
-        #'--jscomp_warning reportUnknownTypes',
         '--jscomp_warning suspiciousCode',
         '--jscomp_warning strictModuleDepCheck',
-        '--jscomp_warning tweakValidation',
         '--jscomp_warning typeInvalidation',
         '--jscomp_warning undefinedNames',
         '--jscomp_warning undefinedVars',
         '--jscomp_warning unknownDefines',
-        #+'--jscomp_warning unnecessaryCasts',
+        # '--jscomp_warning unusedLocalVariables',
+        # '--jscomp_warning unusedPrivateMembers',
         '--jscomp_warning uselessCode',
-        #+'--jscomp_warning useOfGoogBase',
-        '--jscomp_warning violatedModuleDep',
+        # '--jscomp_warning useOfGoogBase',
+        '--jscomp_warning underscore',
         '--jscomp_warning visibility',
+        # '--use_types_for_optimization',
+        '--rewrite_polyfills',
+        '--process_closure_primitives',
     ]
     return compilerArgs
 
@@ -208,19 +208,21 @@ def __getDefaultCompilerArgs(outputFile):
         'java -jar',
         COMPILER_PATH,
         '--charset UTF-8',
-        '--only_closure_dependencies',
+        '--dependency_mode STRICT',
         '--externs ' + EXTERNS_PATH,
         '--js="%s"' % os.path.join(SRC_PATH, '**.js'),
         '--js="%s"' % os.path.join(CLOSURE_LIBRARY_PATH, '**.js'),
-        '--closure_entry_point acgraph',
-        '--js_output_file ' + outputFile
+        '--entry_point acgraph',
+        '--js_output_file ' + outputFile,
+        '--assume_function_wrapper',
+        '--output_wrapper "(function(){%output%}).apply(this);"'
     ]
     return result
 
 
 @sync_required
 def __compileBinary():
-    __ensureDirExists(OUT_PATH)
+    __ensure_dir_exists(OUT_PATH)
 
     t = time.time()
     outputFileName = os.path.join(OUT_PATH, 'graphics.min.js')
@@ -236,7 +238,7 @@ def __compileBinary():
 
 @sync_required
 def __compilePlain():
-    __ensureDirExists(OUT_PATH)
+    __ensure_dir_exists(OUT_PATH)
 
     t = time.time()
     outputFileName = os.path.join(OUT_PATH, 'graphics.js')

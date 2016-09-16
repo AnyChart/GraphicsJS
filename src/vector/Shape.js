@@ -138,12 +138,12 @@ acgraph.vector.Shape.prototype.strokeThickness = function(opt_value) {
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.Shape.prototype.renderInternal = function() {
+  goog.base(this, 'renderInternal');
+
   // Apply stroke and fill settings if they were changed
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.FILL) ||
       this.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE))
     this.renderFillAndStroke();
-
-  goog.base(this, 'renderInternal');
 };
 
 
@@ -259,3 +259,4 @@ acgraph.vector.Shape.prototype.disposeInternal = function() {
 acgraph.vector.Shape.prototype['stroke'] = acgraph.vector.Shape.prototype.stroke;
 acgraph.vector.Shape.prototype['strokeThickness'] = acgraph.vector.Shape.prototype.strokeThickness;
 acgraph.vector.Shape.prototype['fill'] = acgraph.vector.Shape.prototype.fill;
+acgraph.vector.Shape.prototype['attr'] = acgraph.vector.Shape.prototype.attr; //overridden method

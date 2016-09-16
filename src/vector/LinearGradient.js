@@ -34,10 +34,11 @@ goog.require('goog.Disposable');
  * borders. After that, the fill is executed on the element figure according to its coordinates.
  * Read more at <a href='http://www.w3.org/TR/SVG/pservers.html#LinearGradientElementGradientUnitsAttribute'>
  * gradientUnits</a>. Angle is always preserved in this mode.
+ * @param {goog.graphics.AffineTransform=} opt_transform Gradient transform.
  * @constructor
  * @extends {goog.Disposable}
  */
-acgraph.vector.LinearGradient = function(keys, opt_opacity, opt_angle, opt_mode) {
+acgraph.vector.LinearGradient = function(keys, opt_opacity, opt_angle, opt_mode, opt_transform) {
   goog.base(this);
   /**
    * Gradient keys.
@@ -71,6 +72,11 @@ acgraph.vector.LinearGradient = function(keys, opt_opacity, opt_angle, opt_mode)
    */
   this.bounds = (opt_mode && (opt_mode instanceof acgraph.math.Rect)) ?
       /** @type {acgraph.math.Rect} */(opt_mode) : null;
+  /**
+   * Gradient transform.
+   * @type {goog.graphics.AffineTransform}
+   */
+  this.transform = goog.isDefAndNotNull(opt_transform) ? opt_transform : null;
 };
 goog.inherits(acgraph.vector.LinearGradient, goog.Disposable);
 
@@ -89,9 +95,10 @@ goog.inherits(acgraph.vector.LinearGradient, goog.Disposable);
  * @param {number=} opt_opacity Gradient opacity.
  * @param {number=} opt_angle Gradient angle.
  * @param {(boolean|acgraph.math.Rect)=} opt_mode Gradient mode.
+ * @param {goog.graphics.AffineTransform=} opt_transform Gradient transform.
  * @return {string} String id.
  */
-acgraph.vector.LinearGradient.serialize = function(keys, opt_opacity, opt_angle, opt_mode) {
+acgraph.vector.LinearGradient.serialize = function(keys, opt_opacity, opt_angle, opt_mode, opt_transform) {
   // Conversion of input params, the same as in constructor, to apply defaults
   // and unify values.
   /** @type {number}*/
@@ -117,8 +124,9 @@ acgraph.vector.LinearGradient.serialize = function(keys, opt_opacity, opt_angle,
   var boundsToString = bounds ?
       '' + bounds.left + bounds.top + bounds.width + bounds.height :
       '';
+  var transformationToString = opt_transform ? opt_transform.toString() : '';
 
-  return gradientKeys.join('') + opacity + angle + saveAngle + boundsToString;
+  return gradientKeys.join('') + opacity + angle + saveAngle + boundsToString + transformationToString;
 };
 
 
@@ -197,6 +205,7 @@ acgraph.vector.LinearGradient.prototype.disposeInternal = function() {
     this.defs = null;
   }
   this.bounds = null;
+  this.transform = null;
   delete this.keys;
   this.mode = false;
   goog.base(this, 'disposeInternal');

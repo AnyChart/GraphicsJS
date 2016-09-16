@@ -226,6 +226,34 @@ acgraph.vector.primitives.triangleDown = function(stageOrPath, centerX, centerY,
 
 
 /**
+ Draws a triangle heading rightwards set by it's circumscribed circle's center and radius.
+ @param {!(acgraph.vector.Stage|acgraph.vector.Path)} stageOrPath Stage to create a path or a Path to append a triangle.
+    Path is not cleared before star drawing, so you need to clear it manually.
+ @param {number} centerX X coordinate of triangle circumscribed circle's center.
+ @param {number} centerY Y coordinate of triangle circumscribed circle's center.
+ @param {number} outerRadius Triangle circumscribed circle's radius.
+ @return {!acgraph.vector.Path} {@link acgraph.vector.Path} instance for method chaining.
+ */
+acgraph.vector.primitives.triangleRight = function(stageOrPath, centerX, centerY, outerRadius) {
+  return acgraph.vector.primitives.star(stageOrPath, centerX, centerY, outerRadius, outerRadius * 0.5, 3, 0);
+};
+
+
+/**
+ Draws a triangle heading leftwards set by it's circumscribed circle's center and radius.
+ @param {!(acgraph.vector.Stage|acgraph.vector.Path)} stageOrPath Stage to create a path or a Path to append a triangle.
+    Path is not cleared before star drawing, so you need to clear it manually.
+ @param {number} centerX X coordinate of triangle circumscribed circle's center.
+ @param {number} centerY Y coordinate of triangle circumscribed circle's center.
+ @param {number} outerRadius Triangle circumscribed circle's radius.
+ @return {!acgraph.vector.Path} {@link acgraph.vector.Path} instance for method chaining.
+ */
+acgraph.vector.primitives.triangleLeft = function(stageOrPath, centerX, centerY, outerRadius) {
+  return acgraph.vector.primitives.star(stageOrPath, centerX, centerY, outerRadius, outerRadius * 0.5, 3, 180);
+};
+
+
+/**
  Draws a diamond set by it's circumscribed circle's center and radius.
  @param {!(acgraph.vector.Stage|acgraph.vector.Path)} stageOrPath Stage to create a path or a Path to append a diamond.
     Path is not cleared before star drawing, so you need to clear it manually.
@@ -752,6 +780,8 @@ goog.exportSymbol('acgraph.vector.primitives.star10', acgraph.vector.primitives.
 goog.exportSymbol('acgraph.vector.primitives.diamond', acgraph.vector.primitives.diamond);
 goog.exportSymbol('acgraph.vector.primitives.triangleUp', acgraph.vector.primitives.triangleUp);
 goog.exportSymbol('acgraph.vector.primitives.triangleDown', acgraph.vector.primitives.triangleDown);
+goog.exportSymbol('acgraph.vector.primitives.triangleRight', acgraph.vector.primitives.triangleRight);
+goog.exportSymbol('acgraph.vector.primitives.triangleLeft', acgraph.vector.primitives.triangleLeft);
 goog.exportSymbol('acgraph.vector.primitives.cross', acgraph.vector.primitives.cross);
 goog.exportSymbol('acgraph.vector.primitives.diagonalCross', acgraph.vector.primitives.diagonalCross);
 goog.exportSymbol('acgraph.vector.primitives.hLine', acgraph.vector.primitives.hLine);

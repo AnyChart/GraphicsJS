@@ -13,10 +13,11 @@ goog.require('goog.Disposable');
  * @param {number} fy Y coordinate of focal point.
  * @param {number=} opt_opacity Opacity of the gradient.
  * @param {acgraph.math.Rect=} opt_mode If defined then userSpaceOnUse mode else objectBoundingBox.
+ * @param {goog.graphics.AffineTransform=} opt_transform Gradient transform.
  * @extends {goog.Disposable}
  * @constructor
  */
-acgraph.vector.RadialGradient = function(keys, cx, cy, fx, fy, opt_opacity, opt_mode) {
+acgraph.vector.RadialGradient = function(keys, cx, cy, fx, fy, opt_opacity, opt_mode, opt_transform) {
   goog.base(this);
   /**
    * Center X.
@@ -55,6 +56,11 @@ acgraph.vector.RadialGradient = function(keys, cx, cy, fx, fy, opt_opacity, opt_
    * @type {acgraph.math.Rect}
    */
   this.bounds = goog.isDefAndNotNull(opt_mode) ? opt_mode : null;
+  /**
+   * Gradient transform.
+   * @type {goog.graphics.AffineTransform}
+   */
+  this.transform = goog.isDefAndNotNull(opt_transform) ? opt_transform : null;
 };
 goog.inherits(acgraph.vector.RadialGradient, goog.Disposable);
 
@@ -76,9 +82,10 @@ goog.inherits(acgraph.vector.RadialGradient, goog.Disposable);
  * @param {number} fy Focal point Y.
  * @param {number=} opt_opacity Gradient opacity.
  * @param {acgraph.math.Rect=} opt_mode Gradient mode.
+ * @param {goog.graphics.AffineTransform=} opt_transform Gradient transform.
  * @return {string} String id.
  */
-acgraph.vector.RadialGradient.serialize = function(keys, cx, cy, fx, fy, opt_opacity, opt_mode) {
+acgraph.vector.RadialGradient.serialize = function(keys, cx, cy, fx, fy, opt_opacity, opt_mode, opt_transform) {
   // Conversion of input params, the same as in constructor, to apply defaults
   // and unify values.
   /** @type {number}*/
@@ -86,13 +93,13 @@ acgraph.vector.RadialGradient.serialize = function(keys, cx, cy, fx, fy, opt_opa
   /** @type {Array.<string>} */
   var gradientKeys = [];
   goog.array.forEach(keys, function(el) {
-    gradientKeys.push('' + el['offset'] + el['color'] + (el['opacity'] ? el['opacity'] : 1)
-    );
+    gradientKeys.push('' + el['offset'] + el['color'] + (el['opacity'] ? el['opacity'] : 1));
   });
   /** @type {string} */
   var boundsToString = opt_mode ? '' + opt_mode.left + opt_mode.top + opt_mode.width + opt_mode.height : '';
+  var transformationToString = opt_transform ? opt_transform.toString() : '';
 
-  return gradientKeys.join('') + opacity + cx + cy + fx + fy + boundsToString;
+  return gradientKeys.join('') + opacity + cx + cy + fx + fy + boundsToString + transformationToString;
 };
 
 
@@ -171,6 +178,7 @@ acgraph.vector.RadialGradient.prototype.disposeInternal = function() {
     this.defs = null;
   }
   this.bounds = null;
+  this.transform = null;
   delete this.keys;
   goog.base(this, 'disposeInternal');
 };

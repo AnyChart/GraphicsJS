@@ -393,7 +393,7 @@ acgraph.utils.HTMLParser.prototype.textElement = null;
  * @private
  */
 acgraph.utils.HTMLParser.prototype.init_ = function() {
-  /** @type {Array.<acgraph.vector.TextSegmentStyle>} */
+  /** @type {Array.<?acgraph.vector.TextSegmentStyle>} */
   this.styleStack = [];
 
   /** @type {Array.<string>} */

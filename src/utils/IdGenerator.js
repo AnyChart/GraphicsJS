@@ -29,6 +29,7 @@ acgraph.utils.IdGenerator.ElementTypePrefix = {
   IMAGE_FILL: 'imageFill',
   STROKE: 'stroke',
   LAYER: 'layer',
+  UNMANAGEABLE_LAYER: 'unmanageablelayer',
   RECT: 'rect',
   CIRCLE: 'circle',
   ELLIPSE: 'ellipse',

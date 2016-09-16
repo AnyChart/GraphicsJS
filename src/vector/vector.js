@@ -3,6 +3,7 @@ goog.provide('acgraph.vector.Anchor');
 goog.provide('acgraph.vector.Cursor');
 goog.provide('acgraph.vector.ILayer');
 goog.require('acgraph.math.Rect');
+goog.require('goog.graphics.AffineTransform');
 
 /**
  A namespace for working with vector graphics.
@@ -517,6 +518,61 @@ acgraph.vector.PaperSize = {
 
 
 /**
+ * Converts string representation of transformations to goog.graphics.AffineTransform object.
+ * @param {string} value
+ * @return {goog.graphics.AffineTransform}
+ */
+acgraph.vector.parseTransformationString = function(value) {
+  var i, j, len, len_;
+
+  var transforms = value.trim()
+      .replace(/\(\s+/gi, '(')
+      .replace(/\s+\)/gi, ')')
+      .replace(/(\s+,\s+)|(\s+)/gi, ',')
+      .replace(/(\)),*(\w)/gi, '$1 $2')
+      .split(' ');
+
+  var tx = new goog.graphics.AffineTransform();
+
+  for (j = 0, len_ = transforms.length; j < len_; j++) {
+    var transform = transforms[j];
+
+    var r = /^(matrix|translate|rotate|scale|skewX|skewY)\(([e\d.,-]+)\)/i;
+    var result = r.exec(transform);
+    var type = result[1];
+    var params = /** @type {Array.<number>} */(result[2].split(','));
+    for (i = 0, len = params.length; i < len; i++) {
+      params[i] = parseFloat(params[i]);
+    }
+
+    switch (type) {
+      case 'matrix':
+        var new_tx = new goog.graphics.AffineTransform(params[0], params[1], params[2], params[3], params[4], params[5]);
+        tx.concatenate(new_tx);
+        break;
+      case 'translate':
+        tx.translate(params[0], params[1] || 0);
+        break;
+      case 'rotate':
+        tx.rotate(goog.math.toRadians(params[0]), params[1] || 0, params[2] || 0);
+        break;
+      case 'scale':
+        tx.scale(params[0], params[1] || 0);
+        break;
+      case 'skewX':
+        tx.shear(Math.tan(goog.math.toRadians(params[0])), 0);
+        break;
+      case 'skewY':
+        tx.shear(0, Math.tan(goog.math.toRadians(params[0])));
+        break;
+    }
+  }
+
+  return tx;
+};
+
+
+/**
  * Normalizes stroke params. Look at vector.Shape.fill() params for details.
  * @param {(!acgraph.vector.Fill|!Array.<(acgraph.vector.GradientKey|string)>|null)=} opt_fillOrColorOrKeys .
  * @param {number=} opt_opacityOrAngleOrCx .
@@ -540,6 +596,8 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
   /** @type {number} */
   var i;
   var color;
+  var newKeys;
+  var newKey;
 
   if (goog.isString(opt_fillOrColorOrKeys)) { // if that's a "function(color, opt_opacity);" case.
     newFill = acgraph.vector.parseColor(opt_fillOrColorOrKeys, false);
@@ -557,8 +615,34 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
       if (goog.isString(key)) // key is set as string - need to normalize
         key = acgraph.vector.parseKey(key);
       if (isNaN(key['offset'])) // check all invalid offsets, including absence
-        key['offset'] = i / (keys.length - 1);
+        key['offset'] = i / ((keys.length - 1) || 1);
       keys[i] = /** @type {acgraph.vector.GradientKey} */(key);
+    }
+    newKeys = goog.array.slice(keys, 0);
+    newKeys.sort(function(k1, k2) {
+      return k1['offset'] - k2['offset'];
+    });
+
+    if (newKeys[0]['offset'] != 0) {
+      newKey = /** @type {acgraph.vector.GradientKey} */ ({
+        'offset': 0,
+        'color': /** @type {string} */ (keys[0]['color'])
+      });
+      if (goog.isDef(keys[0]['opacity']) && !isNaN(keys[0]['opacity'])) {
+        newKey['opacity'] = goog.math.clamp(keys[0]['opacity'], 0, 1);
+      }
+      keys.unshift(newKey);
+    }
+
+    if (newKeys[newKeys.length - 1]['offset'] != 1) {
+      newKey = /** @type {acgraph.vector.GradientKey} */ ({
+        'offset': 1,
+        'color': /** @type {string} */ (keys[keys.length - 1]['color'])
+      });
+      if (goog.isDef(keys[keys.length - 1]['opacity']) && !isNaN(keys[keys.length - 1]['opacity'])) {
+        newKey['opacity'] = goog.math.clamp(keys[keys.length - 1]['opacity'], 0, 1);
+      }
+      keys.push(newKey);
     }
     if (goog.isNumber(opt_opacityOrAngleOrCx) && !isNaN(opt_opacityOrAngleOrCx) &&
         goog.isNumber(opt_modeOrCy) && !isNaN(opt_modeOrCy)) { // radial gradient
@@ -584,11 +668,16 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
   } else if (goog.isObject(opt_fillOrColorOrKeys)) { // fill as an object
     if (opt_fillOrColorOrKeys instanceof acgraph.vector.PatternFill) {
       newFill = opt_fillOrColorOrKeys;
+    } else if (opt_fillOrColorOrKeys['type'] == 'pattern') {
+      delete opt_fillOrColorOrKeys['id'];
+      var bounds = opt_fillOrColorOrKeys['bounds'];
+      bounds = new acgraph.math.Rect(bounds['left'], bounds['top'], bounds['width'], bounds['height']);
+      newFill = acgraph.patternFill(bounds);
+      newFill.deserialize(opt_fillOrColorOrKeys);
     } else if ('keys' in opt_fillOrColorOrKeys) { // gradient
       keys = goog.array.slice(opt_fillOrColorOrKeys['keys'], 0);
       for (i = keys.length; i--;) { // iterate keys and normalize them if set as simple color
         key = keys[i];
-        var newKey;
         if (goog.isString(key)) // key is set as string - need to normalize
           newKey = acgraph.vector.parseKey(key);
         else { // copy as we can
@@ -607,13 +696,41 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
             newKey['opacity'] = goog.math.clamp(key['opacity'], 0, 1);
         }
         if (isNaN(newKey['offset'])) // check all invalid offsets, including absence
-          newKey['offset'] = i / (keys.length - 1);
+          newKey['offset'] = i / ((keys.length - 1) || 1);
         keys[i] = /** @type {acgraph.vector.GradientKey} */(newKey);
       }
+      newKeys = goog.array.slice(keys, 0);
+      newKeys.sort(function(k1, k2) {
+        return k1['offset'] - k2['offset'];
+      });
+
+      if (newKeys[0]['offset'] != 0) {
+        newKey = /** @type {acgraph.vector.GradientKey} */ ({
+          'offset': 0,
+          'color': /** @type {string} */ (keys[0]['color'])
+        });
+        if (goog.isDef(keys[0]['opacity']) && !isNaN(keys[0]['opacity'])) {
+          newKey['opacity'] = goog.math.clamp(keys[0]['opacity'], 0, 1);
+        }
+        keys.unshift(newKey);
+      }
+
+      if (newKeys[newKeys.length - 1]['offset'] != 1) {
+        newKey = /** @type {acgraph.vector.GradientKey} */ ({
+          'offset': 1,
+          'color': /** @type {string} */ (keys[keys.length - 1]['color'])
+        });
+        if (goog.isDef(keys[keys.length - 1]['opacity']) && !isNaN(keys[keys.length - 1]['opacity'])) {
+          newKey['opacity'] = goog.math.clamp(keys[keys.length - 1]['opacity'], 0, 1);
+        }
+        keys.push(newKey);
+      }
+
       opacity = goog.math.clamp(goog.isDef(opt_fillOrColorOrKeys['opacity']) ? opt_fillOrColorOrKeys['opacity'] : 1, 0, 1);
       var mode = acgraph.vector.normalizeGradientMode(opt_fillOrColorOrKeys['mode']);
       cx = opt_fillOrColorOrKeys['cx'];
       cy = opt_fillOrColorOrKeys['cy'];
+
       if (goog.isNumber(cx) && !isNaN(cx) && goog.isNumber(cy) && !isNaN(cy)) { // treat as radial gradient
         newFill = {
           'keys': keys,
@@ -631,6 +748,24 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
           'mode': mode || !!opt_fillOrColorOrKeys['mode'], // can be boolean
           'opacity': opacity
         };
+      }
+      var transform = opt_fillOrColorOrKeys['transform'];
+      if (goog.isDefAndNotNull(transform)) {
+        if (transform instanceof goog.graphics.AffineTransform) {
+          newFill['transform'] = transform;
+        } else if (goog.isObject(transform)) {
+          newFill['transform'] = new goog.graphics.AffineTransform();
+          newFill['transform'].setTransform(
+              transform['m00'],
+              transform['m10'],
+              transform['m01'],
+              transform['m11'],
+              transform['m02'],
+              transform['m12']
+          );
+        } else if (goog.isString(transform)) {
+          newFill['transform'] = acgraph.vector.parseTransformationString(transform);
+        }
       }
     } else if ('src' in opt_fillOrColorOrKeys) {
       newFill = {
@@ -757,11 +892,19 @@ acgraph.vector.normalizeHatchFill = function(opt_patternFillOrType, opt_color, o
   } else if (opt_patternFillOrType instanceof acgraph.vector.PatternFill) {
     newFill = opt_patternFillOrType;
   } else if (goog.isObject(opt_patternFillOrType)) {
-    newFill = acgraph.hatchFill(
-        /** @type {acgraph.vector.HatchFill.HatchFillType} */(opt_patternFillOrType['type']),
-        opt_patternFillOrType['color'],
-        opt_patternFillOrType['thickness'],
-        opt_patternFillOrType['size']);
+    if (opt_patternFillOrType['type'] == 'pattern') {
+      delete opt_patternFillOrType['id'];
+      var bounds = opt_patternFillOrType['bounds'];
+      bounds = new acgraph.math.Rect(bounds['left'], bounds['top'], bounds['width'], bounds['height']);
+      newFill = acgraph.patternFill(bounds);
+      newFill.deserialize(opt_patternFillOrType);
+    } else {
+      newFill = acgraph.hatchFill(
+          /** @type {acgraph.vector.HatchFill.HatchFillType} */(opt_patternFillOrType['type']),
+          opt_patternFillOrType['color'],
+          opt_patternFillOrType['thickness'],
+          opt_patternFillOrType['size']);
+    }
   } else
     newFill = null;
   return newFill;

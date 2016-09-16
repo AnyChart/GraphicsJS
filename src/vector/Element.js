@@ -41,6 +41,39 @@ acgraph.vector.Element = function() {
    */
   this.disableStrokeScaling_ = false;
 
+  /**
+   * Title element. A subnode.
+   * @type {?Element}
+   */
+  this.titleElement = null;
+
+  /**
+   * Text of title.
+   * @type {?string}
+   * @private
+   */
+  this.titleVal_ = null;
+
+  /**
+   * Desc element. A subnode.
+   * @type {?Element}
+   */
+  this.descElement = null;
+
+  /**
+   * Text of desc.
+   * @type {?string}
+   * @private
+   */
+  this.descVal_ = null;
+
+  /**
+   * Attributes list to be set.
+   * @type {Object.<string, *>}
+   * @private
+   */
+  this.attributes_ = {};
+
   // Set all supported sync flags in the beginning.
   this.setDirtyState(acgraph.vector.Element.DirtyState.ALL);
 };
@@ -61,71 +94,83 @@ acgraph.vector.Element.DirtyState = {
   /**
    * DOM is not created, need to create it.
    */
-  DOM_MISSING: 0x01,
+  DOM_MISSING: 1 << 0,
   /**
    * Visibility settings has changed.
    */
-  VISIBILITY: 0x02,
+  VISIBILITY: 1 << 1,
   /**
    * Transformation state has changed.
    */
-  TRANSFORMATION: 0x04,
+  TRANSFORMATION: 1 << 2,
   /**
    * Fill must be refreshed.
    */
-  FILL: 0x08,
+  FILL: 1 << 3,
   /**
    * Stroke must be refreshed.
    */
-  STROKE: 0x10,
+  STROKE: 1 << 4,
   /**
    * Element data has changed (i.e. X, Y or size).
    */
-  DATA: 0x20,
+  DATA: 1 << 5,
   /**
    * Child elements have changed, need to refresh them.
    */
-  CHILDREN: 0x40,
+  CHILDREN: 1 << 6,
   /**
    * Child set has changed (added, removed, moved).
    */
-  CHILDREN_SET: 0x80,
+  CHILDREN_SET: 1 << 7,
   /**
    * Parent transformation state has changed.
    */
-  PARENT_TRANSFORMATION: 0x100,
+  PARENT_TRANSFORMATION: 1 << 8,
   /**
    * Clipping rectangle state has changed.
    */
-  CLIP: 0x200,
+  CLIP: 1 << 9,
   /**
    * Need to update style.
    */
-  STYLE: 0x400,
+  STYLE: 1 << 10,
   /**
    * Need to update id.
    */
-  ID: 0x800,
+  ID: 1 << 11,
   /**
    * Need to update cursor.
    */
-  CURSOR: 0x1000,
+  CURSOR: 1 << 12,
   /**
    * Need to update pointer events property.
    */
-  POINTER_EVENTS: 0x2000,
+  POINTER_EVENTS: 1 << 13,
   /**
    * Need to update position.
    */
-  POSITION: 0x4000,
+  POSITION: 1 << 14,
   /**
    * Need to update position.
    */
-  STROKE_SCALING: 0x8000,
+  STROKE_SCALING: 1 << 15,
+  /**
+   * Needs to update the title.
+   */
+  TITLE: 1 << 16,
+  /**
+   * Needs to update the desc.
+   */
+  DESC: 1 << 17,
+  /**
+   * Needs to update attribute.
+   */
+  ATTRIBUTE: 1 << 18,
   /**
    * Need to update everything.
    */
-  ALL: 0xFFFF
+  ALL: 0xFFFFFFFF
 };
 
 
@@ -277,14 +322,17 @@ acgraph.vector.Element.prototype.tag;
  */
 acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES =
     acgraph.vector.Element.DirtyState.DOM_MISSING |
-        acgraph.vector.Element.DirtyState.VISIBILITY |
-        acgraph.vector.Element.DirtyState.CURSOR |
-        acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION |
-        acgraph.vector.Element.DirtyState.TRANSFORMATION |
-        acgraph.vector.Element.DirtyState.CLIP |
-        acgraph.vector.Element.DirtyState.ID |
-        acgraph.vector.Element.DirtyState.POINTER_EVENTS |
-        acgraph.vector.Element.DirtyState.STROKE_SCALING;
+    acgraph.vector.Element.DirtyState.VISIBILITY |
+    acgraph.vector.Element.DirtyState.CURSOR |
+    acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION |
+    acgraph.vector.Element.DirtyState.TRANSFORMATION |
+    acgraph.vector.Element.DirtyState.CLIP |
+    acgraph.vector.Element.DirtyState.ID |
+    acgraph.vector.Element.DirtyState.POINTER_EVENTS |
+    acgraph.vector.Element.DirtyState.STROKE_SCALING |
+    acgraph.vector.Element.DirtyState.TITLE |
+    acgraph.vector.Element.DirtyState.DESC |
+    acgraph.vector.Element.DirtyState.ATTRIBUTE;
 
 
 /**
@@ -433,6 +481,62 @@ acgraph.vector.Element.prototype.getFullChildrenCount = function() {
 };
 
 
+/**
+ * Gets/sets element's title value.
+ * @param {(string|null)=} opt_value - Value to be set.
+ * @return {(string|null|acgraph.vector.Element|undefined)} - Current value or itself for method chaining.
+ */
+acgraph.vector.Element.prototype.title = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (this.titleVal_ != opt_value) {
+      this.titleVal_ = opt_value;
+      this.setDirtyState(acgraph.vector.Element.DirtyState.TITLE);
+    }
+    return this;
+  }
+  return this.titleVal_;
+};
+
+
+/**
+ * Gets/sets element's desc value.
+ * @param {(string|null)=} opt_value - Value to be set.
+ * @return {(string|null|acgraph.vector.Element|undefined)} - Current value or itself for method chaining.
+ */
+acgraph.vector.Element.prototype.desc = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (this.descVal_ != opt_value) {
+      this.descVal_ = opt_value;
+      this.setDirtyState(acgraph.vector.Element.DirtyState.DESC);
+    }
+    return this;
+  }
+  return this.descVal_;
+};
+
+
+/**
+ * Gets/sets attribute.
+ * @param {string} key - Name of attribute.
+ * @param {*=} opt_value - Value of attribute.
+ * @return {acgraph.vector.Element|*} - Attribute value or itself for method chaining.
+ */
+acgraph.vector.Element.prototype.attr = function(key, opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (this.attributes_[key] !== opt_value) {
+      this.attributes_[key] = opt_value;
+      this.setDirtyState(acgraph.vector.Element.DirtyState.ATTRIBUTE);
+    }
+    return this;
+  }
+
+  if (key in this.attributes_)
+    return this.attributes_[key];
+  else
+    return acgraph.getRenderer().getAttribute(this.domElement_, key);
+};
+
+
 //----------------------------------------------------------------------------------------------------------------------
 //
 //  Cursor
@@ -506,10 +610,7 @@ acgraph.vector.Element.prototype.setDirtyState = function(value) {
     if (this.parent_)
       this.parent_.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN);
     var stage = this.getStage();
-    if (stage &&
-        !stage.isSuspended() &&
-        !stage.isRendering() &&
-        !this.isRendering())
+    if (stage && !stage.isSuspended() && !stage.isRendering() && !this.isRendering())
       this.render();
   }
 };
@@ -979,6 +1080,9 @@ acgraph.vector.Element.prototype.render = function() {
  * @protected
  */
 acgraph.vector.Element.prototype.renderInternal = function() {
+  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.ATTRIBUTE))
+    this.renderAttributes();
+
   // We suppose that Stage already exists.
   // If visibility has changed - update it
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.VISIBILITY))
@@ -996,9 +1100,15 @@ acgraph.vector.Element.prototype.renderInternal = function() {
     this.renderClip();
 
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE_SCALING)) {
-    acgraph.getRenderer().setDisableStrokeScaling(this.domElement_, this.disableStrokeScaling_);
+    acgraph.getRenderer().setDisableStrokeScaling(this, this.disableStrokeScaling_);
     this.clearDirtyState(acgraph.vector.Element.DirtyState.STROKE_SCALING);
   }
+
+  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.TITLE))
+    this.renderTitle();
+
+  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DESC))
+    this.renderDesc();
 
   // Set element id
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.ID)) {
@@ -1012,7 +1122,7 @@ acgraph.vector.Element.prototype.renderInternal = function() {
  * @protected
  */
 acgraph.vector.Element.prototype.renderId = function() {
-  acgraph.getRenderer().setId(this.domElement_, this.id_ || '');
+  acgraph.getRenderer().setId(this, this.id_ || '');
   this.clearDirtyState(acgraph.vector.Element.DirtyState.ID);
 };
 
@@ -1069,8 +1179,39 @@ acgraph.vector.Element.prototype.renderClip = function() {
  * @protected
  */
 acgraph.vector.Element.prototype.renderCursor = function() {
-  acgraph.getRenderer().setCursorProperties(this.domElement(), this.cursor_ || this.parentCursor);
+  acgraph.getRenderer().setCursorProperties(this, this.cursor_ || this.parentCursor);
   this.clearDirtyState(acgraph.vector.Element.DirtyState.CURSOR);
+};
+
+
+/**
+ * Applies title value.
+ * @protected
+ */
+acgraph.vector.Element.prototype.renderTitle = function() {
+  acgraph.getRenderer().setTitle(this, this.titleVal_);
+  this.clearDirtyState(acgraph.vector.Element.DirtyState.TITLE);
+};
+
+
+/**
+ * Applies desc value.
+ * @protected
+ */
+acgraph.vector.Element.prototype.renderDesc = function() {
+  acgraph.getRenderer().setDesc(this, this.descVal_);
+  this.clearDirtyState(acgraph.vector.Element.DirtyState.DESC);
+};
+
+
+/**
+ * Applies attributes.
+ * @protected
+ */
+acgraph.vector.Element.prototype.renderAttributes = function() {
+  acgraph.getRenderer().setAttributes(this, this.attributes_);
+  this.attributes_ = {};
+  this.clearDirtyState(acgraph.vector.Element.DirtyState.ATTRIBUTE);
 };
 
 
@@ -1133,91 +1274,91 @@ acgraph.vector.Element.prototype.dispatchEvent = function(e) {
 
 
 /**
-* Adds an event listener. A listener can only be added once to an
-* object and if it is added again the key for the listener is
-* returned. Note that if the existing listener is a one-off listener
-* (registered via listenOnce), it will no longer be a one-off
-* listener after a call to listen().
-*
-* @param {!goog.events.EventId.<EVENTOBJ>|string} type The event type id.
-* @param {function(this:SCOPE, EVENTOBJ):(boolean|undefined)} listener Callback
-*     method.
-* @param {boolean=} opt_useCapture Whether to fire in capture phase
-*     (defaults to false).
-* @param {SCOPE=} opt_listenerScope Object in whose scope to call the
-*     listener.
-* @return {!goog.events.ListenableKey} Unique key for the listener.
-* @template SCOPE,EVENTOBJ
-*/
+ * Adds an event listener. A listener can only be added once to an
+ * object and if it is added again the key for the listener is
+ * returned. Note that if the existing listener is a one-off listener
+ * (registered via listenOnce), it will no longer be a one-off
+ * listener after a call to listen().
+ *
+ * @param {!goog.events.EventId.<EVENTOBJ>|string} type The event type id.
+ * @param {function(this:SCOPE, EVENTOBJ):(boolean|undefined)} listener Callback
+ *     method.
+ * @param {boolean=} opt_useCapture Whether to fire in capture phase
+ *     (defaults to false).
+ * @param {SCOPE=} opt_listenerScope Object in whose scope to call the
+ *     listener.
+ * @return {!goog.events.ListenableKey} Unique key for the listener.
+ * @template SCOPE,EVENTOBJ
+ */
 acgraph.vector.Element.prototype.listen = function(type, listener, opt_useCapture, opt_listenerScope) {
   return /** @type {!goog.events.ListenableKey} */(goog.base(this, 'listen', String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope));
 };
 
 
 /**
-* Adds an event listener that is removed automatically after the
-* listener fired once.
-*
-* If an existing listener already exists, listenOnce will do
-* nothing. In particular, if the listener was previously registered
-* via listen(), listenOnce() will not turn the listener into a
-* one-off listener. Similarly, if there is already an existing
-* one-off listener, listenOnce does not modify the listeners (it is
-* still a once listener).
-*
-* @param {!goog.events.EventId.<EVENTOBJ>|string} type The event type id.
-* @param {function(this:SCOPE, EVENTOBJ):(boolean|undefined)} listener Callback
-*     method.
-* @param {boolean=} opt_useCapture Whether to fire in capture phase
-*     (defaults to false).
-* @param {SCOPE=} opt_listenerScope Object in whose scope to call the
-*     listener.
-* @return {!goog.events.ListenableKey} Unique key for the listener.
-* @template SCOPE,EVENTOBJ
-*/
+ * Adds an event listener that is removed automatically after the
+ * listener fired once.
+ *
+ * If an existing listener already exists, listenOnce will do
+ * nothing. In particular, if the listener was previously registered
+ * via listen(), listenOnce() will not turn the listener into a
+ * one-off listener. Similarly, if there is already an existing
+ * one-off listener, listenOnce does not modify the listeners (it is
+ * still a once listener).
+ *
+ * @param {!goog.events.EventId.<EVENTOBJ>|string} type The event type id.
+ * @param {function(this:SCOPE, EVENTOBJ):(boolean|undefined)} listener Callback
+ *     method.
+ * @param {boolean=} opt_useCapture Whether to fire in capture phase
+ *     (defaults to false).
+ * @param {SCOPE=} opt_listenerScope Object in whose scope to call the
+ *     listener.
+ * @return {!goog.events.ListenableKey} Unique key for the listener.
+ * @template SCOPE,EVENTOBJ
+ */
 acgraph.vector.Element.prototype.listenOnce = function(type, listener, opt_useCapture, opt_listenerScope) {
   return /** @type {!goog.events.ListenableKey} */(goog.base(this, 'listenOnce', String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope));
 };
 
 
 /**
-* Removes an event listener which was added with listen() or listenOnce().
-*
-* @param {!goog.events.EventId.<EVENTOBJ>|string} type The event type id.
-* @param {function(this:SCOPE, EVENTOBJ):(boolean|undefined)} listener Callback
-*     method.
-* @param {boolean=} opt_useCapture Whether to fire in capture phase
-*     (defaults to false).
-* @param {SCOPE=} opt_listenerScope Object in whose scope to call
-*     the listener.
-* @return {boolean} Whether any listener was removed.
-* @template SCOPE,EVENTOBJ
-*/
+ * Removes an event listener which was added with listen() or listenOnce().
+ *
+ * @param {!goog.events.EventId.<EVENTOBJ>|string} type The event type id.
+ * @param {function(this:SCOPE, EVENTOBJ):(boolean|undefined)} listener Callback
+ *     method.
+ * @param {boolean=} opt_useCapture Whether to fire in capture phase
+ *     (defaults to false).
+ * @param {SCOPE=} opt_listenerScope Object in whose scope to call
+ *     the listener.
+ * @return {boolean} Whether any listener was removed.
+ * @template SCOPE,EVENTOBJ
+ */
 acgraph.vector.Element.prototype.unlisten = function(type, listener, opt_useCapture, opt_listenerScope) {
   return goog.base(this, 'unlisten', String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
 };
 
 
 /**
-* Removes an event listener which was added with listen() by the key
-* returned by listen().
-*
-* @param {goog.events.ListenableKey} key The key returned by
-*     listen() or listenOnce().
-* @return {boolean} Whether any listener was removed.
-*/
+ * Removes an event listener which was added with listen() by the key
+ * returned by listen().
+ *
+ * @param {goog.events.ListenableKey} key The key returned by
+ *     listen() or listenOnce().
+ * @return {boolean} Whether any listener was removed.
+ */
 acgraph.vector.Element.prototype.unlistenByKey;
 
 
 /**
-* Removes all listeners from this listenable. If type is specified,
-* it will only remove listeners of the particular type. otherwise all
-* registered listeners will be removed.
-*
-* @param {string=} opt_type Type of event to remove, default is to
-*     remove all types.
-* @return {number} Number of listeners removed.
-*/
+ * Removes all listeners from this listenable. If type is specified,
+ * it will only remove listeners of the particular type. otherwise all
+ * registered listeners will be removed.
+ *
+ * @param {string=} opt_type Type of event to remove, default is to
+ *     remove all types.
+ * @return {number} Number of listeners removed.
+ */
 acgraph.vector.Element.prototype.removeAllListeners = function(opt_type) {
   if (goog.isDef(opt_type)) opt_type = String(opt_type).toLowerCase();
   return goog.base(this, 'removeAllListeners', opt_type);
@@ -1628,6 +1769,9 @@ acgraph.vector.Element.prototype['domElement'] = acgraph.vector.Element.prototyp
 acgraph.vector.Element.prototype['parent'] = acgraph.vector.Element.prototype.parent;
 acgraph.vector.Element.prototype['hasParent'] = acgraph.vector.Element.prototype.hasParent;
 acgraph.vector.Element.prototype['remove'] = acgraph.vector.Element.prototype.remove;
+acgraph.vector.Element.prototype['attr'] = acgraph.vector.Element.prototype.attr;
+acgraph.vector.Element.prototype['title'] = acgraph.vector.Element.prototype.title;
+acgraph.vector.Element.prototype['desc'] = acgraph.vector.Element.prototype.desc;
 acgraph.vector.Element.prototype['getStage'] = acgraph.vector.Element.prototype.getStage;
 acgraph.vector.Element.prototype['cursor'] = acgraph.vector.Element.prototype.cursor;
 acgraph.vector.Element.prototype['disablePointerEvents'] = acgraph.vector.Element.prototype.disablePointerEvents;

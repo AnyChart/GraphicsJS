@@ -73,6 +73,13 @@ acgraph.utils.exporting.printIFrame_ = null;
 
 
 /**
+ * @type {Window}
+ * @private
+ */
+acgraph.utils.exporting.printWindow_ = null;
+
+
+/**
  * @param {acgraph.vector.Stage} stage
  * @param {(string|number)=} opt_paperSizeOrWidth Paper Size or width.
  * @param {(boolean|string)=} opt_landscapeOrHeight Landscape or height.
@@ -204,7 +211,8 @@ acgraph.utils.exporting.createPrint_ = function() {
  */
 acgraph.utils.exporting.openPrint_ = function() {
   if (acgraph.utils.exporting.printIFrame_) {
-    var iFrameWindow = acgraph.utils.exporting.printIFrame_['contentWindow'];
+    var iFrame = acgraph.utils.exporting.printIFrame_;
+    var iFrameWindow = iFrame['contentWindow'];
 
     //do not delete this, right now we have nothing to do before the print
     //but maybe one day we will
@@ -223,11 +231,32 @@ acgraph.utils.exporting.openPrint_ = function() {
     //iFrameWindow['onafterprint'] = acgraph.utils.exporting.disposePrint_;
     //end listening onBefore/onAfterPrint events
 
-    //this timer will tick right after print dialog close
-    goog.Timer.callOnce(acgraph.utils.exporting.disposePrint_, 5);
-
-    iFrameWindow['focus'](); // Required for IE
-    iFrameWindow['print']();
+    if (goog.userAgent.EDGE) {
+      acgraph.utils.exporting.printWindow_ = window.open();
+      acgraph.utils.exporting.printWindow_.document.write(iFrameWindow.document.documentElement.innerHTML);
+      acgraph.utils.exporting.disposePrint_();
+      acgraph.utils.exporting.printWindow_['onafterprint'] = function() {
+        setTimeout(function() {
+          acgraph.utils.exporting.printWindow_.close();
+        }, 0);
+      };
+      setTimeout(function() {
+        acgraph.utils.exporting.printWindow_['focus'](); // Required for IE
+        acgraph.utils.exporting.printWindow_['print']();
+      }, 0);
+    } else if (goog.userAgent.IE) {
+      setTimeout(function() {
+        goog.style.setStyle(iFrame, 'visibility', '');
+        iFrameWindow['onafterprint'] = acgraph.utils.exporting.disposePrint_;
+        iFrameWindow['focus'](); // Required for IE
+        iFrameWindow['print']();
+      }, 0);
+    } else {
+      //this timer will tick right after print dialog close
+      goog.Timer.callOnce(acgraph.utils.exporting.disposePrint_, 6);
+      iFrameWindow['focus'](); // Required for IE
+      iFrameWindow['print']();
+    }
   }
 };
 
