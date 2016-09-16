@@ -192,7 +192,7 @@ acgraph.vector.Renderer.prototype.setId = goog.abstractMethod;
 /**
  * Sets vector effect to DOM element.
  * @param {!acgraph.vector.Element} element - Element.
- * @param {boolean} disabled - isDisabled
+ * @param {boolean} disabled - isDisabled.
  */
 acgraph.vector.Renderer.prototype.setDisableStrokeScaling = goog.abstractMethod;
 
