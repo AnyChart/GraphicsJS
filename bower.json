@@ -1,0 +1,36 @@
+{
+  "name": "graphicsjs",
+  "description": "A lightweight JavaScript graphics library with the intuitive API, based on SVG/VML technology",
+  "main": "./dist/graphics.min.js",
+  "authors": [
+    "Sergey Medvedev <blackart.ru@gmail.com>",
+    "Anton Kagakin <ask@chidori.ru>",
+    "Anton Saukh <grasshoppergn@gmail.com>",
+    "Alexander Kudryavtsev <alexander.kudryavtsev@anychart.com>",
+    "Roman Lubushkin <ra.lubushkin@gmail.com>"
+  ],
+  "license": "BSD-3-Clause",
+  "keywords": [
+    "javascript",
+    "SVG",
+    "AnyChart",
+    "HTML5",
+    "library",
+    "VML",
+    "graphics",
+    "lightweight"
+  ],
+  "homepage": "http://graphicsjs.org",
+  "ignore": [
+    "**/.*",
+    "npm-debug.log",
+    "contrib",
+    "out",
+    "*.pyc",
+    "*.swp",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
