@@ -1,0 +1,17 @@
+{
+  "name": "graphicsjs",
+  "filename": "graphics.min.js",
+  "version": "1.0.0",
+  "description": "Graphics JSON schema",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AnyChart/graphicsjs.git"
+  },
+  "keywords": [
+    "graphics",
+    "lightweight"
+  ],
+  "author": "RomanLubushkin",
+  "license": "BSD-3-Clause",
+  "homepage": "http://www.graphicsjs.org/"
+}
