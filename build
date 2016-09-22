@@ -153,6 +153,7 @@ def __getOptimizedCompilerArgs():
     compilerArgs = [
         '--compilation_level ADVANCED_OPTIMIZATIONS',
         '--warning_level VERBOSE',
+        '--output_wrapper "(function(){%output%})();"',
         '--jscomp_warning accessControls',
         '--jscomp_warning ambiguousFunctionDecl',
         '--jscomp_warning checkDebuggerStatement',
