@@ -2,16 +2,32 @@
   "name": "graphicsjs",
   "filename": "graphics.min.js",
   "version": "1.0.0",
-  "description": "Graphics JSON schema",
+  "description": "A lightweight JavaScript graphics library with the intuitive API, based on SVG/VML technology",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AnyChart/graphicsjs.git"
   },
+  "bugs": {
+    "url": "https://github.com/anychart/graphicsjs/issues"
+  },
   "keywords": [
+    "javascript",
+    "SVG",
+    "AnyChart",
+    "HTML5",
+    "library",
+    "VML",
     "graphics",
     "lightweight"
   ],
-  "author": "RomanLubushkin",
+  "author": "AnyChart",
+  "contributors": [
+    "Sergey Medvedev <blackart.ru@gmail.com>",
+    "Anton Kagakin <ask@chidori.ru>",
+    "Anton Saukh <grasshoppergn@gmail.com>",
+    "Alexander Kudryavtsev <alexander.kudryavtsev@anychart.com>",
+    "Roman Lubushkin <ra.lubushkin@gmail.com>"
+  ],
   "license": "BSD-3-Clause",
   "homepage": "http://www.graphicsjs.org/"
 }
