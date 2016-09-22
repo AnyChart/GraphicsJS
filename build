@@ -44,16 +44,16 @@ def __has_closure_linter_wrapper():
 
 
 def __has_closure_linter():
-    hasLint = True
+    has_lint = True
     try:
         subprocess.Popen(['gjslint'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except StandardError:
-        hasLint = False
+        has_lint = False
 
-    return hasLint
+    return has_lint
 
 
-def __ensureDirExists(path):
+def __ensure_dir_exists(path):
     if not os.path.exists(path):
         os.mkdir(path)
 
@@ -67,7 +67,7 @@ def __need_sync_contrib():
 
 def __sync_contrib():
     t = time.time()
-    __ensureDirExists(CONTRIB_PATH)
+    __ensure_dir_exists(CONTRIB_PATH)
 
     subprocess.call(['git', 'submodule', 'init'])
     subprocess.call(['git', 'submodule', 'update'])
@@ -83,19 +83,19 @@ def __sync_contrib():
         except StandardError as e:
             print e
             print 'Failed'
-            return False;
+            return False
 
     #Install closure linter
     if not __has_closure_linter():
         if not __install_closure_linter():
-            return False;
+            return False
 
     print 'Environment ready. Time spent: {:.3f}s\n'.format(time.time() - t)
     return True
 
 
-def __download_and_unzip_from_http(from_url, dri_name):
-    z_obj_path = os.path.join(CONTRIB_PATH, dri_name + '.zip')
+def __download_and_unzip_from_http(from_url, dir_name):
+    z_obj_path = os.path.join(CONTRIB_PATH, dir_name + '.zip')
 
     # download zip archive from url
     if not os.path.exists(z_obj_path):
@@ -105,8 +105,8 @@ def __download_and_unzip_from_http(from_url, dri_name):
         )
 
     # extract zip archive
-    target_path = os.path.join(CONTRIB_PATH, dri_name)
-    __ensureDirExists(target_path)
+    target_path = os.path.join(CONTRIB_PATH, dir_name)
+    __ensure_dir_exists(target_path)
     z_obj = zipfile.ZipFile(z_obj_path)
     z_obj.extractall(path=target_path)
     z_obj.close()
@@ -220,7 +220,7 @@ def __getDefaultCompilerArgs(outputFile):
 
 @sync_required
 def __compileBinary():
-    __ensureDirExists(OUT_PATH)
+    __ensure_dir_exists(OUT_PATH)
 
     t = time.time()
     outputFileName = os.path.join(OUT_PATH, 'graphics.min.js')
@@ -236,7 +236,7 @@ def __compileBinary():
 
 @sync_required
 def __compilePlain():
-    __ensureDirExists(OUT_PATH)
+    __ensure_dir_exists(OUT_PATH)
 
     t = time.time()
     outputFileName = os.path.join(OUT_PATH, 'graphics.js')

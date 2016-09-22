@@ -2,7 +2,5 @@
 .DS_Store
 *.pyc
 out
-deps.js
-deps
 *.swp
 contrib/compiler/

@@ -279,6 +279,11 @@ acgraph.vector.vml.Renderer.prototype.createMeasurement_ = function() {
   this.measurementImage_ = goog.dom.createDom(goog.dom.TagName.IMG);
   goog.style.setStyle(this.measurementImage_, {'position': 'absolute', 'left': 0, 'top': 0});
   goog.dom.appendChild(this.measurement_, this.measurementImage_);
+
+  //Group measurement
+
+  this.measurementGroupNode_ = goog.dom.createDom(goog.dom.TagName.DIV);
+  goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
 };
 
 
@@ -424,6 +429,26 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
   this.measurementText_.innerHTML = '';
 
   return boundsTargetText;
+};
+
+
+/**
+ * Measure any svg nodes.
+ * @param {string|Node} element .
+ * @return {acgraph.math.Rect} .
+ */
+acgraph.vector.vml.Renderer.prototype.measureElement = function(element) {
+  if (!this.measurement_) this.createMeasurement_();
+
+  if (goog.isString(element)) {
+    this.measurementGroupNode_.innerHTML = element;
+  } else {
+    goog.dom.appendChild(this.measurementGroupNode_, element.cloneNode(true));
+  }
+  var bounds = goog.style.getBounds(this.measurementGroupNode_);
+  this.measurementGroupNode_.innerHTML = '';
+
+  return bounds;
 };
 
 
@@ -582,15 +607,15 @@ acgraph.vector.vml.Renderer.prototype.getVmlPath_ = function(path, opt_transform
     switch (segment) {
       case acgraph.vector.PathBase.Segment.MOVETO:
         list.push('m');
-        acgraph.utils.arrayPush(list, goog.array.map(args, this.toSizeCoord_));
+        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(args, this.toSizeCoord_), list);
         break;
       case acgraph.vector.PathBase.Segment.LINETO:
         list.push('l');
-        acgraph.utils.arrayPush(list, goog.array.map(args, this.toSizeCoord_));
+        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(args, this.toSizeCoord_), list);
         break;
       case acgraph.vector.PathBase.Segment.CURVETO:
         list.push('c');
-        acgraph.utils.arrayPush(list, goog.array.map(args, this.toSizeCoord_));
+        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(args, this.toSizeCoord_), list);
         break;
       case acgraph.vector.PathBase.Segment.CLOSE:
         list.push('x');
@@ -635,10 +660,52 @@ acgraph.vector.vml.Renderer.prototype.isVMLClassDefined = function() {
 
 /** @inheritDoc **/
 acgraph.vector.vml.Renderer.prototype.setId = function(element, id) {
-  if (id)
-    this.setAttribute_(element, 'id', id);
-  else
-    this.removeAttribute_(element, 'id');
+  this.setIdInternal(element.domElement(), id);
+};
+
+
+/**
+ * Sets id to element.
+ * @param {?Element} element - Element.
+ * @param {string} id - ID to be set.
+ */
+acgraph.vector.vml.Renderer.prototype.setIdInternal = function(element, id) {
+  if (element) {
+    if (id)
+      this.setAttribute_(element, 'id', id);
+    else
+      this.removeAttribute_(element, 'id');
+  }
+};
+
+
+/** @inheritDoc */
+acgraph.vector.vml.Renderer.prototype.setTitle = goog.nullFunction;
+
+
+/** @inheritDoc */
+acgraph.vector.vml.Renderer.prototype.setDesc = goog.nullFunction;
+
+
+/** @inheritDoc */
+acgraph.vector.vml.Renderer.prototype.setAttributes = function(element, attrs) {
+  var domElement = element.domElement();
+  if (domElement && goog.isObject(attrs)) {
+    for (var key in attrs) {
+      var value = attrs[key];
+      if (goog.isNull(value)) {
+        this.removeAttribute_(domElement, key);
+      } else {
+        this.setAttribute_(domElement, key, /** @type {string} */ (value));
+      }
+    }
+  }
+};
+
+
+/** @inheritDoc */
+acgraph.vector.vml.Renderer.prototype.getAttribute = function(element, key) {
+  return element ? element.getAttribute(key) : void 0;
 };
 
 
@@ -1222,7 +1289,7 @@ acgraph.vector.vml.Renderer.prototype.setRectProperties = function(rect) {
 
   points = goog.array.map(points, this.toSizeCoord_);
   var pathData = ['m', points[6], points[7], 'l'];
-  acgraph.utils.arrayPush(pathData, points);
+  acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, points, pathData);
   pathData.push('x');
 
   rect.clearDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
@@ -1255,7 +1322,7 @@ acgraph.vector.vml.Renderer.prototype.setEllipseProperties = function(ellipse) {
     var len = curves.length;
     transform.transform(curves, 0, curves, 0, len / 2);
     list = ['m', this.toSizeCoord_(curves[len - 2]), this.toSizeCoord_(curves[len - 1]), 'c'];
-    acgraph.utils.arrayPush(list, goog.array.map(curves, this.toSizeCoord_));
+    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(curves, this.toSizeCoord_), list);
   } else {
     list = ['ae',
       this.toSizeCoord_(cx),
@@ -1320,12 +1387,10 @@ acgraph.vector.vml.Renderer.prototype.createTextNode = function(text) {
 
 
 /** @inheritDoc */
-acgraph.vector.vml.Renderer.prototype.setCursorProperties = function(domElement, cursor) {
-  if (goog.isNull(cursor)) {
-    domElement.style['cursor'] = '';
-  } else {
-    domElement.style['cursor'] = cursor;
-  }
+acgraph.vector.vml.Renderer.prototype.setCursorProperties = function(element, cursor) {
+  var domElement = element.domElement();
+  if (domElement)
+    domElement.style['cursor'] = cursor || '';
 };
 
 
@@ -1673,7 +1738,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
     // Render shapeType
     if (!shapeType.rendered) {
       shapeTypeDomElement = this.createShapeTypeElement();
-      this.setId(shapeTypeDomElement, acgraph.utils.IdGenerator.getInstance().identify(shapeType));
+      this.setIdInternal(shapeTypeDomElement, acgraph.utils.IdGenerator.getInstance().identify(shapeType));
       this.appendChild(defs.domElement(), shapeTypeDomElement);
       shapeType.rendered = true;
 
@@ -1882,7 +1947,7 @@ acgraph.vector.vml.Renderer.prototype.setRectTransformation = function(element) 
 
   points = goog.array.map(points, this.toSizeCoord_);
   var pathData = ['m', points[6], points[7], 'l'];
-  acgraph.utils.arrayPush(pathData, points);
+  acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, points, pathData);
   pathData.push('x');
 
   this.setAttribute_(domElement, 'path', pathData.join(' '));
@@ -1905,7 +1970,7 @@ acgraph.vector.vml.Renderer.prototype.setEllipseTransformation = function(elemen
     var len = curves.length;
     transform.transform(curves, 0, curves, 0, len / 2);
     list = ['m', this.toSizeCoord_(curves[len - 2]), this.toSizeCoord_(curves[len - 1]), 'c'];
-    acgraph.utils.arrayPush(list, goog.array.map(curves, this.toSizeCoord_));
+    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(curves, this.toSizeCoord_), list);
   } else {
     list = ['ae',
       this.toSizeCoord_(cx),

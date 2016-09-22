@@ -1,6 +1,7 @@
 goog.provide('acgraph.vector.Renderer');
 goog.require('acgraph.math.Rect');
 goog.require('goog.dom');
+goog.require('goog.net.ImageLoader');
 
 
 
@@ -182,16 +183,16 @@ acgraph.vector.Renderer.prototype.saveGradientAngle = function(sourceAngle, boun
 
 /**
  * Sets ID to DOM element.
- * @param {Element} element DOM element.
- * @param {string} id ID.
+ * @param {(!acgraph.vector.Element|!acgraph.vector.Stage)} element - Element.
+ * @param {string} id - ID.
  */
 acgraph.vector.Renderer.prototype.setId = goog.abstractMethod;
 
 
 /**
  * Sets vector effect to DOM element.
- * @param {Element} element DOM element.
- * @param {boolean} isDisabled
+ * @param {!acgraph.vector.Element} element - Element.
+ * @param {boolean} disabled - isDisabled.
  */
 acgraph.vector.Renderer.prototype.setDisableStrokeScaling = goog.abstractMethod;
 
@@ -201,6 +202,40 @@ acgraph.vector.Renderer.prototype.setDisableStrokeScaling = goog.abstractMethod;
  * @param {!acgraph.vector.Element} element Element.
  */
 acgraph.vector.Renderer.prototype.setVisible = goog.abstractMethod;
+
+
+/**
+ * Sets title to DOM element.
+ * @param {(!acgraph.vector.Element|!acgraph.vector.Stage)} element - Element.
+ * @param {?string} title - Title value.
+ */
+acgraph.vector.Renderer.prototype.setTitle = goog.abstractMethod;
+
+
+/**
+ * Sets title to DOM element.
+ * @param {(!acgraph.vector.Element|!acgraph.vector.Stage)} element - Element.
+ * @param {?string} title - Title value.
+ */
+acgraph.vector.Renderer.prototype.setDesc = goog.abstractMethod;
+
+
+/**
+ * Sets attr to DOM element.
+ * @param {!acgraph.vector.Element} element - Element.
+ * @param {Object} value - Attributes key-value map. If value is null, attribute will be removed.
+ */
+acgraph.vector.Renderer.prototype.setAttributes = goog.abstractMethod;
+
+
+/**
+ * Gets attr from DOM element.
+ * @param {?Element} element - Element or null. If null, must return undefined.
+ * @param {string} key - Name of attribute.
+ */
+acgraph.vector.Renderer.prototype.getAttribute = goog.abstractMethod;
+
+
 //endregion
 
 
@@ -438,8 +473,8 @@ acgraph.vector.Renderer.prototype.setTextSegmentProperties = goog.abstractMethod
 /**
  * Sets the cursor properties to the primitive DOM element. If cursor is null - cursor properties will be removed from
  * dom element style.
- * @param {Element} domElement DOMElement.
- * @param {?acgraph.vector.Cursor} cursor Cursor type.
+ * @param {!acgraph.vector.Element} element - Element.
+ * @param {?acgraph.vector.Cursor} cursor - Cursor type.
  */
 acgraph.vector.Renderer.prototype.setCursorProperties = goog.abstractMethod;
 
@@ -525,7 +560,9 @@ acgraph.vector.Renderer.prototype.isImageLoading = function() {
  * @return {goog.net.ImageLoader} .
  */
 acgraph.vector.Renderer.prototype.getImageLoader = function() {
-  return null;
+  if (!this.imageLoader_)
+    this.imageLoader_ = new goog.net.ImageLoader();
+  return this.imageLoader_;
 };
 
 

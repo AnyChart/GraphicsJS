@@ -847,77 +847,20 @@ goog.tagUnsealableClass = function(ctr) {
   }
 };
 goog.UNSEALABLE_CONSTRUCTOR_PROPERTY_ = "goog_defineClass_legacy_unsealable";
-goog.provide("goog.math.Size");
-goog.math.Size = function(width, height) {
-  this.width = width;
-  this.height = height;
+goog.provide("acgraph.utils.IdGenerator");
+acgraph.utils.IdGenerator = function() {
 };
-goog.math.Size.equals = function(a, b) {
-  if (a == b) {
-    return true;
-  }
-  if (!a || !b) {
-    return false;
-  }
-  return a.width == b.width && a.height == b.height;
+goog.addSingletonGetter(acgraph.utils.IdGenerator);
+acgraph.utils.IdGenerator.ElementTypePrefix = {STAGE:"stage", FILL:"fill", FILL_PATTERN:"fillPattern", HATCH_FILL:"hatchFill", IMAGE_FILL:"imageFill", STROKE:"stroke", LAYER:"layer", UNMANAGEABLE_LAYER:"unmanageablelayer", RECT:"rect", CIRCLE:"circle", ELLIPSE:"ellipse", PATH:"path", GRADIENT_KEY:"gKey", LINEAR_GRADIENT:"linearGradient", RADIAL_GRADIENT:"radialGradient", TEXT:"text", TEXT_SEGMENT:"tSegment", IMAGE:"image", CLIP:"clip", SHAPE_TYPE:"shapeType"};
+acgraph.utils.IdGenerator.prototype.nextId_ = 0;
+acgraph.utils.IdGenerator.prototype.prefix_ = "#ac";
+acgraph.utils.IdGenerator.prototype.uid_property_ = "ac_uid_" + (Math.random() * 1E9 >>> 0);
+acgraph.utils.IdGenerator.prototype.identify = function(obj, opt_prefix) {
+  return obj[this.uid_property_] || (obj[this.uid_property_] = this.generateId(obj, opt_prefix));
 };
-goog.math.Size.prototype.clone = function() {
-  return new goog.math.Size(this.width, this.height);
-};
-if (goog.DEBUG) {
-  goog.math.Size.prototype.toString = function() {
-    return "(" + this.width + " x " + this.height + ")";
-  };
-}
-goog.math.Size.prototype.getLongest = function() {
-  return Math.max(this.width, this.height);
-};
-goog.math.Size.prototype.getShortest = function() {
-  return Math.min(this.width, this.height);
-};
-goog.math.Size.prototype.area = function() {
-  return this.width * this.height;
-};
-goog.math.Size.prototype.perimeter = function() {
-  return (this.width + this.height) * 2;
-};
-goog.math.Size.prototype.aspectRatio = function() {
-  return this.width / this.height;
-};
-goog.math.Size.prototype.isEmpty = function() {
-  return !this.area();
-};
-goog.math.Size.prototype.ceil = function() {
-  this.width = Math.ceil(this.width);
-  this.height = Math.ceil(this.height);
-  return this;
-};
-goog.math.Size.prototype.fitsInside = function(target) {
-  return this.width <= target.width && this.height <= target.height;
-};
-goog.math.Size.prototype.floor = function() {
-  this.width = Math.floor(this.width);
-  this.height = Math.floor(this.height);
-  return this;
-};
-goog.math.Size.prototype.round = function() {
-  this.width = Math.round(this.width);
-  this.height = Math.round(this.height);
-  return this;
-};
-goog.math.Size.prototype.scale = function(sx, opt_sy) {
-  var sy = goog.isNumber(opt_sy) ? opt_sy : sx;
-  this.width *= sx;
-  this.height *= sy;
-  return this;
-};
-goog.math.Size.prototype.scaleToCover = function(target) {
-  var s = this.aspectRatio() <= target.aspectRatio() ? target.width / this.width : target.height / this.height;
-  return this.scale(s);
-};
-goog.math.Size.prototype.scaleToFit = function(target) {
-  var s = this.aspectRatio() > target.aspectRatio() ? target.width / this.width : target.height / this.height;
-  return this.scale(s);
+acgraph.utils.IdGenerator.prototype.generateId = function(obj, opt_prefix) {
+  var typePrefix = goog.isDef(opt_prefix) ? opt_prefix : obj.getElementTypePrefix ? obj.getElementTypePrefix() : "";
+  return [this.prefix_, typePrefix, (this.nextId_++).toString(36)].join("_");
 };
 goog.provide("goog.debug.Error");
 goog.debug.Error = function(opt_msg) {
@@ -2128,652 +2071,6 @@ goog.array.copyByIndex = function(arr, index_arr) {
     result.push(arr[index]);
   });
   return result;
-};
-goog.provide("goog.math");
-goog.require("goog.array");
-goog.require("goog.asserts");
-goog.math.randomInt = function(a) {
-  return Math.floor(Math.random() * a);
-};
-goog.math.uniformRandom = function(a, b) {
-  return a + Math.random() * (b - a);
-};
-goog.math.clamp = function(value, min, max) {
-  return Math.min(Math.max(value, min), max);
-};
-goog.math.modulo = function(a, b) {
-  var r = a % b;
-  return r * b < 0 ? r + b : r;
-};
-goog.math.lerp = function(a, b, x) {
-  return a + x * (b - a);
-};
-goog.math.nearlyEquals = function(a, b, opt_tolerance) {
-  return Math.abs(a - b) <= (opt_tolerance || 1E-6);
-};
-goog.math.standardAngle = function(angle) {
-  return goog.math.modulo(angle, 360);
-};
-goog.math.standardAngleInRadians = function(angle) {
-  return goog.math.modulo(angle, 2 * Math.PI);
-};
-goog.math.toRadians = function(angleDegrees) {
-  return angleDegrees * Math.PI / 180;
-};
-goog.math.toDegrees = function(angleRadians) {
-  return angleRadians * 180 / Math.PI;
-};
-goog.math.angleDx = function(degrees, radius) {
-  return radius * Math.cos(goog.math.toRadians(degrees));
-};
-goog.math.angleDy = function(degrees, radius) {
-  return radius * Math.sin(goog.math.toRadians(degrees));
-};
-goog.math.angle = function(x1, y1, x2, y2) {
-  return goog.math.standardAngle(goog.math.toDegrees(Math.atan2(y2 - y1, x2 - x1)));
-};
-goog.math.angleDifference = function(startAngle, endAngle) {
-  var d = goog.math.standardAngle(endAngle) - goog.math.standardAngle(startAngle);
-  if (d > 180) {
-    d = d - 360;
-  } else {
-    if (d <= -180) {
-      d = 360 + d;
-    }
-  }
-  return d;
-};
-goog.math.sign = Math.sign || function(x) {
-  if (x > 0) {
-    return 1;
-  }
-  if (x < 0) {
-    return -1;
-  }
-  return x;
-};
-goog.math.longestCommonSubsequence = function(array1, array2, opt_compareFn, opt_collectorFn) {
-  var compare = opt_compareFn || function(a, b) {
-    return a == b;
-  };
-  var collect = opt_collectorFn || function(i1, i2) {
-    return array1[i1];
-  };
-  var length1 = array1.length;
-  var length2 = array2.length;
-  var arr = [];
-  for (var i = 0;i < length1 + 1;i++) {
-    arr[i] = [];
-    arr[i][0] = 0;
-  }
-  for (var j = 0;j < length2 + 1;j++) {
-    arr[0][j] = 0;
-  }
-  for (i = 1;i <= length1;i++) {
-    for (j = 1;j <= length2;j++) {
-      if (compare(array1[i - 1], array2[j - 1])) {
-        arr[i][j] = arr[i - 1][j - 1] + 1;
-      } else {
-        arr[i][j] = Math.max(arr[i - 1][j], arr[i][j - 1]);
-      }
-    }
-  }
-  var result = [];
-  var i = length1, j = length2;
-  while (i > 0 && j > 0) {
-    if (compare(array1[i - 1], array2[j - 1])) {
-      result.unshift(collect(i - 1, j - 1));
-      i--;
-      j--;
-    } else {
-      if (arr[i - 1][j] > arr[i][j - 1]) {
-        i--;
-      } else {
-        j--;
-      }
-    }
-  }
-  return result;
-};
-goog.math.sum = function(var_args) {
-  return (goog.array.reduce(arguments, function(sum, value) {
-    return sum + value;
-  }, 0));
-};
-goog.math.average = function(var_args) {
-  return goog.math.sum.apply(null, arguments) / arguments.length;
-};
-goog.math.sampleVariance = function(var_args) {
-  var sampleSize = arguments.length;
-  if (sampleSize < 2) {
-    return 0;
-  }
-  var mean = goog.math.average.apply(null, arguments);
-  var variance = goog.math.sum.apply(null, goog.array.map(arguments, function(val) {
-    return Math.pow(val - mean, 2);
-  })) / (sampleSize - 1);
-  return variance;
-};
-goog.math.standardDeviation = function(var_args) {
-  return Math.sqrt(goog.math.sampleVariance.apply(null, arguments));
-};
-goog.math.isInt = function(num) {
-  return isFinite(num) && num % 1 == 0;
-};
-goog.math.isFiniteNumber = function(num) {
-  return isFinite(num) && !isNaN(num);
-};
-goog.math.isNegativeZero = function(num) {
-  return num == 0 && 1 / num < 0;
-};
-goog.math.log10Floor = function(num) {
-  if (num > 0) {
-    var x = Math.round(Math.log(num) * Math.LOG10E);
-    return x - (parseFloat("1e" + x) > num ? 1 : 0);
-  }
-  return num == 0 ? -Infinity : NaN;
-};
-goog.math.safeFloor = function(num, opt_epsilon) {
-  goog.asserts.assert(!goog.isDef(opt_epsilon) || opt_epsilon > 0);
-  return Math.floor(num + (opt_epsilon || 2E-15));
-};
-goog.math.safeCeil = function(num, opt_epsilon) {
-  goog.asserts.assert(!goog.isDef(opt_epsilon) || opt_epsilon > 0);
-  return Math.ceil(num - (opt_epsilon || 2E-15));
-};
-goog.provide("goog.math.Coordinate");
-goog.require("goog.math");
-goog.math.Coordinate = function(opt_x, opt_y) {
-  this.x = goog.isDef(opt_x) ? opt_x : 0;
-  this.y = goog.isDef(opt_y) ? opt_y : 0;
-};
-goog.math.Coordinate.prototype.clone = function() {
-  return new goog.math.Coordinate(this.x, this.y);
-};
-if (goog.DEBUG) {
-  goog.math.Coordinate.prototype.toString = function() {
-    return "(" + this.x + ", " + this.y + ")";
-  };
-}
-goog.math.Coordinate.equals = function(a, b) {
-  if (a == b) {
-    return true;
-  }
-  if (!a || !b) {
-    return false;
-  }
-  return a.x == b.x && a.y == b.y;
-};
-goog.math.Coordinate.distance = function(a, b) {
-  var dx = a.x - b.x;
-  var dy = a.y - b.y;
-  return Math.sqrt(dx * dx + dy * dy);
-};
-goog.math.Coordinate.magnitude = function(a) {
-  return Math.sqrt(a.x * a.x + a.y * a.y);
-};
-goog.math.Coordinate.azimuth = function(a) {
-  return goog.math.angle(0, 0, a.x, a.y);
-};
-goog.math.Coordinate.squaredDistance = function(a, b) {
-  var dx = a.x - b.x;
-  var dy = a.y - b.y;
-  return dx * dx + dy * dy;
-};
-goog.math.Coordinate.difference = function(a, b) {
-  return new goog.math.Coordinate(a.x - b.x, a.y - b.y);
-};
-goog.math.Coordinate.sum = function(a, b) {
-  return new goog.math.Coordinate(a.x + b.x, a.y + b.y);
-};
-goog.math.Coordinate.prototype.ceil = function() {
-  this.x = Math.ceil(this.x);
-  this.y = Math.ceil(this.y);
-  return this;
-};
-goog.math.Coordinate.prototype.floor = function() {
-  this.x = Math.floor(this.x);
-  this.y = Math.floor(this.y);
-  return this;
-};
-goog.math.Coordinate.prototype.round = function() {
-  this.x = Math.round(this.x);
-  this.y = Math.round(this.y);
-  return this;
-};
-goog.math.Coordinate.prototype.translate = function(tx, opt_ty) {
-  if (tx instanceof goog.math.Coordinate) {
-    this.x += tx.x;
-    this.y += tx.y;
-  } else {
-    this.x += Number(tx);
-    if (goog.isNumber(opt_ty)) {
-      this.y += opt_ty;
-    }
-  }
-  return this;
-};
-goog.math.Coordinate.prototype.scale = function(sx, opt_sy) {
-  var sy = goog.isNumber(opt_sy) ? opt_sy : sx;
-  this.x *= sx;
-  this.y *= sy;
-  return this;
-};
-goog.math.Coordinate.prototype.rotateRadians = function(radians, opt_center) {
-  var center = opt_center || new goog.math.Coordinate(0, 0);
-  var x = this.x;
-  var y = this.y;
-  var cos = Math.cos(radians);
-  var sin = Math.sin(radians);
-  this.x = (x - center.x) * cos - (y - center.y) * sin + center.x;
-  this.y = (x - center.x) * sin + (y - center.y) * cos + center.y;
-};
-goog.math.Coordinate.prototype.rotateDegrees = function(degrees, opt_center) {
-  this.rotateRadians(goog.math.toRadians(degrees), opt_center);
-};
-goog.provide("goog.math.Box");
-goog.require("goog.asserts");
-goog.require("goog.math.Coordinate");
-goog.math.Box = function(top, right, bottom, left) {
-  this.top = top;
-  this.right = right;
-  this.bottom = bottom;
-  this.left = left;
-};
-goog.math.Box.boundingBox = function(var_args) {
-  var box = new goog.math.Box(arguments[0].y, arguments[0].x, arguments[0].y, arguments[0].x);
-  for (var i = 1;i < arguments.length;i++) {
-    box.expandToIncludeCoordinate(arguments[i]);
-  }
-  return box;
-};
-goog.math.Box.prototype.getWidth = function() {
-  return this.right - this.left;
-};
-goog.math.Box.prototype.getHeight = function() {
-  return this.bottom - this.top;
-};
-goog.math.Box.prototype.clone = function() {
-  return new goog.math.Box(this.top, this.right, this.bottom, this.left);
-};
-if (goog.DEBUG) {
-  goog.math.Box.prototype.toString = function() {
-    return "(" + this.top + "t, " + this.right + "r, " + this.bottom + "b, " + this.left + "l)";
-  };
-}
-goog.math.Box.prototype.contains = function(other) {
-  return goog.math.Box.contains(this, other);
-};
-goog.math.Box.prototype.expand = function(top, opt_right, opt_bottom, opt_left) {
-  if (goog.isObject(top)) {
-    this.top -= top.top;
-    this.right += top.right;
-    this.bottom += top.bottom;
-    this.left -= top.left;
-  } else {
-    this.top -= (top);
-    this.right += Number(opt_right);
-    this.bottom += Number(opt_bottom);
-    this.left -= Number(opt_left);
-  }
-  return this;
-};
-goog.math.Box.prototype.expandToInclude = function(box) {
-  this.left = Math.min(this.left, box.left);
-  this.top = Math.min(this.top, box.top);
-  this.right = Math.max(this.right, box.right);
-  this.bottom = Math.max(this.bottom, box.bottom);
-};
-goog.math.Box.prototype.expandToIncludeCoordinate = function(coord) {
-  this.top = Math.min(this.top, coord.y);
-  this.right = Math.max(this.right, coord.x);
-  this.bottom = Math.max(this.bottom, coord.y);
-  this.left = Math.min(this.left, coord.x);
-};
-goog.math.Box.equals = function(a, b) {
-  if (a == b) {
-    return true;
-  }
-  if (!a || !b) {
-    return false;
-  }
-  return a.top == b.top && a.right == b.right && a.bottom == b.bottom && a.left == b.left;
-};
-goog.math.Box.contains = function(box, other) {
-  if (!box || !other) {
-    return false;
-  }
-  if (other instanceof goog.math.Box) {
-    return other.left >= box.left && other.right <= box.right && other.top >= box.top && other.bottom <= box.bottom;
-  }
-  return other.x >= box.left && other.x <= box.right && other.y >= box.top && other.y <= box.bottom;
-};
-goog.math.Box.relativePositionX = function(box, coord) {
-  if (coord.x < box.left) {
-    return coord.x - box.left;
-  } else {
-    if (coord.x > box.right) {
-      return coord.x - box.right;
-    }
-  }
-  return 0;
-};
-goog.math.Box.relativePositionY = function(box, coord) {
-  if (coord.y < box.top) {
-    return coord.y - box.top;
-  } else {
-    if (coord.y > box.bottom) {
-      return coord.y - box.bottom;
-    }
-  }
-  return 0;
-};
-goog.math.Box.distance = function(box, coord) {
-  var x = goog.math.Box.relativePositionX(box, coord);
-  var y = goog.math.Box.relativePositionY(box, coord);
-  return Math.sqrt(x * x + y * y);
-};
-goog.math.Box.intersects = function(a, b) {
-  return a.left <= b.right && b.left <= a.right && a.top <= b.bottom && b.top <= a.bottom;
-};
-goog.math.Box.intersectsWithPadding = function(a, b, padding) {
-  return a.left <= b.right + padding && b.left <= a.right + padding && a.top <= b.bottom + padding && b.top <= a.bottom + padding;
-};
-goog.math.Box.prototype.ceil = function() {
-  this.top = Math.ceil(this.top);
-  this.right = Math.ceil(this.right);
-  this.bottom = Math.ceil(this.bottom);
-  this.left = Math.ceil(this.left);
-  return this;
-};
-goog.math.Box.prototype.floor = function() {
-  this.top = Math.floor(this.top);
-  this.right = Math.floor(this.right);
-  this.bottom = Math.floor(this.bottom);
-  this.left = Math.floor(this.left);
-  return this;
-};
-goog.math.Box.prototype.round = function() {
-  this.top = Math.round(this.top);
-  this.right = Math.round(this.right);
-  this.bottom = Math.round(this.bottom);
-  this.left = Math.round(this.left);
-  return this;
-};
-goog.math.Box.prototype.translate = function(tx, opt_ty) {
-  if (tx instanceof goog.math.Coordinate) {
-    this.left += tx.x;
-    this.right += tx.x;
-    this.top += tx.y;
-    this.bottom += tx.y;
-  } else {
-    goog.asserts.assertNumber(tx);
-    this.left += tx;
-    this.right += tx;
-    if (goog.isNumber(opt_ty)) {
-      this.top += opt_ty;
-      this.bottom += opt_ty;
-    }
-  }
-  return this;
-};
-goog.math.Box.prototype.scale = function(sx, opt_sy) {
-  var sy = goog.isNumber(opt_sy) ? opt_sy : sx;
-  this.left *= sx;
-  this.right *= sx;
-  this.top *= sy;
-  this.bottom *= sy;
-  return this;
-};
-goog.provide("goog.math.Rect");
-goog.require("goog.asserts");
-goog.require("goog.math.Box");
-goog.require("goog.math.Coordinate");
-goog.require("goog.math.Size");
-goog.math.Rect = function(x, y, w, h) {
-  this.left = x;
-  this.top = y;
-  this.width = w;
-  this.height = h;
-};
-goog.math.Rect.prototype.clone = function() {
-  return new goog.math.Rect(this.left, this.top, this.width, this.height);
-};
-goog.math.Rect.prototype.toBox = function() {
-  var right = this.left + this.width;
-  var bottom = this.top + this.height;
-  return new goog.math.Box(this.top, right, bottom, this.left);
-};
-goog.math.Rect.createFromPositionAndSize = function(position, size) {
-  return new goog.math.Rect(position.x, position.y, size.width, size.height);
-};
-goog.math.Rect.createFromBox = function(box) {
-  return new goog.math.Rect(box.left, box.top, box.right - box.left, box.bottom - box.top);
-};
-if (goog.DEBUG) {
-  goog.math.Rect.prototype.toString = function() {
-    return "(" + this.left + ", " + this.top + " - " + this.width + "w x " + this.height + "h)";
-  };
-}
-goog.math.Rect.equals = function(a, b) {
-  if (a == b) {
-    return true;
-  }
-  if (!a || !b) {
-    return false;
-  }
-  return a.left == b.left && a.width == b.width && a.top == b.top && a.height == b.height;
-};
-goog.math.Rect.prototype.intersection = function(rect) {
-  var x0 = Math.max(this.left, rect.left);
-  var x1 = Math.min(this.left + this.width, rect.left + rect.width);
-  if (x0 <= x1) {
-    var y0 = Math.max(this.top, rect.top);
-    var y1 = Math.min(this.top + this.height, rect.top + rect.height);
-    if (y0 <= y1) {
-      this.left = x0;
-      this.top = y0;
-      this.width = x1 - x0;
-      this.height = y1 - y0;
-      return true;
-    }
-  }
-  return false;
-};
-goog.math.Rect.intersection = function(a, b) {
-  var x0 = Math.max(a.left, b.left);
-  var x1 = Math.min(a.left + a.width, b.left + b.width);
-  if (x0 <= x1) {
-    var y0 = Math.max(a.top, b.top);
-    var y1 = Math.min(a.top + a.height, b.top + b.height);
-    if (y0 <= y1) {
-      return new goog.math.Rect(x0, y0, x1 - x0, y1 - y0);
-    }
-  }
-  return null;
-};
-goog.math.Rect.intersects = function(a, b) {
-  return a.left <= b.left + b.width && b.left <= a.left + a.width && a.top <= b.top + b.height && b.top <= a.top + a.height;
-};
-goog.math.Rect.prototype.intersects = function(rect) {
-  return goog.math.Rect.intersects(this, rect);
-};
-goog.math.Rect.difference = function(a, b) {
-  var intersection = goog.math.Rect.intersection(a, b);
-  if (!intersection || !intersection.height || !intersection.width) {
-    return [a.clone()];
-  }
-  var result = [];
-  var top = a.top;
-  var height = a.height;
-  var ar = a.left + a.width;
-  var ab = a.top + a.height;
-  var br = b.left + b.width;
-  var bb = b.top + b.height;
-  if (b.top > a.top) {
-    result.push(new goog.math.Rect(a.left, a.top, a.width, b.top - a.top));
-    top = b.top;
-    height -= b.top - a.top;
-  }
-  if (bb < ab) {
-    result.push(new goog.math.Rect(a.left, bb, a.width, ab - bb));
-    height = bb - top;
-  }
-  if (b.left > a.left) {
-    result.push(new goog.math.Rect(a.left, top, b.left - a.left, height));
-  }
-  if (br < ar) {
-    result.push(new goog.math.Rect(br, top, ar - br, height));
-  }
-  return result;
-};
-goog.math.Rect.prototype.difference = function(rect) {
-  return goog.math.Rect.difference(this, rect);
-};
-goog.math.Rect.prototype.boundingRect = function(rect) {
-  var right = Math.max(this.left + this.width, rect.left + rect.width);
-  var bottom = Math.max(this.top + this.height, rect.top + rect.height);
-  this.left = Math.min(this.left, rect.left);
-  this.top = Math.min(this.top, rect.top);
-  this.width = right - this.left;
-  this.height = bottom - this.top;
-};
-goog.math.Rect.boundingRect = function(a, b) {
-  if (!a || !b) {
-    return null;
-  }
-  var clone = a.clone();
-  clone.boundingRect(b);
-  return clone;
-};
-goog.math.Rect.prototype.contains = function(another) {
-  if (another instanceof goog.math.Rect) {
-    return this.left <= another.left && this.left + this.width >= another.left + another.width && this.top <= another.top && this.top + this.height >= another.top + another.height;
-  } else {
-    return another.x >= this.left && another.x <= this.left + this.width && another.y >= this.top && another.y <= this.top + this.height;
-  }
-};
-goog.math.Rect.prototype.squaredDistance = function(point) {
-  var dx = point.x < this.left ? this.left - point.x : Math.max(point.x - (this.left + this.width), 0);
-  var dy = point.y < this.top ? this.top - point.y : Math.max(point.y - (this.top + this.height), 0);
-  return dx * dx + dy * dy;
-};
-goog.math.Rect.prototype.distance = function(point) {
-  return Math.sqrt(this.squaredDistance(point));
-};
-goog.math.Rect.prototype.getSize = function() {
-  return new goog.math.Size(this.width, this.height);
-};
-goog.math.Rect.prototype.getTopLeft = function() {
-  return new goog.math.Coordinate(this.left, this.top);
-};
-goog.math.Rect.prototype.getCenter = function() {
-  return new goog.math.Coordinate(this.left + this.width / 2, this.top + this.height / 2);
-};
-goog.math.Rect.prototype.getBottomRight = function() {
-  return new goog.math.Coordinate(this.left + this.width, this.top + this.height);
-};
-goog.math.Rect.prototype.ceil = function() {
-  this.left = Math.ceil(this.left);
-  this.top = Math.ceil(this.top);
-  this.width = Math.ceil(this.width);
-  this.height = Math.ceil(this.height);
-  return this;
-};
-goog.math.Rect.prototype.floor = function() {
-  this.left = Math.floor(this.left);
-  this.top = Math.floor(this.top);
-  this.width = Math.floor(this.width);
-  this.height = Math.floor(this.height);
-  return this;
-};
-goog.math.Rect.prototype.round = function() {
-  this.left = Math.round(this.left);
-  this.top = Math.round(this.top);
-  this.width = Math.round(this.width);
-  this.height = Math.round(this.height);
-  return this;
-};
-goog.math.Rect.prototype.translate = function(tx, opt_ty) {
-  if (tx instanceof goog.math.Coordinate) {
-    this.left += tx.x;
-    this.top += tx.y;
-  } else {
-    this.left += goog.asserts.assertNumber(tx);
-    if (goog.isNumber(opt_ty)) {
-      this.top += opt_ty;
-    }
-  }
-  return this;
-};
-goog.math.Rect.prototype.scale = function(sx, opt_sy) {
-  var sy = goog.isNumber(opt_sy) ? opt_sy : sx;
-  this.left *= sx;
-  this.width *= sx;
-  this.top *= sy;
-  this.height *= sy;
-  return this;
-};
-goog.provide("acgraph.math.Rect");
-goog.require("goog.math.Rect");
-acgraph.math.Rect = goog.math.Rect;
-acgraph.math.Rect.prototype.getLeft = function() {
-  return this.left;
-};
-acgraph.math.Rect.prototype.getTop = function() {
-  return this.top;
-};
-acgraph.math.Rect.prototype.getWidth = function() {
-  return this.width;
-};
-acgraph.math.Rect.prototype.getHeight = function() {
-  return this.height;
-};
-acgraph.math.Rect.prototype.getRight = function() {
-  return this.left + this.width;
-};
-acgraph.math.Rect.prototype.getBottom = function() {
-  return this.top + this.height;
-};
-acgraph.math.Rect.prototype.left;
-acgraph.math.Rect.prototype.top;
-acgraph.math.Rect.prototype.width;
-acgraph.math.Rect.prototype.height;
-acgraph.math.Rect.equals = goog.math.Rect.equals;
-acgraph.math.Rect.prototype.boundingRect;
-acgraph.math.Rect.prototype.clone;
-acgraph.math.Rect.prototype.getSize;
-acgraph.math.Rect.prototype.toString = function() {
-  return "(" + this.left + ", " + this.top + " - " + this.width + "w x " + this.height + "h)";
-};
-goog.exportSymbol("acgraph.math.Rect", acgraph.math.Rect);
-acgraph.math.Rect.prototype["getLeft"] = acgraph.math.Rect.prototype.getLeft;
-acgraph.math.Rect.prototype["getTop"] = acgraph.math.Rect.prototype.getTop;
-acgraph.math.Rect.prototype["getWidth"] = acgraph.math.Rect.prototype.getWidth;
-acgraph.math.Rect.prototype["getHeight"] = acgraph.math.Rect.prototype.getHeight;
-acgraph.math.Rect.prototype["getRight"] = acgraph.math.Rect.prototype.getRight;
-acgraph.math.Rect.prototype["getBottom"] = acgraph.math.Rect.prototype.getBottom;
-goog.provide("acgraph.error");
-acgraph.error.Code = {ERROR_IS_NOT_FOUND:0, STAGE_TYPE_NOT_SUPPORTED:1, CONTAINER_SHOULD_BE_DEFINED:2, STAGE_SHOULD_HAVE_DOM_ELEMENT:3, PARENT_UNABLE_TO_BE_SET:4, OPERATION_ON_DISPOSED:5, DIRTY_AFTER_SYNC_RENDER:6, STAGE_MISMATCH:7, WRONG_SWAPPING:8, EMPTY_PATH:9, UNIMPLEMENTED_METHOD:10, REQUIRED_PARAMETER_MISSING:11, PARAMETER_TYPE_MISMATCH:12, PARAMETER_IS_NULL_OR_UNDEFINED:13, INVALID_NUMBER_OF_PARAMETERS:14, FEATURE_NOT_SUPPORTED_IN_VML:15};
-acgraph.error.Message = {0:"Can't find an error message that corresponds to the specified error code", 1:"Requested stage type is not supported", 2:"Container should be defined to render stage", 3:"Stage should have a DOM element", 4:"Unable to set the parent component", 5:"Trying to perform an operation with the disposed element", 6:"Synchronous rendering didn't clean up all dirty states", 7:"Can't add an element constructed by another Stage", 8:"Wrong arguments passed to swapChildren", 9:"Path must start with moveTo command", 
-10:"Method must be implemented", 11:"Missing required parameter", 12:"Parameter type mismatch", 13:"Required parameter is null or undefined", 14:"Invalid number of parameters", 15:"Sorry, this feature in not supported in VML oriented browsers"};
-acgraph.error.getErrorMessage = function(errorCode) {
-  return acgraph.error.Message[errorCode] || "Unknown error happened";
-};
-goog.provide("acgraph.utils.IdGenerator");
-acgraph.utils.IdGenerator = function() {
-};
-goog.addSingletonGetter(acgraph.utils.IdGenerator);
-acgraph.utils.IdGenerator.ElementTypePrefix = {STAGE:"stage", FILL:"fill", FILL_PATTERN:"fillPattern", HATCH_FILL:"hatchFill", IMAGE_FILL:"imageFill", STROKE:"stroke", LAYER:"layer", RECT:"rect", CIRCLE:"circle", ELLIPSE:"ellipse", PATH:"path", GRADIENT_KEY:"gKey", LINEAR_GRADIENT:"linearGradient", RADIAL_GRADIENT:"radialGradient", TEXT:"text", TEXT_SEGMENT:"tSegment", IMAGE:"image", CLIP:"clip", SHAPE_TYPE:"shapeType"};
-acgraph.utils.IdGenerator.prototype.nextId_ = 0;
-acgraph.utils.IdGenerator.prototype.prefix_ = "#ac";
-acgraph.utils.IdGenerator.prototype.uid_property_ = "ac_uid_" + (Math.random() * 1E9 >>> 0);
-acgraph.utils.IdGenerator.prototype.identify = function(obj, opt_prefix) {
-  return obj[this.uid_property_] || (obj[this.uid_property_] = this.generateId(obj, opt_prefix));
-};
-acgraph.utils.IdGenerator.prototype.generateId = function(obj, opt_prefix) {
-  var typePrefix = goog.isDef(opt_prefix) ? opt_prefix : obj.getElementTypePrefix ? obj.getElementTypePrefix() : "";
-  return [this.prefix_, typePrefix, (this.nextId_++).toString(36)].join("_");
 };
 goog.provide("goog.labs.userAgent.util");
 goog.require("goog.string");
@@ -4334,6 +3631,702 @@ goog.exportSymbol("acgraph.events.EventType.DRAG_START", acgraph.events.EventTyp
 goog.exportSymbol("acgraph.events.EventType.DRAG_END", acgraph.events.EventType.DRAG_END);
 goog.exportSymbol("acgraph.events.EventType.DRAG_EARLY_CANCEL", acgraph.events.EventType.DRAG_EARLY_CANCEL);
 goog.exportSymbol("acgraph.events.EventType.DRAG_BEFORE", acgraph.events.EventType.DRAG_BEFORE);
+goog.provide("goog.math.Size");
+goog.math.Size = function(width, height) {
+  this.width = width;
+  this.height = height;
+};
+goog.math.Size.equals = function(a, b) {
+  if (a == b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  return a.width == b.width && a.height == b.height;
+};
+goog.math.Size.prototype.clone = function() {
+  return new goog.math.Size(this.width, this.height);
+};
+if (goog.DEBUG) {
+  goog.math.Size.prototype.toString = function() {
+    return "(" + this.width + " x " + this.height + ")";
+  };
+}
+goog.math.Size.prototype.getLongest = function() {
+  return Math.max(this.width, this.height);
+};
+goog.math.Size.prototype.getShortest = function() {
+  return Math.min(this.width, this.height);
+};
+goog.math.Size.prototype.area = function() {
+  return this.width * this.height;
+};
+goog.math.Size.prototype.perimeter = function() {
+  return (this.width + this.height) * 2;
+};
+goog.math.Size.prototype.aspectRatio = function() {
+  return this.width / this.height;
+};
+goog.math.Size.prototype.isEmpty = function() {
+  return !this.area();
+};
+goog.math.Size.prototype.ceil = function() {
+  this.width = Math.ceil(this.width);
+  this.height = Math.ceil(this.height);
+  return this;
+};
+goog.math.Size.prototype.fitsInside = function(target) {
+  return this.width <= target.width && this.height <= target.height;
+};
+goog.math.Size.prototype.floor = function() {
+  this.width = Math.floor(this.width);
+  this.height = Math.floor(this.height);
+  return this;
+};
+goog.math.Size.prototype.round = function() {
+  this.width = Math.round(this.width);
+  this.height = Math.round(this.height);
+  return this;
+};
+goog.math.Size.prototype.scale = function(sx, opt_sy) {
+  var sy = goog.isNumber(opt_sy) ? opt_sy : sx;
+  this.width *= sx;
+  this.height *= sy;
+  return this;
+};
+goog.math.Size.prototype.scaleToCover = function(target) {
+  var s = this.aspectRatio() <= target.aspectRatio() ? target.width / this.width : target.height / this.height;
+  return this.scale(s);
+};
+goog.math.Size.prototype.scaleToFit = function(target) {
+  var s = this.aspectRatio() > target.aspectRatio() ? target.width / this.width : target.height / this.height;
+  return this.scale(s);
+};
+goog.provide("goog.math");
+goog.require("goog.array");
+goog.require("goog.asserts");
+goog.math.randomInt = function(a) {
+  return Math.floor(Math.random() * a);
+};
+goog.math.uniformRandom = function(a, b) {
+  return a + Math.random() * (b - a);
+};
+goog.math.clamp = function(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+};
+goog.math.modulo = function(a, b) {
+  var r = a % b;
+  return r * b < 0 ? r + b : r;
+};
+goog.math.lerp = function(a, b, x) {
+  return a + x * (b - a);
+};
+goog.math.nearlyEquals = function(a, b, opt_tolerance) {
+  return Math.abs(a - b) <= (opt_tolerance || 1E-6);
+};
+goog.math.standardAngle = function(angle) {
+  return goog.math.modulo(angle, 360);
+};
+goog.math.standardAngleInRadians = function(angle) {
+  return goog.math.modulo(angle, 2 * Math.PI);
+};
+goog.math.toRadians = function(angleDegrees) {
+  return angleDegrees * Math.PI / 180;
+};
+goog.math.toDegrees = function(angleRadians) {
+  return angleRadians * 180 / Math.PI;
+};
+goog.math.angleDx = function(degrees, radius) {
+  return radius * Math.cos(goog.math.toRadians(degrees));
+};
+goog.math.angleDy = function(degrees, radius) {
+  return radius * Math.sin(goog.math.toRadians(degrees));
+};
+goog.math.angle = function(x1, y1, x2, y2) {
+  return goog.math.standardAngle(goog.math.toDegrees(Math.atan2(y2 - y1, x2 - x1)));
+};
+goog.math.angleDifference = function(startAngle, endAngle) {
+  var d = goog.math.standardAngle(endAngle) - goog.math.standardAngle(startAngle);
+  if (d > 180) {
+    d = d - 360;
+  } else {
+    if (d <= -180) {
+      d = 360 + d;
+    }
+  }
+  return d;
+};
+goog.math.sign = Math.sign || function(x) {
+  if (x > 0) {
+    return 1;
+  }
+  if (x < 0) {
+    return -1;
+  }
+  return x;
+};
+goog.math.longestCommonSubsequence = function(array1, array2, opt_compareFn, opt_collectorFn) {
+  var compare = opt_compareFn || function(a, b) {
+    return a == b;
+  };
+  var collect = opt_collectorFn || function(i1, i2) {
+    return array1[i1];
+  };
+  var length1 = array1.length;
+  var length2 = array2.length;
+  var arr = [];
+  for (var i = 0;i < length1 + 1;i++) {
+    arr[i] = [];
+    arr[i][0] = 0;
+  }
+  for (var j = 0;j < length2 + 1;j++) {
+    arr[0][j] = 0;
+  }
+  for (i = 1;i <= length1;i++) {
+    for (j = 1;j <= length2;j++) {
+      if (compare(array1[i - 1], array2[j - 1])) {
+        arr[i][j] = arr[i - 1][j - 1] + 1;
+      } else {
+        arr[i][j] = Math.max(arr[i - 1][j], arr[i][j - 1]);
+      }
+    }
+  }
+  var result = [];
+  var i = length1, j = length2;
+  while (i > 0 && j > 0) {
+    if (compare(array1[i - 1], array2[j - 1])) {
+      result.unshift(collect(i - 1, j - 1));
+      i--;
+      j--;
+    } else {
+      if (arr[i - 1][j] > arr[i][j - 1]) {
+        i--;
+      } else {
+        j--;
+      }
+    }
+  }
+  return result;
+};
+goog.math.sum = function(var_args) {
+  return (goog.array.reduce(arguments, function(sum, value) {
+    return sum + value;
+  }, 0));
+};
+goog.math.average = function(var_args) {
+  return goog.math.sum.apply(null, arguments) / arguments.length;
+};
+goog.math.sampleVariance = function(var_args) {
+  var sampleSize = arguments.length;
+  if (sampleSize < 2) {
+    return 0;
+  }
+  var mean = goog.math.average.apply(null, arguments);
+  var variance = goog.math.sum.apply(null, goog.array.map(arguments, function(val) {
+    return Math.pow(val - mean, 2);
+  })) / (sampleSize - 1);
+  return variance;
+};
+goog.math.standardDeviation = function(var_args) {
+  return Math.sqrt(goog.math.sampleVariance.apply(null, arguments));
+};
+goog.math.isInt = function(num) {
+  return isFinite(num) && num % 1 == 0;
+};
+goog.math.isFiniteNumber = function(num) {
+  return isFinite(num) && !isNaN(num);
+};
+goog.math.isNegativeZero = function(num) {
+  return num == 0 && 1 / num < 0;
+};
+goog.math.log10Floor = function(num) {
+  if (num > 0) {
+    var x = Math.round(Math.log(num) * Math.LOG10E);
+    return x - (parseFloat("1e" + x) > num ? 1 : 0);
+  }
+  return num == 0 ? -Infinity : NaN;
+};
+goog.math.safeFloor = function(num, opt_epsilon) {
+  goog.asserts.assert(!goog.isDef(opt_epsilon) || opt_epsilon > 0);
+  return Math.floor(num + (opt_epsilon || 2E-15));
+};
+goog.math.safeCeil = function(num, opt_epsilon) {
+  goog.asserts.assert(!goog.isDef(opt_epsilon) || opt_epsilon > 0);
+  return Math.ceil(num - (opt_epsilon || 2E-15));
+};
+goog.provide("goog.math.Coordinate");
+goog.require("goog.math");
+goog.math.Coordinate = function(opt_x, opt_y) {
+  this.x = goog.isDef(opt_x) ? opt_x : 0;
+  this.y = goog.isDef(opt_y) ? opt_y : 0;
+};
+goog.math.Coordinate.prototype.clone = function() {
+  return new goog.math.Coordinate(this.x, this.y);
+};
+if (goog.DEBUG) {
+  goog.math.Coordinate.prototype.toString = function() {
+    return "(" + this.x + ", " + this.y + ")";
+  };
+}
+goog.math.Coordinate.equals = function(a, b) {
+  if (a == b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  return a.x == b.x && a.y == b.y;
+};
+goog.math.Coordinate.distance = function(a, b) {
+  var dx = a.x - b.x;
+  var dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+};
+goog.math.Coordinate.magnitude = function(a) {
+  return Math.sqrt(a.x * a.x + a.y * a.y);
+};
+goog.math.Coordinate.azimuth = function(a) {
+  return goog.math.angle(0, 0, a.x, a.y);
+};
+goog.math.Coordinate.squaredDistance = function(a, b) {
+  var dx = a.x - b.x;
+  var dy = a.y - b.y;
+  return dx * dx + dy * dy;
+};
+goog.math.Coordinate.difference = function(a, b) {
+  return new goog.math.Coordinate(a.x - b.x, a.y - b.y);
+};
+goog.math.Coordinate.sum = function(a, b) {
+  return new goog.math.Coordinate(a.x + b.x, a.y + b.y);
+};
+goog.math.Coordinate.prototype.ceil = function() {
+  this.x = Math.ceil(this.x);
+  this.y = Math.ceil(this.y);
+  return this;
+};
+goog.math.Coordinate.prototype.floor = function() {
+  this.x = Math.floor(this.x);
+  this.y = Math.floor(this.y);
+  return this;
+};
+goog.math.Coordinate.prototype.round = function() {
+  this.x = Math.round(this.x);
+  this.y = Math.round(this.y);
+  return this;
+};
+goog.math.Coordinate.prototype.translate = function(tx, opt_ty) {
+  if (tx instanceof goog.math.Coordinate) {
+    this.x += tx.x;
+    this.y += tx.y;
+  } else {
+    this.x += Number(tx);
+    if (goog.isNumber(opt_ty)) {
+      this.y += opt_ty;
+    }
+  }
+  return this;
+};
+goog.math.Coordinate.prototype.scale = function(sx, opt_sy) {
+  var sy = goog.isNumber(opt_sy) ? opt_sy : sx;
+  this.x *= sx;
+  this.y *= sy;
+  return this;
+};
+goog.math.Coordinate.prototype.rotateRadians = function(radians, opt_center) {
+  var center = opt_center || new goog.math.Coordinate(0, 0);
+  var x = this.x;
+  var y = this.y;
+  var cos = Math.cos(radians);
+  var sin = Math.sin(radians);
+  this.x = (x - center.x) * cos - (y - center.y) * sin + center.x;
+  this.y = (x - center.x) * sin + (y - center.y) * cos + center.y;
+};
+goog.math.Coordinate.prototype.rotateDegrees = function(degrees, opt_center) {
+  this.rotateRadians(goog.math.toRadians(degrees), opt_center);
+};
+goog.provide("goog.math.Box");
+goog.require("goog.asserts");
+goog.require("goog.math.Coordinate");
+goog.math.Box = function(top, right, bottom, left) {
+  this.top = top;
+  this.right = right;
+  this.bottom = bottom;
+  this.left = left;
+};
+goog.math.Box.boundingBox = function(var_args) {
+  var box = new goog.math.Box(arguments[0].y, arguments[0].x, arguments[0].y, arguments[0].x);
+  for (var i = 1;i < arguments.length;i++) {
+    box.expandToIncludeCoordinate(arguments[i]);
+  }
+  return box;
+};
+goog.math.Box.prototype.getWidth = function() {
+  return this.right - this.left;
+};
+goog.math.Box.prototype.getHeight = function() {
+  return this.bottom - this.top;
+};
+goog.math.Box.prototype.clone = function() {
+  return new goog.math.Box(this.top, this.right, this.bottom, this.left);
+};
+if (goog.DEBUG) {
+  goog.math.Box.prototype.toString = function() {
+    return "(" + this.top + "t, " + this.right + "r, " + this.bottom + "b, " + this.left + "l)";
+  };
+}
+goog.math.Box.prototype.contains = function(other) {
+  return goog.math.Box.contains(this, other);
+};
+goog.math.Box.prototype.expand = function(top, opt_right, opt_bottom, opt_left) {
+  if (goog.isObject(top)) {
+    this.top -= top.top;
+    this.right += top.right;
+    this.bottom += top.bottom;
+    this.left -= top.left;
+  } else {
+    this.top -= (top);
+    this.right += Number(opt_right);
+    this.bottom += Number(opt_bottom);
+    this.left -= Number(opt_left);
+  }
+  return this;
+};
+goog.math.Box.prototype.expandToInclude = function(box) {
+  this.left = Math.min(this.left, box.left);
+  this.top = Math.min(this.top, box.top);
+  this.right = Math.max(this.right, box.right);
+  this.bottom = Math.max(this.bottom, box.bottom);
+};
+goog.math.Box.prototype.expandToIncludeCoordinate = function(coord) {
+  this.top = Math.min(this.top, coord.y);
+  this.right = Math.max(this.right, coord.x);
+  this.bottom = Math.max(this.bottom, coord.y);
+  this.left = Math.min(this.left, coord.x);
+};
+goog.math.Box.equals = function(a, b) {
+  if (a == b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  return a.top == b.top && a.right == b.right && a.bottom == b.bottom && a.left == b.left;
+};
+goog.math.Box.contains = function(box, other) {
+  if (!box || !other) {
+    return false;
+  }
+  if (other instanceof goog.math.Box) {
+    return other.left >= box.left && other.right <= box.right && other.top >= box.top && other.bottom <= box.bottom;
+  }
+  return other.x >= box.left && other.x <= box.right && other.y >= box.top && other.y <= box.bottom;
+};
+goog.math.Box.relativePositionX = function(box, coord) {
+  if (coord.x < box.left) {
+    return coord.x - box.left;
+  } else {
+    if (coord.x > box.right) {
+      return coord.x - box.right;
+    }
+  }
+  return 0;
+};
+goog.math.Box.relativePositionY = function(box, coord) {
+  if (coord.y < box.top) {
+    return coord.y - box.top;
+  } else {
+    if (coord.y > box.bottom) {
+      return coord.y - box.bottom;
+    }
+  }
+  return 0;
+};
+goog.math.Box.distance = function(box, coord) {
+  var x = goog.math.Box.relativePositionX(box, coord);
+  var y = goog.math.Box.relativePositionY(box, coord);
+  return Math.sqrt(x * x + y * y);
+};
+goog.math.Box.intersects = function(a, b) {
+  return a.left <= b.right && b.left <= a.right && a.top <= b.bottom && b.top <= a.bottom;
+};
+goog.math.Box.intersectsWithPadding = function(a, b, padding) {
+  return a.left <= b.right + padding && b.left <= a.right + padding && a.top <= b.bottom + padding && b.top <= a.bottom + padding;
+};
+goog.math.Box.prototype.ceil = function() {
+  this.top = Math.ceil(this.top);
+  this.right = Math.ceil(this.right);
+  this.bottom = Math.ceil(this.bottom);
+  this.left = Math.ceil(this.left);
+  return this;
+};
+goog.math.Box.prototype.floor = function() {
+  this.top = Math.floor(this.top);
+  this.right = Math.floor(this.right);
+  this.bottom = Math.floor(this.bottom);
+  this.left = Math.floor(this.left);
+  return this;
+};
+goog.math.Box.prototype.round = function() {
+  this.top = Math.round(this.top);
+  this.right = Math.round(this.right);
+  this.bottom = Math.round(this.bottom);
+  this.left = Math.round(this.left);
+  return this;
+};
+goog.math.Box.prototype.translate = function(tx, opt_ty) {
+  if (tx instanceof goog.math.Coordinate) {
+    this.left += tx.x;
+    this.right += tx.x;
+    this.top += tx.y;
+    this.bottom += tx.y;
+  } else {
+    goog.asserts.assertNumber(tx);
+    this.left += tx;
+    this.right += tx;
+    if (goog.isNumber(opt_ty)) {
+      this.top += opt_ty;
+      this.bottom += opt_ty;
+    }
+  }
+  return this;
+};
+goog.math.Box.prototype.scale = function(sx, opt_sy) {
+  var sy = goog.isNumber(opt_sy) ? opt_sy : sx;
+  this.left *= sx;
+  this.right *= sx;
+  this.top *= sy;
+  this.bottom *= sy;
+  return this;
+};
+goog.provide("goog.math.Rect");
+goog.require("goog.asserts");
+goog.require("goog.math.Box");
+goog.require("goog.math.Coordinate");
+goog.require("goog.math.Size");
+goog.math.Rect = function(x, y, w, h) {
+  this.left = x;
+  this.top = y;
+  this.width = w;
+  this.height = h;
+};
+goog.math.Rect.prototype.clone = function() {
+  return new goog.math.Rect(this.left, this.top, this.width, this.height);
+};
+goog.math.Rect.prototype.toBox = function() {
+  var right = this.left + this.width;
+  var bottom = this.top + this.height;
+  return new goog.math.Box(this.top, right, bottom, this.left);
+};
+goog.math.Rect.createFromPositionAndSize = function(position, size) {
+  return new goog.math.Rect(position.x, position.y, size.width, size.height);
+};
+goog.math.Rect.createFromBox = function(box) {
+  return new goog.math.Rect(box.left, box.top, box.right - box.left, box.bottom - box.top);
+};
+if (goog.DEBUG) {
+  goog.math.Rect.prototype.toString = function() {
+    return "(" + this.left + ", " + this.top + " - " + this.width + "w x " + this.height + "h)";
+  };
+}
+goog.math.Rect.equals = function(a, b) {
+  if (a == b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  return a.left == b.left && a.width == b.width && a.top == b.top && a.height == b.height;
+};
+goog.math.Rect.prototype.intersection = function(rect) {
+  var x0 = Math.max(this.left, rect.left);
+  var x1 = Math.min(this.left + this.width, rect.left + rect.width);
+  if (x0 <= x1) {
+    var y0 = Math.max(this.top, rect.top);
+    var y1 = Math.min(this.top + this.height, rect.top + rect.height);
+    if (y0 <= y1) {
+      this.left = x0;
+      this.top = y0;
+      this.width = x1 - x0;
+      this.height = y1 - y0;
+      return true;
+    }
+  }
+  return false;
+};
+goog.math.Rect.intersection = function(a, b) {
+  var x0 = Math.max(a.left, b.left);
+  var x1 = Math.min(a.left + a.width, b.left + b.width);
+  if (x0 <= x1) {
+    var y0 = Math.max(a.top, b.top);
+    var y1 = Math.min(a.top + a.height, b.top + b.height);
+    if (y0 <= y1) {
+      return new goog.math.Rect(x0, y0, x1 - x0, y1 - y0);
+    }
+  }
+  return null;
+};
+goog.math.Rect.intersects = function(a, b) {
+  return a.left <= b.left + b.width && b.left <= a.left + a.width && a.top <= b.top + b.height && b.top <= a.top + a.height;
+};
+goog.math.Rect.prototype.intersects = function(rect) {
+  return goog.math.Rect.intersects(this, rect);
+};
+goog.math.Rect.difference = function(a, b) {
+  var intersection = goog.math.Rect.intersection(a, b);
+  if (!intersection || !intersection.height || !intersection.width) {
+    return [a.clone()];
+  }
+  var result = [];
+  var top = a.top;
+  var height = a.height;
+  var ar = a.left + a.width;
+  var ab = a.top + a.height;
+  var br = b.left + b.width;
+  var bb = b.top + b.height;
+  if (b.top > a.top) {
+    result.push(new goog.math.Rect(a.left, a.top, a.width, b.top - a.top));
+    top = b.top;
+    height -= b.top - a.top;
+  }
+  if (bb < ab) {
+    result.push(new goog.math.Rect(a.left, bb, a.width, ab - bb));
+    height = bb - top;
+  }
+  if (b.left > a.left) {
+    result.push(new goog.math.Rect(a.left, top, b.left - a.left, height));
+  }
+  if (br < ar) {
+    result.push(new goog.math.Rect(br, top, ar - br, height));
+  }
+  return result;
+};
+goog.math.Rect.prototype.difference = function(rect) {
+  return goog.math.Rect.difference(this, rect);
+};
+goog.math.Rect.prototype.boundingRect = function(rect) {
+  var right = Math.max(this.left + this.width, rect.left + rect.width);
+  var bottom = Math.max(this.top + this.height, rect.top + rect.height);
+  this.left = Math.min(this.left, rect.left);
+  this.top = Math.min(this.top, rect.top);
+  this.width = right - this.left;
+  this.height = bottom - this.top;
+};
+goog.math.Rect.boundingRect = function(a, b) {
+  if (!a || !b) {
+    return null;
+  }
+  var clone = a.clone();
+  clone.boundingRect(b);
+  return clone;
+};
+goog.math.Rect.prototype.contains = function(another) {
+  if (another instanceof goog.math.Rect) {
+    return this.left <= another.left && this.left + this.width >= another.left + another.width && this.top <= another.top && this.top + this.height >= another.top + another.height;
+  } else {
+    return another.x >= this.left && another.x <= this.left + this.width && another.y >= this.top && another.y <= this.top + this.height;
+  }
+};
+goog.math.Rect.prototype.squaredDistance = function(point) {
+  var dx = point.x < this.left ? this.left - point.x : Math.max(point.x - (this.left + this.width), 0);
+  var dy = point.y < this.top ? this.top - point.y : Math.max(point.y - (this.top + this.height), 0);
+  return dx * dx + dy * dy;
+};
+goog.math.Rect.prototype.distance = function(point) {
+  return Math.sqrt(this.squaredDistance(point));
+};
+goog.math.Rect.prototype.getSize = function() {
+  return new goog.math.Size(this.width, this.height);
+};
+goog.math.Rect.prototype.getTopLeft = function() {
+  return new goog.math.Coordinate(this.left, this.top);
+};
+goog.math.Rect.prototype.getCenter = function() {
+  return new goog.math.Coordinate(this.left + this.width / 2, this.top + this.height / 2);
+};
+goog.math.Rect.prototype.getBottomRight = function() {
+  return new goog.math.Coordinate(this.left + this.width, this.top + this.height);
+};
+goog.math.Rect.prototype.ceil = function() {
+  this.left = Math.ceil(this.left);
+  this.top = Math.ceil(this.top);
+  this.width = Math.ceil(this.width);
+  this.height = Math.ceil(this.height);
+  return this;
+};
+goog.math.Rect.prototype.floor = function() {
+  this.left = Math.floor(this.left);
+  this.top = Math.floor(this.top);
+  this.width = Math.floor(this.width);
+  this.height = Math.floor(this.height);
+  return this;
+};
+goog.math.Rect.prototype.round = function() {
+  this.left = Math.round(this.left);
+  this.top = Math.round(this.top);
+  this.width = Math.round(this.width);
+  this.height = Math.round(this.height);
+  return this;
+};
+goog.math.Rect.prototype.translate = function(tx, opt_ty) {
+  if (tx instanceof goog.math.Coordinate) {
+    this.left += tx.x;
+    this.top += tx.y;
+  } else {
+    this.left += goog.asserts.assertNumber(tx);
+    if (goog.isNumber(opt_ty)) {
+      this.top += opt_ty;
+    }
+  }
+  return this;
+};
+goog.math.Rect.prototype.scale = function(sx, opt_sy) {
+  var sy = goog.isNumber(opt_sy) ? opt_sy : sx;
+  this.left *= sx;
+  this.width *= sx;
+  this.top *= sy;
+  this.height *= sy;
+  return this;
+};
+goog.provide("acgraph.math.Rect");
+goog.require("goog.math.Rect");
+acgraph.math.Rect = goog.math.Rect;
+acgraph.math.Rect.prototype.getLeft = function() {
+  return this.left;
+};
+acgraph.math.Rect.prototype.getTop = function() {
+  return this.top;
+};
+acgraph.math.Rect.prototype.getWidth = function() {
+  return this.width;
+};
+acgraph.math.Rect.prototype.getHeight = function() {
+  return this.height;
+};
+acgraph.math.Rect.prototype.getRight = function() {
+  return this.left + this.width;
+};
+acgraph.math.Rect.prototype.getBottom = function() {
+  return this.top + this.height;
+};
+acgraph.math.Rect.prototype.left;
+acgraph.math.Rect.prototype.top;
+acgraph.math.Rect.prototype.width;
+acgraph.math.Rect.prototype.height;
+acgraph.math.Rect.equals = goog.math.Rect.equals;
+acgraph.math.Rect.prototype.boundingRect;
+acgraph.math.Rect.prototype.clone;
+acgraph.math.Rect.prototype.getSize;
+acgraph.math.Rect.prototype.toString = function() {
+  return "(" + this.left + ", " + this.top + " - " + this.width + "w x " + this.height + "h)";
+};
+goog.exportSymbol("acgraph.math.Rect", acgraph.math.Rect);
+acgraph.math.Rect.prototype["getLeft"] = acgraph.math.Rect.prototype.getLeft;
+acgraph.math.Rect.prototype["getTop"] = acgraph.math.Rect.prototype.getTop;
+acgraph.math.Rect.prototype["getWidth"] = acgraph.math.Rect.prototype.getWidth;
+acgraph.math.Rect.prototype["getHeight"] = acgraph.math.Rect.prototype.getHeight;
+acgraph.math.Rect.prototype["getRight"] = acgraph.math.Rect.prototype.getRight;
+acgraph.math.Rect.prototype["getBottom"] = acgraph.math.Rect.prototype.getBottom;
 goog.provide("goog.dom.TagName");
 goog.dom.TagName = {A:"A", ABBR:"ABBR", ACRONYM:"ACRONYM", ADDRESS:"ADDRESS", APPLET:"APPLET", AREA:"AREA", ARTICLE:"ARTICLE", ASIDE:"ASIDE", AUDIO:"AUDIO", B:"B", BASE:"BASE", BASEFONT:"BASEFONT", BDI:"BDI", BDO:"BDO", BIG:"BIG", BLOCKQUOTE:"BLOCKQUOTE", BODY:"BODY", BR:"BR", BUTTON:"BUTTON", CANVAS:"CANVAS", CAPTION:"CAPTION", CENTER:"CENTER", CITE:"CITE", CODE:"CODE", COL:"COL", COLGROUP:"COLGROUP", COMMAND:"COMMAND", DATA:"DATA", DATALIST:"DATALIST", DD:"DD", DEL:"DEL", DETAILS:"DETAILS", DFN:"DFN", 
 DIALOG:"DIALOG", DIR:"DIR", DIV:"DIV", DL:"DL", DT:"DT", EM:"EM", EMBED:"EMBED", FIELDSET:"FIELDSET", FIGCAPTION:"FIGCAPTION", FIGURE:"FIGURE", FONT:"FONT", FOOTER:"FOOTER", FORM:"FORM", FRAME:"FRAME", FRAMESET:"FRAMESET", H1:"H1", H2:"H2", H3:"H3", H4:"H4", H5:"H5", H6:"H6", HEAD:"HEAD", HEADER:"HEADER", HGROUP:"HGROUP", HR:"HR", HTML:"HTML", I:"I", IFRAME:"IFRAME", IMG:"IMG", INPUT:"INPUT", INS:"INS", ISINDEX:"ISINDEX", KBD:"KBD", KEYGEN:"KEYGEN", LABEL:"LABEL", LEGEND:"LEGEND", LI:"LI", LINK:"LINK", 
@@ -7803,11 +7796,19 @@ goog.graphics.AffineTransform.prototype.equals = function(tx) {
   }
   return this.m00_ == tx.m00_ && this.m01_ == tx.m01_ && this.m02_ == tx.m02_ && this.m10_ == tx.m10_ && this.m11_ == tx.m11_ && this.m12_ == tx.m12_;
 };
+goog.provide("acgraph.error");
+acgraph.error.Code = {ERROR_IS_NOT_FOUND:0, STAGE_TYPE_NOT_SUPPORTED:1, CONTAINER_SHOULD_BE_DEFINED:2, STAGE_SHOULD_HAVE_DOM_ELEMENT:3, PARENT_UNABLE_TO_BE_SET:4, OPERATION_ON_DISPOSED:5, DIRTY_AFTER_SYNC_RENDER:6, STAGE_MISMATCH:7, WRONG_SWAPPING:8, EMPTY_PATH:9, UNIMPLEMENTED_METHOD:10, REQUIRED_PARAMETER_MISSING:11, PARAMETER_TYPE_MISMATCH:12, PARAMETER_IS_NULL_OR_UNDEFINED:13, INVALID_NUMBER_OF_PARAMETERS:14, FEATURE_NOT_SUPPORTED_IN_VML:15};
+acgraph.error.Message = {0:"Can't find an error message that corresponds to the specified error code", 1:"Requested stage type is not supported", 2:"Container should be defined to render stage", 3:"Stage should have a DOM element", 4:"Unable to set the parent component", 5:"Trying to perform an operation with the disposed element", 6:"Synchronous rendering didn't clean up all dirty states", 7:"Can't add an element constructed by another Stage", 8:"Wrong arguments passed to swapChildren", 9:"Path must start with moveTo command", 
+10:"Method must be implemented", 11:"Missing required parameter", 12:"Parameter type mismatch", 13:"Required parameter is null or undefined", 14:"Invalid number of parameters", 15:"Sorry, this feature in not supported in VML oriented browsers"};
+acgraph.error.getErrorMessage = function(errorCode) {
+  return acgraph.error.Message[errorCode] || "Unknown error happened";
+};
 goog.provide("acgraph.vector");
 goog.provide("acgraph.vector.Anchor");
 goog.provide("acgraph.vector.Cursor");
 goog.provide("acgraph.vector.ILayer");
 goog.require("acgraph.math.Rect");
+goog.require("goog.graphics.AffineTransform");
 acgraph.vector.Anchor = {LEFT_TOP:"leftTop", LEFT_CENTER:"leftCenter", LEFT_BOTTOM:"leftBottom", CENTER_TOP:"centerTop", CENTER:"center", CENTER_BOTTOM:"centerBottom", RIGHT_TOP:"rightTop", RIGHT_CENTER:"rightCenter", RIGHT_BOTTOM:"rightBottom"};
 acgraph.vector.Cursor = {DEFAULT:"default", CROSSHAIR:"crosshair", POINTER:"pointer", MOVE:"move", TEXT:"text", WAIT:"wait", HELP:"help", N_RESIZE:"n-resize", NE_RESIZE:"ne-resize", E_RESIZE:"e-resize", SE_RESIZE:"se-resize", S_RESIZE:"s-resize", SW_RESIZE:"sw-resize", W_RESIZE:"w-resize", NW_RESIZE:"nw-resize", NS_RESIZE:"ns-resize", EW_RESIZE:"ew-resize", NWSE_RESIZE:"nwse-resize", NESW_RESIZE:"nesw-resize"};
 acgraph.vector.getCoordinateByAnchor = function(bounds, anchor) {
@@ -7940,6 +7941,43 @@ acgraph.vector.StrokeLineJoin = {MITER:"miter", ROUND:"round", BEVEL:"bevel"};
 acgraph.vector.StrokeLineCap = {BUTT:"butt", ROUND:"round", SQUARE:"square"};
 acgraph.vector.ImageFillMode = {STRETCH:"stretch", FIT_MAX:"fitMax", FIT:"fit", TILE:"tile"};
 acgraph.vector.PaperSize = {US_LETTER:"usletter", A0:"a0", A1:"a1", A2:"a2", A3:"a3", A4:"a4", A5:"a5", A6:"a6"};
+acgraph.vector.parseTransformationString = function(value) {
+  var i, j, len, len_;
+  var transforms = value.trim().replace(/\(\s+/gi, "(").replace(/\s+\)/gi, ")").replace(/(\s+,\s+)|(\s+)/gi, ",").replace(/(\)),*(\w)/gi, "$1 $2").split(" ");
+  var tx = new goog.graphics.AffineTransform;
+  for (j = 0, len_ = transforms.length;j < len_;j++) {
+    var transform = transforms[j];
+    var r = /^(matrix|translate|rotate|scale|skewX|skewY)\(([e\d.,-]+)\)/i;
+    var result = r.exec(transform);
+    var type = result[1];
+    var params = (result[2].split(","));
+    for (i = 0, len = params.length;i < len;i++) {
+      params[i] = parseFloat(params[i]);
+    }
+    switch(type) {
+      case "matrix":
+        var new_tx = new goog.graphics.AffineTransform(params[0], params[1], params[2], params[3], params[4], params[5]);
+        tx.concatenate(new_tx);
+        break;
+      case "translate":
+        tx.translate(params[0], params[1] || 0);
+        break;
+      case "rotate":
+        tx.rotate(goog.math.toRadians(params[0]), params[1] || 0, params[2] || 0);
+        break;
+      case "scale":
+        tx.scale(params[0], params[1] || 0);
+        break;
+      case "skewX":
+        tx.shear(Math.tan(goog.math.toRadians(params[0])), 0);
+        break;
+      case "skewY":
+        tx.shear(0, Math.tan(goog.math.toRadians(params[0])));
+        break;
+    }
+  }
+  return tx;
+};
 acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngleOrCx, opt_modeOrCy, opt_opacityOrMode, opt_opacity, opt_fx, opt_fy) {
   var newFill;
   var opacity;
@@ -7947,6 +7985,8 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
   var key;
   var i;
   var color;
+  var newKeys;
+  var newKey;
   if (goog.isString(opt_fillOrColorOrKeys)) {
     newFill = acgraph.vector.parseColor(opt_fillOrColorOrKeys, false);
     if (goog.isString(newFill) && goog.isDef(opt_opacityOrAngleOrCx)) {
@@ -7962,9 +8002,27 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
           key = acgraph.vector.parseKey(key);
         }
         if (isNaN(key["offset"])) {
-          key["offset"] = i / (keys.length - 1);
+          key["offset"] = i / (keys.length - 1 || 1);
         }
         keys[i] = (key);
+      }
+      newKeys = goog.array.slice(keys, 0);
+      newKeys.sort(function(k1, k2) {
+        return k1["offset"] - k2["offset"];
+      });
+      if (newKeys[0]["offset"] != 0) {
+        newKey = ({"offset":0, "color":(keys[0]["color"])});
+        if (goog.isDef(keys[0]["opacity"]) && !isNaN(keys[0]["opacity"])) {
+          newKey["opacity"] = goog.math.clamp(keys[0]["opacity"], 0, 1);
+        }
+        keys.unshift(newKey);
+      }
+      if (newKeys[newKeys.length - 1]["offset"] != 1) {
+        newKey = ({"offset":1, "color":(keys[keys.length - 1]["color"])});
+        if (goog.isDef(keys[keys.length - 1]["opacity"]) && !isNaN(keys[keys.length - 1]["opacity"])) {
+          newKey["opacity"] = goog.math.clamp(keys[keys.length - 1]["opacity"], 0, 1);
+        }
+        keys.push(newKey);
       }
       if (goog.isNumber(opt_opacityOrAngleOrCx) && !isNaN(opt_opacityOrAngleOrCx) && goog.isNumber(opt_modeOrCy) && !isNaN(opt_modeOrCy)) {
         var cx = opt_opacityOrAngleOrCx || 0;
@@ -7978,51 +8036,91 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
         if (opt_fillOrColorOrKeys instanceof acgraph.vector.PatternFill) {
           newFill = opt_fillOrColorOrKeys;
         } else {
-          if ("keys" in opt_fillOrColorOrKeys) {
-            keys = goog.array.slice(opt_fillOrColorOrKeys["keys"], 0);
-            for (i = keys.length;i--;) {
-              key = keys[i];
-              var newKey;
-              if (goog.isString(key)) {
-                newKey = acgraph.vector.parseKey(key);
-              } else {
-                if (goog.isString(key["color"])) {
-                  color = key["color"];
+          if (opt_fillOrColorOrKeys["type"] == "pattern") {
+            delete opt_fillOrColorOrKeys["id"];
+            var bounds = opt_fillOrColorOrKeys["bounds"];
+            bounds = new acgraph.math.Rect(bounds["left"], bounds["top"], bounds["width"], bounds["height"]);
+            newFill = acgraph.patternFill(bounds);
+            newFill.deserialize(opt_fillOrColorOrKeys);
+          } else {
+            if ("keys" in opt_fillOrColorOrKeys) {
+              keys = goog.array.slice(opt_fillOrColorOrKeys["keys"], 0);
+              for (i = keys.length;i--;) {
+                key = keys[i];
+                if (goog.isString(key)) {
+                  newKey = acgraph.vector.parseKey(key);
                 } else {
-                  if (goog.isArray(key["color"])) {
-                    color = goog.color.rgbArrayToHex(key["color"]);
+                  if (goog.isString(key["color"])) {
+                    color = key["color"];
                   } else {
-                    color = "black";
+                    if (goog.isArray(key["color"])) {
+                      color = goog.color.rgbArrayToHex(key["color"]);
+                    } else {
+                      color = "black";
+                    }
+                  }
+                  newKey = {"offset":key["offset"], "color":color};
+                  if (!isNaN(key["opacity"])) {
+                    newKey["opacity"] = goog.math.clamp(key["opacity"], 0, 1);
                   }
                 }
-                newKey = {"offset":key["offset"], "color":color};
-                if (!isNaN(key["opacity"])) {
-                  newKey["opacity"] = goog.math.clamp(key["opacity"], 0, 1);
+                if (isNaN(newKey["offset"])) {
+                  newKey["offset"] = i / (keys.length - 1 || 1);
+                }
+                keys[i] = (newKey);
+              }
+              newKeys = goog.array.slice(keys, 0);
+              newKeys.sort(function(k1, k2) {
+                return k1["offset"] - k2["offset"];
+              });
+              if (newKeys[0]["offset"] != 0) {
+                newKey = ({"offset":0, "color":(keys[0]["color"])});
+                if (goog.isDef(keys[0]["opacity"]) && !isNaN(keys[0]["opacity"])) {
+                  newKey["opacity"] = goog.math.clamp(keys[0]["opacity"], 0, 1);
+                }
+                keys.unshift(newKey);
+              }
+              if (newKeys[newKeys.length - 1]["offset"] != 1) {
+                newKey = ({"offset":1, "color":(keys[keys.length - 1]["color"])});
+                if (goog.isDef(keys[keys.length - 1]["opacity"]) && !isNaN(keys[keys.length - 1]["opacity"])) {
+                  newKey["opacity"] = goog.math.clamp(keys[keys.length - 1]["opacity"], 0, 1);
+                }
+                keys.push(newKey);
+              }
+              opacity = goog.math.clamp(goog.isDef(opt_fillOrColorOrKeys["opacity"]) ? opt_fillOrColorOrKeys["opacity"] : 1, 0, 1);
+              var mode = acgraph.vector.normalizeGradientMode(opt_fillOrColorOrKeys["mode"]);
+              cx = opt_fillOrColorOrKeys["cx"];
+              cy = opt_fillOrColorOrKeys["cy"];
+              if (goog.isNumber(cx) && !isNaN(cx) && goog.isNumber(cy) && !isNaN(cy)) {
+                newFill = {"keys":keys, "cx":+cx, "cy":+cy, "mode":mode, "fx":isNaN(opt_fillOrColorOrKeys["fx"]) ? +opt_fillOrColorOrKeys["cx"] : +opt_fillOrColorOrKeys["fx"], "fy":isNaN(opt_fillOrColorOrKeys["fy"]) ? +opt_fillOrColorOrKeys["cy"] : +opt_fillOrColorOrKeys["fy"], "opacity":opacity};
+              } else {
+                newFill = {"keys":keys, "angle":+opt_fillOrColorOrKeys["angle"] || 0, "mode":mode || !!opt_fillOrColorOrKeys["mode"], "opacity":opacity};
+              }
+              var transform = opt_fillOrColorOrKeys["transform"];
+              if (goog.isDefAndNotNull(transform)) {
+                if (transform instanceof goog.graphics.AffineTransform) {
+                  newFill["transform"] = transform;
+                } else {
+                  if (goog.isObject(transform)) {
+                    newFill["transform"] = new goog.graphics.AffineTransform;
+                    newFill["transform"].setTransform(transform["m00"], transform["m10"], transform["m01"], transform["m11"], transform["m02"], transform["m12"]);
+                  } else {
+                    if (goog.isString(transform)) {
+                      newFill["transform"] = acgraph.vector.parseTransformationString(transform);
+                    }
+                  }
                 }
               }
-              if (isNaN(newKey["offset"])) {
-                newKey["offset"] = i / (keys.length - 1);
-              }
-              keys[i] = (newKey);
-            }
-            opacity = goog.math.clamp(goog.isDef(opt_fillOrColorOrKeys["opacity"]) ? opt_fillOrColorOrKeys["opacity"] : 1, 0, 1);
-            var mode = acgraph.vector.normalizeGradientMode(opt_fillOrColorOrKeys["mode"]);
-            cx = opt_fillOrColorOrKeys["cx"];
-            cy = opt_fillOrColorOrKeys["cy"];
-            if (goog.isNumber(cx) && !isNaN(cx) && goog.isNumber(cy) && !isNaN(cy)) {
-              newFill = {"keys":keys, "cx":+cx, "cy":+cy, "mode":mode, "fx":isNaN(opt_fillOrColorOrKeys["fx"]) ? +opt_fillOrColorOrKeys["cx"] : +opt_fillOrColorOrKeys["fx"], "fy":isNaN(opt_fillOrColorOrKeys["fy"]) ? +opt_fillOrColorOrKeys["cy"] : +opt_fillOrColorOrKeys["fy"], "opacity":opacity};
             } else {
-              newFill = {"keys":keys, "angle":+opt_fillOrColorOrKeys["angle"] || 0, "mode":mode || !!opt_fillOrColorOrKeys["mode"], "opacity":opacity};
-            }
-          } else {
-            if ("src" in opt_fillOrColorOrKeys) {
-              newFill = {"src":opt_fillOrColorOrKeys["src"], "mode":goog.isDef(opt_fillOrColorOrKeys["mode"]) ? opt_fillOrColorOrKeys["mode"] : acgraph.vector.ImageFillMode.STRETCH, "opacity":goog.math.clamp(goog.isDef(opt_fillOrColorOrKeys["opacity"]) ? opt_fillOrColorOrKeys["opacity"] : 1, 0, 1)};
-            } else {
-              color = goog.isString(opt_fillOrColorOrKeys["color"]) ? opt_fillOrColorOrKeys["color"] : "black";
-              if (isNaN(opt_fillOrColorOrKeys["opacity"])) {
-                newFill = color;
+              if ("src" in opt_fillOrColorOrKeys) {
+                newFill = {"src":opt_fillOrColorOrKeys["src"], "mode":goog.isDef(opt_fillOrColorOrKeys["mode"]) ? opt_fillOrColorOrKeys["mode"] : acgraph.vector.ImageFillMode.STRETCH, "opacity":goog.math.clamp(goog.isDef(opt_fillOrColorOrKeys["opacity"]) ? opt_fillOrColorOrKeys["opacity"] : 1, 0, 1)};
               } else {
-                newFill = {"color":color, "opacity":goog.math.clamp(opt_fillOrColorOrKeys["opacity"], 0, 1)};
+                color = goog.isString(opt_fillOrColorOrKeys["color"]) ? opt_fillOrColorOrKeys["color"] : "black";
+                if (isNaN(opt_fillOrColorOrKeys["opacity"])) {
+                  newFill = color;
+                } else {
+                  newFill = {"color":color, "opacity":goog.math.clamp(opt_fillOrColorOrKeys["opacity"], 0, 1)};
+                }
               }
             }
           }
@@ -8105,7 +8203,15 @@ acgraph.vector.normalizeHatchFill = function(opt_patternFillOrType, opt_color, o
       newFill = opt_patternFillOrType;
     } else {
       if (goog.isObject(opt_patternFillOrType)) {
-        newFill = acgraph.hatchFill((opt_patternFillOrType["type"]), opt_patternFillOrType["color"], opt_patternFillOrType["thickness"], opt_patternFillOrType["size"]);
+        if (opt_patternFillOrType["type"] == "pattern") {
+          delete opt_patternFillOrType["id"];
+          var bounds = opt_patternFillOrType["bounds"];
+          bounds = new acgraph.math.Rect(bounds["left"], bounds["top"], bounds["width"], bounds["height"]);
+          newFill = acgraph.patternFill(bounds);
+          newFill.deserialize(opt_patternFillOrType);
+        } else {
+          newFill = acgraph.hatchFill((opt_patternFillOrType["type"]), opt_patternFillOrType["color"], opt_patternFillOrType["thickness"], opt_patternFillOrType["size"]);
+        }
       } else {
         newFill = null;
       }
@@ -8258,10 +8364,15 @@ acgraph.vector.Element = function() {
   goog.base(this);
   this.draggable_ = false;
   this.disableStrokeScaling_ = false;
+  this.titleElement = null;
+  this.titleVal_ = null;
+  this.descElement = null;
+  this.descVal_ = null;
+  this.attributes_ = {};
   this.setDirtyState(acgraph.vector.Element.DirtyState.ALL);
 };
 goog.inherits(acgraph.vector.Element, goog.events.EventTarget);
-acgraph.vector.Element.DirtyState = {DOM_MISSING:1, VISIBILITY:2, TRANSFORMATION:4, FILL:8, STROKE:16, DATA:32, CHILDREN:64, CHILDREN_SET:128, PARENT_TRANSFORMATION:256, CLIP:512, STYLE:1024, ID:2048, CURSOR:4096, POINTER_EVENTS:8192, POSITION:16384, STROKE_SCALING:32768, ALL:65535};
+acgraph.vector.Element.DirtyState = {DOM_MISSING:1 << 0, VISIBILITY:1 << 1, TRANSFORMATION:1 << 2, FILL:1 << 3, STROKE:1 << 4, DATA:1 << 5, CHILDREN:1 << 6, CHILDREN_SET:1 << 7, PARENT_TRANSFORMATION:1 << 8, CLIP:1 << 9, STYLE:1 << 10, ID:1 << 11, CURSOR:1 << 12, POINTER_EVENTS:1 << 13, POSITION:1 << 14, STROKE_SCALING:1 << 15, TITLE:1 << 16, DESC:1 << 17, ATTRIBUTE:1 << 18, ALL:4294967295};
 acgraph.vector.Element.prototype.isRendering_ = false;
 acgraph.vector.Element.prototype.cursor_ = null;
 acgraph.vector.Element.prototype.parentCursor = null;
@@ -8278,7 +8389,8 @@ acgraph.vector.Element.prototype.fullTransform_ = null;
 acgraph.vector.Element.prototype.id_ = undefined;
 acgraph.vector.Element.prototype.zIndex_ = 0;
 acgraph.vector.Element.prototype.tag;
-acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES = acgraph.vector.Element.DirtyState.DOM_MISSING | acgraph.vector.Element.DirtyState.VISIBILITY | acgraph.vector.Element.DirtyState.CURSOR | acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION | acgraph.vector.Element.DirtyState.TRANSFORMATION | acgraph.vector.Element.DirtyState.CLIP | acgraph.vector.Element.DirtyState.ID | acgraph.vector.Element.DirtyState.POINTER_EVENTS | acgraph.vector.Element.DirtyState.STROKE_SCALING;
+acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES = acgraph.vector.Element.DirtyState.DOM_MISSING | acgraph.vector.Element.DirtyState.VISIBILITY | acgraph.vector.Element.DirtyState.CURSOR | acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION | acgraph.vector.Element.DirtyState.TRANSFORMATION | acgraph.vector.Element.DirtyState.CLIP | acgraph.vector.Element.DirtyState.ID | acgraph.vector.Element.DirtyState.POINTER_EVENTS | acgraph.vector.Element.DirtyState.STROKE_SCALING | acgraph.vector.Element.DirtyState.TITLE | 
+acgraph.vector.Element.DirtyState.DESC | acgraph.vector.Element.DirtyState.ATTRIBUTE;
 acgraph.vector.Element.prototype.dirtyState_ = 0;
 acgraph.vector.Element.prototype.id = function(opt_value) {
   if (goog.isDef(opt_value)) {
@@ -8345,6 +8457,40 @@ acgraph.vector.Element.prototype.remove = function() {
 };
 acgraph.vector.Element.prototype.getFullChildrenCount = function() {
   return 0;
+};
+acgraph.vector.Element.prototype.title = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (this.titleVal_ != opt_value) {
+      this.titleVal_ = opt_value;
+      this.setDirtyState(acgraph.vector.Element.DirtyState.TITLE);
+    }
+    return this;
+  }
+  return this.titleVal_;
+};
+acgraph.vector.Element.prototype.desc = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (this.descVal_ != opt_value) {
+      this.descVal_ = opt_value;
+      this.setDirtyState(acgraph.vector.Element.DirtyState.DESC);
+    }
+    return this;
+  }
+  return this.descVal_;
+};
+acgraph.vector.Element.prototype.attr = function(key, opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (this.attributes_[key] !== opt_value) {
+      this.attributes_[key] = opt_value;
+      this.setDirtyState(acgraph.vector.Element.DirtyState.ATTRIBUTE);
+    }
+    return this;
+  }
+  if (key in this.attributes_) {
+    return this.attributes_[key];
+  } else {
+    return acgraph.getRenderer().getAttribute(this.domElement_, key);
+  }
 };
 acgraph.vector.Element.prototype.cursor = function(opt_value) {
   if (goog.isDef(opt_value)) {
@@ -8593,6 +8739,9 @@ acgraph.vector.Element.prototype.render = function() {
   return this;
 };
 acgraph.vector.Element.prototype.renderInternal = function() {
+  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.ATTRIBUTE)) {
+    this.renderAttributes();
+  }
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.VISIBILITY)) {
     this.renderVisibility();
   }
@@ -8609,15 +8758,21 @@ acgraph.vector.Element.prototype.renderInternal = function() {
     this.renderClip();
   }
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE_SCALING)) {
-    acgraph.getRenderer().setDisableStrokeScaling(this.domElement_, this.disableStrokeScaling_);
+    acgraph.getRenderer().setDisableStrokeScaling(this, this.disableStrokeScaling_);
     this.clearDirtyState(acgraph.vector.Element.DirtyState.STROKE_SCALING);
+  }
+  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.TITLE)) {
+    this.renderTitle();
+  }
+  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DESC)) {
+    this.renderDesc();
   }
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.ID)) {
     this.renderId();
   }
 };
 acgraph.vector.Element.prototype.renderId = function() {
-  acgraph.getRenderer().setId(this.domElement_, this.id_ || "");
+  acgraph.getRenderer().setId(this, this.id_ || "");
   this.clearDirtyState(acgraph.vector.Element.DirtyState.ID);
 };
 acgraph.vector.Element.prototype.renderVisibility = function() {
@@ -8638,8 +8793,21 @@ acgraph.vector.Element.prototype.renderClip = function() {
   this.clearDirtyState(acgraph.vector.Element.DirtyState.CLIP);
 };
 acgraph.vector.Element.prototype.renderCursor = function() {
-  acgraph.getRenderer().setCursorProperties(this.domElement(), this.cursor_ || this.parentCursor);
+  acgraph.getRenderer().setCursorProperties(this, this.cursor_ || this.parentCursor);
   this.clearDirtyState(acgraph.vector.Element.DirtyState.CURSOR);
+};
+acgraph.vector.Element.prototype.renderTitle = function() {
+  acgraph.getRenderer().setTitle(this, this.titleVal_);
+  this.clearDirtyState(acgraph.vector.Element.DirtyState.TITLE);
+};
+acgraph.vector.Element.prototype.renderDesc = function() {
+  acgraph.getRenderer().setDesc(this, this.descVal_);
+  this.clearDirtyState(acgraph.vector.Element.DirtyState.DESC);
+};
+acgraph.vector.Element.prototype.renderAttributes = function() {
+  acgraph.getRenderer().setAttributes(this, this.attributes_);
+  this.attributes_ = {};
+  this.clearDirtyState(acgraph.vector.Element.DirtyState.ATTRIBUTE);
 };
 acgraph.vector.Element.prototype.setParentEventTarget = function(value) {
   if (this.parent_ && (this.parent_) !== (value)) {
@@ -8890,6 +9058,9 @@ acgraph.vector.Element.prototype["domElement"] = acgraph.vector.Element.prototyp
 acgraph.vector.Element.prototype["parent"] = acgraph.vector.Element.prototype.parent;
 acgraph.vector.Element.prototype["hasParent"] = acgraph.vector.Element.prototype.hasParent;
 acgraph.vector.Element.prototype["remove"] = acgraph.vector.Element.prototype.remove;
+acgraph.vector.Element.prototype["attr"] = acgraph.vector.Element.prototype.attr;
+acgraph.vector.Element.prototype["title"] = acgraph.vector.Element.prototype.title;
+acgraph.vector.Element.prototype["desc"] = acgraph.vector.Element.prototype.desc;
 acgraph.vector.Element.prototype["getStage"] = acgraph.vector.Element.prototype.getStage;
 acgraph.vector.Element.prototype["cursor"] = acgraph.vector.Element.prototype.cursor;
 acgraph.vector.Element.prototype["disablePointerEvents"] = acgraph.vector.Element.prototype.disablePointerEvents;
@@ -8925,6 +9096,79 @@ acgraph.vector.Element.prototype["unlistenByKey"] = acgraph.vector.Element.proto
 acgraph.vector.Element.prototype["removeAllListeners"] = acgraph.vector.Element.prototype.removeAllListeners;
 acgraph.vector.Element.prototype["drag"] = acgraph.vector.Element.prototype.drag;
 acgraph.vector.Element.prototype["dispose"] = acgraph.vector.Element.prototype.dispose;
+goog.provide("acgraph.vector.UnmanagedLayer");
+goog.require("acgraph.utils.IdGenerator");
+goog.require("acgraph.vector.Element");
+acgraph.vector.UnmanagedLayer = function(opt_content) {
+  goog.base(this);
+  this.content_ = goog.isDef(opt_content) ? opt_content : "";
+};
+goog.inherits(acgraph.vector.UnmanagedLayer, acgraph.vector.Element);
+acgraph.vector.UnmanagedLayer.prototype.getElementTypePrefix = function() {
+  return acgraph.utils.IdGenerator.ElementTypePrefix.UNMANAGEABLE_LAYER;
+};
+acgraph.vector.UnmanagedLayer.prototype.SUPPORTED_DIRTY_STATES = acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES | acgraph.vector.Element.DirtyState.DATA;
+acgraph.vector.UnmanagedLayer.prototype.content = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (opt_value != this.content_) {
+      this.content_ = opt_value;
+      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+    }
+    return this;
+  }
+  return this.content_;
+};
+acgraph.vector.UnmanagedLayer.prototype.createDomInternal = function() {
+  return acgraph.getRenderer().createLayerElement();
+};
+acgraph.vector.UnmanagedLayer.prototype.renderInternal = function() {
+  goog.base(this, "renderInternal");
+  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
+    var domelement = this.domElement();
+    goog.dom.removeChildren(domelement);
+    if (goog.isString(this.content_)) {
+      domelement.innerHTML = this.content_;
+    } else {
+      goog.dom.appendChild(domelement, this.content_);
+    }
+    this.clearDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  }
+};
+acgraph.vector.UnmanagedLayer.prototype.getBoundsWithTransform = function(transform) {
+  var isSelfTransform = transform == this.getSelfTransformation();
+  var isFullTransform = transform == this.getFullTransformation();
+  if (this.boundsCache && isSelfTransform) {
+    return this.boundsCache.clone();
+  } else {
+    if (this.absoluteBoundsCache && isFullTransform) {
+      return this.absoluteBoundsCache.clone();
+    } else {
+      var bounds = acgraph.getRenderer().measureElement(this.content_);
+      if (transform) {
+        bounds = acgraph.math.getBoundsOfRectWithTransform(bounds, transform);
+      }
+      if (isSelfTransform) {
+        this.boundsCache = bounds.clone();
+      }
+      if (isFullTransform) {
+        this.absoluteBoundsCache = bounds.clone();
+      }
+      return bounds;
+    }
+  }
+};
+acgraph.vector.UnmanagedLayer.prototype.deserialize = function(data) {
+  if ("content" in data) {
+    this.content(data["content"]);
+  }
+  goog.base(this, "deserialize", data);
+};
+acgraph.vector.UnmanagedLayer.prototype.serialize = function() {
+  var data = goog.base(this, "serialize");
+  data["content"] = goog.isString(this.content_) ? this.content_ : this.content_.outerHTML;
+  return data;
+};
+acgraph.vector.UnmanagedLayer.prototype["content"] = acgraph.vector.UnmanagedLayer.prototype.content;
 goog.provide("acgraph.vector.Layer");
 goog.require("acgraph.error");
 goog.require("acgraph.math.Rect");
@@ -9033,6 +9277,11 @@ acgraph.vector.Layer.prototype.layer = function() {
   layer.parent(this);
   return layer;
 };
+acgraph.vector.Layer.prototype.unmanagedLayer = function() {
+  var layer = acgraph.unmanagedLayer();
+  layer.parent(this);
+  return layer;
+};
 acgraph.vector.Layer.prototype.text = function(opt_x, opt_y, opt_text, opt_style) {
   var text = acgraph.text(opt_x, opt_y);
   if (opt_style) {
@@ -9113,6 +9362,12 @@ acgraph.vector.Layer.prototype.triangleUp = function(centerX, centerY, outerRadi
 };
 acgraph.vector.Layer.prototype.triangleDown = function(centerX, centerY, outerRadius) {
   return (acgraph.vector.primitives.triangleDown(this.path(), centerX, centerY, outerRadius).parent(this));
+};
+acgraph.vector.Layer.prototype.triangleRight = function(centerX, centerY, outerRadius) {
+  return (acgraph.vector.primitives.triangleRight(this.path(), centerX, centerY, outerRadius).parent(this));
+};
+acgraph.vector.Layer.prototype.triangleLeft = function(centerX, centerY, outerRadius) {
+  return (acgraph.vector.primitives.triangleLeft(this.path(), centerX, centerY, outerRadius).parent(this));
 };
 acgraph.vector.Layer.prototype.diamond = function(centerX, centerY, outerRadius) {
   return (acgraph.vector.primitives.diamond(this.path(), centerX, centerY, outerRadius).parent(this));
@@ -9270,7 +9525,7 @@ acgraph.vector.Layer.prototype.renderChildrenDom = function(maxChanges) {
     }
   }
   if (flagSuccess) {
-    this.domChildren = goog.array.slice(this.children, 0);
+    this.domChildren = goog.array.slice(children, 0);
     this.expectedChidrenHash_ = null;
     this.clearDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET);
   } else {
@@ -9278,7 +9533,7 @@ acgraph.vector.Layer.prototype.renderChildrenDom = function(maxChanges) {
       goog.array.splice(this.domChildren, removings[i], 1);
     }
     for (i = 0;i < addings.length;i++) {
-      this.domChildren.push(this.children[addings[i]]);
+      this.domChildren.push(children[addings[i]]);
     }
   }
   return changesMade;
@@ -9440,6 +9695,7 @@ acgraph.vector.Layer.prototype["indexOfChild"] = acgraph.vector.Layer.prototype.
 acgraph.vector.Layer.prototype["numChildren"] = acgraph.vector.Layer.prototype.numChildren;
 acgraph.vector.Layer.prototype["circle"] = acgraph.vector.Layer.prototype.circle;
 acgraph.vector.Layer.prototype["layer"] = acgraph.vector.Layer.prototype.layer;
+acgraph.vector.Layer.prototype["unmanagedLayer"] = acgraph.vector.Layer.prototype.unmanagedLayer;
 acgraph.vector.Layer.prototype["ellipse"] = acgraph.vector.Layer.prototype.ellipse;
 acgraph.vector.Layer.prototype["rect"] = acgraph.vector.Layer.prototype.rect;
 acgraph.vector.Layer.prototype["truncatedRect"] = acgraph.vector.Layer.prototype.truncatedRect;
@@ -9455,6 +9711,8 @@ acgraph.vector.Layer.prototype["star10"] = acgraph.vector.Layer.prototype.star10
 acgraph.vector.Layer.prototype["diamond"] = acgraph.vector.Layer.prototype.diamond;
 acgraph.vector.Layer.prototype["triangleUp"] = acgraph.vector.Layer.prototype.triangleUp;
 acgraph.vector.Layer.prototype["triangleDown"] = acgraph.vector.Layer.prototype.triangleDown;
+acgraph.vector.Layer.prototype["triangleRight"] = acgraph.vector.Layer.prototype.triangleRight;
+acgraph.vector.Layer.prototype["triangleLeft"] = acgraph.vector.Layer.prototype.triangleLeft;
 acgraph.vector.Layer.prototype["cross"] = acgraph.vector.Layer.prototype.cross;
 acgraph.vector.Layer.prototype["diagonalCross"] = acgraph.vector.Layer.prototype.diagonalCross;
 acgraph.vector.Layer.prototype["hLine"] = acgraph.vector.Layer.prototype.hLine;
@@ -9567,42 +9825,40 @@ goog.provide("acgraph.utils");
 goog.require("goog.userAgent");
 acgraph.utils.recursiveClone = function(obj) {
   var res;
-  if (goog.isArray(obj)) {
-    res = new Array(obj.length);
+  var type = goog.typeOf(obj);
+  if (type == "array") {
+    res = [];
+    for (var i = 0;i < obj.length;i++) {
+      if (i in obj) {
+        res[i] = acgraph.utils.recursiveClone(obj[i]);
+      }
+    }
   } else {
-    if (goog.isObject(obj)) {
+    if (type == "object") {
       res = {};
+      for (var key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          res[key] = acgraph.utils.recursiveClone(obj[key]);
+        }
+      }
     } else {
       return obj;
     }
   }
-  for (var key in obj) {
-    res[key] = acgraph.utils.recursiveClone(obj[key]);
-  }
   return res;
 };
-acgraph.utils.arrayPush = function(array, args) {
-  if (goog.userAgent.GECKO) {
-    Array.prototype.push.apply(array, args);
+acgraph.utils.partialApplyingArgsToFunction = function(func, args, opt_obj) {
+  if (goog.userAgent.GECKO || goog.userAgent.IE) {
+    func.apply(opt_obj, args);
   } else {
-    if (goog.userAgent.IE) {
-      if (goog.userAgent.VERSION >= 11) {
-        for (var j = 0, len = args.length;j < len;j++) {
-          array.push(args[j]);
-        }
-      } else {
-        Array.prototype.push.apply(array, args);
-      }
-    } else {
-      var start = 0;
-      var count = 5E4;
-      var end = count;
-      var step = Math.ceil(args.length / count);
-      for (var i = 0;i < step;i++) {
-        Array.prototype.push.apply(array, args.slice(start, end));
-        start += count;
-        end += count;
-      }
+    var start = 0;
+    var count = 5E4;
+    var end = count;
+    var step = Math.ceil(args.length / count);
+    for (var i = 0;i < step;i++) {
+      func.apply(opt_obj, args.slice(start, end));
+      start += count;
+      end += count;
     }
   }
 };
@@ -9658,10 +9914,10 @@ acgraph.vector.Shape.prototype.strokeThickness = function(opt_value) {
   }
 };
 acgraph.vector.Shape.prototype.renderInternal = function() {
+  goog.base(this, "renderInternal");
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.FILL) || this.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE)) {
     this.renderFillAndStroke();
   }
-  goog.base(this, "renderInternal");
 };
 acgraph.vector.Shape.prototype.renderFillAndStroke = function() {
   acgraph.getRenderer().applyFillAndStroke(this);
@@ -9749,6 +10005,7 @@ acgraph.vector.Shape.prototype.disposeInternal = function() {
 acgraph.vector.Shape.prototype["stroke"] = acgraph.vector.Shape.prototype.stroke;
 acgraph.vector.Shape.prototype["strokeThickness"] = acgraph.vector.Shape.prototype.strokeThickness;
 acgraph.vector.Shape.prototype["fill"] = acgraph.vector.Shape.prototype.fill;
+acgraph.vector.Shape.prototype["attr"] = acgraph.vector.Shape.prototype.attr;
 goog.provide("acgraph.math");
 goog.require("acgraph.math.Rect");
 goog.require("goog.math");
@@ -9865,7 +10122,9 @@ acgraph.math.round = function(num, opt_digitsCount) {
 };
 acgraph.math.angleBetweenVectors = function(ux, uy, vx, vy) {
   var sign = ux * vy - uy * vx;
-  var result = goog.math.toDegrees(Math.acos((ux * vx + uy * vy) / (Math.sqrt(ux * ux + uy * uy) * Math.sqrt(vx * vx + vy * vy))));
+  var cos = (ux * vx + uy * vy) / (Math.sqrt(ux * ux + uy * uy) * Math.sqrt(vx * vx + vy * vy));
+  cos = goog.math.clamp(cos, -1, 1);
+  var result = goog.math.toDegrees(Math.acos(cos));
   return sign > 0 ? result : -result;
 };
 acgraph.math.getRotationAngle = function(transform) {
@@ -10258,7 +10517,7 @@ acgraph.vector.PathBase.prototype.calcBounds_ = function(transform, calcMap, all
           rect = new acgraph.math.Rect(this.currentPoint_[0], this.currentPoint_[1], 0, 0);
         }
         this.forEachSegment(function(segment, args) {
-          calcMap[segment].apply(this, args);
+          acgraph.utils.partialApplyingArgsToFunction(calcMap[segment], args, this);
         }, {rect:rect, transform:transform}, true);
       } else {
         rect = new acgraph.math.Rect(NaN, NaN, NaN, NaN);
@@ -10854,7 +11113,7 @@ goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.PERCENT_90", acgraph.v
 goog.provide("acgraph.vector.RadialGradient");
 goog.require("acgraph.utils.IdGenerator");
 goog.require("goog.Disposable");
-acgraph.vector.RadialGradient = function(keys, cx, cy, fx, fy, opt_opacity, opt_mode) {
+acgraph.vector.RadialGradient = function(keys, cx, cy, fx, fy, opt_opacity, opt_mode, opt_transform) {
   goog.base(this);
   this.cx = cx;
   this.cy = cy;
@@ -10863,16 +11122,18 @@ acgraph.vector.RadialGradient = function(keys, cx, cy, fx, fy, opt_opacity, opt_
   this.keys = keys;
   this.opacity = goog.isDefAndNotNull(opt_opacity) ? goog.math.clamp(opt_opacity, 0, 1) : 1;
   this.bounds = goog.isDefAndNotNull(opt_mode) ? opt_mode : null;
+  this.transform = goog.isDefAndNotNull(opt_transform) ? opt_transform : null;
 };
 goog.inherits(acgraph.vector.RadialGradient, goog.Disposable);
-acgraph.vector.RadialGradient.serialize = function(keys, cx, cy, fx, fy, opt_opacity, opt_mode) {
+acgraph.vector.RadialGradient.serialize = function(keys, cx, cy, fx, fy, opt_opacity, opt_mode, opt_transform) {
   var opacity = goog.isDefAndNotNull(opt_opacity) ? goog.math.clamp(opt_opacity, 0, 1) : 1;
   var gradientKeys = [];
   goog.array.forEach(keys, function(el) {
     gradientKeys.push("" + el["offset"] + el["color"] + (el["opacity"] ? el["opacity"] : 1));
   });
   var boundsToString = opt_mode ? "" + opt_mode.left + opt_mode.top + opt_mode.width + opt_mode.height : "";
-  return gradientKeys.join("") + opacity + cx + cy + fx + fy + boundsToString;
+  var transformationToString = opt_transform ? opt_transform.toString() : "";
+  return gradientKeys.join("") + opacity + cx + cy + fx + fy + boundsToString + transformationToString;
 };
 acgraph.vector.RadialGradient.prototype.rendered = false;
 acgraph.vector.RadialGradient.prototype.defs = null;
@@ -10892,6 +11153,7 @@ acgraph.vector.RadialGradient.prototype.disposeInternal = function() {
     this.defs = null;
   }
   this.bounds = null;
+  this.transform = null;
   delete this.keys;
   goog.base(this, "disposeInternal");
 };
@@ -10899,7 +11161,7 @@ acgraph.vector.RadialGradient.prototype["dispose"] = acgraph.vector.RadialGradie
 goog.provide("acgraph.vector.LinearGradient");
 goog.require("acgraph.utils.IdGenerator");
 goog.require("goog.Disposable");
-acgraph.vector.LinearGradient = function(keys, opt_opacity, opt_angle, opt_mode) {
+acgraph.vector.LinearGradient = function(keys, opt_opacity, opt_angle, opt_mode, opt_transform) {
   goog.base(this);
   this.keys = keys;
   this.opacity = goog.isDefAndNotNull(opt_opacity) ? goog.math.clamp(opt_opacity, 0, 1) : 1;
@@ -10907,9 +11169,10 @@ acgraph.vector.LinearGradient = function(keys, opt_opacity, opt_angle, opt_mode)
   this.mode = goog.isDefAndNotNull(opt_mode) ? opt_mode : false;
   this.saveAngle = !!opt_mode;
   this.bounds = opt_mode && opt_mode instanceof acgraph.math.Rect ? (opt_mode) : null;
+  this.transform = goog.isDefAndNotNull(opt_transform) ? opt_transform : null;
 };
 goog.inherits(acgraph.vector.LinearGradient, goog.Disposable);
-acgraph.vector.LinearGradient.serialize = function(keys, opt_opacity, opt_angle, opt_mode) {
+acgraph.vector.LinearGradient.serialize = function(keys, opt_opacity, opt_angle, opt_mode, opt_transform) {
   var angle = goog.isDefAndNotNull(opt_angle) ? goog.math.standardAngle(opt_angle) : 0;
   var opacity = goog.isDefAndNotNull(opt_opacity) ? goog.math.clamp(opt_opacity, 0, 1) : 1;
   var saveAngle = !!opt_mode;
@@ -10919,7 +11182,8 @@ acgraph.vector.LinearGradient.serialize = function(keys, opt_opacity, opt_angle,
     gradientKeys.push("" + el["offset"] + el["color"] + (el["opacity"] ? el["opacity"] : null));
   });
   var boundsToString = bounds ? "" + bounds.left + bounds.top + bounds.width + bounds.height : "";
-  return gradientKeys.join("") + opacity + angle + saveAngle + boundsToString;
+  var transformationToString = opt_transform ? opt_transform.toString() : "";
+  return gradientKeys.join("") + opacity + angle + saveAngle + boundsToString + transformationToString;
 };
 acgraph.vector.LinearGradient.prototype.rendered = false;
 acgraph.vector.LinearGradient.prototype.defs = null;
@@ -10939,6 +11203,7 @@ acgraph.vector.LinearGradient.prototype.disposeInternal = function() {
     this.defs = null;
   }
   this.bounds = null;
+  this.transform = null;
   delete this.keys;
   this.mode = false;
   goog.base(this, "disposeInternal");
@@ -11039,30 +11304,30 @@ acgraph.vector.Defs.prototype.removeHatchFill = function(element) {
   var hatchFillDomElement = goog.dom.getElement((element.id()));
   goog.dom.removeNode(hatchFillDomElement);
 };
-acgraph.vector.Defs.prototype.getLinearGradient = function(keys, opt_opacity, opt_angle, opt_mode) {
-  var id = acgraph.vector.LinearGradient.serialize(keys, opt_opacity, opt_angle, opt_mode);
+acgraph.vector.Defs.prototype.getLinearGradient = function(keys, opt_opacity, opt_angle, opt_mode, opt_transform) {
+  var id = acgraph.vector.LinearGradient.serialize(keys, opt_opacity, opt_angle, opt_mode, opt_transform);
   if (goog.object.containsKey(this.linearGradients_, id)) {
     return this.linearGradients_[id];
   }
-  return this.linearGradients_[id] = new acgraph.vector.LinearGradient(keys, opt_opacity, opt_angle, opt_mode);
+  return this.linearGradients_[id] = new acgraph.vector.LinearGradient(keys, opt_opacity, opt_angle, opt_mode, opt_transform);
 };
 acgraph.vector.Defs.prototype.removeLinearGradient = function(element) {
-  var id = acgraph.vector.LinearGradient.serialize(element.keys, element.opacity, element.angle, element.mode);
+  var id = acgraph.vector.LinearGradient.serialize(element.keys, element.opacity, element.angle, element.mode, element.transform);
   if (goog.object.containsKey(this.linearGradients_, id)) {
     goog.object.remove(this.linearGradients_, id);
   }
   var linearGradientDomElement = goog.dom.getElement(element.id());
   goog.dom.removeNode(linearGradientDomElement);
 };
-acgraph.vector.Defs.prototype.getRadialGradient = function(keys, cx, cy, fx, fy, opt_opacity, opt_mode) {
-  var id = acgraph.vector.RadialGradient.serialize(keys, cx, cy, fx, fy, opt_opacity, opt_mode);
+acgraph.vector.Defs.prototype.getRadialGradient = function(keys, cx, cy, fx, fy, opt_opacity, opt_mode, opt_transform) {
+  var id = acgraph.vector.RadialGradient.serialize(keys, cx, cy, fx, fy, opt_opacity, opt_mode, opt_transform);
   if (goog.object.containsKey(this.radialGradients_, id)) {
     return this.radialGradients_[id];
   }
-  return this.radialGradients_[id] = new acgraph.vector.RadialGradient(keys, cx, cy, fx, fy, opt_opacity, opt_mode);
+  return this.radialGradients_[id] = new acgraph.vector.RadialGradient(keys, cx, cy, fx, fy, opt_opacity, opt_mode, opt_transform);
 };
 acgraph.vector.Defs.prototype.removeRadialGradient = function(element) {
-  var id = acgraph.vector.RadialGradient.serialize(element.keys, element.cx, element.cy, element.fx, element.fy, element.opacity, element.bounds);
+  var id = acgraph.vector.RadialGradient.serialize(element.keys, element.cx, element.cy, element.fx, element.fy, element.opacity, element.bounds, element.transform);
   if (goog.object.containsKey(this.radialGradients_, id)) {
     goog.object.remove(this.radialGradients_, id);
   }
@@ -11594,6 +11859,4007 @@ acgraph.vector.Rect.prototype["setBounds"] = acgraph.vector.Rect.prototype.setBo
 acgraph.vector.Rect.prototype["cut"] = acgraph.vector.Rect.prototype.cut;
 acgraph.vector.Rect.prototype["round"] = acgraph.vector.Rect.prototype.round;
 acgraph.vector.Rect.prototype["roundInner"] = acgraph.vector.Rect.prototype.roundInner;
+goog.provide("goog.structs");
+goog.require("goog.array");
+goog.require("goog.object");
+goog.structs.getCount = function(col) {
+  if (col.getCount && typeof col.getCount == "function") {
+    return col.getCount();
+  }
+  if (goog.isArrayLike(col) || goog.isString(col)) {
+    return col.length;
+  }
+  return goog.object.getCount(col);
+};
+goog.structs.getValues = function(col) {
+  if (col.getValues && typeof col.getValues == "function") {
+    return col.getValues();
+  }
+  if (goog.isString(col)) {
+    return col.split("");
+  }
+  if (goog.isArrayLike(col)) {
+    var rv = [];
+    var l = col.length;
+    for (var i = 0;i < l;i++) {
+      rv.push(col[i]);
+    }
+    return rv;
+  }
+  return goog.object.getValues(col);
+};
+goog.structs.getKeys = function(col) {
+  if (col.getKeys && typeof col.getKeys == "function") {
+    return col.getKeys();
+  }
+  if (col.getValues && typeof col.getValues == "function") {
+    return undefined;
+  }
+  if (goog.isArrayLike(col) || goog.isString(col)) {
+    var rv = [];
+    var l = col.length;
+    for (var i = 0;i < l;i++) {
+      rv.push(i);
+    }
+    return rv;
+  }
+  return goog.object.getKeys(col);
+};
+goog.structs.contains = function(col, val) {
+  if (col.contains && typeof col.contains == "function") {
+    return col.contains(val);
+  }
+  if (col.containsValue && typeof col.containsValue == "function") {
+    return col.containsValue(val);
+  }
+  if (goog.isArrayLike(col) || goog.isString(col)) {
+    return goog.array.contains((col), val);
+  }
+  return goog.object.containsValue(col, val);
+};
+goog.structs.isEmpty = function(col) {
+  if (col.isEmpty && typeof col.isEmpty == "function") {
+    return col.isEmpty();
+  }
+  if (goog.isArrayLike(col) || goog.isString(col)) {
+    return goog.array.isEmpty((col));
+  }
+  return goog.object.isEmpty(col);
+};
+goog.structs.clear = function(col) {
+  if (col.clear && typeof col.clear == "function") {
+    col.clear();
+  } else {
+    if (goog.isArrayLike(col)) {
+      goog.array.clear((col));
+    } else {
+      goog.object.clear(col);
+    }
+  }
+};
+goog.structs.forEach = function(col, f, opt_obj) {
+  if (col.forEach && typeof col.forEach == "function") {
+    col.forEach(f, opt_obj);
+  } else {
+    if (goog.isArrayLike(col) || goog.isString(col)) {
+      goog.array.forEach((col), f, opt_obj);
+    } else {
+      var keys = goog.structs.getKeys(col);
+      var values = goog.structs.getValues(col);
+      var l = values.length;
+      for (var i = 0;i < l;i++) {
+        f.call((opt_obj), values[i], keys && keys[i], col);
+      }
+    }
+  }
+};
+goog.structs.filter = function(col, f, opt_obj) {
+  if (typeof col.filter == "function") {
+    return col.filter(f, opt_obj);
+  }
+  if (goog.isArrayLike(col) || goog.isString(col)) {
+    return goog.array.filter((col), f, opt_obj);
+  }
+  var rv;
+  var keys = goog.structs.getKeys(col);
+  var values = goog.structs.getValues(col);
+  var l = values.length;
+  if (keys) {
+    rv = {};
+    for (var i = 0;i < l;i++) {
+      if (f.call((opt_obj), values[i], keys[i], col)) {
+        rv[keys[i]] = values[i];
+      }
+    }
+  } else {
+    rv = [];
+    for (var i = 0;i < l;i++) {
+      if (f.call(opt_obj, values[i], undefined, col)) {
+        rv.push(values[i]);
+      }
+    }
+  }
+  return rv;
+};
+goog.structs.map = function(col, f, opt_obj) {
+  if (typeof col.map == "function") {
+    return col.map(f, opt_obj);
+  }
+  if (goog.isArrayLike(col) || goog.isString(col)) {
+    return goog.array.map((col), f, opt_obj);
+  }
+  var rv;
+  var keys = goog.structs.getKeys(col);
+  var values = goog.structs.getValues(col);
+  var l = values.length;
+  if (keys) {
+    rv = {};
+    for (var i = 0;i < l;i++) {
+      rv[keys[i]] = f.call((opt_obj), values[i], keys[i], col);
+    }
+  } else {
+    rv = [];
+    for (var i = 0;i < l;i++) {
+      rv[i] = f.call((opt_obj), values[i], undefined, col);
+    }
+  }
+  return rv;
+};
+goog.structs.some = function(col, f, opt_obj) {
+  if (typeof col.some == "function") {
+    return col.some(f, opt_obj);
+  }
+  if (goog.isArrayLike(col) || goog.isString(col)) {
+    return goog.array.some((col), f, opt_obj);
+  }
+  var keys = goog.structs.getKeys(col);
+  var values = goog.structs.getValues(col);
+  var l = values.length;
+  for (var i = 0;i < l;i++) {
+    if (f.call((opt_obj), values[i], keys && keys[i], col)) {
+      return true;
+    }
+  }
+  return false;
+};
+goog.structs.every = function(col, f, opt_obj) {
+  if (typeof col.every == "function") {
+    return col.every(f, opt_obj);
+  }
+  if (goog.isArrayLike(col) || goog.isString(col)) {
+    return goog.array.every((col), f, opt_obj);
+  }
+  var keys = goog.structs.getKeys(col);
+  var values = goog.structs.getValues(col);
+  var l = values.length;
+  for (var i = 0;i < l;i++) {
+    if (!f.call((opt_obj), values[i], keys && keys[i], col)) {
+      return false;
+    }
+  }
+  return true;
+};
+goog.provide("goog.uri.utils");
+goog.provide("goog.uri.utils.ComponentIndex");
+goog.provide("goog.uri.utils.QueryArray");
+goog.provide("goog.uri.utils.QueryValue");
+goog.provide("goog.uri.utils.StandardQueryParam");
+goog.require("goog.asserts");
+goog.require("goog.string");
+goog.uri.utils.CharCode_ = {AMPERSAND:38, EQUAL:61, HASH:35, QUESTION:63};
+goog.uri.utils.buildFromEncodedParts = function(opt_scheme, opt_userInfo, opt_domain, opt_port, opt_path, opt_queryData, opt_fragment) {
+  var out = "";
+  if (opt_scheme) {
+    out += opt_scheme + ":";
+  }
+  if (opt_domain) {
+    out += "//";
+    if (opt_userInfo) {
+      out += opt_userInfo + "@";
+    }
+    out += opt_domain;
+    if (opt_port) {
+      out += ":" + opt_port;
+    }
+  }
+  if (opt_path) {
+    out += opt_path;
+  }
+  if (opt_queryData) {
+    out += "?" + opt_queryData;
+  }
+  if (opt_fragment) {
+    out += "#" + opt_fragment;
+  }
+  return out;
+};
+goog.uri.utils.splitRe_ = new RegExp("^" + "(?:" + "([^:/?#.]+)" + ":)?" + "(?://" + "(?:([^/?#]*)@)?" + "([^/#?]*?)" + "(?::([0-9]+))?" + "(?=[/#?]|$)" + ")?" + "([^?#]+)?" + "(?:\\?([^#]*))?" + "(?:#(.*))?" + "$");
+goog.uri.utils.ComponentIndex = {SCHEME:1, USER_INFO:2, DOMAIN:3, PORT:4, PATH:5, QUERY_DATA:6, FRAGMENT:7};
+goog.uri.utils.split = function(uri) {
+  return (uri.match(goog.uri.utils.splitRe_));
+};
+goog.uri.utils.decodeIfPossible_ = function(uri, opt_preserveReserved) {
+  if (!uri) {
+    return uri;
+  }
+  return opt_preserveReserved ? decodeURI(uri) : decodeURIComponent(uri);
+};
+goog.uri.utils.getComponentByIndex_ = function(componentIndex, uri) {
+  return goog.uri.utils.split(uri)[componentIndex] || null;
+};
+goog.uri.utils.getScheme = function(uri) {
+  return goog.uri.utils.getComponentByIndex_(goog.uri.utils.ComponentIndex.SCHEME, uri);
+};
+goog.uri.utils.getEffectiveScheme = function(uri) {
+  var scheme = goog.uri.utils.getScheme(uri);
+  if (!scheme && goog.global.self && goog.global.self.location) {
+    var protocol = goog.global.self.location.protocol;
+    scheme = protocol.substr(0, protocol.length - 1);
+  }
+  return scheme ? scheme.toLowerCase() : "";
+};
+goog.uri.utils.getUserInfoEncoded = function(uri) {
+  return goog.uri.utils.getComponentByIndex_(goog.uri.utils.ComponentIndex.USER_INFO, uri);
+};
+goog.uri.utils.getUserInfo = function(uri) {
+  return goog.uri.utils.decodeIfPossible_(goog.uri.utils.getUserInfoEncoded(uri));
+};
+goog.uri.utils.getDomainEncoded = function(uri) {
+  return goog.uri.utils.getComponentByIndex_(goog.uri.utils.ComponentIndex.DOMAIN, uri);
+};
+goog.uri.utils.getDomain = function(uri) {
+  return goog.uri.utils.decodeIfPossible_(goog.uri.utils.getDomainEncoded(uri), true);
+};
+goog.uri.utils.getPort = function(uri) {
+  return Number(goog.uri.utils.getComponentByIndex_(goog.uri.utils.ComponentIndex.PORT, uri)) || null;
+};
+goog.uri.utils.getPathEncoded = function(uri) {
+  return goog.uri.utils.getComponentByIndex_(goog.uri.utils.ComponentIndex.PATH, uri);
+};
+goog.uri.utils.getPath = function(uri) {
+  return goog.uri.utils.decodeIfPossible_(goog.uri.utils.getPathEncoded(uri), true);
+};
+goog.uri.utils.getQueryData = function(uri) {
+  return goog.uri.utils.getComponentByIndex_(goog.uri.utils.ComponentIndex.QUERY_DATA, uri);
+};
+goog.uri.utils.getFragmentEncoded = function(uri) {
+  var hashIndex = uri.indexOf("#");
+  return hashIndex < 0 ? null : uri.substr(hashIndex + 1);
+};
+goog.uri.utils.setFragmentEncoded = function(uri, fragment) {
+  return goog.uri.utils.removeFragment(uri) + (fragment ? "#" + fragment : "");
+};
+goog.uri.utils.getFragment = function(uri) {
+  return goog.uri.utils.decodeIfPossible_(goog.uri.utils.getFragmentEncoded(uri));
+};
+goog.uri.utils.getHost = function(uri) {
+  var pieces = goog.uri.utils.split(uri);
+  return goog.uri.utils.buildFromEncodedParts(pieces[goog.uri.utils.ComponentIndex.SCHEME], pieces[goog.uri.utils.ComponentIndex.USER_INFO], pieces[goog.uri.utils.ComponentIndex.DOMAIN], pieces[goog.uri.utils.ComponentIndex.PORT]);
+};
+goog.uri.utils.getPathAndAfter = function(uri) {
+  var pieces = goog.uri.utils.split(uri);
+  return goog.uri.utils.buildFromEncodedParts(null, null, null, null, pieces[goog.uri.utils.ComponentIndex.PATH], pieces[goog.uri.utils.ComponentIndex.QUERY_DATA], pieces[goog.uri.utils.ComponentIndex.FRAGMENT]);
+};
+goog.uri.utils.removeFragment = function(uri) {
+  var hashIndex = uri.indexOf("#");
+  return hashIndex < 0 ? uri : uri.substr(0, hashIndex);
+};
+goog.uri.utils.haveSameDomain = function(uri1, uri2) {
+  var pieces1 = goog.uri.utils.split(uri1);
+  var pieces2 = goog.uri.utils.split(uri2);
+  return pieces1[goog.uri.utils.ComponentIndex.DOMAIN] == pieces2[goog.uri.utils.ComponentIndex.DOMAIN] && pieces1[goog.uri.utils.ComponentIndex.SCHEME] == pieces2[goog.uri.utils.ComponentIndex.SCHEME] && pieces1[goog.uri.utils.ComponentIndex.PORT] == pieces2[goog.uri.utils.ComponentIndex.PORT];
+};
+goog.uri.utils.assertNoFragmentsOrQueries_ = function(uri) {
+  if (goog.DEBUG && (uri.indexOf("#") >= 0 || uri.indexOf("?") >= 0)) {
+    throw Error("goog.uri.utils: Fragment or query identifiers are not " + "supported: [" + uri + "]");
+  }
+};
+goog.uri.utils.QueryValue;
+goog.uri.utils.QueryArray;
+goog.uri.utils.parseQueryData = function(encodedQuery, callback) {
+  if (!encodedQuery) {
+    return;
+  }
+  var pairs = encodedQuery.split("&");
+  for (var i = 0;i < pairs.length;i++) {
+    var indexOfEquals = pairs[i].indexOf("=");
+    var name = null;
+    var value = null;
+    if (indexOfEquals >= 0) {
+      name = pairs[i].substring(0, indexOfEquals);
+      value = pairs[i].substring(indexOfEquals + 1);
+    } else {
+      name = pairs[i];
+    }
+    callback(name, value ? goog.string.urlDecode(value) : "");
+  }
+};
+goog.uri.utils.appendQueryData_ = function(buffer) {
+  if (buffer[1]) {
+    var baseUri = (buffer[0]);
+    var hashIndex = baseUri.indexOf("#");
+    if (hashIndex >= 0) {
+      buffer.push(baseUri.substr(hashIndex));
+      buffer[0] = baseUri = baseUri.substr(0, hashIndex);
+    }
+    var questionIndex = baseUri.indexOf("?");
+    if (questionIndex < 0) {
+      buffer[1] = "?";
+    } else {
+      if (questionIndex == baseUri.length - 1) {
+        buffer[1] = undefined;
+      }
+    }
+  }
+  return buffer.join("");
+};
+goog.uri.utils.appendKeyValuePairs_ = function(key, value, pairs) {
+  if (goog.isArray(value)) {
+    goog.asserts.assertArray(value);
+    for (var j = 0;j < value.length;j++) {
+      goog.uri.utils.appendKeyValuePairs_(key, String(value[j]), pairs);
+    }
+  } else {
+    if (value != null) {
+      pairs.push("&", key, value === "" ? "" : "=", goog.string.urlEncode(value));
+    }
+  }
+};
+goog.uri.utils.buildQueryDataBuffer_ = function(buffer, keysAndValues, opt_startIndex) {
+  goog.asserts.assert(Math.max(keysAndValues.length - (opt_startIndex || 0), 0) % 2 == 0, "goog.uri.utils: Key/value lists must be even in length.");
+  for (var i = opt_startIndex || 0;i < keysAndValues.length;i += 2) {
+    goog.uri.utils.appendKeyValuePairs_(keysAndValues[i], keysAndValues[i + 1], buffer);
+  }
+  return buffer;
+};
+goog.uri.utils.buildQueryData = function(keysAndValues, opt_startIndex) {
+  var buffer = goog.uri.utils.buildQueryDataBuffer_([], keysAndValues, opt_startIndex);
+  buffer[0] = "";
+  return buffer.join("");
+};
+goog.uri.utils.buildQueryDataBufferFromMap_ = function(buffer, map) {
+  for (var key in map) {
+    goog.uri.utils.appendKeyValuePairs_(key, map[key], buffer);
+  }
+  return buffer;
+};
+goog.uri.utils.buildQueryDataFromMap = function(map) {
+  var buffer = goog.uri.utils.buildQueryDataBufferFromMap_([], map);
+  buffer[0] = "";
+  return buffer.join("");
+};
+goog.uri.utils.appendParams = function(uri, var_args) {
+  return goog.uri.utils.appendQueryData_(arguments.length == 2 ? goog.uri.utils.buildQueryDataBuffer_([uri], arguments[1], 0) : goog.uri.utils.buildQueryDataBuffer_([uri], arguments, 1));
+};
+goog.uri.utils.appendParamsFromMap = function(uri, map) {
+  return goog.uri.utils.appendQueryData_(goog.uri.utils.buildQueryDataBufferFromMap_([uri], map));
+};
+goog.uri.utils.appendParam = function(uri, key, opt_value) {
+  var paramArr = [uri, "&", key];
+  if (goog.isDefAndNotNull(opt_value)) {
+    paramArr.push("=", goog.string.urlEncode(opt_value));
+  }
+  return goog.uri.utils.appendQueryData_(paramArr);
+};
+goog.uri.utils.findParam_ = function(uri, startIndex, keyEncoded, hashOrEndIndex) {
+  var index = startIndex;
+  var keyLength = keyEncoded.length;
+  while ((index = uri.indexOf(keyEncoded, index)) >= 0 && index < hashOrEndIndex) {
+    var precedingChar = uri.charCodeAt(index - 1);
+    if (precedingChar == goog.uri.utils.CharCode_.AMPERSAND || precedingChar == goog.uri.utils.CharCode_.QUESTION) {
+      var followingChar = uri.charCodeAt(index + keyLength);
+      if (!followingChar || followingChar == goog.uri.utils.CharCode_.EQUAL || followingChar == goog.uri.utils.CharCode_.AMPERSAND || followingChar == goog.uri.utils.CharCode_.HASH) {
+        return index;
+      }
+    }
+    index += keyLength + 1;
+  }
+  return -1;
+};
+goog.uri.utils.hashOrEndRe_ = /#|$/;
+goog.uri.utils.hasParam = function(uri, keyEncoded) {
+  return goog.uri.utils.findParam_(uri, 0, keyEncoded, uri.search(goog.uri.utils.hashOrEndRe_)) >= 0;
+};
+goog.uri.utils.getParamValue = function(uri, keyEncoded) {
+  var hashOrEndIndex = uri.search(goog.uri.utils.hashOrEndRe_);
+  var foundIndex = goog.uri.utils.findParam_(uri, 0, keyEncoded, hashOrEndIndex);
+  if (foundIndex < 0) {
+    return null;
+  } else {
+    var endPosition = uri.indexOf("&", foundIndex);
+    if (endPosition < 0 || endPosition > hashOrEndIndex) {
+      endPosition = hashOrEndIndex;
+    }
+    foundIndex += keyEncoded.length + 1;
+    return goog.string.urlDecode(uri.substr(foundIndex, endPosition - foundIndex));
+  }
+};
+goog.uri.utils.getParamValues = function(uri, keyEncoded) {
+  var hashOrEndIndex = uri.search(goog.uri.utils.hashOrEndRe_);
+  var position = 0;
+  var foundIndex;
+  var result = [];
+  while ((foundIndex = goog.uri.utils.findParam_(uri, position, keyEncoded, hashOrEndIndex)) >= 0) {
+    position = uri.indexOf("&", foundIndex);
+    if (position < 0 || position > hashOrEndIndex) {
+      position = hashOrEndIndex;
+    }
+    foundIndex += keyEncoded.length + 1;
+    result.push(goog.string.urlDecode(uri.substr(foundIndex, position - foundIndex)));
+  }
+  return result;
+};
+goog.uri.utils.trailingQueryPunctuationRe_ = /[?&]($|#)/;
+goog.uri.utils.removeParam = function(uri, keyEncoded) {
+  var hashOrEndIndex = uri.search(goog.uri.utils.hashOrEndRe_);
+  var position = 0;
+  var foundIndex;
+  var buffer = [];
+  while ((foundIndex = goog.uri.utils.findParam_(uri, position, keyEncoded, hashOrEndIndex)) >= 0) {
+    buffer.push(uri.substring(position, foundIndex));
+    position = Math.min(uri.indexOf("&", foundIndex) + 1 || hashOrEndIndex, hashOrEndIndex);
+  }
+  buffer.push(uri.substr(position));
+  return buffer.join("").replace(goog.uri.utils.trailingQueryPunctuationRe_, "$1");
+};
+goog.uri.utils.setParam = function(uri, keyEncoded, value) {
+  return goog.uri.utils.appendParam(goog.uri.utils.removeParam(uri, keyEncoded), keyEncoded, value);
+};
+goog.uri.utils.appendPath = function(baseUri, path) {
+  goog.uri.utils.assertNoFragmentsOrQueries_(baseUri);
+  if (goog.string.endsWith(baseUri, "/")) {
+    baseUri = baseUri.substr(0, baseUri.length - 1);
+  }
+  if (goog.string.startsWith(path, "/")) {
+    path = path.substr(1);
+  }
+  return goog.string.buildString(baseUri, "/", path);
+};
+goog.uri.utils.setPath = function(uri, path) {
+  if (!goog.string.startsWith(path, "/")) {
+    path = "/" + path;
+  }
+  var parts = goog.uri.utils.split(uri);
+  return goog.uri.utils.buildFromEncodedParts(parts[goog.uri.utils.ComponentIndex.SCHEME], parts[goog.uri.utils.ComponentIndex.USER_INFO], parts[goog.uri.utils.ComponentIndex.DOMAIN], parts[goog.uri.utils.ComponentIndex.PORT], path, parts[goog.uri.utils.ComponentIndex.QUERY_DATA], parts[goog.uri.utils.ComponentIndex.FRAGMENT]);
+};
+goog.uri.utils.StandardQueryParam = {RANDOM:"zx"};
+goog.uri.utils.makeUnique = function(uri) {
+  return goog.uri.utils.setParam(uri, goog.uri.utils.StandardQueryParam.RANDOM, goog.string.getRandomString());
+};
+goog.provide("goog.net.ErrorCode");
+goog.net.ErrorCode = {NO_ERROR:0, ACCESS_DENIED:1, FILE_NOT_FOUND:2, FF_SILENT_ERROR:3, CUSTOM_ERROR:4, EXCEPTION:5, HTTP_ERROR:6, ABORT:7, TIMEOUT:8, OFFLINE:9};
+goog.net.ErrorCode.getDebugMessage = function(errorCode) {
+  switch(errorCode) {
+    case goog.net.ErrorCode.NO_ERROR:
+      return "No Error";
+    case goog.net.ErrorCode.ACCESS_DENIED:
+      return "Access denied to content document";
+    case goog.net.ErrorCode.FILE_NOT_FOUND:
+      return "File not found";
+    case goog.net.ErrorCode.FF_SILENT_ERROR:
+      return "Firefox silently errored";
+    case goog.net.ErrorCode.CUSTOM_ERROR:
+      return "Application custom error";
+    case goog.net.ErrorCode.EXCEPTION:
+      return "An exception occurred";
+    case goog.net.ErrorCode.HTTP_ERROR:
+      return "Http response at 400 or 500 level";
+    case goog.net.ErrorCode.ABORT:
+      return "Request was aborted";
+    case goog.net.ErrorCode.TIMEOUT:
+      return "Request timed out";
+    case goog.net.ErrorCode.OFFLINE:
+      return "The resource is not available offline";
+    default:
+      return "Unrecognized error code";
+  }
+};
+goog.provide("goog.json");
+goog.provide("goog.json.Replacer");
+goog.provide("goog.json.Reviver");
+goog.provide("goog.json.Serializer");
+goog.define("goog.json.USE_NATIVE_JSON", false);
+goog.json.isValid = function(s) {
+  if (/^\s*$/.test(s)) {
+    return false;
+  }
+  var backslashesRe = /\\["\\\/bfnrtu]/g;
+  var simpleValuesRe = /(?:"[^"\\\n\r\u2028\u2029\x00-\x08\x0a-\x1f]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)[\s\u2028\u2029]*(?=:|,|]|}|$)/g;
+  var openBracketsRe = /(?:^|:|,)(?:[\s\u2028\u2029]*\[)+/g;
+  var remainderRe = /^[\],:{}\s\u2028\u2029]*$/;
+  return remainderRe.test(s.replace(backslashesRe, "@").replace(simpleValuesRe, "]").replace(openBracketsRe, ""));
+};
+goog.json.parse = goog.json.USE_NATIVE_JSON ? (goog.global["JSON"]["parse"]) : function(s) {
+  var o = String(s);
+  if (goog.json.isValid(o)) {
+    try {
+      return (eval("(" + o + ")"));
+    } catch (ex) {
+    }
+  }
+  throw Error("Invalid JSON string: " + o);
+};
+goog.json.unsafeParse = goog.json.USE_NATIVE_JSON ? (goog.global["JSON"]["parse"]) : function(s) {
+  return (eval("(" + s + ")"));
+};
+goog.json.Replacer;
+goog.json.Reviver;
+goog.json.serialize = goog.json.USE_NATIVE_JSON ? (goog.global["JSON"]["stringify"]) : function(object, opt_replacer) {
+  return (new goog.json.Serializer(opt_replacer)).serialize(object);
+};
+goog.json.Serializer = function(opt_replacer) {
+  this.replacer_ = opt_replacer;
+};
+goog.json.Serializer.prototype.serialize = function(object) {
+  var sb = [];
+  this.serializeInternal(object, sb);
+  return sb.join("");
+};
+goog.json.Serializer.prototype.serializeInternal = function(object, sb) {
+  if (object == null) {
+    sb.push("null");
+    return;
+  }
+  if (typeof object == "object") {
+    if (goog.isArray(object)) {
+      this.serializeArray(object, sb);
+      return;
+    } else {
+      if (object instanceof String || object instanceof Number || object instanceof Boolean) {
+        object = object.valueOf();
+      } else {
+        this.serializeObject_((object), sb);
+        return;
+      }
+    }
+  }
+  switch(typeof object) {
+    case "string":
+      this.serializeString_(object, sb);
+      break;
+    case "number":
+      this.serializeNumber_(object, sb);
+      break;
+    case "boolean":
+      sb.push(String(object));
+      break;
+    case "function":
+      sb.push("null");
+      break;
+    default:
+      throw Error("Unknown type: " + typeof object);;
+  }
+};
+goog.json.Serializer.charToJsonCharCache_ = {'"':'\\"', "\\":"\\\\", "/":"\\/", "\b":"\\b", "\f":"\\f", "\n":"\\n", "\r":"\\r", "\t":"\\t", "\x0B":"\\u000b"};
+goog.json.Serializer.charsToReplace_ = /\uffff/.test("￿") ? /[\\\"\x00-\x1f\x7f-\uffff]/g : /[\\\"\x00-\x1f\x7f-\xff]/g;
+goog.json.Serializer.prototype.serializeString_ = function(s, sb) {
+  sb.push('"', s.replace(goog.json.Serializer.charsToReplace_, function(c) {
+    var rv = goog.json.Serializer.charToJsonCharCache_[c];
+    if (!rv) {
+      rv = "\\u" + (c.charCodeAt(0) | 65536).toString(16).substr(1);
+      goog.json.Serializer.charToJsonCharCache_[c] = rv;
+    }
+    return rv;
+  }), '"');
+};
+goog.json.Serializer.prototype.serializeNumber_ = function(n, sb) {
+  sb.push(isFinite(n) && !isNaN(n) ? String(n) : "null");
+};
+goog.json.Serializer.prototype.serializeArray = function(arr, sb) {
+  var l = arr.length;
+  sb.push("[");
+  var sep = "";
+  for (var i = 0;i < l;i++) {
+    sb.push(sep);
+    var value = arr[i];
+    this.serializeInternal(this.replacer_ ? this.replacer_.call(arr, String(i), value) : value, sb);
+    sep = ",";
+  }
+  sb.push("]");
+};
+goog.json.Serializer.prototype.serializeObject_ = function(obj, sb) {
+  sb.push("{");
+  var sep = "";
+  for (var key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      var value = obj[key];
+      if (typeof value != "function") {
+        sb.push(sep);
+        this.serializeString_(key, sb);
+        sb.push(":");
+        this.serializeInternal(this.replacer_ ? this.replacer_.call(obj, key, value) : value, sb);
+        sep = ",";
+      }
+    }
+  }
+  sb.push("}");
+};
+goog.provide("goog.html.SafeScript");
+goog.require("goog.asserts");
+goog.require("goog.string.Const");
+goog.require("goog.string.TypedString");
+goog.html.SafeScript = function() {
+  this.privateDoNotAccessOrElseSafeScriptWrappedValue_ = "";
+  this.SAFE_SCRIPT_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = goog.html.SafeScript.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_;
+};
+goog.html.SafeScript.prototype.implementsGoogStringTypedString = true;
+goog.html.SafeScript.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
+goog.html.SafeScript.fromConstant = function(script) {
+  var scriptString = goog.string.Const.unwrap(script);
+  if (scriptString.length === 0) {
+    return goog.html.SafeScript.EMPTY;
+  }
+  return goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse(scriptString);
+};
+goog.html.SafeScript.prototype.getTypedStringValue = function() {
+  return this.privateDoNotAccessOrElseSafeScriptWrappedValue_;
+};
+if (goog.DEBUG) {
+  goog.html.SafeScript.prototype.toString = function() {
+    return "SafeScript{" + this.privateDoNotAccessOrElseSafeScriptWrappedValue_ + "}";
+  };
+}
+goog.html.SafeScript.unwrap = function(safeScript) {
+  if (safeScript instanceof goog.html.SafeScript && safeScript.constructor === goog.html.SafeScript && safeScript.SAFE_SCRIPT_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ === goog.html.SafeScript.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_) {
+    return safeScript.privateDoNotAccessOrElseSafeScriptWrappedValue_;
+  } else {
+    goog.asserts.fail("expected object of type SafeScript, got '" + safeScript + "'");
+    return "type_error:SafeScript";
+  }
+};
+goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse = function(script) {
+  return (new goog.html.SafeScript).initSecurityPrivateDoNotAccessOrElse_(script);
+};
+goog.html.SafeScript.prototype.initSecurityPrivateDoNotAccessOrElse_ = function(script) {
+  this.privateDoNotAccessOrElseSafeScriptWrappedValue_ = script;
+  return this;
+};
+goog.html.SafeScript.EMPTY = goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse("");
+goog.provide("goog.html.uncheckedconversions");
+goog.require("goog.asserts");
+goog.require("goog.html.SafeHtml");
+goog.require("goog.html.SafeScript");
+goog.require("goog.html.SafeStyle");
+goog.require("goog.html.SafeStyleSheet");
+goog.require("goog.html.SafeUrl");
+goog.require("goog.html.TrustedResourceUrl");
+goog.require("goog.string");
+goog.require("goog.string.Const");
+goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract = function(justification, html, opt_dir) {
+  goog.asserts.assertString(goog.string.Const.unwrap(justification), "must provide justification");
+  goog.asserts.assert(!goog.string.isEmptyOrWhitespace(goog.string.Const.unwrap(justification)), "must provide non-empty justification");
+  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(html, opt_dir || null);
+};
+goog.html.uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract = function(justification, script) {
+  goog.asserts.assertString(goog.string.Const.unwrap(justification), "must provide justification");
+  goog.asserts.assert(!goog.string.isEmpty(goog.string.Const.unwrap(justification)), "must provide non-empty justification");
+  return goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse(script);
+};
+goog.html.uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract = function(justification, style) {
+  goog.asserts.assertString(goog.string.Const.unwrap(justification), "must provide justification");
+  goog.asserts.assert(!goog.string.isEmptyOrWhitespace(goog.string.Const.unwrap(justification)), "must provide non-empty justification");
+  return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse(style);
+};
+goog.html.uncheckedconversions.safeStyleSheetFromStringKnownToSatisfyTypeContract = function(justification, styleSheet) {
+  goog.asserts.assertString(goog.string.Const.unwrap(justification), "must provide justification");
+  goog.asserts.assert(!goog.string.isEmptyOrWhitespace(goog.string.Const.unwrap(justification)), "must provide non-empty justification");
+  return goog.html.SafeStyleSheet.createSafeStyleSheetSecurityPrivateDoNotAccessOrElse(styleSheet);
+};
+goog.html.uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract = function(justification, url) {
+  goog.asserts.assertString(goog.string.Const.unwrap(justification), "must provide justification");
+  goog.asserts.assert(!goog.string.isEmptyOrWhitespace(goog.string.Const.unwrap(justification)), "must provide non-empty justification");
+  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url);
+};
+goog.html.uncheckedconversions.trustedResourceUrlFromStringKnownToSatisfyTypeContract = function(justification, url) {
+  goog.asserts.assertString(goog.string.Const.unwrap(justification), "must provide justification");
+  goog.asserts.assert(!goog.string.isEmptyOrWhitespace(goog.string.Const.unwrap(justification)), "must provide non-empty justification");
+  return goog.html.TrustedResourceUrl.createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse(url);
+};
+goog.provide("goog.structs.Collection");
+goog.structs.Collection = function() {
+};
+goog.structs.Collection.prototype.add;
+goog.structs.Collection.prototype.remove;
+goog.structs.Collection.prototype.contains;
+goog.structs.Collection.prototype.getCount;
+goog.provide("goog.functions");
+goog.functions.constant = function(retValue) {
+  return function() {
+    return retValue;
+  };
+};
+goog.functions.FALSE = goog.functions.constant(false);
+goog.functions.TRUE = goog.functions.constant(true);
+goog.functions.NULL = goog.functions.constant(null);
+goog.functions.identity = function(opt_returnValue, var_args) {
+  return opt_returnValue;
+};
+goog.functions.error = function(message) {
+  return function() {
+    throw Error(message);
+  };
+};
+goog.functions.fail = function(err) {
+  return function() {
+    throw err;
+  };
+};
+goog.functions.lock = function(f, opt_numArgs) {
+  opt_numArgs = opt_numArgs || 0;
+  return function() {
+    return f.apply(this, Array.prototype.slice.call(arguments, 0, opt_numArgs));
+  };
+};
+goog.functions.nth = function(n) {
+  return function() {
+    return arguments[n];
+  };
+};
+goog.functions.partialRight = function(fn, var_args) {
+  var rightArgs = Array.prototype.slice.call(arguments, 1);
+  return function() {
+    var newArgs = Array.prototype.slice.call(arguments);
+    newArgs.push.apply(newArgs, rightArgs);
+    return fn.apply(this, newArgs);
+  };
+};
+goog.functions.withReturnValue = function(f, retValue) {
+  return goog.functions.sequence(f, goog.functions.constant(retValue));
+};
+goog.functions.equalTo = function(value, opt_useLooseComparison) {
+  return function(other) {
+    return opt_useLooseComparison ? value == other : value === other;
+  };
+};
+goog.functions.compose = function(fn, var_args) {
+  var functions = arguments;
+  var length = functions.length;
+  return function() {
+    var result;
+    if (length) {
+      result = functions[length - 1].apply(this, arguments);
+    }
+    for (var i = length - 2;i >= 0;i--) {
+      result = functions[i].call(this, result);
+    }
+    return result;
+  };
+};
+goog.functions.sequence = function(var_args) {
+  var functions = arguments;
+  var length = functions.length;
+  return function() {
+    var result;
+    for (var i = 0;i < length;i++) {
+      result = functions[i].apply(this, arguments);
+    }
+    return result;
+  };
+};
+goog.functions.and = function(var_args) {
+  var functions = arguments;
+  var length = functions.length;
+  return function() {
+    for (var i = 0;i < length;i++) {
+      if (!functions[i].apply(this, arguments)) {
+        return false;
+      }
+    }
+    return true;
+  };
+};
+goog.functions.or = function(var_args) {
+  var functions = arguments;
+  var length = functions.length;
+  return function() {
+    for (var i = 0;i < length;i++) {
+      if (functions[i].apply(this, arguments)) {
+        return true;
+      }
+    }
+    return false;
+  };
+};
+goog.functions.not = function(f) {
+  return function() {
+    return !f.apply(this, arguments);
+  };
+};
+goog.functions.create = function(constructor, var_args) {
+  var temp = function() {
+  };
+  temp.prototype = constructor.prototype;
+  var obj = new temp;
+  constructor.apply(obj, Array.prototype.slice.call(arguments, 1));
+  return obj;
+};
+goog.define("goog.functions.CACHE_RETURN_VALUE", true);
+goog.functions.cacheReturnValue = function(fn) {
+  var called = false;
+  var value;
+  return function() {
+    if (!goog.functions.CACHE_RETURN_VALUE) {
+      return fn();
+    }
+    if (!called) {
+      value = fn();
+      called = true;
+    }
+    return value;
+  };
+};
+goog.functions.once = function(f) {
+  var inner = f;
+  return function() {
+    if (inner) {
+      var tmp = inner;
+      inner = null;
+      tmp();
+    }
+  };
+};
+goog.functions.debounce = function(f, interval, opt_scope) {
+  if (opt_scope) {
+    f = goog.bind(f, opt_scope);
+  }
+  var timeout = null;
+  return (function(var_args) {
+    goog.global.clearTimeout(timeout);
+    var args = arguments;
+    timeout = goog.global.setTimeout(function() {
+      f.apply(null, args);
+    }, interval);
+  });
+};
+goog.functions.throttle = function(f, interval, opt_scope) {
+  if (opt_scope) {
+    f = goog.bind(f, opt_scope);
+  }
+  var timeout = null;
+  var shouldFire = false;
+  var args = [];
+  var handleTimeout = function() {
+    timeout = null;
+    if (shouldFire) {
+      shouldFire = false;
+      fire();
+    }
+  };
+  var fire = function() {
+    timeout = goog.global.setTimeout(handleTimeout, interval);
+    f.apply(null, args);
+  };
+  return (function(var_args) {
+    args = arguments;
+    if (!timeout) {
+      fire();
+    } else {
+      shouldFire = true;
+    }
+  });
+};
+goog.provide("goog.iter");
+goog.provide("goog.iter.Iterable");
+goog.provide("goog.iter.Iterator");
+goog.provide("goog.iter.StopIteration");
+goog.require("goog.array");
+goog.require("goog.asserts");
+goog.require("goog.functions");
+goog.require("goog.math");
+goog.iter.Iterable;
+goog.iter.StopIteration = "StopIteration" in goog.global ? goog.global["StopIteration"] : {message:"StopIteration", stack:""};
+goog.iter.Iterator = function() {
+};
+goog.iter.Iterator.prototype.next = function() {
+  throw goog.iter.StopIteration;
+};
+goog.iter.Iterator.prototype.__iterator__ = function(opt_keys) {
+  return this;
+};
+goog.iter.toIterator = function(iterable) {
+  if (iterable instanceof goog.iter.Iterator) {
+    return iterable;
+  }
+  if (typeof iterable.__iterator__ == "function") {
+    return iterable.__iterator__(false);
+  }
+  if (goog.isArrayLike(iterable)) {
+    var i = 0;
+    var newIter = new goog.iter.Iterator;
+    newIter.next = function() {
+      while (true) {
+        if (i >= iterable.length) {
+          throw goog.iter.StopIteration;
+        }
+        if (!(i in iterable)) {
+          i++;
+          continue;
+        }
+        return iterable[i++];
+      }
+    };
+    return newIter;
+  }
+  throw Error("Not implemented");
+};
+goog.iter.forEach = function(iterable, f, opt_obj) {
+  if (goog.isArrayLike(iterable)) {
+    try {
+      goog.array.forEach((iterable), f, opt_obj);
+    } catch (ex) {
+      if (ex !== goog.iter.StopIteration) {
+        throw ex;
+      }
+    }
+  } else {
+    iterable = goog.iter.toIterator(iterable);
+    try {
+      while (true) {
+        f.call(opt_obj, iterable.next(), undefined, iterable);
+      }
+    } catch (ex$0) {
+      if (ex$0 !== goog.iter.StopIteration) {
+        throw ex$0;
+      }
+    }
+  }
+};
+goog.iter.filter = function(iterable, f, opt_obj) {
+  var iterator = goog.iter.toIterator(iterable);
+  var newIter = new goog.iter.Iterator;
+  newIter.next = function() {
+    while (true) {
+      var val = iterator.next();
+      if (f.call(opt_obj, val, undefined, iterator)) {
+        return val;
+      }
+    }
+  };
+  return newIter;
+};
+goog.iter.filterFalse = function(iterable, f, opt_obj) {
+  return goog.iter.filter(iterable, goog.functions.not(f), opt_obj);
+};
+goog.iter.range = function(startOrStop, opt_stop, opt_step) {
+  var start = 0;
+  var stop = startOrStop;
+  var step = opt_step || 1;
+  if (arguments.length > 1) {
+    start = startOrStop;
+    stop = opt_stop;
+  }
+  if (step == 0) {
+    throw Error("Range step argument must not be zero");
+  }
+  var newIter = new goog.iter.Iterator;
+  newIter.next = function() {
+    if (step > 0 && start >= stop || step < 0 && start <= stop) {
+      throw goog.iter.StopIteration;
+    }
+    var rv = start;
+    start += step;
+    return rv;
+  };
+  return newIter;
+};
+goog.iter.join = function(iterable, deliminator) {
+  return goog.iter.toArray(iterable).join(deliminator);
+};
+goog.iter.map = function(iterable, f, opt_obj) {
+  var iterator = goog.iter.toIterator(iterable);
+  var newIter = new goog.iter.Iterator;
+  newIter.next = function() {
+    var val = iterator.next();
+    return f.call(opt_obj, val, undefined, iterator);
+  };
+  return newIter;
+};
+goog.iter.reduce = function(iterable, f, val, opt_obj) {
+  var rval = val;
+  goog.iter.forEach(iterable, function(val) {
+    rval = f.call(opt_obj, rval, val);
+  });
+  return rval;
+};
+goog.iter.some = function(iterable, f, opt_obj) {
+  iterable = goog.iter.toIterator(iterable);
+  try {
+    while (true) {
+      if (f.call(opt_obj, iterable.next(), undefined, iterable)) {
+        return true;
+      }
+    }
+  } catch (ex) {
+    if (ex !== goog.iter.StopIteration) {
+      throw ex;
+    }
+  }
+  return false;
+};
+goog.iter.every = function(iterable, f, opt_obj) {
+  iterable = goog.iter.toIterator(iterable);
+  try {
+    while (true) {
+      if (!f.call(opt_obj, iterable.next(), undefined, iterable)) {
+        return false;
+      }
+    }
+  } catch (ex) {
+    if (ex !== goog.iter.StopIteration) {
+      throw ex;
+    }
+  }
+  return true;
+};
+goog.iter.chain = function(var_args) {
+  return goog.iter.chainFromIterable(arguments);
+};
+goog.iter.chainFromIterable = function(iterable) {
+  var iterator = goog.iter.toIterator(iterable);
+  var iter = new goog.iter.Iterator;
+  var current = null;
+  iter.next = function() {
+    while (true) {
+      if (current == null) {
+        var it = iterator.next();
+        current = goog.iter.toIterator(it);
+      }
+      try {
+        return current.next();
+      } catch (ex) {
+        if (ex !== goog.iter.StopIteration) {
+          throw ex;
+        }
+        current = null;
+      }
+    }
+  };
+  return iter;
+};
+goog.iter.dropWhile = function(iterable, f, opt_obj) {
+  var iterator = goog.iter.toIterator(iterable);
+  var newIter = new goog.iter.Iterator;
+  var dropping = true;
+  newIter.next = function() {
+    while (true) {
+      var val = iterator.next();
+      if (dropping && f.call(opt_obj, val, undefined, iterator)) {
+        continue;
+      } else {
+        dropping = false;
+      }
+      return val;
+    }
+  };
+  return newIter;
+};
+goog.iter.takeWhile = function(iterable, f, opt_obj) {
+  var iterator = goog.iter.toIterator(iterable);
+  var iter = new goog.iter.Iterator;
+  iter.next = function() {
+    var val = iterator.next();
+    if (f.call(opt_obj, val, undefined, iterator)) {
+      return val;
+    }
+    throw goog.iter.StopIteration;
+  };
+  return iter;
+};
+goog.iter.toArray = function(iterable) {
+  if (goog.isArrayLike(iterable)) {
+    return goog.array.toArray((iterable));
+  }
+  iterable = goog.iter.toIterator(iterable);
+  var array = [];
+  goog.iter.forEach(iterable, function(val) {
+    array.push(val);
+  });
+  return array;
+};
+goog.iter.equals = function(iterable1, iterable2, opt_equalsFn) {
+  var fillValue = {};
+  var pairs = goog.iter.zipLongest(fillValue, iterable1, iterable2);
+  var equalsFn = opt_equalsFn || goog.array.defaultCompareEquality;
+  return goog.iter.every(pairs, function(pair) {
+    return equalsFn(pair[0], pair[1]);
+  });
+};
+goog.iter.nextOrValue = function(iterable, defaultValue) {
+  try {
+    return goog.iter.toIterator(iterable).next();
+  } catch (e) {
+    if (e != goog.iter.StopIteration) {
+      throw e;
+    }
+    return defaultValue;
+  }
+};
+goog.iter.product = function(var_args) {
+  var someArrayEmpty = goog.array.some(arguments, function(arr) {
+    return !arr.length;
+  });
+  if (someArrayEmpty || !arguments.length) {
+    return new goog.iter.Iterator;
+  }
+  var iter = new goog.iter.Iterator;
+  var arrays = arguments;
+  var indicies = goog.array.repeat(0, arrays.length);
+  iter.next = function() {
+    if (indicies) {
+      var retVal = goog.array.map(indicies, function(valueIndex, arrayIndex) {
+        return arrays[arrayIndex][valueIndex];
+      });
+      for (var i = indicies.length - 1;i >= 0;i--) {
+        goog.asserts.assert(indicies);
+        if (indicies[i] < arrays[i].length - 1) {
+          indicies[i]++;
+          break;
+        }
+        if (i == 0) {
+          indicies = null;
+          break;
+        }
+        indicies[i] = 0;
+      }
+      return retVal;
+    }
+    throw goog.iter.StopIteration;
+  };
+  return iter;
+};
+goog.iter.cycle = function(iterable) {
+  var baseIterator = goog.iter.toIterator(iterable);
+  var cache = [];
+  var cacheIndex = 0;
+  var iter = new goog.iter.Iterator;
+  var useCache = false;
+  iter.next = function() {
+    var returnElement = null;
+    if (!useCache) {
+      try {
+        returnElement = baseIterator.next();
+        cache.push(returnElement);
+        return returnElement;
+      } catch (e) {
+        if (e != goog.iter.StopIteration || goog.array.isEmpty(cache)) {
+          throw e;
+        }
+        useCache = true;
+      }
+    }
+    returnElement = cache[cacheIndex];
+    cacheIndex = (cacheIndex + 1) % cache.length;
+    return returnElement;
+  };
+  return iter;
+};
+goog.iter.count = function(opt_start, opt_step) {
+  var counter = opt_start || 0;
+  var step = goog.isDef(opt_step) ? opt_step : 1;
+  var iter = new goog.iter.Iterator;
+  iter.next = function() {
+    var returnValue = counter;
+    counter += step;
+    return returnValue;
+  };
+  return iter;
+};
+goog.iter.repeat = function(value) {
+  var iter = new goog.iter.Iterator;
+  iter.next = goog.functions.constant(value);
+  return iter;
+};
+goog.iter.accumulate = function(iterable) {
+  var iterator = goog.iter.toIterator(iterable);
+  var total = 0;
+  var iter = new goog.iter.Iterator;
+  iter.next = function() {
+    total += iterator.next();
+    return total;
+  };
+  return iter;
+};
+goog.iter.zip = function(var_args) {
+  var args = arguments;
+  var iter = new goog.iter.Iterator;
+  if (args.length > 0) {
+    var iterators = goog.array.map(args, goog.iter.toIterator);
+    iter.next = function() {
+      var arr = goog.array.map(iterators, function(it) {
+        return it.next();
+      });
+      return arr;
+    };
+  }
+  return iter;
+};
+goog.iter.zipLongest = function(fillValue, var_args) {
+  var args = goog.array.slice(arguments, 1);
+  var iter = new goog.iter.Iterator;
+  if (args.length > 0) {
+    var iterators = goog.array.map(args, goog.iter.toIterator);
+    iter.next = function() {
+      var iteratorsHaveValues = false;
+      var arr = goog.array.map(iterators, function(it) {
+        var returnValue;
+        try {
+          returnValue = it.next();
+          iteratorsHaveValues = true;
+        } catch (ex) {
+          if (ex !== goog.iter.StopIteration) {
+            throw ex;
+          }
+          returnValue = fillValue;
+        }
+        return returnValue;
+      });
+      if (!iteratorsHaveValues) {
+        throw goog.iter.StopIteration;
+      }
+      return arr;
+    };
+  }
+  return iter;
+};
+goog.iter.compress = function(iterable, selectors) {
+  var selectorIterator = goog.iter.toIterator(selectors);
+  return goog.iter.filter(iterable, function() {
+    return !!selectorIterator.next();
+  });
+};
+goog.iter.GroupByIterator_ = function(iterable, opt_keyFunc) {
+  this.iterator = goog.iter.toIterator(iterable);
+  this.keyFunc = opt_keyFunc || goog.functions.identity;
+  this.targetKey;
+  this.currentKey;
+  this.currentValue;
+};
+goog.inherits(goog.iter.GroupByIterator_, goog.iter.Iterator);
+goog.iter.GroupByIterator_.prototype.next = function() {
+  while (this.currentKey == this.targetKey) {
+    this.currentValue = this.iterator.next();
+    this.currentKey = this.keyFunc(this.currentValue);
+  }
+  this.targetKey = this.currentKey;
+  return [this.currentKey, this.groupItems_(this.targetKey)];
+};
+goog.iter.GroupByIterator_.prototype.groupItems_ = function(targetKey) {
+  var arr = [];
+  while (this.currentKey == targetKey) {
+    arr.push(this.currentValue);
+    try {
+      this.currentValue = this.iterator.next();
+    } catch (ex) {
+      if (ex !== goog.iter.StopIteration) {
+        throw ex;
+      }
+      break;
+    }
+    this.currentKey = this.keyFunc(this.currentValue);
+  }
+  return arr;
+};
+goog.iter.groupBy = function(iterable, opt_keyFunc) {
+  return new goog.iter.GroupByIterator_(iterable, opt_keyFunc);
+};
+goog.iter.starMap = function(iterable, f, opt_obj) {
+  var iterator = goog.iter.toIterator(iterable);
+  var iter = new goog.iter.Iterator;
+  iter.next = function() {
+    var args = goog.iter.toArray(iterator.next());
+    return f.apply(opt_obj, goog.array.concat(args, undefined, iterator));
+  };
+  return iter;
+};
+goog.iter.tee = function(iterable, opt_num) {
+  var iterator = goog.iter.toIterator(iterable);
+  var num = goog.isNumber(opt_num) ? opt_num : 2;
+  var buffers = goog.array.map(goog.array.range(num), function() {
+    return [];
+  });
+  var addNextIteratorValueToBuffers = function() {
+    var val = iterator.next();
+    goog.array.forEach(buffers, function(buffer) {
+      buffer.push(val);
+    });
+  };
+  var createIterator = function(buffer) {
+    var iter = new goog.iter.Iterator;
+    iter.next = function() {
+      if (goog.array.isEmpty(buffer)) {
+        addNextIteratorValueToBuffers();
+      }
+      goog.asserts.assert(!goog.array.isEmpty(buffer));
+      return buffer.shift();
+    };
+    return iter;
+  };
+  return goog.array.map(buffers, createIterator);
+};
+goog.iter.enumerate = function(iterable, opt_start) {
+  return goog.iter.zip(goog.iter.count(opt_start), iterable);
+};
+goog.iter.limit = function(iterable, limitSize) {
+  goog.asserts.assert(goog.math.isInt(limitSize) && limitSize >= 0);
+  var iterator = goog.iter.toIterator(iterable);
+  var iter = new goog.iter.Iterator;
+  var remaining = limitSize;
+  iter.next = function() {
+    if (remaining-- > 0) {
+      return iterator.next();
+    }
+    throw goog.iter.StopIteration;
+  };
+  return iter;
+};
+goog.iter.consume = function(iterable, count) {
+  goog.asserts.assert(goog.math.isInt(count) && count >= 0);
+  var iterator = goog.iter.toIterator(iterable);
+  while (count-- > 0) {
+    goog.iter.nextOrValue(iterator, null);
+  }
+  return iterator;
+};
+goog.iter.slice = function(iterable, start, opt_end) {
+  goog.asserts.assert(goog.math.isInt(start) && start >= 0);
+  var iterator = goog.iter.consume(iterable, start);
+  if (goog.isNumber(opt_end)) {
+    goog.asserts.assert(goog.math.isInt(opt_end) && opt_end >= start);
+    iterator = goog.iter.limit(iterator, opt_end - start);
+  }
+  return iterator;
+};
+goog.iter.hasDuplicates_ = function(arr) {
+  var deduped = [];
+  goog.array.removeDuplicates(arr, deduped);
+  return arr.length != deduped.length;
+};
+goog.iter.permutations = function(iterable, opt_length) {
+  var elements = goog.iter.toArray(iterable);
+  var length = goog.isNumber(opt_length) ? opt_length : elements.length;
+  var sets = goog.array.repeat(elements, length);
+  var product = goog.iter.product.apply(undefined, sets);
+  return goog.iter.filter(product, function(arr) {
+    return !goog.iter.hasDuplicates_(arr);
+  });
+};
+goog.iter.combinations = function(iterable, length) {
+  var elements = goog.iter.toArray(iterable);
+  var indexes = goog.iter.range(elements.length);
+  var indexIterator = goog.iter.permutations(indexes, length);
+  var sortedIndexIterator = goog.iter.filter(indexIterator, function(arr) {
+    return goog.array.isSorted(arr);
+  });
+  var iter = new goog.iter.Iterator;
+  function getIndexFromElements(index) {
+    return elements[index];
+  }
+  iter.next = function() {
+    return goog.array.map(sortedIndexIterator.next(), getIndexFromElements);
+  };
+  return iter;
+};
+goog.iter.combinationsWithReplacement = function(iterable, length) {
+  var elements = goog.iter.toArray(iterable);
+  var indexes = goog.array.range(elements.length);
+  var sets = goog.array.repeat(indexes, length);
+  var indexIterator = goog.iter.product.apply(undefined, sets);
+  var sortedIndexIterator = goog.iter.filter(indexIterator, function(arr) {
+    return goog.array.isSorted(arr);
+  });
+  var iter = new goog.iter.Iterator;
+  function getIndexFromElements(index) {
+    return elements[index];
+  }
+  iter.next = function() {
+    return goog.array.map((sortedIndexIterator.next()), getIndexFromElements);
+  };
+  return iter;
+};
+goog.provide("goog.structs.Map");
+goog.require("goog.iter.Iterator");
+goog.require("goog.iter.StopIteration");
+goog.require("goog.object");
+goog.structs.Map = function(opt_map, var_args) {
+  this.map_ = {};
+  this.keys_ = [];
+  this.count_ = 0;
+  this.version_ = 0;
+  var argLength = arguments.length;
+  if (argLength > 1) {
+    if (argLength % 2) {
+      throw Error("Uneven number of arguments");
+    }
+    for (var i = 0;i < argLength;i += 2) {
+      this.set(arguments[i], arguments[i + 1]);
+    }
+  } else {
+    if (opt_map) {
+      this.addAll((opt_map));
+    }
+  }
+};
+goog.structs.Map.prototype.getCount = function() {
+  return this.count_;
+};
+goog.structs.Map.prototype.getValues = function() {
+  this.cleanupKeysArray_();
+  var rv = [];
+  for (var i = 0;i < this.keys_.length;i++) {
+    var key = this.keys_[i];
+    rv.push(this.map_[key]);
+  }
+  return rv;
+};
+goog.structs.Map.prototype.getKeys = function() {
+  this.cleanupKeysArray_();
+  return (this.keys_.concat());
+};
+goog.structs.Map.prototype.containsKey = function(key) {
+  return goog.structs.Map.hasKey_(this.map_, key);
+};
+goog.structs.Map.prototype.containsValue = function(val) {
+  for (var i = 0;i < this.keys_.length;i++) {
+    var key = this.keys_[i];
+    if (goog.structs.Map.hasKey_(this.map_, key) && this.map_[key] == val) {
+      return true;
+    }
+  }
+  return false;
+};
+goog.structs.Map.prototype.equals = function(otherMap, opt_equalityFn) {
+  if (this === otherMap) {
+    return true;
+  }
+  if (this.count_ != otherMap.getCount()) {
+    return false;
+  }
+  var equalityFn = opt_equalityFn || goog.structs.Map.defaultEquals;
+  this.cleanupKeysArray_();
+  for (var key, i = 0;key = this.keys_[i];i++) {
+    if (!equalityFn(this.get(key), otherMap.get(key))) {
+      return false;
+    }
+  }
+  return true;
+};
+goog.structs.Map.defaultEquals = function(a, b) {
+  return a === b;
+};
+goog.structs.Map.prototype.isEmpty = function() {
+  return this.count_ == 0;
+};
+goog.structs.Map.prototype.clear = function() {
+  this.map_ = {};
+  this.keys_.length = 0;
+  this.count_ = 0;
+  this.version_ = 0;
+};
+goog.structs.Map.prototype.remove = function(key) {
+  if (goog.structs.Map.hasKey_(this.map_, key)) {
+    delete this.map_[key];
+    this.count_--;
+    this.version_++;
+    if (this.keys_.length > 2 * this.count_) {
+      this.cleanupKeysArray_();
+    }
+    return true;
+  }
+  return false;
+};
+goog.structs.Map.prototype.cleanupKeysArray_ = function() {
+  if (this.count_ != this.keys_.length) {
+    var srcIndex = 0;
+    var destIndex = 0;
+    while (srcIndex < this.keys_.length) {
+      var key = this.keys_[srcIndex];
+      if (goog.structs.Map.hasKey_(this.map_, key)) {
+        this.keys_[destIndex++] = key;
+      }
+      srcIndex++;
+    }
+    this.keys_.length = destIndex;
+  }
+  if (this.count_ != this.keys_.length) {
+    var seen = {};
+    var srcIndex = 0;
+    var destIndex = 0;
+    while (srcIndex < this.keys_.length) {
+      var key = this.keys_[srcIndex];
+      if (!goog.structs.Map.hasKey_(seen, key)) {
+        this.keys_[destIndex++] = key;
+        seen[key] = 1;
+      }
+      srcIndex++;
+    }
+    this.keys_.length = destIndex;
+  }
+};
+goog.structs.Map.prototype.get = function(key, opt_val) {
+  if (goog.structs.Map.hasKey_(this.map_, key)) {
+    return this.map_[key];
+  }
+  return opt_val;
+};
+goog.structs.Map.prototype.set = function(key, value) {
+  if (!goog.structs.Map.hasKey_(this.map_, key)) {
+    this.count_++;
+    this.keys_.push((key));
+    this.version_++;
+  }
+  this.map_[key] = value;
+};
+goog.structs.Map.prototype.addAll = function(map) {
+  var keys, values;
+  if (map instanceof goog.structs.Map) {
+    keys = map.getKeys();
+    values = map.getValues();
+  } else {
+    keys = goog.object.getKeys(map);
+    values = goog.object.getValues(map);
+  }
+  for (var i = 0;i < keys.length;i++) {
+    this.set(keys[i], values[i]);
+  }
+};
+goog.structs.Map.prototype.forEach = function(f, opt_obj) {
+  var keys = this.getKeys();
+  for (var i = 0;i < keys.length;i++) {
+    var key = keys[i];
+    var value = this.get(key);
+    f.call(opt_obj, value, key, this);
+  }
+};
+goog.structs.Map.prototype.clone = function() {
+  return new goog.structs.Map(this);
+};
+goog.structs.Map.prototype.transpose = function() {
+  var transposed = new goog.structs.Map;
+  for (var i = 0;i < this.keys_.length;i++) {
+    var key = this.keys_[i];
+    var value = this.map_[key];
+    transposed.set(value, key);
+  }
+  return transposed;
+};
+goog.structs.Map.prototype.toObject = function() {
+  this.cleanupKeysArray_();
+  var obj = {};
+  for (var i = 0;i < this.keys_.length;i++) {
+    var key = this.keys_[i];
+    obj[key] = this.map_[key];
+  }
+  return obj;
+};
+goog.structs.Map.prototype.getKeyIterator = function() {
+  return this.__iterator__(true);
+};
+goog.structs.Map.prototype.getValueIterator = function() {
+  return this.__iterator__(false);
+};
+goog.structs.Map.prototype.__iterator__ = function(opt_keys) {
+  this.cleanupKeysArray_();
+  var i = 0;
+  var version = this.version_;
+  var selfObj = this;
+  var newIter = new goog.iter.Iterator;
+  newIter.next = function() {
+    if (version != selfObj.version_) {
+      throw Error("The map has changed since the iterator was created");
+    }
+    if (i >= selfObj.keys_.length) {
+      throw goog.iter.StopIteration;
+    }
+    var key = selfObj.keys_[i++];
+    return opt_keys ? key : selfObj.map_[key];
+  };
+  return newIter;
+};
+goog.structs.Map.hasKey_ = function(obj, key) {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+};
+goog.provide("goog.structs.Set");
+goog.require("goog.structs");
+goog.require("goog.structs.Collection");
+goog.require("goog.structs.Map");
+goog.structs.Set = function(opt_values) {
+  this.map_ = new goog.structs.Map;
+  if (opt_values) {
+    this.addAll(opt_values);
+  }
+};
+goog.structs.Set.getKey_ = function(val) {
+  var type = typeof val;
+  if (type == "object" && val || type == "function") {
+    return "o" + goog.getUid((val));
+  } else {
+    return type.substr(0, 1) + val;
+  }
+};
+goog.structs.Set.prototype.getCount = function() {
+  return this.map_.getCount();
+};
+goog.structs.Set.prototype.add = function(element) {
+  this.map_.set(goog.structs.Set.getKey_(element), element);
+};
+goog.structs.Set.prototype.addAll = function(col) {
+  var values = goog.structs.getValues(col);
+  var l = values.length;
+  for (var i = 0;i < l;i++) {
+    this.add(values[i]);
+  }
+};
+goog.structs.Set.prototype.removeAll = function(col) {
+  var values = goog.structs.getValues(col);
+  var l = values.length;
+  for (var i = 0;i < l;i++) {
+    this.remove(values[i]);
+  }
+};
+goog.structs.Set.prototype.remove = function(element) {
+  return this.map_.remove(goog.structs.Set.getKey_(element));
+};
+goog.structs.Set.prototype.clear = function() {
+  this.map_.clear();
+};
+goog.structs.Set.prototype.isEmpty = function() {
+  return this.map_.isEmpty();
+};
+goog.structs.Set.prototype.contains = function(element) {
+  return this.map_.containsKey(goog.structs.Set.getKey_(element));
+};
+goog.structs.Set.prototype.containsAll = function(col) {
+  return goog.structs.every(col, this.contains, this);
+};
+goog.structs.Set.prototype.intersection = function(col) {
+  var result = new goog.structs.Set;
+  var values = goog.structs.getValues(col);
+  for (var i = 0;i < values.length;i++) {
+    var value = values[i];
+    if (this.contains(value)) {
+      result.add(value);
+    }
+  }
+  return result;
+};
+goog.structs.Set.prototype.difference = function(col) {
+  var result = this.clone();
+  result.removeAll(col);
+  return result;
+};
+goog.structs.Set.prototype.getValues = function() {
+  return this.map_.getValues();
+};
+goog.structs.Set.prototype.clone = function() {
+  return new goog.structs.Set(this);
+};
+goog.structs.Set.prototype.equals = function(col) {
+  return this.getCount() == goog.structs.getCount(col) && this.isSubsetOf(col);
+};
+goog.structs.Set.prototype.isSubsetOf = function(col) {
+  var colCount = goog.structs.getCount(col);
+  if (this.getCount() > colCount) {
+    return false;
+  }
+  if (!(col instanceof goog.structs.Set) && colCount > 5) {
+    col = new goog.structs.Set(col);
+  }
+  return goog.structs.every(this, function(value) {
+    return goog.structs.contains(col, value);
+  });
+};
+goog.structs.Set.prototype.__iterator__ = function(opt_keys) {
+  return this.map_.__iterator__(false);
+};
+goog.provide("goog.debug");
+goog.require("goog.array");
+goog.require("goog.html.SafeHtml");
+goog.require("goog.html.SafeUrl");
+goog.require("goog.html.uncheckedconversions");
+goog.require("goog.string.Const");
+goog.require("goog.structs.Set");
+goog.require("goog.userAgent");
+goog.define("goog.debug.LOGGING_ENABLED", goog.DEBUG);
+goog.define("goog.debug.FORCE_SLOPPY_STACKS", false);
+goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
+  var target = opt_target || goog.global;
+  var oldErrorHandler = target.onerror;
+  var retVal = !!opt_cancel;
+  if (goog.userAgent.WEBKIT && !goog.userAgent.isVersionOrHigher("535.3")) {
+    retVal = !retVal;
+  }
+  target.onerror = function(message, url, line, opt_col, opt_error) {
+    if (oldErrorHandler) {
+      oldErrorHandler(message, url, line, opt_col, opt_error);
+    }
+    logFunc({message:message, fileName:url, line:line, col:opt_col, error:opt_error});
+    return retVal;
+  };
+};
+goog.debug.expose = function(obj, opt_showFn) {
+  if (typeof obj == "undefined") {
+    return "undefined";
+  }
+  if (obj == null) {
+    return "NULL";
+  }
+  var str = [];
+  for (var x in obj) {
+    if (!opt_showFn && goog.isFunction(obj[x])) {
+      continue;
+    }
+    var s = x + " = ";
+    try {
+      s += obj[x];
+    } catch (e) {
+      s += "*** " + e + " ***";
+    }
+    str.push(s);
+  }
+  return str.join("\n");
+};
+goog.debug.deepExpose = function(obj, opt_showFn) {
+  var str = [];
+  var helper = function(obj, space, parentSeen) {
+    var nestspace = space + "  ";
+    var seen = new goog.structs.Set(parentSeen);
+    var indentMultiline = function(str) {
+      return str.replace(/\n/g, "\n" + space);
+    };
+    try {
+      if (!goog.isDef(obj)) {
+        str.push("undefined");
+      } else {
+        if (goog.isNull(obj)) {
+          str.push("NULL");
+        } else {
+          if (goog.isString(obj)) {
+            str.push('"' + indentMultiline(obj) + '"');
+          } else {
+            if (goog.isFunction(obj)) {
+              str.push(indentMultiline(String(obj)));
+            } else {
+              if (goog.isObject(obj)) {
+                if (seen.contains(obj)) {
+                  str.push("*** reference loop detected ***");
+                } else {
+                  seen.add(obj);
+                  str.push("{");
+                  for (var x in obj) {
+                    if (!opt_showFn && goog.isFunction(obj[x])) {
+                      continue;
+                    }
+                    str.push("\n");
+                    str.push(nestspace);
+                    str.push(x + " = ");
+                    helper(obj[x], nestspace, seen);
+                  }
+                  str.push("\n" + space + "}");
+                }
+              } else {
+                str.push(obj);
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      str.push("*** " + e + " ***");
+    }
+  };
+  helper(obj, "", new goog.structs.Set);
+  return str.join("");
+};
+goog.debug.exposeArray = function(arr) {
+  var str = [];
+  for (var i = 0;i < arr.length;i++) {
+    if (goog.isArray(arr[i])) {
+      str.push(goog.debug.exposeArray(arr[i]));
+    } else {
+      str.push(arr[i]);
+    }
+  }
+  return "[ " + str.join(", ") + " ]";
+};
+goog.debug.exposeException = function(err, opt_fn) {
+  var html = goog.debug.exposeExceptionAsHtml(err, opt_fn);
+  return goog.html.SafeHtml.unwrap(html);
+};
+goog.debug.exposeExceptionAsHtml = function(err, opt_fn) {
+  try {
+    var e = goog.debug.normalizeErrorObject(err);
+    var viewSourceUrl = goog.debug.createViewSourceUrl_(e.fileName);
+    var error = goog.html.SafeHtml.concat(goog.html.SafeHtml.htmlEscapePreservingNewlinesAndSpaces("Message: " + e.message + "\nUrl: "), goog.html.SafeHtml.create("a", {href:viewSourceUrl, target:"_new"}, e.fileName), goog.html.SafeHtml.htmlEscapePreservingNewlinesAndSpaces("\nLine: " + e.lineNumber + "\n\nBrowser stack:\n" + e.stack + "-> " + "[end]\n\nJS stack traversal:\n" + goog.debug.getStacktrace(opt_fn) + "-> "));
+    return error;
+  } catch (e2) {
+    return goog.html.SafeHtml.htmlEscapePreservingNewlinesAndSpaces("Exception trying to expose exception! You win, we lose. " + e2);
+  }
+};
+goog.debug.createViewSourceUrl_ = function(opt_fileName) {
+  if (!goog.isDefAndNotNull(opt_fileName)) {
+    opt_fileName = "";
+  }
+  if (!/^https?:\/\//i.test(opt_fileName)) {
+    return goog.html.SafeUrl.fromConstant(goog.string.Const.from("sanitizedviewsrc"));
+  }
+  var sanitizedFileName = goog.html.SafeUrl.sanitize(opt_fileName);
+  return goog.html.uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract(goog.string.Const.from("view-source scheme plus HTTP/HTTPS URL"), "view-source:" + goog.html.SafeUrl.unwrap(sanitizedFileName));
+};
+goog.debug.normalizeErrorObject = function(err) {
+  var href = goog.getObjectByName("window.location.href");
+  if (goog.isString(err)) {
+    return {"message":err, "name":"Unknown error", "lineNumber":"Not available", "fileName":href, "stack":"Not available"};
+  }
+  var lineNumber, fileName;
+  var threwError = false;
+  try {
+    lineNumber = err.lineNumber || err.line || "Not available";
+  } catch (e) {
+    lineNumber = "Not available";
+    threwError = true;
+  }
+  try {
+    fileName = err.fileName || err.filename || err.sourceURL || goog.global["$googDebugFname"] || href;
+  } catch (e$1) {
+    fileName = "Not available";
+    threwError = true;
+  }
+  if (threwError || !err.lineNumber || !err.fileName || !err.stack || !err.message || !err.name) {
+    return {"message":err.message || "Not available", "name":err.name || "UnknownError", "lineNumber":lineNumber, "fileName":fileName, "stack":err.stack || "Not available"};
+  }
+  return err;
+};
+goog.debug.enhanceError = function(err, opt_message) {
+  var error;
+  if (typeof err == "string") {
+    error = Error(err);
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(error, goog.debug.enhanceError);
+    }
+  } else {
+    error = err;
+  }
+  if (!error.stack) {
+    error.stack = goog.debug.getStacktrace(goog.debug.enhanceError);
+  }
+  if (opt_message) {
+    var x = 0;
+    while (error["message" + x]) {
+      ++x;
+    }
+    error["message" + x] = String(opt_message);
+  }
+  return error;
+};
+goog.debug.getStacktraceSimple = function(opt_depth) {
+  if (!goog.debug.FORCE_SLOPPY_STACKS) {
+    var stack = goog.debug.getNativeStackTrace_(goog.debug.getStacktraceSimple);
+    if (stack) {
+      return stack;
+    }
+  }
+  var sb = [];
+  var fn = arguments.callee.caller;
+  var depth = 0;
+  while (fn && (!opt_depth || depth < opt_depth)) {
+    sb.push(goog.debug.getFunctionName(fn));
+    sb.push("()\n");
+    try {
+      fn = fn.caller;
+    } catch (e) {
+      sb.push("[exception trying to get caller]\n");
+      break;
+    }
+    depth++;
+    if (depth >= goog.debug.MAX_STACK_DEPTH) {
+      sb.push("[...long stack...]");
+      break;
+    }
+  }
+  if (opt_depth && depth >= opt_depth) {
+    sb.push("[...reached max depth limit...]");
+  } else {
+    sb.push("[end]");
+  }
+  return sb.join("");
+};
+goog.debug.MAX_STACK_DEPTH = 50;
+goog.debug.getNativeStackTrace_ = function(fn) {
+  var tempErr = new Error;
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(tempErr, fn);
+    return String(tempErr.stack);
+  } else {
+    try {
+      throw tempErr;
+    } catch (e) {
+      tempErr = e;
+    }
+    var stack = tempErr.stack;
+    if (stack) {
+      return String(stack);
+    }
+  }
+  return null;
+};
+goog.debug.getStacktrace = function(opt_fn) {
+  var stack;
+  if (!goog.debug.FORCE_SLOPPY_STACKS) {
+    var contextFn = opt_fn || goog.debug.getStacktrace;
+    stack = goog.debug.getNativeStackTrace_(contextFn);
+  }
+  if (!stack) {
+    stack = goog.debug.getStacktraceHelper_(opt_fn || arguments.callee.caller, []);
+  }
+  return stack;
+};
+goog.debug.getStacktraceHelper_ = function(fn, visited) {
+  var sb = [];
+  if (goog.array.contains(visited, fn)) {
+    sb.push("[...circular reference...]");
+  } else {
+    if (fn && visited.length < goog.debug.MAX_STACK_DEPTH) {
+      sb.push(goog.debug.getFunctionName(fn) + "(");
+      var args = fn.arguments;
+      for (var i = 0;args && i < args.length;i++) {
+        if (i > 0) {
+          sb.push(", ");
+        }
+        var argDesc;
+        var arg = args[i];
+        switch(typeof arg) {
+          case "object":
+            argDesc = arg ? "object" : "null";
+            break;
+          case "string":
+            argDesc = arg;
+            break;
+          case "number":
+            argDesc = String(arg);
+            break;
+          case "boolean":
+            argDesc = arg ? "true" : "false";
+            break;
+          case "function":
+            argDesc = goog.debug.getFunctionName(arg);
+            argDesc = argDesc ? argDesc : "[fn]";
+            break;
+          case "undefined":
+          ;
+          default:
+            argDesc = typeof arg;
+            break;
+        }
+        if (argDesc.length > 40) {
+          argDesc = argDesc.substr(0, 40) + "...";
+        }
+        sb.push(argDesc);
+      }
+      visited.push(fn);
+      sb.push(")\n");
+      try {
+        sb.push(goog.debug.getStacktraceHelper_(fn.caller, visited));
+      } catch (e) {
+        sb.push("[exception trying to get caller]\n");
+      }
+    } else {
+      if (fn) {
+        sb.push("[...long stack...]");
+      } else {
+        sb.push("[end]");
+      }
+    }
+  }
+  return sb.join("");
+};
+goog.debug.setFunctionResolver = function(resolver) {
+  goog.debug.fnNameResolver_ = resolver;
+};
+goog.debug.getFunctionName = function(fn) {
+  if (goog.debug.fnNameCache_[fn]) {
+    return goog.debug.fnNameCache_[fn];
+  }
+  if (goog.debug.fnNameResolver_) {
+    var name = goog.debug.fnNameResolver_(fn);
+    if (name) {
+      goog.debug.fnNameCache_[fn] = name;
+      return name;
+    }
+  }
+  var functionSource = String(fn);
+  if (!goog.debug.fnNameCache_[functionSource]) {
+    var matches = /function ([^\(]+)/.exec(functionSource);
+    if (matches) {
+      var method = matches[1];
+      goog.debug.fnNameCache_[functionSource] = method;
+    } else {
+      goog.debug.fnNameCache_[functionSource] = "[Anonymous]";
+    }
+  }
+  return goog.debug.fnNameCache_[functionSource];
+};
+goog.debug.makeWhitespaceVisible = function(string) {
+  return string.replace(/ /g, "[_]").replace(/\f/g, "[f]").replace(/\n/g, "[n]\n").replace(/\r/g, "[r]").replace(/\t/g, "[t]");
+};
+goog.debug.runtimeType = function(value) {
+  if (value instanceof Function) {
+    return value.displayName || value.name || "unknown type name";
+  } else {
+    if (value instanceof Object) {
+      return value.constructor.displayName || value.constructor.name || Object.prototype.toString.call(value);
+    } else {
+      return value === null ? "null" : typeof value;
+    }
+  }
+};
+goog.debug.fnNameCache_ = {};
+goog.debug.fnNameResolver_;
+goog.provide("goog.debug.LogRecord");
+goog.debug.LogRecord = function(level, msg, loggerName, opt_time, opt_sequenceNumber) {
+  this.reset(level, msg, loggerName, opt_time, opt_sequenceNumber);
+};
+goog.debug.LogRecord.prototype.time_;
+goog.debug.LogRecord.prototype.level_;
+goog.debug.LogRecord.prototype.msg_;
+goog.debug.LogRecord.prototype.loggerName_;
+goog.debug.LogRecord.prototype.sequenceNumber_ = 0;
+goog.debug.LogRecord.prototype.exception_ = null;
+goog.define("goog.debug.LogRecord.ENABLE_SEQUENCE_NUMBERS", true);
+goog.debug.LogRecord.nextSequenceNumber_ = 0;
+goog.debug.LogRecord.prototype.reset = function(level, msg, loggerName, opt_time, opt_sequenceNumber) {
+  if (goog.debug.LogRecord.ENABLE_SEQUENCE_NUMBERS) {
+    this.sequenceNumber_ = typeof opt_sequenceNumber == "number" ? opt_sequenceNumber : goog.debug.LogRecord.nextSequenceNumber_++;
+  }
+  this.time_ = opt_time || goog.now();
+  this.level_ = level;
+  this.msg_ = msg;
+  this.loggerName_ = loggerName;
+  delete this.exception_;
+};
+goog.debug.LogRecord.prototype.getLoggerName = function() {
+  return this.loggerName_;
+};
+goog.debug.LogRecord.prototype.getException = function() {
+  return this.exception_;
+};
+goog.debug.LogRecord.prototype.setException = function(exception) {
+  this.exception_ = exception;
+};
+goog.debug.LogRecord.prototype.setLoggerName = function(loggerName) {
+  this.loggerName_ = loggerName;
+};
+goog.debug.LogRecord.prototype.getLevel = function() {
+  return this.level_;
+};
+goog.debug.LogRecord.prototype.setLevel = function(level) {
+  this.level_ = level;
+};
+goog.debug.LogRecord.prototype.getMessage = function() {
+  return this.msg_;
+};
+goog.debug.LogRecord.prototype.setMessage = function(msg) {
+  this.msg_ = msg;
+};
+goog.debug.LogRecord.prototype.getMillis = function() {
+  return this.time_;
+};
+goog.debug.LogRecord.prototype.setMillis = function(time) {
+  this.time_ = time;
+};
+goog.debug.LogRecord.prototype.getSequenceNumber = function() {
+  return this.sequenceNumber_;
+};
+goog.provide("goog.debug.LogBuffer");
+goog.require("goog.asserts");
+goog.require("goog.debug.LogRecord");
+goog.debug.LogBuffer = function() {
+  goog.asserts.assert(goog.debug.LogBuffer.isBufferingEnabled(), "Cannot use goog.debug.LogBuffer without defining " + "goog.debug.LogBuffer.CAPACITY.");
+  this.clear();
+};
+goog.debug.LogBuffer.getInstance = function() {
+  if (!goog.debug.LogBuffer.instance_) {
+    goog.debug.LogBuffer.instance_ = new goog.debug.LogBuffer;
+  }
+  return goog.debug.LogBuffer.instance_;
+};
+goog.define("goog.debug.LogBuffer.CAPACITY", 0);
+goog.debug.LogBuffer.prototype.buffer_;
+goog.debug.LogBuffer.prototype.curIndex_;
+goog.debug.LogBuffer.prototype.isFull_;
+goog.debug.LogBuffer.prototype.addRecord = function(level, msg, loggerName) {
+  var curIndex = (this.curIndex_ + 1) % goog.debug.LogBuffer.CAPACITY;
+  this.curIndex_ = curIndex;
+  if (this.isFull_) {
+    var ret = this.buffer_[curIndex];
+    ret.reset(level, msg, loggerName);
+    return ret;
+  }
+  this.isFull_ = curIndex == goog.debug.LogBuffer.CAPACITY - 1;
+  return this.buffer_[curIndex] = new goog.debug.LogRecord(level, msg, loggerName);
+};
+goog.debug.LogBuffer.isBufferingEnabled = function() {
+  return goog.debug.LogBuffer.CAPACITY > 0;
+};
+goog.debug.LogBuffer.prototype.clear = function() {
+  this.buffer_ = new Array(goog.debug.LogBuffer.CAPACITY);
+  this.curIndex_ = -1;
+  this.isFull_ = false;
+};
+goog.debug.LogBuffer.prototype.forEachRecord = function(func) {
+  var buffer = this.buffer_;
+  if (!buffer[0]) {
+    return;
+  }
+  var curIndex = this.curIndex_;
+  var i = this.isFull_ ? curIndex : -1;
+  do {
+    i = (i + 1) % goog.debug.LogBuffer.CAPACITY;
+    func((buffer[i]));
+  } while (i != curIndex);
+};
+goog.provide("goog.debug.LogManager");
+goog.provide("goog.debug.Loggable");
+goog.provide("goog.debug.Logger");
+goog.provide("goog.debug.Logger.Level");
+goog.require("goog.array");
+goog.require("goog.asserts");
+goog.require("goog.debug");
+goog.require("goog.debug.LogBuffer");
+goog.require("goog.debug.LogRecord");
+goog.debug.Loggable;
+goog.debug.Logger = function(name) {
+  this.name_ = name;
+  this.parent_ = null;
+  this.level_ = null;
+  this.children_ = null;
+  this.handlers_ = null;
+};
+goog.debug.Logger.ROOT_LOGGER_NAME = "";
+goog.define("goog.debug.Logger.ENABLE_HIERARCHY", true);
+if (!goog.debug.Logger.ENABLE_HIERARCHY) {
+  goog.debug.Logger.rootHandlers_ = [];
+  goog.debug.Logger.rootLevel_;
+}
+goog.debug.Logger.Level = function(name, value) {
+  this.name = name;
+  this.value = value;
+};
+goog.debug.Logger.Level.prototype.toString = function() {
+  return this.name;
+};
+goog.debug.Logger.Level.OFF = new goog.debug.Logger.Level("OFF", Infinity);
+goog.debug.Logger.Level.SHOUT = new goog.debug.Logger.Level("SHOUT", 1200);
+goog.debug.Logger.Level.SEVERE = new goog.debug.Logger.Level("SEVERE", 1E3);
+goog.debug.Logger.Level.WARNING = new goog.debug.Logger.Level("WARNING", 900);
+goog.debug.Logger.Level.INFO = new goog.debug.Logger.Level("INFO", 800);
+goog.debug.Logger.Level.CONFIG = new goog.debug.Logger.Level("CONFIG", 700);
+goog.debug.Logger.Level.FINE = new goog.debug.Logger.Level("FINE", 500);
+goog.debug.Logger.Level.FINER = new goog.debug.Logger.Level("FINER", 400);
+goog.debug.Logger.Level.FINEST = new goog.debug.Logger.Level("FINEST", 300);
+goog.debug.Logger.Level.ALL = new goog.debug.Logger.Level("ALL", 0);
+goog.debug.Logger.Level.PREDEFINED_LEVELS = [goog.debug.Logger.Level.OFF, goog.debug.Logger.Level.SHOUT, goog.debug.Logger.Level.SEVERE, goog.debug.Logger.Level.WARNING, goog.debug.Logger.Level.INFO, goog.debug.Logger.Level.CONFIG, goog.debug.Logger.Level.FINE, goog.debug.Logger.Level.FINER, goog.debug.Logger.Level.FINEST, goog.debug.Logger.Level.ALL];
+goog.debug.Logger.Level.predefinedLevelsCache_ = null;
+goog.debug.Logger.Level.createPredefinedLevelsCache_ = function() {
+  goog.debug.Logger.Level.predefinedLevelsCache_ = {};
+  for (var i = 0, level;level = goog.debug.Logger.Level.PREDEFINED_LEVELS[i];i++) {
+    goog.debug.Logger.Level.predefinedLevelsCache_[level.value] = level;
+    goog.debug.Logger.Level.predefinedLevelsCache_[level.name] = level;
+  }
+};
+goog.debug.Logger.Level.getPredefinedLevel = function(name) {
+  if (!goog.debug.Logger.Level.predefinedLevelsCache_) {
+    goog.debug.Logger.Level.createPredefinedLevelsCache_();
+  }
+  return goog.debug.Logger.Level.predefinedLevelsCache_[name] || null;
+};
+goog.debug.Logger.Level.getPredefinedLevelByValue = function(value) {
+  if (!goog.debug.Logger.Level.predefinedLevelsCache_) {
+    goog.debug.Logger.Level.createPredefinedLevelsCache_();
+  }
+  if (value in (goog.debug.Logger.Level.predefinedLevelsCache_)) {
+    return goog.debug.Logger.Level.predefinedLevelsCache_[value];
+  }
+  for (var i = 0;i < goog.debug.Logger.Level.PREDEFINED_LEVELS.length;++i) {
+    var level = goog.debug.Logger.Level.PREDEFINED_LEVELS[i];
+    if (level.value <= value) {
+      return level;
+    }
+  }
+  return null;
+};
+goog.debug.Logger.getLogger = function(name) {
+  return goog.debug.LogManager.getLogger(name);
+};
+goog.debug.Logger.logToProfilers = function(msg) {
+  if (goog.global["console"]) {
+    if (goog.global["console"]["timeStamp"]) {
+      goog.global["console"]["timeStamp"](msg);
+    } else {
+      if (goog.global["console"]["markTimeline"]) {
+        goog.global["console"]["markTimeline"](msg);
+      }
+    }
+  }
+  if (goog.global["msWriteProfilerMark"]) {
+    goog.global["msWriteProfilerMark"](msg);
+  }
+};
+goog.debug.Logger.prototype.getName = function() {
+  return this.name_;
+};
+goog.debug.Logger.prototype.addHandler = function(handler) {
+  if (goog.debug.LOGGING_ENABLED) {
+    if (goog.debug.Logger.ENABLE_HIERARCHY) {
+      if (!this.handlers_) {
+        this.handlers_ = [];
+      }
+      this.handlers_.push(handler);
+    } else {
+      goog.asserts.assert(!this.name_, "Cannot call addHandler on a non-root logger when " + "goog.debug.Logger.ENABLE_HIERARCHY is false.");
+      goog.debug.Logger.rootHandlers_.push(handler);
+    }
+  }
+};
+goog.debug.Logger.prototype.removeHandler = function(handler) {
+  if (goog.debug.LOGGING_ENABLED) {
+    var handlers = goog.debug.Logger.ENABLE_HIERARCHY ? this.handlers_ : goog.debug.Logger.rootHandlers_;
+    return !!handlers && goog.array.remove(handlers, handler);
+  } else {
+    return false;
+  }
+};
+goog.debug.Logger.prototype.getParent = function() {
+  return this.parent_;
+};
+goog.debug.Logger.prototype.getChildren = function() {
+  if (!this.children_) {
+    this.children_ = {};
+  }
+  return this.children_;
+};
+goog.debug.Logger.prototype.setLevel = function(level) {
+  if (goog.debug.LOGGING_ENABLED) {
+    if (goog.debug.Logger.ENABLE_HIERARCHY) {
+      this.level_ = level;
+    } else {
+      goog.asserts.assert(!this.name_, "Cannot call setLevel() on a non-root logger when " + "goog.debug.Logger.ENABLE_HIERARCHY is false.");
+      goog.debug.Logger.rootLevel_ = level;
+    }
+  }
+};
+goog.debug.Logger.prototype.getLevel = function() {
+  return goog.debug.LOGGING_ENABLED ? this.level_ : goog.debug.Logger.Level.OFF;
+};
+goog.debug.Logger.prototype.getEffectiveLevel = function() {
+  if (!goog.debug.LOGGING_ENABLED) {
+    return goog.debug.Logger.Level.OFF;
+  }
+  if (!goog.debug.Logger.ENABLE_HIERARCHY) {
+    return goog.debug.Logger.rootLevel_;
+  }
+  if (this.level_) {
+    return this.level_;
+  }
+  if (this.parent_) {
+    return this.parent_.getEffectiveLevel();
+  }
+  goog.asserts.fail("Root logger has no level set.");
+  return null;
+};
+goog.debug.Logger.prototype.isLoggable = function(level) {
+  return goog.debug.LOGGING_ENABLED && level.value >= this.getEffectiveLevel().value;
+};
+goog.debug.Logger.prototype.log = function(level, msg, opt_exception) {
+  if (goog.debug.LOGGING_ENABLED && this.isLoggable(level)) {
+    if (goog.isFunction(msg)) {
+      msg = msg();
+    }
+    this.doLogRecord_(this.getLogRecord(level, msg, opt_exception));
+  }
+};
+goog.debug.Logger.prototype.getLogRecord = function(level, msg, opt_exception) {
+  if (goog.debug.LogBuffer.isBufferingEnabled()) {
+    var logRecord = goog.debug.LogBuffer.getInstance().addRecord(level, msg, this.name_)
+  } else {
+    logRecord = new goog.debug.LogRecord(level, String(msg), this.name_);
+  }
+  if (opt_exception) {
+    logRecord.setException(opt_exception);
+  }
+  return logRecord;
+};
+goog.debug.Logger.prototype.shout = function(msg, opt_exception) {
+  if (goog.debug.LOGGING_ENABLED) {
+    this.log(goog.debug.Logger.Level.SHOUT, msg, opt_exception);
+  }
+};
+goog.debug.Logger.prototype.severe = function(msg, opt_exception) {
+  if (goog.debug.LOGGING_ENABLED) {
+    this.log(goog.debug.Logger.Level.SEVERE, msg, opt_exception);
+  }
+};
+goog.debug.Logger.prototype.warning = function(msg, opt_exception) {
+  if (goog.debug.LOGGING_ENABLED) {
+    this.log(goog.debug.Logger.Level.WARNING, msg, opt_exception);
+  }
+};
+goog.debug.Logger.prototype.info = function(msg, opt_exception) {
+  if (goog.debug.LOGGING_ENABLED) {
+    this.log(goog.debug.Logger.Level.INFO, msg, opt_exception);
+  }
+};
+goog.debug.Logger.prototype.config = function(msg, opt_exception) {
+  if (goog.debug.LOGGING_ENABLED) {
+    this.log(goog.debug.Logger.Level.CONFIG, msg, opt_exception);
+  }
+};
+goog.debug.Logger.prototype.fine = function(msg, opt_exception) {
+  if (goog.debug.LOGGING_ENABLED) {
+    this.log(goog.debug.Logger.Level.FINE, msg, opt_exception);
+  }
+};
+goog.debug.Logger.prototype.finer = function(msg, opt_exception) {
+  if (goog.debug.LOGGING_ENABLED) {
+    this.log(goog.debug.Logger.Level.FINER, msg, opt_exception);
+  }
+};
+goog.debug.Logger.prototype.finest = function(msg, opt_exception) {
+  if (goog.debug.LOGGING_ENABLED) {
+    this.log(goog.debug.Logger.Level.FINEST, msg, opt_exception);
+  }
+};
+goog.debug.Logger.prototype.logRecord = function(logRecord) {
+  if (goog.debug.LOGGING_ENABLED && this.isLoggable(logRecord.getLevel())) {
+    this.doLogRecord_(logRecord);
+  }
+};
+goog.debug.Logger.prototype.doLogRecord_ = function(logRecord) {
+  goog.debug.Logger.logToProfilers("log:" + logRecord.getMessage());
+  if (goog.debug.Logger.ENABLE_HIERARCHY) {
+    var target = this;
+    while (target) {
+      target.callPublish_(logRecord);
+      target = target.getParent();
+    }
+  } else {
+    for (var i = 0, handler;handler = goog.debug.Logger.rootHandlers_[i++];) {
+      handler(logRecord);
+    }
+  }
+};
+goog.debug.Logger.prototype.callPublish_ = function(logRecord) {
+  if (this.handlers_) {
+    for (var i = 0, handler;handler = this.handlers_[i];i++) {
+      handler(logRecord);
+    }
+  }
+};
+goog.debug.Logger.prototype.setParent_ = function(parent) {
+  this.parent_ = parent;
+};
+goog.debug.Logger.prototype.addChild_ = function(name, logger) {
+  this.getChildren()[name] = logger;
+};
+goog.debug.LogManager = {};
+goog.debug.LogManager.loggers_ = {};
+goog.debug.LogManager.rootLogger_ = null;
+goog.debug.LogManager.initialize = function() {
+  if (!goog.debug.LogManager.rootLogger_) {
+    goog.debug.LogManager.rootLogger_ = new goog.debug.Logger(goog.debug.Logger.ROOT_LOGGER_NAME);
+    goog.debug.LogManager.loggers_[goog.debug.Logger.ROOT_LOGGER_NAME] = goog.debug.LogManager.rootLogger_;
+    goog.debug.LogManager.rootLogger_.setLevel(goog.debug.Logger.Level.CONFIG);
+  }
+};
+goog.debug.LogManager.getLoggers = function() {
+  return goog.debug.LogManager.loggers_;
+};
+goog.debug.LogManager.getRoot = function() {
+  goog.debug.LogManager.initialize();
+  return (goog.debug.LogManager.rootLogger_);
+};
+goog.debug.LogManager.getLogger = function(name) {
+  goog.debug.LogManager.initialize();
+  var ret = goog.debug.LogManager.loggers_[name];
+  return ret || goog.debug.LogManager.createLogger_(name);
+};
+goog.debug.LogManager.createFunctionForCatchErrors = function(opt_logger) {
+  return function(info) {
+    var logger = opt_logger || goog.debug.LogManager.getRoot();
+    logger.severe("Error: " + info.message + " (" + info.fileName + " @ Line: " + info.line + ")");
+  };
+};
+goog.debug.LogManager.createLogger_ = function(name) {
+  var logger = new goog.debug.Logger(name);
+  if (goog.debug.Logger.ENABLE_HIERARCHY) {
+    var lastDotIndex = name.lastIndexOf(".");
+    var parentName = name.substr(0, lastDotIndex);
+    var leafName = name.substr(lastDotIndex + 1);
+    var parentLogger = goog.debug.LogManager.getLogger(parentName);
+    parentLogger.addChild_(leafName, logger);
+    logger.setParent_(parentLogger);
+  }
+  goog.debug.LogManager.loggers_[name] = logger;
+  return logger;
+};
+goog.provide("goog.log");
+goog.provide("goog.log.Level");
+goog.provide("goog.log.LogRecord");
+goog.provide("goog.log.Logger");
+goog.require("goog.debug");
+goog.require("goog.debug.LogManager");
+goog.require("goog.debug.LogRecord");
+goog.require("goog.debug.Logger");
+goog.define("goog.log.ENABLED", goog.debug.LOGGING_ENABLED);
+goog.log.ROOT_LOGGER_NAME = goog.debug.Logger.ROOT_LOGGER_NAME;
+goog.log.Logger = goog.debug.Logger;
+goog.log.Level = goog.debug.Logger.Level;
+goog.log.LogRecord = goog.debug.LogRecord;
+goog.log.getLogger = function(name, opt_level) {
+  if (goog.log.ENABLED) {
+    var logger = goog.debug.LogManager.getLogger(name);
+    if (opt_level && logger) {
+      logger.setLevel(opt_level);
+    }
+    return logger;
+  } else {
+    return null;
+  }
+};
+goog.log.addHandler = function(logger, handler) {
+  if (goog.log.ENABLED && logger) {
+    logger.addHandler(handler);
+  }
+};
+goog.log.removeHandler = function(logger, handler) {
+  if (goog.log.ENABLED && logger) {
+    return logger.removeHandler(handler);
+  } else {
+    return false;
+  }
+};
+goog.log.log = function(logger, level, msg, opt_exception) {
+  if (goog.log.ENABLED && logger) {
+    logger.log(level, msg, opt_exception);
+  }
+};
+goog.log.error = function(logger, msg, opt_exception) {
+  if (goog.log.ENABLED && logger) {
+    logger.severe(msg, opt_exception);
+  }
+};
+goog.log.warning = function(logger, msg, opt_exception) {
+  if (goog.log.ENABLED && logger) {
+    logger.warning(msg, opt_exception);
+  }
+};
+goog.log.info = function(logger, msg, opt_exception) {
+  if (goog.log.ENABLED && logger) {
+    logger.info(msg, opt_exception);
+  }
+};
+goog.log.fine = function(logger, msg, opt_exception) {
+  if (goog.log.ENABLED && logger) {
+    logger.fine(msg, opt_exception);
+  }
+};
+goog.provide("goog.net.XhrLike");
+goog.net.XhrLike = function() {
+};
+goog.net.XhrLike.OrNative;
+goog.net.XhrLike.prototype.onreadystatechange;
+goog.net.XhrLike.prototype.responseText;
+goog.net.XhrLike.prototype.responseXML;
+goog.net.XhrLike.prototype.readyState;
+goog.net.XhrLike.prototype.status;
+goog.net.XhrLike.prototype.statusText;
+goog.net.XhrLike.prototype.open = function(method, url, opt_async, opt_user, opt_password) {
+};
+goog.net.XhrLike.prototype.send = function(opt_data) {
+};
+goog.net.XhrLike.prototype.abort = function() {
+};
+goog.net.XhrLike.prototype.setRequestHeader = function(header, value) {
+};
+goog.net.XhrLike.prototype.getResponseHeader = function(header) {
+};
+goog.net.XhrLike.prototype.getAllResponseHeaders = function() {
+};
+goog.provide("goog.net.XmlHttpFactory");
+goog.require("goog.net.XhrLike");
+goog.net.XmlHttpFactory = function() {
+};
+goog.net.XmlHttpFactory.prototype.cachedOptions_ = null;
+goog.net.XmlHttpFactory.prototype.createInstance = goog.abstractMethod;
+goog.net.XmlHttpFactory.prototype.getOptions = function() {
+  return this.cachedOptions_ || (this.cachedOptions_ = this.internalGetOptions());
+};
+goog.net.XmlHttpFactory.prototype.internalGetOptions = goog.abstractMethod;
+goog.provide("goog.net.WrapperXmlHttpFactory");
+goog.require("goog.net.XhrLike");
+goog.require("goog.net.XmlHttpFactory");
+goog.net.WrapperXmlHttpFactory = function(xhrFactory, optionsFactory) {
+  goog.net.XmlHttpFactory.call(this);
+  this.xhrFactory_ = xhrFactory;
+  this.optionsFactory_ = optionsFactory;
+};
+goog.inherits(goog.net.WrapperXmlHttpFactory, goog.net.XmlHttpFactory);
+goog.net.WrapperXmlHttpFactory.prototype.createInstance = function() {
+  return this.xhrFactory_();
+};
+goog.net.WrapperXmlHttpFactory.prototype.getOptions = function() {
+  return this.optionsFactory_();
+};
+goog.provide("goog.net.DefaultXmlHttpFactory");
+goog.provide("goog.net.XmlHttp");
+goog.provide("goog.net.XmlHttp.OptionType");
+goog.provide("goog.net.XmlHttp.ReadyState");
+goog.provide("goog.net.XmlHttpDefines");
+goog.require("goog.asserts");
+goog.require("goog.net.WrapperXmlHttpFactory");
+goog.require("goog.net.XmlHttpFactory");
+goog.net.XmlHttp = function() {
+  return goog.net.XmlHttp.factory_.createInstance();
+};
+goog.define("goog.net.XmlHttp.ASSUME_NATIVE_XHR", false);
+goog.net.XmlHttpDefines = {};
+goog.define("goog.net.XmlHttpDefines.ASSUME_NATIVE_XHR", false);
+goog.net.XmlHttp.getOptions = function() {
+  return goog.net.XmlHttp.factory_.getOptions();
+};
+goog.net.XmlHttp.OptionType = {USE_NULL_FUNCTION:0, LOCAL_REQUEST_ERROR:1};
+goog.net.XmlHttp.ReadyState = {UNINITIALIZED:0, LOADING:1, LOADED:2, INTERACTIVE:3, COMPLETE:4};
+goog.net.XmlHttp.factory_;
+goog.net.XmlHttp.setFactory = function(factory, optionsFactory) {
+  goog.net.XmlHttp.setGlobalFactory(new goog.net.WrapperXmlHttpFactory(goog.asserts.assert(factory), goog.asserts.assert(optionsFactory)));
+};
+goog.net.XmlHttp.setGlobalFactory = function(factory) {
+  goog.net.XmlHttp.factory_ = factory;
+};
+goog.net.DefaultXmlHttpFactory = function() {
+  goog.net.XmlHttpFactory.call(this);
+};
+goog.inherits(goog.net.DefaultXmlHttpFactory, goog.net.XmlHttpFactory);
+goog.net.DefaultXmlHttpFactory.prototype.createInstance = function() {
+  var progId = this.getProgId_();
+  if (progId) {
+    return new ActiveXObject(progId);
+  } else {
+    return new XMLHttpRequest;
+  }
+};
+goog.net.DefaultXmlHttpFactory.prototype.internalGetOptions = function() {
+  var progId = this.getProgId_();
+  var options = {};
+  if (progId) {
+    options[goog.net.XmlHttp.OptionType.USE_NULL_FUNCTION] = true;
+    options[goog.net.XmlHttp.OptionType.LOCAL_REQUEST_ERROR] = true;
+  }
+  return options;
+};
+goog.net.DefaultXmlHttpFactory.prototype.ieProgId_;
+goog.net.DefaultXmlHttpFactory.prototype.getProgId_ = function() {
+  if (goog.net.XmlHttp.ASSUME_NATIVE_XHR || goog.net.XmlHttpDefines.ASSUME_NATIVE_XHR) {
+    return "";
+  }
+  if (!this.ieProgId_ && typeof XMLHttpRequest == "undefined" && typeof ActiveXObject != "undefined") {
+    var ACTIVE_X_IDENTS = ["MSXML2.XMLHTTP.6.0", "MSXML2.XMLHTTP.3.0", "MSXML2.XMLHTTP", "Microsoft.XMLHTTP"];
+    for (var i = 0;i < ACTIVE_X_IDENTS.length;i++) {
+      var candidate = ACTIVE_X_IDENTS[i];
+      try {
+        new ActiveXObject(candidate);
+        this.ieProgId_ = candidate;
+        return candidate;
+      } catch (e) {
+      }
+    }
+    throw Error("Could not create ActiveXObject. ActiveX might be disabled," + " or MSXML might not be installed");
+  }
+  return (this.ieProgId_);
+};
+goog.net.XmlHttp.setGlobalFactory(new goog.net.DefaultXmlHttpFactory);
+goog.provide("goog.net.EventType");
+goog.net.EventType = {COMPLETE:"complete", SUCCESS:"success", ERROR:"error", ABORT:"abort", READY:"ready", READY_STATE_CHANGE:"readystatechange", TIMEOUT:"timeout", INCREMENTAL_DATA:"incrementaldata", PROGRESS:"progress", DOWNLOAD_PROGRESS:"downloadprogress", UPLOAD_PROGRESS:"uploadprogress"};
+goog.provide("goog.Thenable");
+goog.Thenable = function() {
+};
+goog.Thenable.prototype.then = function(opt_onFulfilled, opt_onRejected, opt_context) {
+};
+goog.Thenable.IMPLEMENTED_BY_PROP = "$goog_Thenable";
+goog.Thenable.addImplementation = function(ctor) {
+  goog.exportProperty(ctor.prototype, "then", ctor.prototype.then);
+  if (COMPILED) {
+    ctor.prototype[goog.Thenable.IMPLEMENTED_BY_PROP] = true;
+  } else {
+    ctor.prototype.$goog_Thenable = true;
+  }
+};
+goog.Thenable.isImplementedBy = function(object) {
+  if (!object) {
+    return false;
+  }
+  try {
+    if (COMPILED) {
+      return !!object[goog.Thenable.IMPLEMENTED_BY_PROP];
+    }
+    return !!object.$goog_Thenable;
+  } catch (e) {
+    return false;
+  }
+};
+goog.provide("goog.async.FreeList");
+goog.async.FreeList = goog.defineClass(null, {constructor:function(create, reset, limit) {
+  this.limit_ = limit;
+  this.create_ = create;
+  this.reset_ = reset;
+  this.occupants_ = 0;
+  this.head_ = null;
+}, get:function() {
+  var item;
+  if (this.occupants_ > 0) {
+    this.occupants_--;
+    item = this.head_;
+    this.head_ = item.next;
+    item.next = null;
+  } else {
+    item = this.create_();
+  }
+  return item;
+}, put:function(item) {
+  this.reset_(item);
+  if (this.occupants_ < this.limit_) {
+    this.occupants_++;
+    item.next = this.head_;
+    this.head_ = item;
+  }
+}, occupants:function() {
+  return this.occupants_;
+}});
+goog.provide("goog.async.WorkItem");
+goog.provide("goog.async.WorkQueue");
+goog.require("goog.asserts");
+goog.require("goog.async.FreeList");
+goog.async.WorkQueue = function() {
+  this.workHead_ = null;
+  this.workTail_ = null;
+};
+goog.define("goog.async.WorkQueue.DEFAULT_MAX_UNUSED", 100);
+goog.async.WorkQueue.freelist_ = new goog.async.FreeList(function() {
+  return new goog.async.WorkItem;
+}, function(item) {
+  item.reset();
+}, goog.async.WorkQueue.DEFAULT_MAX_UNUSED);
+goog.async.WorkQueue.prototype.add = function(fn, scope) {
+  var item = this.getUnusedItem_();
+  item.set(fn, scope);
+  if (this.workTail_) {
+    this.workTail_.next = item;
+    this.workTail_ = item;
+  } else {
+    goog.asserts.assert(!this.workHead_);
+    this.workHead_ = item;
+    this.workTail_ = item;
+  }
+};
+goog.async.WorkQueue.prototype.remove = function() {
+  var item = null;
+  if (this.workHead_) {
+    item = this.workHead_;
+    this.workHead_ = this.workHead_.next;
+    if (!this.workHead_) {
+      this.workTail_ = null;
+    }
+    item.next = null;
+  }
+  return item;
+};
+goog.async.WorkQueue.prototype.returnUnused = function(item) {
+  goog.async.WorkQueue.freelist_.put(item);
+};
+goog.async.WorkQueue.prototype.getUnusedItem_ = function() {
+  return goog.async.WorkQueue.freelist_.get();
+};
+goog.async.WorkItem = function() {
+  this.fn = null;
+  this.scope = null;
+  this.next = null;
+};
+goog.async.WorkItem.prototype.set = function(fn, scope) {
+  this.fn = fn;
+  this.scope = scope;
+  this.next = null;
+};
+goog.async.WorkItem.prototype.reset = function() {
+  this.fn = null;
+  this.scope = null;
+  this.next = null;
+};
+goog.provide("goog.async.nextTick");
+goog.provide("goog.async.throwException");
+goog.require("goog.debug.entryPointRegistry");
+goog.require("goog.dom.TagName");
+goog.require("goog.functions");
+goog.require("goog.labs.userAgent.browser");
+goog.require("goog.labs.userAgent.engine");
+goog.async.throwException = function(exception) {
+  goog.global.setTimeout(function() {
+    throw exception;
+  }, 0);
+};
+goog.async.nextTick = function(callback, opt_context, opt_useSetImmediate) {
+  var cb = callback;
+  if (opt_context) {
+    cb = goog.bind(callback, opt_context);
+  }
+  cb = goog.async.nextTick.wrapCallback_(cb);
+  if (goog.isFunction(goog.global.setImmediate) && (opt_useSetImmediate || goog.async.nextTick.useSetImmediate_())) {
+    goog.global.setImmediate(cb);
+    return;
+  }
+  if (!goog.async.nextTick.setImmediate_) {
+    goog.async.nextTick.setImmediate_ = goog.async.nextTick.getSetImmediateEmulator_();
+  }
+  goog.async.nextTick.setImmediate_(cb);
+};
+goog.async.nextTick.useSetImmediate_ = function() {
+  if (!goog.global.Window || !goog.global.Window.prototype) {
+    return true;
+  }
+  if (goog.labs.userAgent.browser.isEdge() || goog.global.Window.prototype.setImmediate != goog.global.setImmediate) {
+    return true;
+  }
+  return false;
+};
+goog.async.nextTick.setImmediate_;
+goog.async.nextTick.getSetImmediateEmulator_ = function() {
+  var Channel = goog.global["MessageChannel"];
+  if (typeof Channel === "undefined" && typeof window !== "undefined" && window.postMessage && window.addEventListener && !goog.labs.userAgent.engine.isPresto()) {
+    Channel = function() {
+      var iframe = (document.createElement(goog.dom.TagName.IFRAME));
+      iframe.style.display = "none";
+      iframe.src = "";
+      document.documentElement.appendChild(iframe);
+      var win = iframe.contentWindow;
+      var doc = win.document;
+      doc.open();
+      doc.write("");
+      doc.close();
+      var message = "callImmediate" + Math.random();
+      var origin = win.location.protocol == "file:" ? "*" : win.location.protocol + "//" + win.location.host;
+      var onmessage = goog.bind(function(e) {
+        if (origin != "*" && e.origin != origin || e.data != message) {
+          return;
+        }
+        this["port1"].onmessage();
+      }, this);
+      win.addEventListener("message", onmessage, false);
+      this["port1"] = {};
+      this["port2"] = {postMessage:function() {
+        win.postMessage(message, origin);
+      }};
+    };
+  }
+  if (typeof Channel !== "undefined" && !goog.labs.userAgent.browser.isIE()) {
+    var channel = new Channel;
+    var head = {};
+    var tail = head;
+    channel["port1"].onmessage = function() {
+      if (goog.isDef(head.next)) {
+        head = head.next;
+        var cb = head.cb;
+        head.cb = null;
+        cb();
+      }
+    };
+    return function(cb) {
+      tail.next = {cb:cb};
+      tail = tail.next;
+      channel["port2"].postMessage(0);
+    };
+  }
+  if (typeof document !== "undefined" && "onreadystatechange" in document.createElement(goog.dom.TagName.SCRIPT)) {
+    return function(cb) {
+      var script = document.createElement(goog.dom.TagName.SCRIPT);
+      script.onreadystatechange = function() {
+        script.onreadystatechange = null;
+        script.parentNode.removeChild(script);
+        script = null;
+        cb();
+        cb = null;
+      };
+      document.documentElement.appendChild(script);
+    };
+  }
+  return function(cb) {
+    goog.global.setTimeout(cb, 0);
+  };
+};
+goog.async.nextTick.wrapCallback_ = goog.functions.identity;
+goog.debug.entryPointRegistry.register(function(transformer) {
+  goog.async.nextTick.wrapCallback_ = transformer;
+});
+goog.provide("goog.async.run");
+goog.require("goog.async.WorkQueue");
+goog.require("goog.async.nextTick");
+goog.require("goog.async.throwException");
+goog.async.run = function(callback, opt_context) {
+  if (!goog.async.run.schedule_) {
+    goog.async.run.initializeRunner_();
+  }
+  if (!goog.async.run.workQueueScheduled_) {
+    goog.async.run.schedule_();
+    goog.async.run.workQueueScheduled_ = true;
+  }
+  goog.async.run.workQueue_.add(callback, opt_context);
+};
+goog.async.run.initializeRunner_ = function() {
+  if (goog.global.Promise && goog.global.Promise.resolve) {
+    var promise = goog.global.Promise.resolve(undefined);
+    goog.async.run.schedule_ = function() {
+      promise.then(goog.async.run.processWorkQueue);
+    };
+  } else {
+    goog.async.run.schedule_ = function() {
+      goog.async.nextTick(goog.async.run.processWorkQueue);
+    };
+  }
+};
+goog.async.run.forceNextTick = function(opt_realSetTimeout) {
+  goog.async.run.schedule_ = function() {
+    goog.async.nextTick(goog.async.run.processWorkQueue);
+    if (opt_realSetTimeout) {
+      opt_realSetTimeout(goog.async.run.processWorkQueue);
+    }
+  };
+};
+goog.async.run.schedule_;
+goog.async.run.workQueueScheduled_ = false;
+goog.async.run.workQueue_ = new goog.async.WorkQueue;
+if (goog.DEBUG) {
+  goog.async.run.resetQueue = function() {
+    goog.async.run.workQueueScheduled_ = false;
+    goog.async.run.workQueue_ = new goog.async.WorkQueue;
+  };
+}
+goog.async.run.processWorkQueue = function() {
+  var item = null;
+  while (item = goog.async.run.workQueue_.remove()) {
+    try {
+      item.fn.call(item.scope);
+    } catch (e) {
+      goog.async.throwException(e);
+    }
+    goog.async.run.workQueue_.returnUnused(item);
+  }
+  goog.async.run.workQueueScheduled_ = false;
+};
+goog.provide("goog.promise.Resolver");
+goog.promise.Resolver = function() {
+};
+goog.promise.Resolver.prototype.promise;
+goog.promise.Resolver.prototype.resolve;
+goog.promise.Resolver.prototype.reject;
+goog.provide("goog.Promise");
+goog.require("goog.Thenable");
+goog.require("goog.asserts");
+goog.require("goog.async.FreeList");
+goog.require("goog.async.run");
+goog.require("goog.async.throwException");
+goog.require("goog.debug.Error");
+goog.require("goog.promise.Resolver");
+goog.Promise = function(resolver, opt_context) {
+  this.state_ = goog.Promise.State_.PENDING;
+  this.result_ = undefined;
+  this.parent_ = null;
+  this.callbackEntries_ = null;
+  this.callbackEntriesTail_ = null;
+  this.executing_ = false;
+  if (goog.Promise.UNHANDLED_REJECTION_DELAY > 0) {
+    this.unhandledRejectionId_ = 0;
+  } else {
+    if (goog.Promise.UNHANDLED_REJECTION_DELAY == 0) {
+      this.hadUnhandledRejection_ = false;
+    }
+  }
+  if (goog.Promise.LONG_STACK_TRACES) {
+    this.stack_ = [];
+    this.addStackTrace_(new Error("created"));
+    this.currentStep_ = 0;
+  }
+  if (resolver != goog.nullFunction) {
+    try {
+      var self = this;
+      resolver.call(opt_context, function(value) {
+        self.resolve_(goog.Promise.State_.FULFILLED, value);
+      }, function(reason) {
+        if (goog.DEBUG && !(reason instanceof goog.Promise.CancellationError)) {
+          try {
+            if (reason instanceof Error) {
+              throw reason;
+            } else {
+              throw new Error("Promise rejected.");
+            }
+          } catch (e) {
+          }
+        }
+        self.resolve_(goog.Promise.State_.REJECTED, reason);
+      });
+    } catch (e) {
+      this.resolve_(goog.Promise.State_.REJECTED, e);
+    }
+  }
+};
+goog.define("goog.Promise.LONG_STACK_TRACES", false);
+goog.define("goog.Promise.UNHANDLED_REJECTION_DELAY", 0);
+goog.Promise.State_ = {PENDING:0, BLOCKED:1, FULFILLED:2, REJECTED:3};
+goog.Promise.CallbackEntry_ = function() {
+  this.child = null;
+  this.onFulfilled = null;
+  this.onRejected = null;
+  this.context = null;
+  this.next = null;
+  this.always = false;
+};
+goog.Promise.CallbackEntry_.prototype.reset = function() {
+  this.child = null;
+  this.onFulfilled = null;
+  this.onRejected = null;
+  this.context = null;
+  this.always = false;
+};
+goog.define("goog.Promise.DEFAULT_MAX_UNUSED", 100);
+goog.Promise.freelist_ = new goog.async.FreeList(function() {
+  return new goog.Promise.CallbackEntry_;
+}, function(item) {
+  item.reset();
+}, goog.Promise.DEFAULT_MAX_UNUSED);
+goog.Promise.getCallbackEntry_ = function(onFulfilled, onRejected, context) {
+  var entry = goog.Promise.freelist_.get();
+  entry.onFulfilled = onFulfilled;
+  entry.onRejected = onRejected;
+  entry.context = context;
+  return entry;
+};
+goog.Promise.returnEntry_ = function(entry) {
+  goog.Promise.freelist_.put(entry);
+};
+goog.Promise.resolve = function(opt_value) {
+  if (opt_value instanceof goog.Promise) {
+    return opt_value;
+  }
+  var promise = new goog.Promise(goog.nullFunction);
+  promise.resolve_(goog.Promise.State_.FULFILLED, opt_value);
+  return promise;
+};
+goog.Promise.reject = function(opt_reason) {
+  return new goog.Promise(function(resolve, reject) {
+    reject(opt_reason);
+  });
+};
+goog.Promise.resolveThen_ = function(value, onFulfilled, onRejected) {
+  var isThenable = goog.Promise.maybeThen_(value, onFulfilled, onRejected, null);
+  if (!isThenable) {
+    goog.async.run(goog.partial(onFulfilled, value));
+  }
+};
+goog.Promise.race = function(promises) {
+  return new goog.Promise(function(resolve, reject) {
+    if (!promises.length) {
+      resolve(undefined);
+    }
+    for (var i = 0, promise;i < promises.length;i++) {
+      promise = promises[i];
+      goog.Promise.resolveThen_(promise, resolve, reject);
+    }
+  });
+};
+goog.Promise.all = function(promises) {
+  return new goog.Promise(function(resolve, reject) {
+    var toFulfill = promises.length;
+    var values = [];
+    if (!toFulfill) {
+      resolve(values);
+      return;
+    }
+    var onFulfill = function(index, value) {
+      toFulfill--;
+      values[index] = value;
+      if (toFulfill == 0) {
+        resolve(values);
+      }
+    };
+    var onReject = function(reason) {
+      reject(reason);
+    };
+    for (var i = 0, promise;i < promises.length;i++) {
+      promise = promises[i];
+      goog.Promise.resolveThen_(promise, goog.partial(onFulfill, i), onReject);
+    }
+  });
+};
+goog.Promise.allSettled = function(promises) {
+  return new goog.Promise(function(resolve, reject) {
+    var toSettle = promises.length;
+    var results = [];
+    if (!toSettle) {
+      resolve(results);
+      return;
+    }
+    var onSettled = function(index, fulfilled, result) {
+      toSettle--;
+      results[index] = fulfilled ? {fulfilled:true, value:result} : {fulfilled:false, reason:result};
+      if (toSettle == 0) {
+        resolve(results);
+      }
+    };
+    for (var i = 0, promise;i < promises.length;i++) {
+      promise = promises[i];
+      goog.Promise.resolveThen_(promise, goog.partial(onSettled, i, true), goog.partial(onSettled, i, false));
+    }
+  });
+};
+goog.Promise.firstFulfilled = function(promises) {
+  return new goog.Promise(function(resolve, reject) {
+    var toReject = promises.length;
+    var reasons = [];
+    if (!toReject) {
+      resolve(undefined);
+      return;
+    }
+    var onFulfill = function(value) {
+      resolve(value);
+    };
+    var onReject = function(index, reason) {
+      toReject--;
+      reasons[index] = reason;
+      if (toReject == 0) {
+        reject(reasons);
+      }
+    };
+    for (var i = 0, promise;i < promises.length;i++) {
+      promise = promises[i];
+      goog.Promise.resolveThen_(promise, onFulfill, goog.partial(onReject, i));
+    }
+  });
+};
+goog.Promise.withResolver = function() {
+  var resolve, reject;
+  var promise = new goog.Promise(function(rs, rj) {
+    resolve = rs;
+    reject = rj;
+  });
+  return new goog.Promise.Resolver_(promise, resolve, reject);
+};
+goog.Promise.prototype.then = function(opt_onFulfilled, opt_onRejected, opt_context) {
+  if (opt_onFulfilled != null) {
+    goog.asserts.assertFunction(opt_onFulfilled, "opt_onFulfilled should be a function.");
+  }
+  if (opt_onRejected != null) {
+    goog.asserts.assertFunction(opt_onRejected, "opt_onRejected should be a function. Did you pass opt_context " + "as the second argument instead of the third?");
+  }
+  if (goog.Promise.LONG_STACK_TRACES) {
+    this.addStackTrace_(new Error("then"));
+  }
+  return this.addChildPromise_(goog.isFunction(opt_onFulfilled) ? opt_onFulfilled : null, goog.isFunction(opt_onRejected) ? opt_onRejected : null, opt_context);
+};
+goog.Thenable.addImplementation(goog.Promise);
+goog.Promise.prototype.thenVoid = function(opt_onFulfilled, opt_onRejected, opt_context) {
+  if (opt_onFulfilled != null) {
+    goog.asserts.assertFunction(opt_onFulfilled, "opt_onFulfilled should be a function.");
+  }
+  if (opt_onRejected != null) {
+    goog.asserts.assertFunction(opt_onRejected, "opt_onRejected should be a function. Did you pass opt_context " + "as the second argument instead of the third?");
+  }
+  if (goog.Promise.LONG_STACK_TRACES) {
+    this.addStackTrace_(new Error("then"));
+  }
+  this.addCallbackEntry_(goog.Promise.getCallbackEntry_(opt_onFulfilled || goog.nullFunction, opt_onRejected || null, opt_context));
+};
+goog.Promise.prototype.thenAlways = function(onSettled, opt_context) {
+  if (goog.Promise.LONG_STACK_TRACES) {
+    this.addStackTrace_(new Error("thenAlways"));
+  }
+  var entry = goog.Promise.getCallbackEntry_(onSettled, onSettled, opt_context);
+  entry.always = true;
+  this.addCallbackEntry_(entry);
+  return this;
+};
+goog.Promise.prototype.thenCatch = function(onRejected, opt_context) {
+  if (goog.Promise.LONG_STACK_TRACES) {
+    this.addStackTrace_(new Error("thenCatch"));
+  }
+  return this.addChildPromise_(null, onRejected, opt_context);
+};
+goog.Promise.prototype.cancel = function(opt_message) {
+  if (this.state_ == goog.Promise.State_.PENDING) {
+    goog.async.run(function() {
+      var err = new goog.Promise.CancellationError(opt_message);
+      this.cancelInternal_(err);
+    }, this);
+  }
+};
+goog.Promise.prototype.cancelInternal_ = function(err) {
+  if (this.state_ == goog.Promise.State_.PENDING) {
+    if (this.parent_) {
+      this.parent_.cancelChild_(this, err);
+      this.parent_ = null;
+    } else {
+      this.resolve_(goog.Promise.State_.REJECTED, err);
+    }
+  }
+};
+goog.Promise.prototype.cancelChild_ = function(childPromise, err) {
+  if (!this.callbackEntries_) {
+    return;
+  }
+  var childCount = 0;
+  var childEntry = null;
+  var beforeChildEntry = null;
+  for (var entry = this.callbackEntries_;entry;entry = entry.next) {
+    if (!entry.always) {
+      childCount++;
+      if (entry.child == childPromise) {
+        childEntry = entry;
+      }
+      if (childEntry && childCount > 1) {
+        break;
+      }
+    }
+    if (!childEntry) {
+      beforeChildEntry = entry;
+    }
+  }
+  if (childEntry) {
+    if (this.state_ == goog.Promise.State_.PENDING && childCount == 1) {
+      this.cancelInternal_(err);
+    } else {
+      if (beforeChildEntry) {
+        this.removeEntryAfter_(beforeChildEntry);
+      } else {
+        this.popEntry_();
+      }
+      this.executeCallback_(childEntry, goog.Promise.State_.REJECTED, err);
+    }
+  }
+};
+goog.Promise.prototype.addCallbackEntry_ = function(callbackEntry) {
+  if (!this.hasEntry_() && (this.state_ == goog.Promise.State_.FULFILLED || this.state_ == goog.Promise.State_.REJECTED)) {
+    this.scheduleCallbacks_();
+  }
+  this.queueEntry_(callbackEntry);
+};
+goog.Promise.prototype.addChildPromise_ = function(onFulfilled, onRejected, opt_context) {
+  var callbackEntry = goog.Promise.getCallbackEntry_(null, null, null);
+  callbackEntry.child = new goog.Promise(function(resolve, reject) {
+    callbackEntry.onFulfilled = onFulfilled ? function(value) {
+      try {
+        var result = onFulfilled.call(opt_context, value);
+        resolve(result);
+      } catch (err) {
+        reject(err);
+      }
+    } : resolve;
+    callbackEntry.onRejected = onRejected ? function(reason) {
+      try {
+        var result = onRejected.call(opt_context, reason);
+        if (!goog.isDef(result) && reason instanceof goog.Promise.CancellationError) {
+          reject(reason);
+        } else {
+          resolve(result);
+        }
+      } catch (err) {
+        reject(err);
+      }
+    } : reject;
+  });
+  callbackEntry.child.parent_ = this;
+  this.addCallbackEntry_(callbackEntry);
+  return callbackEntry.child;
+};
+goog.Promise.prototype.unblockAndFulfill_ = function(value) {
+  goog.asserts.assert(this.state_ == goog.Promise.State_.BLOCKED);
+  this.state_ = goog.Promise.State_.PENDING;
+  this.resolve_(goog.Promise.State_.FULFILLED, value);
+};
+goog.Promise.prototype.unblockAndReject_ = function(reason) {
+  goog.asserts.assert(this.state_ == goog.Promise.State_.BLOCKED);
+  this.state_ = goog.Promise.State_.PENDING;
+  this.resolve_(goog.Promise.State_.REJECTED, reason);
+};
+goog.Promise.prototype.resolve_ = function(state, x) {
+  if (this.state_ != goog.Promise.State_.PENDING) {
+    return;
+  }
+  if (this == x) {
+    state = goog.Promise.State_.REJECTED;
+    x = new TypeError("Promise cannot resolve to itself");
+  }
+  this.state_ = goog.Promise.State_.BLOCKED;
+  var isThenable = goog.Promise.maybeThen_(x, this.unblockAndFulfill_, this.unblockAndReject_, this);
+  if (isThenable) {
+    return;
+  }
+  this.result_ = x;
+  this.state_ = state;
+  this.parent_ = null;
+  this.scheduleCallbacks_();
+  if (state == goog.Promise.State_.REJECTED && !(x instanceof goog.Promise.CancellationError)) {
+    goog.Promise.addUnhandledRejection_(this, x);
+  }
+};
+goog.Promise.maybeThen_ = function(value, onFulfilled, onRejected, context) {
+  if (value instanceof goog.Promise) {
+    value.thenVoid(onFulfilled, onRejected, context);
+    return true;
+  } else {
+    if (goog.Thenable.isImplementedBy(value)) {
+      value = (value);
+      value.then(onFulfilled, onRejected, context);
+      return true;
+    } else {
+      if (goog.isObject(value)) {
+        try {
+          var then = value["then"];
+          if (goog.isFunction(then)) {
+            goog.Promise.tryThen_(value, then, onFulfilled, onRejected, context);
+            return true;
+          }
+        } catch (e) {
+          onRejected.call(context, e);
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+};
+goog.Promise.tryThen_ = function(thenable, then, onFulfilled, onRejected, context) {
+  var called = false;
+  var resolve = function(value) {
+    if (!called) {
+      called = true;
+      onFulfilled.call(context, value);
+    }
+  };
+  var reject = function(reason) {
+    if (!called) {
+      called = true;
+      onRejected.call(context, reason);
+    }
+  };
+  try {
+    then.call(thenable, resolve, reject);
+  } catch (e) {
+    reject(e);
+  }
+};
+goog.Promise.prototype.scheduleCallbacks_ = function() {
+  if (!this.executing_) {
+    this.executing_ = true;
+    goog.async.run(this.executeCallbacks_, this);
+  }
+};
+goog.Promise.prototype.hasEntry_ = function() {
+  return !!this.callbackEntries_;
+};
+goog.Promise.prototype.queueEntry_ = function(entry) {
+  goog.asserts.assert(entry.onFulfilled != null);
+  if (this.callbackEntriesTail_) {
+    this.callbackEntriesTail_.next = entry;
+    this.callbackEntriesTail_ = entry;
+  } else {
+    this.callbackEntries_ = entry;
+    this.callbackEntriesTail_ = entry;
+  }
+};
+goog.Promise.prototype.popEntry_ = function() {
+  var entry = null;
+  if (this.callbackEntries_) {
+    entry = this.callbackEntries_;
+    this.callbackEntries_ = entry.next;
+    entry.next = null;
+  }
+  if (!this.callbackEntries_) {
+    this.callbackEntriesTail_ = null;
+  }
+  if (entry != null) {
+    goog.asserts.assert(entry.onFulfilled != null);
+  }
+  return entry;
+};
+goog.Promise.prototype.removeEntryAfter_ = function(previous) {
+  goog.asserts.assert(this.callbackEntries_);
+  goog.asserts.assert(previous != null);
+  if (previous.next == this.callbackEntriesTail_) {
+    this.callbackEntriesTail_ = previous;
+  }
+  previous.next = previous.next.next;
+};
+goog.Promise.prototype.executeCallbacks_ = function() {
+  var entry = null;
+  while (entry = this.popEntry_()) {
+    if (goog.Promise.LONG_STACK_TRACES) {
+      this.currentStep_++;
+    }
+    this.executeCallback_(entry, this.state_, this.result_);
+  }
+  this.executing_ = false;
+};
+goog.Promise.prototype.executeCallback_ = function(callbackEntry, state, result) {
+  if (state == goog.Promise.State_.REJECTED && callbackEntry.onRejected && !callbackEntry.always) {
+    this.removeUnhandledRejection_();
+  }
+  if (callbackEntry.child) {
+    callbackEntry.child.parent_ = null;
+    goog.Promise.invokeCallback_(callbackEntry, state, result);
+  } else {
+    try {
+      callbackEntry.always ? callbackEntry.onFulfilled.call(callbackEntry.context) : goog.Promise.invokeCallback_(callbackEntry, state, result);
+    } catch (err) {
+      goog.Promise.handleRejection_.call(null, err);
+    }
+  }
+  goog.Promise.returnEntry_(callbackEntry);
+};
+goog.Promise.invokeCallback_ = function(callbackEntry, state, result) {
+  if (state == goog.Promise.State_.FULFILLED) {
+    callbackEntry.onFulfilled.call(callbackEntry.context, result);
+  } else {
+    if (callbackEntry.onRejected) {
+      callbackEntry.onRejected.call(callbackEntry.context, result);
+    }
+  }
+};
+goog.Promise.prototype.addStackTrace_ = function(err) {
+  if (goog.Promise.LONG_STACK_TRACES && goog.isString(err.stack)) {
+    var trace = err.stack.split("\n", 4)[3];
+    var message = err.message;
+    message += Array(11 - message.length).join(" ");
+    this.stack_.push(message + trace);
+  }
+};
+goog.Promise.prototype.appendLongStack_ = function(err) {
+  if (goog.Promise.LONG_STACK_TRACES && err && goog.isString(err.stack) && this.stack_.length) {
+    var longTrace = ["Promise trace:"];
+    for (var promise = this;promise;promise = promise.parent_) {
+      for (var i = this.currentStep_;i >= 0;i--) {
+        longTrace.push(promise.stack_[i]);
+      }
+      longTrace.push("Value: " + "[" + (promise.state_ == goog.Promise.State_.REJECTED ? "REJECTED" : "FULFILLED") + "] " + "<" + String(promise.result_) + ">");
+    }
+    err.stack += "\n\n" + longTrace.join("\n");
+  }
+};
+goog.Promise.prototype.removeUnhandledRejection_ = function() {
+  if (goog.Promise.UNHANDLED_REJECTION_DELAY > 0) {
+    for (var p = this;p && p.unhandledRejectionId_;p = p.parent_) {
+      goog.global.clearTimeout(p.unhandledRejectionId_);
+      p.unhandledRejectionId_ = 0;
+    }
+  } else {
+    if (goog.Promise.UNHANDLED_REJECTION_DELAY == 0) {
+      for (var p = this;p && p.hadUnhandledRejection_;p = p.parent_) {
+        p.hadUnhandledRejection_ = false;
+      }
+    }
+  }
+};
+goog.Promise.addUnhandledRejection_ = function(promise, reason) {
+  if (goog.Promise.UNHANDLED_REJECTION_DELAY > 0) {
+    promise.unhandledRejectionId_ = goog.global.setTimeout(function() {
+      promise.appendLongStack_(reason);
+      goog.Promise.handleRejection_.call(null, reason);
+    }, goog.Promise.UNHANDLED_REJECTION_DELAY);
+  } else {
+    if (goog.Promise.UNHANDLED_REJECTION_DELAY == 0) {
+      promise.hadUnhandledRejection_ = true;
+      goog.async.run(function() {
+        if (promise.hadUnhandledRejection_) {
+          promise.appendLongStack_(reason);
+          goog.Promise.handleRejection_.call(null, reason);
+        }
+      });
+    }
+  }
+};
+goog.Promise.handleRejection_ = goog.async.throwException;
+goog.Promise.setUnhandledRejectionHandler = function(handler) {
+  goog.Promise.handleRejection_ = handler;
+};
+goog.Promise.CancellationError = function(opt_message) {
+  goog.Promise.CancellationError.base(this, "constructor", opt_message);
+};
+goog.inherits(goog.Promise.CancellationError, goog.debug.Error);
+goog.Promise.CancellationError.prototype.name = "cancel";
+goog.Promise.Resolver_ = function(promise, resolve, reject) {
+  this.promise = promise;
+  this.resolve = resolve;
+  this.reject = reject;
+};
+goog.provide("goog.Timer");
+goog.require("goog.Promise");
+goog.require("goog.events.EventTarget");
+goog.Timer = function(opt_interval, opt_timerObject) {
+  goog.events.EventTarget.call(this);
+  this.interval_ = opt_interval || 1;
+  this.timerObject_ = (opt_timerObject || goog.Timer.defaultTimerObject);
+  this.boundTick_ = goog.bind(this.tick_, this);
+  this.last_ = goog.now();
+};
+goog.inherits(goog.Timer, goog.events.EventTarget);
+goog.Timer.MAX_TIMEOUT_ = 2147483647;
+goog.Timer.INVALID_TIMEOUT_ID_ = -1;
+goog.Timer.prototype.enabled = false;
+goog.Timer.defaultTimerObject = goog.global;
+goog.Timer.intervalScale = .8;
+goog.Timer.prototype.timer_ = null;
+goog.Timer.prototype.getInterval = function() {
+  return this.interval_;
+};
+goog.Timer.prototype.setInterval = function(interval) {
+  this.interval_ = interval;
+  if (this.timer_ && this.enabled) {
+    this.stop();
+    this.start();
+  } else {
+    if (this.timer_) {
+      this.stop();
+    }
+  }
+};
+goog.Timer.prototype.tick_ = function() {
+  if (this.enabled) {
+    var elapsed = goog.now() - this.last_;
+    if (elapsed > 0 && elapsed < this.interval_ * goog.Timer.intervalScale) {
+      this.timer_ = this.timerObject_.setTimeout(this.boundTick_, this.interval_ - elapsed);
+      return;
+    }
+    if (this.timer_) {
+      this.timerObject_.clearTimeout(this.timer_);
+      this.timer_ = null;
+    }
+    this.dispatchTick();
+    if (this.enabled) {
+      this.timer_ = this.timerObject_.setTimeout(this.boundTick_, this.interval_);
+      this.last_ = goog.now();
+    }
+  }
+};
+goog.Timer.prototype.dispatchTick = function() {
+  this.dispatchEvent(goog.Timer.TICK);
+};
+goog.Timer.prototype.start = function() {
+  this.enabled = true;
+  if (!this.timer_) {
+    this.timer_ = this.timerObject_.setTimeout(this.boundTick_, this.interval_);
+    this.last_ = goog.now();
+  }
+};
+goog.Timer.prototype.stop = function() {
+  this.enabled = false;
+  if (this.timer_) {
+    this.timerObject_.clearTimeout(this.timer_);
+    this.timer_ = null;
+  }
+};
+goog.Timer.prototype.disposeInternal = function() {
+  goog.Timer.superClass_.disposeInternal.call(this);
+  this.stop();
+  delete this.timerObject_;
+};
+goog.Timer.TICK = "tick";
+goog.Timer.callOnce = function(listener, opt_delay, opt_handler) {
+  if (goog.isFunction(listener)) {
+    if (opt_handler) {
+      listener = goog.bind(listener, opt_handler);
+    }
+  } else {
+    if (listener && typeof listener.handleEvent == "function") {
+      listener = goog.bind(listener.handleEvent, listener);
+    } else {
+      throw Error("Invalid listener argument");
+    }
+  }
+  if (Number(opt_delay) > goog.Timer.MAX_TIMEOUT_) {
+    return goog.Timer.INVALID_TIMEOUT_ID_;
+  } else {
+    return goog.Timer.defaultTimerObject.setTimeout(listener, opt_delay || 0);
+  }
+};
+goog.Timer.clear = function(timerId) {
+  goog.Timer.defaultTimerObject.clearTimeout(timerId);
+};
+goog.Timer.promise = function(delay, opt_result) {
+  var timerKey = null;
+  return (new goog.Promise(function(resolve, reject) {
+    timerKey = goog.Timer.callOnce(function() {
+      resolve(opt_result);
+    }, delay);
+    if (timerKey == goog.Timer.INVALID_TIMEOUT_ID_) {
+      reject(new Error("Failed to schedule timer."));
+    }
+  })).thenCatch(function(error) {
+    goog.Timer.clear(timerKey);
+    throw error;
+  });
+};
+goog.provide("goog.net.HttpStatus");
+goog.net.HttpStatus = {CONTINUE:100, SWITCHING_PROTOCOLS:101, OK:200, CREATED:201, ACCEPTED:202, NON_AUTHORITATIVE_INFORMATION:203, NO_CONTENT:204, RESET_CONTENT:205, PARTIAL_CONTENT:206, MULTIPLE_CHOICES:300, MOVED_PERMANENTLY:301, FOUND:302, SEE_OTHER:303, NOT_MODIFIED:304, USE_PROXY:305, TEMPORARY_REDIRECT:307, BAD_REQUEST:400, UNAUTHORIZED:401, PAYMENT_REQUIRED:402, FORBIDDEN:403, NOT_FOUND:404, METHOD_NOT_ALLOWED:405, NOT_ACCEPTABLE:406, PROXY_AUTHENTICATION_REQUIRED:407, REQUEST_TIMEOUT:408, 
+CONFLICT:409, GONE:410, LENGTH_REQUIRED:411, PRECONDITION_FAILED:412, REQUEST_ENTITY_TOO_LARGE:413, REQUEST_URI_TOO_LONG:414, UNSUPPORTED_MEDIA_TYPE:415, REQUEST_RANGE_NOT_SATISFIABLE:416, EXPECTATION_FAILED:417, PRECONDITION_REQUIRED:428, TOO_MANY_REQUESTS:429, REQUEST_HEADER_FIELDS_TOO_LARGE:431, INTERNAL_SERVER_ERROR:500, NOT_IMPLEMENTED:501, BAD_GATEWAY:502, SERVICE_UNAVAILABLE:503, GATEWAY_TIMEOUT:504, HTTP_VERSION_NOT_SUPPORTED:505, NETWORK_AUTHENTICATION_REQUIRED:511, QUIRK_IE_NO_CONTENT:1223};
+goog.net.HttpStatus.isSuccess = function(status) {
+  switch(status) {
+    case goog.net.HttpStatus.OK:
+    ;
+    case goog.net.HttpStatus.CREATED:
+    ;
+    case goog.net.HttpStatus.ACCEPTED:
+    ;
+    case goog.net.HttpStatus.NO_CONTENT:
+    ;
+    case goog.net.HttpStatus.PARTIAL_CONTENT:
+    ;
+    case goog.net.HttpStatus.NOT_MODIFIED:
+    ;
+    case goog.net.HttpStatus.QUIRK_IE_NO_CONTENT:
+      return true;
+    default:
+      return false;
+  }
+};
+goog.provide("goog.net.XhrIo");
+goog.provide("goog.net.XhrIo.ResponseType");
+goog.require("goog.Timer");
+goog.require("goog.array");
+goog.require("goog.asserts");
+goog.require("goog.debug.entryPointRegistry");
+goog.require("goog.events.EventTarget");
+goog.require("goog.json");
+goog.require("goog.log");
+goog.require("goog.net.ErrorCode");
+goog.require("goog.net.EventType");
+goog.require("goog.net.HttpStatus");
+goog.require("goog.net.XmlHttp");
+goog.require("goog.object");
+goog.require("goog.string");
+goog.require("goog.structs");
+goog.require("goog.structs.Map");
+goog.require("goog.uri.utils");
+goog.require("goog.userAgent");
+goog.forwardDeclare("goog.Uri");
+goog.net.XhrIo = function(opt_xmlHttpFactory) {
+  goog.net.XhrIo.base(this, "constructor");
+  this.headers = new goog.structs.Map;
+  this.xmlHttpFactory_ = opt_xmlHttpFactory || null;
+  this.active_ = false;
+  this.xhr_ = null;
+  this.xhrOptions_ = null;
+  this.lastUri_ = "";
+  this.lastMethod_ = "";
+  this.lastErrorCode_ = goog.net.ErrorCode.NO_ERROR;
+  this.lastError_ = "";
+  this.errorDispatched_ = false;
+  this.inSend_ = false;
+  this.inOpen_ = false;
+  this.inAbort_ = false;
+  this.timeoutInterval_ = 0;
+  this.timeoutId_ = null;
+  this.responseType_ = goog.net.XhrIo.ResponseType.DEFAULT;
+  this.withCredentials_ = false;
+  this.progressEventsEnabled_ = false;
+  this.useXhr2Timeout_ = false;
+};
+goog.inherits(goog.net.XhrIo, goog.events.EventTarget);
+goog.net.XhrIo.ResponseType = {DEFAULT:"", TEXT:"text", DOCUMENT:"document", BLOB:"blob", ARRAY_BUFFER:"arraybuffer"};
+goog.net.XhrIo.prototype.logger_ = goog.log.getLogger("goog.net.XhrIo");
+goog.net.XhrIo.CONTENT_TYPE_HEADER = "Content-Type";
+goog.net.XhrIo.HTTP_SCHEME_PATTERN = /^https?$/i;
+goog.net.XhrIo.METHODS_WITH_FORM_DATA = ["POST", "PUT"];
+goog.net.XhrIo.FORM_CONTENT_TYPE = "application/x-www-form-urlencoded;charset=utf-8";
+goog.net.XhrIo.XHR2_TIMEOUT_ = "timeout";
+goog.net.XhrIo.XHR2_ON_TIMEOUT_ = "ontimeout";
+goog.net.XhrIo.sendInstances_ = [];
+goog.net.XhrIo.send = function(url, opt_callback, opt_method, opt_content, opt_headers, opt_timeoutInterval, opt_withCredentials) {
+  var x = new goog.net.XhrIo;
+  goog.net.XhrIo.sendInstances_.push(x);
+  if (opt_callback) {
+    x.listen(goog.net.EventType.COMPLETE, opt_callback);
+  }
+  x.listenOnce(goog.net.EventType.READY, x.cleanupSend_);
+  if (opt_timeoutInterval) {
+    x.setTimeoutInterval(opt_timeoutInterval);
+  }
+  if (opt_withCredentials) {
+    x.setWithCredentials(opt_withCredentials);
+  }
+  x.send(url, opt_method, opt_content, opt_headers);
+  return x;
+};
+goog.net.XhrIo.cleanup = function() {
+  var instances = goog.net.XhrIo.sendInstances_;
+  while (instances.length) {
+    instances.pop().dispose();
+  }
+};
+goog.net.XhrIo.protectEntryPoints = function(errorHandler) {
+  goog.net.XhrIo.prototype.onReadyStateChangeEntryPoint_ = errorHandler.protectEntryPoint(goog.net.XhrIo.prototype.onReadyStateChangeEntryPoint_);
+};
+goog.net.XhrIo.prototype.cleanupSend_ = function() {
+  this.dispose();
+  goog.array.remove(goog.net.XhrIo.sendInstances_, this);
+};
+goog.net.XhrIo.prototype.getTimeoutInterval = function() {
+  return this.timeoutInterval_;
+};
+goog.net.XhrIo.prototype.setTimeoutInterval = function(ms) {
+  this.timeoutInterval_ = Math.max(0, ms);
+};
+goog.net.XhrIo.prototype.setResponseType = function(type) {
+  this.responseType_ = type;
+};
+goog.net.XhrIo.prototype.getResponseType = function() {
+  return this.responseType_;
+};
+goog.net.XhrIo.prototype.setWithCredentials = function(withCredentials) {
+  this.withCredentials_ = withCredentials;
+};
+goog.net.XhrIo.prototype.getWithCredentials = function() {
+  return this.withCredentials_;
+};
+goog.net.XhrIo.prototype.setProgressEventsEnabled = function(enabled) {
+  this.progressEventsEnabled_ = enabled;
+};
+goog.net.XhrIo.prototype.getProgressEventsEnabled = function() {
+  return this.progressEventsEnabled_;
+};
+goog.net.XhrIo.prototype.send = function(url, opt_method, opt_content, opt_headers) {
+  if (this.xhr_) {
+    throw Error("[goog.net.XhrIo] Object is active with another request=" + this.lastUri_ + "; newUri=" + url);
+  }
+  var method = opt_method ? opt_method.toUpperCase() : "GET";
+  this.lastUri_ = url;
+  this.lastError_ = "";
+  this.lastErrorCode_ = goog.net.ErrorCode.NO_ERROR;
+  this.lastMethod_ = method;
+  this.errorDispatched_ = false;
+  this.active_ = true;
+  this.xhr_ = this.createXhr();
+  this.xhrOptions_ = this.xmlHttpFactory_ ? this.xmlHttpFactory_.getOptions() : goog.net.XmlHttp.getOptions();
+  this.xhr_.onreadystatechange = goog.bind(this.onReadyStateChange_, this);
+  if (this.getProgressEventsEnabled() && "onprogress" in this.xhr_) {
+    this.xhr_.onprogress = goog.bind(function(e) {
+      this.onProgressHandler_(e, true);
+    }, this);
+    if (this.xhr_.upload) {
+      this.xhr_.upload.onprogress = goog.bind(this.onProgressHandler_, this);
+    }
+  }
+  try {
+    goog.log.fine(this.logger_, this.formatMsg_("Opening Xhr"));
+    this.inOpen_ = true;
+    this.xhr_.open(method, String(url), true);
+    this.inOpen_ = false;
+  } catch (err) {
+    goog.log.fine(this.logger_, this.formatMsg_("Error opening Xhr: " + err.message));
+    this.error_(goog.net.ErrorCode.EXCEPTION, err);
+    return;
+  }
+  var content = opt_content || "";
+  var headers = this.headers.clone();
+  if (opt_headers) {
+    goog.structs.forEach(opt_headers, function(value, key) {
+      headers.set(key, value);
+    });
+  }
+  var contentTypeKey = goog.array.find(headers.getKeys(), goog.net.XhrIo.isContentTypeHeader_);
+  var contentIsFormData = goog.global["FormData"] && content instanceof goog.global["FormData"];
+  if (goog.array.contains(goog.net.XhrIo.METHODS_WITH_FORM_DATA, method) && !contentTypeKey && !contentIsFormData) {
+    headers.set(goog.net.XhrIo.CONTENT_TYPE_HEADER, goog.net.XhrIo.FORM_CONTENT_TYPE);
+  }
+  headers.forEach(function(value, key) {
+    this.xhr_.setRequestHeader(key, value);
+  }, this);
+  if (this.responseType_) {
+    this.xhr_.responseType = this.responseType_;
+  }
+  if (goog.object.containsKey(this.xhr_, "withCredentials")) {
+    this.xhr_.withCredentials = this.withCredentials_;
+  }
+  try {
+    this.cleanUpTimeoutTimer_();
+    if (this.timeoutInterval_ > 0) {
+      this.useXhr2Timeout_ = goog.net.XhrIo.shouldUseXhr2Timeout_(this.xhr_);
+      goog.log.fine(this.logger_, this.formatMsg_("Will abort after " + this.timeoutInterval_ + "ms if incomplete, xhr2 " + this.useXhr2Timeout_));
+      if (this.useXhr2Timeout_) {
+        this.xhr_[goog.net.XhrIo.XHR2_TIMEOUT_] = this.timeoutInterval_;
+        this.xhr_[goog.net.XhrIo.XHR2_ON_TIMEOUT_] = goog.bind(this.timeout_, this);
+      } else {
+        this.timeoutId_ = goog.Timer.callOnce(this.timeout_, this.timeoutInterval_, this);
+      }
+    }
+    goog.log.fine(this.logger_, this.formatMsg_("Sending request"));
+    this.inSend_ = true;
+    this.xhr_.send(content);
+    this.inSend_ = false;
+  } catch (err$2) {
+    goog.log.fine(this.logger_, this.formatMsg_("Send error: " + err$2.message));
+    this.error_(goog.net.ErrorCode.EXCEPTION, err$2);
+  }
+};
+goog.net.XhrIo.shouldUseXhr2Timeout_ = function(xhr) {
+  return goog.userAgent.IE && goog.userAgent.isVersionOrHigher(9) && goog.isNumber(xhr[goog.net.XhrIo.XHR2_TIMEOUT_]) && goog.isDef(xhr[goog.net.XhrIo.XHR2_ON_TIMEOUT_]);
+};
+goog.net.XhrIo.isContentTypeHeader_ = function(header) {
+  return goog.string.caseInsensitiveEquals(goog.net.XhrIo.CONTENT_TYPE_HEADER, header);
+};
+goog.net.XhrIo.prototype.createXhr = function() {
+  return this.xmlHttpFactory_ ? this.xmlHttpFactory_.createInstance() : goog.net.XmlHttp();
+};
+goog.net.XhrIo.prototype.timeout_ = function() {
+  if (typeof goog == "undefined") {
+  } else {
+    if (this.xhr_) {
+      this.lastError_ = "Timed out after " + this.timeoutInterval_ + "ms, aborting";
+      this.lastErrorCode_ = goog.net.ErrorCode.TIMEOUT;
+      goog.log.fine(this.logger_, this.formatMsg_(this.lastError_));
+      this.dispatchEvent(goog.net.EventType.TIMEOUT);
+      this.abort(goog.net.ErrorCode.TIMEOUT);
+    }
+  }
+};
+goog.net.XhrIo.prototype.error_ = function(errorCode, err) {
+  this.active_ = false;
+  if (this.xhr_) {
+    this.inAbort_ = true;
+    this.xhr_.abort();
+    this.inAbort_ = false;
+  }
+  this.lastError_ = err;
+  this.lastErrorCode_ = errorCode;
+  this.dispatchErrors_();
+  this.cleanUpXhr_();
+};
+goog.net.XhrIo.prototype.dispatchErrors_ = function() {
+  if (!this.errorDispatched_) {
+    this.errorDispatched_ = true;
+    this.dispatchEvent(goog.net.EventType.COMPLETE);
+    this.dispatchEvent(goog.net.EventType.ERROR);
+  }
+};
+goog.net.XhrIo.prototype.abort = function(opt_failureCode) {
+  if (this.xhr_ && this.active_) {
+    goog.log.fine(this.logger_, this.formatMsg_("Aborting"));
+    this.active_ = false;
+    this.inAbort_ = true;
+    this.xhr_.abort();
+    this.inAbort_ = false;
+    this.lastErrorCode_ = opt_failureCode || goog.net.ErrorCode.ABORT;
+    this.dispatchEvent(goog.net.EventType.COMPLETE);
+    this.dispatchEvent(goog.net.EventType.ABORT);
+    this.cleanUpXhr_();
+  }
+};
+goog.net.XhrIo.prototype.disposeInternal = function() {
+  if (this.xhr_) {
+    if (this.active_) {
+      this.active_ = false;
+      this.inAbort_ = true;
+      this.xhr_.abort();
+      this.inAbort_ = false;
+    }
+    this.cleanUpXhr_(true);
+  }
+  goog.net.XhrIo.base(this, "disposeInternal");
+};
+goog.net.XhrIo.prototype.onReadyStateChange_ = function() {
+  if (this.isDisposed()) {
+    return;
+  }
+  if (!this.inOpen_ && !this.inSend_ && !this.inAbort_) {
+    this.onReadyStateChangeEntryPoint_();
+  } else {
+    this.onReadyStateChangeHelper_();
+  }
+};
+goog.net.XhrIo.prototype.onReadyStateChangeEntryPoint_ = function() {
+  this.onReadyStateChangeHelper_();
+};
+goog.net.XhrIo.prototype.onReadyStateChangeHelper_ = function() {
+  if (!this.active_) {
+    return;
+  }
+  if (typeof goog == "undefined") {
+  } else {
+    if (this.xhrOptions_[goog.net.XmlHttp.OptionType.LOCAL_REQUEST_ERROR] && this.getReadyState() == goog.net.XmlHttp.ReadyState.COMPLETE && this.getStatus() == 2) {
+      goog.log.fine(this.logger_, this.formatMsg_("Local request error detected and ignored"));
+    } else {
+      if (this.inSend_ && this.getReadyState() == goog.net.XmlHttp.ReadyState.COMPLETE) {
+        goog.Timer.callOnce(this.onReadyStateChange_, 0, this);
+        return;
+      }
+      this.dispatchEvent(goog.net.EventType.READY_STATE_CHANGE);
+      if (this.isComplete()) {
+        goog.log.fine(this.logger_, this.formatMsg_("Request complete"));
+        this.active_ = false;
+        try {
+          if (this.isSuccess()) {
+            this.dispatchEvent(goog.net.EventType.COMPLETE);
+            this.dispatchEvent(goog.net.EventType.SUCCESS);
+          } else {
+            this.lastErrorCode_ = goog.net.ErrorCode.HTTP_ERROR;
+            this.lastError_ = this.getStatusText() + " [" + this.getStatus() + "]";
+            this.dispatchErrors_();
+          }
+        } finally {
+          this.cleanUpXhr_();
+        }
+      }
+    }
+  }
+};
+goog.net.XhrIo.prototype.onProgressHandler_ = function(e, opt_isDownload) {
+  goog.asserts.assert(e.type === goog.net.EventType.PROGRESS, "goog.net.EventType.PROGRESS is of the same type as raw XHR progress.");
+  this.dispatchEvent(goog.net.XhrIo.buildProgressEvent_(e, goog.net.EventType.PROGRESS));
+  this.dispatchEvent(goog.net.XhrIo.buildProgressEvent_(e, opt_isDownload ? goog.net.EventType.DOWNLOAD_PROGRESS : goog.net.EventType.UPLOAD_PROGRESS));
+};
+goog.net.XhrIo.buildProgressEvent_ = function(e, eventType) {
+  return ({type:eventType, lengthComputable:e.lengthComputable, loaded:e.loaded, total:e.total});
+};
+goog.net.XhrIo.prototype.cleanUpXhr_ = function(opt_fromDispose) {
+  if (this.xhr_) {
+    this.cleanUpTimeoutTimer_();
+    var xhr = this.xhr_;
+    var clearedOnReadyStateChange = this.xhrOptions_[goog.net.XmlHttp.OptionType.USE_NULL_FUNCTION] ? goog.nullFunction : null;
+    this.xhr_ = null;
+    this.xhrOptions_ = null;
+    if (!opt_fromDispose) {
+      this.dispatchEvent(goog.net.EventType.READY);
+    }
+    try {
+      xhr.onreadystatechange = clearedOnReadyStateChange;
+    } catch (e) {
+      goog.log.error(this.logger_, "Problem encountered resetting onreadystatechange: " + e.message);
+    }
+  }
+};
+goog.net.XhrIo.prototype.cleanUpTimeoutTimer_ = function() {
+  if (this.xhr_ && this.useXhr2Timeout_) {
+    this.xhr_[goog.net.XhrIo.XHR2_ON_TIMEOUT_] = null;
+  }
+  if (goog.isNumber(this.timeoutId_)) {
+    goog.Timer.clear(this.timeoutId_);
+    this.timeoutId_ = null;
+  }
+};
+goog.net.XhrIo.prototype.isActive = function() {
+  return !!this.xhr_;
+};
+goog.net.XhrIo.prototype.isComplete = function() {
+  return this.getReadyState() == goog.net.XmlHttp.ReadyState.COMPLETE;
+};
+goog.net.XhrIo.prototype.isSuccess = function() {
+  var status = this.getStatus();
+  return goog.net.HttpStatus.isSuccess(status) || status === 0 && !this.isLastUriEffectiveSchemeHttp_();
+};
+goog.net.XhrIo.prototype.isLastUriEffectiveSchemeHttp_ = function() {
+  var scheme = goog.uri.utils.getEffectiveScheme(String(this.lastUri_));
+  return goog.net.XhrIo.HTTP_SCHEME_PATTERN.test(scheme);
+};
+goog.net.XhrIo.prototype.getReadyState = function() {
+  return this.xhr_ ? (this.xhr_.readyState) : goog.net.XmlHttp.ReadyState.UNINITIALIZED;
+};
+goog.net.XhrIo.prototype.getStatus = function() {
+  try {
+    return this.getReadyState() > goog.net.XmlHttp.ReadyState.LOADED ? this.xhr_.status : -1;
+  } catch (e) {
+    return -1;
+  }
+};
+goog.net.XhrIo.prototype.getStatusText = function() {
+  try {
+    return this.getReadyState() > goog.net.XmlHttp.ReadyState.LOADED ? this.xhr_.statusText : "";
+  } catch (e) {
+    goog.log.fine(this.logger_, "Can not get status: " + e.message);
+    return "";
+  }
+};
+goog.net.XhrIo.prototype.getLastUri = function() {
+  return String(this.lastUri_);
+};
+goog.net.XhrIo.prototype.getResponseText = function() {
+  try {
+    return this.xhr_ ? this.xhr_.responseText : "";
+  } catch (e) {
+    goog.log.fine(this.logger_, "Can not get responseText: " + e.message);
+    return "";
+  }
+};
+goog.net.XhrIo.prototype.getResponseBody = function() {
+  try {
+    if (this.xhr_ && "responseBody" in this.xhr_) {
+      return this.xhr_["responseBody"];
+    }
+  } catch (e) {
+    goog.log.fine(this.logger_, "Can not get responseBody: " + e.message);
+  }
+  return null;
+};
+goog.net.XhrIo.prototype.getResponseXml = function() {
+  try {
+    return this.xhr_ ? this.xhr_.responseXML : null;
+  } catch (e) {
+    goog.log.fine(this.logger_, "Can not get responseXML: " + e.message);
+    return null;
+  }
+};
+goog.net.XhrIo.prototype.getResponseJson = function(opt_xssiPrefix) {
+  if (!this.xhr_) {
+    return undefined;
+  }
+  var responseText = this.xhr_.responseText;
+  if (opt_xssiPrefix && responseText.indexOf(opt_xssiPrefix) == 0) {
+    responseText = responseText.substring(opt_xssiPrefix.length);
+  }
+  return goog.json.parse(responseText);
+};
+goog.net.XhrIo.prototype.getResponse = function() {
+  try {
+    if (!this.xhr_) {
+      return null;
+    }
+    if ("response" in this.xhr_) {
+      return this.xhr_.response;
+    }
+    switch(this.responseType_) {
+      case goog.net.XhrIo.ResponseType.DEFAULT:
+      ;
+      case goog.net.XhrIo.ResponseType.TEXT:
+        return this.xhr_.responseText;
+      case goog.net.XhrIo.ResponseType.ARRAY_BUFFER:
+        if ("mozResponseArrayBuffer" in this.xhr_) {
+          return this.xhr_.mozResponseArrayBuffer;
+        }
+      ;
+    }
+    goog.log.error(this.logger_, "Response type " + this.responseType_ + " is not " + "supported on this browser");
+    return null;
+  } catch (e) {
+    goog.log.fine(this.logger_, "Can not get response: " + e.message);
+    return null;
+  }
+};
+goog.net.XhrIo.prototype.getResponseHeader = function(key) {
+  return this.xhr_ && this.isComplete() ? this.xhr_.getResponseHeader(key) : undefined;
+};
+goog.net.XhrIo.prototype.getAllResponseHeaders = function() {
+  return this.xhr_ && this.isComplete() ? this.xhr_.getAllResponseHeaders() : "";
+};
+goog.net.XhrIo.prototype.getResponseHeaders = function() {
+  var headersObject = {};
+  var headersArray = this.getAllResponseHeaders().split("\r\n");
+  for (var i = 0;i < headersArray.length;i++) {
+    if (goog.string.isEmptyOrWhitespace(headersArray[i])) {
+      continue;
+    }
+    var keyValue = goog.string.splitLimit(headersArray[i], ": ", 2);
+    if (headersObject[keyValue[0]]) {
+      headersObject[keyValue[0]] += ", " + keyValue[1];
+    } else {
+      headersObject[keyValue[0]] = keyValue[1];
+    }
+  }
+  return headersObject;
+};
+goog.net.XhrIo.prototype.getLastErrorCode = function() {
+  return this.lastErrorCode_;
+};
+goog.net.XhrIo.prototype.getLastError = function() {
+  return goog.isString(this.lastError_) ? this.lastError_ : String(this.lastError_);
+};
+goog.net.XhrIo.prototype.formatMsg_ = function(msg) {
+  return msg + " [" + this.lastMethod_ + " " + this.lastUri_ + " " + this.getStatus() + "]";
+};
+goog.debug.entryPointRegistry.register(function(transformer) {
+  goog.net.XhrIo.prototype.onReadyStateChangeEntryPoint_ = transformer(goog.net.XhrIo.prototype.onReadyStateChangeEntryPoint_);
+});
 goog.provide("acgraph.vector.Ellipse");
 goog.require("acgraph.math.Coordinate");
 goog.require("acgraph.math.Rect");
@@ -12794,13 +17060,14 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
   var line = (goog.array.peek(this.textLines_));
   var peekSegment = (goog.array.peek(line));
   var ellipsisBounds = this.getTextBounds(this.ellipsis_, peekSegment.getStyle());
+  var ellipsis = this.ellipsis_;
   if (ellipsisBounds.width > this.width_) {
     cutPos = this.cutTextSegment_(this.ellipsis_, peekSegment.getStyle(), 0, this.width_, ellipsisBounds);
-    this.ellipsis_ = this.ellipsis_.substring(0, cutPos);
+    ellipsis = this.ellipsis_.substring(0, cutPos);
   }
   var left = this.prevLineWidth_;
   var right = this.width_;
-  if (this.ellipsis_ == "") {
+  if (ellipsis == "") {
     index = goog.array.indexOf(this.segments_, peekSegment) + 1;
     goog.array.splice(this.segments_, index, this.segments_.length - index);
   } else {
@@ -12808,7 +17075,7 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
       this.currentLine_ = line;
       index = goog.array.indexOf(this.segments_, peekSegment) + 1;
       goog.array.splice(this.segments_, index, this.segments_.length - index);
-      textSegmentEllipsis = this.createSegment_(this.ellipsis_, peekSegment.getStyle(), ellipsisBounds);
+      textSegmentEllipsis = this.createSegment_(ellipsis, peekSegment.getStyle(), ellipsisBounds);
       if (this.currentLine_.length == 2 && this.currentLine_[0].text == "") {
         textSegmentEllipsis.dy = this.accumulatedHeight_ - this.currentLine_[0].height;
         textSegmentEllipsis.firstInLine = true;
@@ -12818,7 +17085,7 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
       var segmentBounds;
       while (!segment && i >= 0) {
         peekSegment = line[i];
-        ellipsisBounds = this.getTextBounds(this.ellipsis_, peekSegment.getStyle());
+        ellipsisBounds = this.getTextBounds(ellipsis, peekSegment.getStyle());
         segmentBounds = this.getTextBounds(peekSegment.text, peekSegment.getStyle());
         if (left - segmentBounds.width + ellipsisBounds.width <= this.width_) {
           segment = peekSegment;
@@ -12853,10 +17120,10 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
         lastSegmentInline.y = segment.y;
         if (segment_bounds.width + ellipsisBounds.width > this.width_) {
           cutPos = this.cutTextSegment_(this.ellipsis_, peekSegment.getStyle(), segment_bounds.width, this.width_, ellipsisBounds);
-          this.ellipsis_ = this.ellipsis_.substring(0, cutPos);
+          ellipsis = this.ellipsis_.substring(0, cutPos);
         }
         if (cutPos > 0) {
-          textSegmentEllipsis = this.createSegment_(this.ellipsis_, segment.getStyle(), ellipsisBounds);
+          textSegmentEllipsis = this.createSegment_(ellipsis, segment.getStyle(), ellipsisBounds);
           textSegmentEllipsis.x = lastSegmentInline.x + segment_bounds.width;
           textSegmentEllipsis.y = lastSegmentInline.y;
         }
@@ -13270,1105 +17537,6 @@ acgraph.events.BrowserEvent.prototype.getOriginalEvent = function() {
 acgraph.events.BrowserEvent.prototype["stopPropagation"] = acgraph.events.BrowserEvent.prototype.stopPropagation;
 acgraph.events.BrowserEvent.prototype["stopWrapperPropagation"] = acgraph.events.BrowserEvent.prototype.stopWrapperPropagation;
 acgraph.events.BrowserEvent.prototype["preventDefault"] = acgraph.events.BrowserEvent.prototype.preventDefault;
-goog.provide("goog.Thenable");
-goog.Thenable = function() {
-};
-goog.Thenable.prototype.then = function(opt_onFulfilled, opt_onRejected, opt_context) {
-};
-goog.Thenable.IMPLEMENTED_BY_PROP = "$goog_Thenable";
-goog.Thenable.addImplementation = function(ctor) {
-  goog.exportProperty(ctor.prototype, "then", ctor.prototype.then);
-  if (COMPILED) {
-    ctor.prototype[goog.Thenable.IMPLEMENTED_BY_PROP] = true;
-  } else {
-    ctor.prototype.$goog_Thenable = true;
-  }
-};
-goog.Thenable.isImplementedBy = function(object) {
-  if (!object) {
-    return false;
-  }
-  try {
-    if (COMPILED) {
-      return !!object[goog.Thenable.IMPLEMENTED_BY_PROP];
-    }
-    return !!object.$goog_Thenable;
-  } catch (e) {
-    return false;
-  }
-};
-goog.provide("goog.async.FreeList");
-goog.async.FreeList = goog.defineClass(null, {constructor:function(create, reset, limit) {
-  this.limit_ = limit;
-  this.create_ = create;
-  this.reset_ = reset;
-  this.occupants_ = 0;
-  this.head_ = null;
-}, get:function() {
-  var item;
-  if (this.occupants_ > 0) {
-    this.occupants_--;
-    item = this.head_;
-    this.head_ = item.next;
-    item.next = null;
-  } else {
-    item = this.create_();
-  }
-  return item;
-}, put:function(item) {
-  this.reset_(item);
-  if (this.occupants_ < this.limit_) {
-    this.occupants_++;
-    item.next = this.head_;
-    this.head_ = item;
-  }
-}, occupants:function() {
-  return this.occupants_;
-}});
-goog.provide("goog.async.WorkItem");
-goog.provide("goog.async.WorkQueue");
-goog.require("goog.asserts");
-goog.require("goog.async.FreeList");
-goog.async.WorkQueue = function() {
-  this.workHead_ = null;
-  this.workTail_ = null;
-};
-goog.define("goog.async.WorkQueue.DEFAULT_MAX_UNUSED", 100);
-goog.async.WorkQueue.freelist_ = new goog.async.FreeList(function() {
-  return new goog.async.WorkItem;
-}, function(item) {
-  item.reset();
-}, goog.async.WorkQueue.DEFAULT_MAX_UNUSED);
-goog.async.WorkQueue.prototype.add = function(fn, scope) {
-  var item = this.getUnusedItem_();
-  item.set(fn, scope);
-  if (this.workTail_) {
-    this.workTail_.next = item;
-    this.workTail_ = item;
-  } else {
-    goog.asserts.assert(!this.workHead_);
-    this.workHead_ = item;
-    this.workTail_ = item;
-  }
-};
-goog.async.WorkQueue.prototype.remove = function() {
-  var item = null;
-  if (this.workHead_) {
-    item = this.workHead_;
-    this.workHead_ = this.workHead_.next;
-    if (!this.workHead_) {
-      this.workTail_ = null;
-    }
-    item.next = null;
-  }
-  return item;
-};
-goog.async.WorkQueue.prototype.returnUnused = function(item) {
-  goog.async.WorkQueue.freelist_.put(item);
-};
-goog.async.WorkQueue.prototype.getUnusedItem_ = function() {
-  return goog.async.WorkQueue.freelist_.get();
-};
-goog.async.WorkItem = function() {
-  this.fn = null;
-  this.scope = null;
-  this.next = null;
-};
-goog.async.WorkItem.prototype.set = function(fn, scope) {
-  this.fn = fn;
-  this.scope = scope;
-  this.next = null;
-};
-goog.async.WorkItem.prototype.reset = function() {
-  this.fn = null;
-  this.scope = null;
-  this.next = null;
-};
-goog.provide("goog.functions");
-goog.functions.constant = function(retValue) {
-  return function() {
-    return retValue;
-  };
-};
-goog.functions.FALSE = goog.functions.constant(false);
-goog.functions.TRUE = goog.functions.constant(true);
-goog.functions.NULL = goog.functions.constant(null);
-goog.functions.identity = function(opt_returnValue, var_args) {
-  return opt_returnValue;
-};
-goog.functions.error = function(message) {
-  return function() {
-    throw Error(message);
-  };
-};
-goog.functions.fail = function(err) {
-  return function() {
-    throw err;
-  };
-};
-goog.functions.lock = function(f, opt_numArgs) {
-  opt_numArgs = opt_numArgs || 0;
-  return function() {
-    return f.apply(this, Array.prototype.slice.call(arguments, 0, opt_numArgs));
-  };
-};
-goog.functions.nth = function(n) {
-  return function() {
-    return arguments[n];
-  };
-};
-goog.functions.partialRight = function(fn, var_args) {
-  var rightArgs = Array.prototype.slice.call(arguments, 1);
-  return function() {
-    var newArgs = Array.prototype.slice.call(arguments);
-    newArgs.push.apply(newArgs, rightArgs);
-    return fn.apply(this, newArgs);
-  };
-};
-goog.functions.withReturnValue = function(f, retValue) {
-  return goog.functions.sequence(f, goog.functions.constant(retValue));
-};
-goog.functions.equalTo = function(value, opt_useLooseComparison) {
-  return function(other) {
-    return opt_useLooseComparison ? value == other : value === other;
-  };
-};
-goog.functions.compose = function(fn, var_args) {
-  var functions = arguments;
-  var length = functions.length;
-  return function() {
-    var result;
-    if (length) {
-      result = functions[length - 1].apply(this, arguments);
-    }
-    for (var i = length - 2;i >= 0;i--) {
-      result = functions[i].call(this, result);
-    }
-    return result;
-  };
-};
-goog.functions.sequence = function(var_args) {
-  var functions = arguments;
-  var length = functions.length;
-  return function() {
-    var result;
-    for (var i = 0;i < length;i++) {
-      result = functions[i].apply(this, arguments);
-    }
-    return result;
-  };
-};
-goog.functions.and = function(var_args) {
-  var functions = arguments;
-  var length = functions.length;
-  return function() {
-    for (var i = 0;i < length;i++) {
-      if (!functions[i].apply(this, arguments)) {
-        return false;
-      }
-    }
-    return true;
-  };
-};
-goog.functions.or = function(var_args) {
-  var functions = arguments;
-  var length = functions.length;
-  return function() {
-    for (var i = 0;i < length;i++) {
-      if (functions[i].apply(this, arguments)) {
-        return true;
-      }
-    }
-    return false;
-  };
-};
-goog.functions.not = function(f) {
-  return function() {
-    return !f.apply(this, arguments);
-  };
-};
-goog.functions.create = function(constructor, var_args) {
-  var temp = function() {
-  };
-  temp.prototype = constructor.prototype;
-  var obj = new temp;
-  constructor.apply(obj, Array.prototype.slice.call(arguments, 1));
-  return obj;
-};
-goog.define("goog.functions.CACHE_RETURN_VALUE", true);
-goog.functions.cacheReturnValue = function(fn) {
-  var called = false;
-  var value;
-  return function() {
-    if (!goog.functions.CACHE_RETURN_VALUE) {
-      return fn();
-    }
-    if (!called) {
-      value = fn();
-      called = true;
-    }
-    return value;
-  };
-};
-goog.functions.once = function(f) {
-  var inner = f;
-  return function() {
-    if (inner) {
-      var tmp = inner;
-      inner = null;
-      tmp();
-    }
-  };
-};
-goog.functions.debounce = function(f, interval, opt_scope) {
-  if (opt_scope) {
-    f = goog.bind(f, opt_scope);
-  }
-  var timeout = null;
-  return (function(var_args) {
-    goog.global.clearTimeout(timeout);
-    var args = arguments;
-    timeout = goog.global.setTimeout(function() {
-      f.apply(null, args);
-    }, interval);
-  });
-};
-goog.functions.throttle = function(f, interval, opt_scope) {
-  if (opt_scope) {
-    f = goog.bind(f, opt_scope);
-  }
-  var timeout = null;
-  var shouldFire = false;
-  var args = [];
-  var handleTimeout = function() {
-    timeout = null;
-    if (shouldFire) {
-      shouldFire = false;
-      fire();
-    }
-  };
-  var fire = function() {
-    timeout = goog.global.setTimeout(handleTimeout, interval);
-    f.apply(null, args);
-  };
-  return (function(var_args) {
-    args = arguments;
-    if (!timeout) {
-      fire();
-    } else {
-      shouldFire = true;
-    }
-  });
-};
-goog.provide("goog.async.nextTick");
-goog.provide("goog.async.throwException");
-goog.require("goog.debug.entryPointRegistry");
-goog.require("goog.dom.TagName");
-goog.require("goog.functions");
-goog.require("goog.labs.userAgent.browser");
-goog.require("goog.labs.userAgent.engine");
-goog.async.throwException = function(exception) {
-  goog.global.setTimeout(function() {
-    throw exception;
-  }, 0);
-};
-goog.async.nextTick = function(callback, opt_context, opt_useSetImmediate) {
-  var cb = callback;
-  if (opt_context) {
-    cb = goog.bind(callback, opt_context);
-  }
-  cb = goog.async.nextTick.wrapCallback_(cb);
-  if (goog.isFunction(goog.global.setImmediate) && (opt_useSetImmediate || goog.async.nextTick.useSetImmediate_())) {
-    goog.global.setImmediate(cb);
-    return;
-  }
-  if (!goog.async.nextTick.setImmediate_) {
-    goog.async.nextTick.setImmediate_ = goog.async.nextTick.getSetImmediateEmulator_();
-  }
-  goog.async.nextTick.setImmediate_(cb);
-};
-goog.async.nextTick.useSetImmediate_ = function() {
-  if (!goog.global.Window || !goog.global.Window.prototype) {
-    return true;
-  }
-  if (goog.labs.userAgent.browser.isEdge() || goog.global.Window.prototype.setImmediate != goog.global.setImmediate) {
-    return true;
-  }
-  return false;
-};
-goog.async.nextTick.setImmediate_;
-goog.async.nextTick.getSetImmediateEmulator_ = function() {
-  var Channel = goog.global["MessageChannel"];
-  if (typeof Channel === "undefined" && typeof window !== "undefined" && window.postMessage && window.addEventListener && !goog.labs.userAgent.engine.isPresto()) {
-    Channel = function() {
-      var iframe = (document.createElement(goog.dom.TagName.IFRAME));
-      iframe.style.display = "none";
-      iframe.src = "";
-      document.documentElement.appendChild(iframe);
-      var win = iframe.contentWindow;
-      var doc = win.document;
-      doc.open();
-      doc.write("");
-      doc.close();
-      var message = "callImmediate" + Math.random();
-      var origin = win.location.protocol == "file:" ? "*" : win.location.protocol + "//" + win.location.host;
-      var onmessage = goog.bind(function(e) {
-        if (origin != "*" && e.origin != origin || e.data != message) {
-          return;
-        }
-        this["port1"].onmessage();
-      }, this);
-      win.addEventListener("message", onmessage, false);
-      this["port1"] = {};
-      this["port2"] = {postMessage:function() {
-        win.postMessage(message, origin);
-      }};
-    };
-  }
-  if (typeof Channel !== "undefined" && !goog.labs.userAgent.browser.isIE()) {
-    var channel = new Channel;
-    var head = {};
-    var tail = head;
-    channel["port1"].onmessage = function() {
-      if (goog.isDef(head.next)) {
-        head = head.next;
-        var cb = head.cb;
-        head.cb = null;
-        cb();
-      }
-    };
-    return function(cb) {
-      tail.next = {cb:cb};
-      tail = tail.next;
-      channel["port2"].postMessage(0);
-    };
-  }
-  if (typeof document !== "undefined" && "onreadystatechange" in document.createElement(goog.dom.TagName.SCRIPT)) {
-    return function(cb) {
-      var script = document.createElement(goog.dom.TagName.SCRIPT);
-      script.onreadystatechange = function() {
-        script.onreadystatechange = null;
-        script.parentNode.removeChild(script);
-        script = null;
-        cb();
-        cb = null;
-      };
-      document.documentElement.appendChild(script);
-    };
-  }
-  return function(cb) {
-    goog.global.setTimeout(cb, 0);
-  };
-};
-goog.async.nextTick.wrapCallback_ = goog.functions.identity;
-goog.debug.entryPointRegistry.register(function(transformer) {
-  goog.async.nextTick.wrapCallback_ = transformer;
-});
-goog.provide("goog.async.run");
-goog.require("goog.async.WorkQueue");
-goog.require("goog.async.nextTick");
-goog.require("goog.async.throwException");
-goog.async.run = function(callback, opt_context) {
-  if (!goog.async.run.schedule_) {
-    goog.async.run.initializeRunner_();
-  }
-  if (!goog.async.run.workQueueScheduled_) {
-    goog.async.run.schedule_();
-    goog.async.run.workQueueScheduled_ = true;
-  }
-  goog.async.run.workQueue_.add(callback, opt_context);
-};
-goog.async.run.initializeRunner_ = function() {
-  if (goog.global.Promise && goog.global.Promise.resolve) {
-    var promise = goog.global.Promise.resolve(undefined);
-    goog.async.run.schedule_ = function() {
-      promise.then(goog.async.run.processWorkQueue);
-    };
-  } else {
-    goog.async.run.schedule_ = function() {
-      goog.async.nextTick(goog.async.run.processWorkQueue);
-    };
-  }
-};
-goog.async.run.forceNextTick = function(opt_realSetTimeout) {
-  goog.async.run.schedule_ = function() {
-    goog.async.nextTick(goog.async.run.processWorkQueue);
-    if (opt_realSetTimeout) {
-      opt_realSetTimeout(goog.async.run.processWorkQueue);
-    }
-  };
-};
-goog.async.run.schedule_;
-goog.async.run.workQueueScheduled_ = false;
-goog.async.run.workQueue_ = new goog.async.WorkQueue;
-if (goog.DEBUG) {
-  goog.async.run.resetQueue = function() {
-    goog.async.run.workQueueScheduled_ = false;
-    goog.async.run.workQueue_ = new goog.async.WorkQueue;
-  };
-}
-goog.async.run.processWorkQueue = function() {
-  var item = null;
-  while (item = goog.async.run.workQueue_.remove()) {
-    try {
-      item.fn.call(item.scope);
-    } catch (e) {
-      goog.async.throwException(e);
-    }
-    goog.async.run.workQueue_.returnUnused(item);
-  }
-  goog.async.run.workQueueScheduled_ = false;
-};
-goog.provide("goog.promise.Resolver");
-goog.promise.Resolver = function() {
-};
-goog.promise.Resolver.prototype.promise;
-goog.promise.Resolver.prototype.resolve;
-goog.promise.Resolver.prototype.reject;
-goog.provide("goog.Promise");
-goog.require("goog.Thenable");
-goog.require("goog.asserts");
-goog.require("goog.async.FreeList");
-goog.require("goog.async.run");
-goog.require("goog.async.throwException");
-goog.require("goog.debug.Error");
-goog.require("goog.promise.Resolver");
-goog.Promise = function(resolver, opt_context) {
-  this.state_ = goog.Promise.State_.PENDING;
-  this.result_ = undefined;
-  this.parent_ = null;
-  this.callbackEntries_ = null;
-  this.callbackEntriesTail_ = null;
-  this.executing_ = false;
-  if (goog.Promise.UNHANDLED_REJECTION_DELAY > 0) {
-    this.unhandledRejectionId_ = 0;
-  } else {
-    if (goog.Promise.UNHANDLED_REJECTION_DELAY == 0) {
-      this.hadUnhandledRejection_ = false;
-    }
-  }
-  if (goog.Promise.LONG_STACK_TRACES) {
-    this.stack_ = [];
-    this.addStackTrace_(new Error("created"));
-    this.currentStep_ = 0;
-  }
-  if (resolver != goog.nullFunction) {
-    try {
-      var self = this;
-      resolver.call(opt_context, function(value) {
-        self.resolve_(goog.Promise.State_.FULFILLED, value);
-      }, function(reason) {
-        if (goog.DEBUG && !(reason instanceof goog.Promise.CancellationError)) {
-          try {
-            if (reason instanceof Error) {
-              throw reason;
-            } else {
-              throw new Error("Promise rejected.");
-            }
-          } catch (e) {
-          }
-        }
-        self.resolve_(goog.Promise.State_.REJECTED, reason);
-      });
-    } catch (e) {
-      this.resolve_(goog.Promise.State_.REJECTED, e);
-    }
-  }
-};
-goog.define("goog.Promise.LONG_STACK_TRACES", false);
-goog.define("goog.Promise.UNHANDLED_REJECTION_DELAY", 0);
-goog.Promise.State_ = {PENDING:0, BLOCKED:1, FULFILLED:2, REJECTED:3};
-goog.Promise.CallbackEntry_ = function() {
-  this.child = null;
-  this.onFulfilled = null;
-  this.onRejected = null;
-  this.context = null;
-  this.next = null;
-  this.always = false;
-};
-goog.Promise.CallbackEntry_.prototype.reset = function() {
-  this.child = null;
-  this.onFulfilled = null;
-  this.onRejected = null;
-  this.context = null;
-  this.always = false;
-};
-goog.define("goog.Promise.DEFAULT_MAX_UNUSED", 100);
-goog.Promise.freelist_ = new goog.async.FreeList(function() {
-  return new goog.Promise.CallbackEntry_;
-}, function(item) {
-  item.reset();
-}, goog.Promise.DEFAULT_MAX_UNUSED);
-goog.Promise.getCallbackEntry_ = function(onFulfilled, onRejected, context) {
-  var entry = goog.Promise.freelist_.get();
-  entry.onFulfilled = onFulfilled;
-  entry.onRejected = onRejected;
-  entry.context = context;
-  return entry;
-};
-goog.Promise.returnEntry_ = function(entry) {
-  goog.Promise.freelist_.put(entry);
-};
-goog.Promise.resolve = function(opt_value) {
-  if (opt_value instanceof goog.Promise) {
-    return opt_value;
-  }
-  var promise = new goog.Promise(goog.nullFunction);
-  promise.resolve_(goog.Promise.State_.FULFILLED, opt_value);
-  return promise;
-};
-goog.Promise.reject = function(opt_reason) {
-  return new goog.Promise(function(resolve, reject) {
-    reject(opt_reason);
-  });
-};
-goog.Promise.resolveThen_ = function(value, onFulfilled, onRejected) {
-  var isThenable = goog.Promise.maybeThen_(value, onFulfilled, onRejected, null);
-  if (!isThenable) {
-    goog.async.run(goog.partial(onFulfilled, value));
-  }
-};
-goog.Promise.race = function(promises) {
-  return new goog.Promise(function(resolve, reject) {
-    if (!promises.length) {
-      resolve(undefined);
-    }
-    for (var i = 0, promise;i < promises.length;i++) {
-      promise = promises[i];
-      goog.Promise.resolveThen_(promise, resolve, reject);
-    }
-  });
-};
-goog.Promise.all = function(promises) {
-  return new goog.Promise(function(resolve, reject) {
-    var toFulfill = promises.length;
-    var values = [];
-    if (!toFulfill) {
-      resolve(values);
-      return;
-    }
-    var onFulfill = function(index, value) {
-      toFulfill--;
-      values[index] = value;
-      if (toFulfill == 0) {
-        resolve(values);
-      }
-    };
-    var onReject = function(reason) {
-      reject(reason);
-    };
-    for (var i = 0, promise;i < promises.length;i++) {
-      promise = promises[i];
-      goog.Promise.resolveThen_(promise, goog.partial(onFulfill, i), onReject);
-    }
-  });
-};
-goog.Promise.allSettled = function(promises) {
-  return new goog.Promise(function(resolve, reject) {
-    var toSettle = promises.length;
-    var results = [];
-    if (!toSettle) {
-      resolve(results);
-      return;
-    }
-    var onSettled = function(index, fulfilled, result) {
-      toSettle--;
-      results[index] = fulfilled ? {fulfilled:true, value:result} : {fulfilled:false, reason:result};
-      if (toSettle == 0) {
-        resolve(results);
-      }
-    };
-    for (var i = 0, promise;i < promises.length;i++) {
-      promise = promises[i];
-      goog.Promise.resolveThen_(promise, goog.partial(onSettled, i, true), goog.partial(onSettled, i, false));
-    }
-  });
-};
-goog.Promise.firstFulfilled = function(promises) {
-  return new goog.Promise(function(resolve, reject) {
-    var toReject = promises.length;
-    var reasons = [];
-    if (!toReject) {
-      resolve(undefined);
-      return;
-    }
-    var onFulfill = function(value) {
-      resolve(value);
-    };
-    var onReject = function(index, reason) {
-      toReject--;
-      reasons[index] = reason;
-      if (toReject == 0) {
-        reject(reasons);
-      }
-    };
-    for (var i = 0, promise;i < promises.length;i++) {
-      promise = promises[i];
-      goog.Promise.resolveThen_(promise, onFulfill, goog.partial(onReject, i));
-    }
-  });
-};
-goog.Promise.withResolver = function() {
-  var resolve, reject;
-  var promise = new goog.Promise(function(rs, rj) {
-    resolve = rs;
-    reject = rj;
-  });
-  return new goog.Promise.Resolver_(promise, resolve, reject);
-};
-goog.Promise.prototype.then = function(opt_onFulfilled, opt_onRejected, opt_context) {
-  if (opt_onFulfilled != null) {
-    goog.asserts.assertFunction(opt_onFulfilled, "opt_onFulfilled should be a function.");
-  }
-  if (opt_onRejected != null) {
-    goog.asserts.assertFunction(opt_onRejected, "opt_onRejected should be a function. Did you pass opt_context " + "as the second argument instead of the third?");
-  }
-  if (goog.Promise.LONG_STACK_TRACES) {
-    this.addStackTrace_(new Error("then"));
-  }
-  return this.addChildPromise_(goog.isFunction(opt_onFulfilled) ? opt_onFulfilled : null, goog.isFunction(opt_onRejected) ? opt_onRejected : null, opt_context);
-};
-goog.Thenable.addImplementation(goog.Promise);
-goog.Promise.prototype.thenVoid = function(opt_onFulfilled, opt_onRejected, opt_context) {
-  if (opt_onFulfilled != null) {
-    goog.asserts.assertFunction(opt_onFulfilled, "opt_onFulfilled should be a function.");
-  }
-  if (opt_onRejected != null) {
-    goog.asserts.assertFunction(opt_onRejected, "opt_onRejected should be a function. Did you pass opt_context " + "as the second argument instead of the third?");
-  }
-  if (goog.Promise.LONG_STACK_TRACES) {
-    this.addStackTrace_(new Error("then"));
-  }
-  this.addCallbackEntry_(goog.Promise.getCallbackEntry_(opt_onFulfilled || goog.nullFunction, opt_onRejected || null, opt_context));
-};
-goog.Promise.prototype.thenAlways = function(onSettled, opt_context) {
-  if (goog.Promise.LONG_STACK_TRACES) {
-    this.addStackTrace_(new Error("thenAlways"));
-  }
-  var entry = goog.Promise.getCallbackEntry_(onSettled, onSettled, opt_context);
-  entry.always = true;
-  this.addCallbackEntry_(entry);
-  return this;
-};
-goog.Promise.prototype.thenCatch = function(onRejected, opt_context) {
-  if (goog.Promise.LONG_STACK_TRACES) {
-    this.addStackTrace_(new Error("thenCatch"));
-  }
-  return this.addChildPromise_(null, onRejected, opt_context);
-};
-goog.Promise.prototype.cancel = function(opt_message) {
-  if (this.state_ == goog.Promise.State_.PENDING) {
-    goog.async.run(function() {
-      var err = new goog.Promise.CancellationError(opt_message);
-      this.cancelInternal_(err);
-    }, this);
-  }
-};
-goog.Promise.prototype.cancelInternal_ = function(err) {
-  if (this.state_ == goog.Promise.State_.PENDING) {
-    if (this.parent_) {
-      this.parent_.cancelChild_(this, err);
-      this.parent_ = null;
-    } else {
-      this.resolve_(goog.Promise.State_.REJECTED, err);
-    }
-  }
-};
-goog.Promise.prototype.cancelChild_ = function(childPromise, err) {
-  if (!this.callbackEntries_) {
-    return;
-  }
-  var childCount = 0;
-  var childEntry = null;
-  var beforeChildEntry = null;
-  for (var entry = this.callbackEntries_;entry;entry = entry.next) {
-    if (!entry.always) {
-      childCount++;
-      if (entry.child == childPromise) {
-        childEntry = entry;
-      }
-      if (childEntry && childCount > 1) {
-        break;
-      }
-    }
-    if (!childEntry) {
-      beforeChildEntry = entry;
-    }
-  }
-  if (childEntry) {
-    if (this.state_ == goog.Promise.State_.PENDING && childCount == 1) {
-      this.cancelInternal_(err);
-    } else {
-      if (beforeChildEntry) {
-        this.removeEntryAfter_(beforeChildEntry);
-      } else {
-        this.popEntry_();
-      }
-      this.executeCallback_(childEntry, goog.Promise.State_.REJECTED, err);
-    }
-  }
-};
-goog.Promise.prototype.addCallbackEntry_ = function(callbackEntry) {
-  if (!this.hasEntry_() && (this.state_ == goog.Promise.State_.FULFILLED || this.state_ == goog.Promise.State_.REJECTED)) {
-    this.scheduleCallbacks_();
-  }
-  this.queueEntry_(callbackEntry);
-};
-goog.Promise.prototype.addChildPromise_ = function(onFulfilled, onRejected, opt_context) {
-  var callbackEntry = goog.Promise.getCallbackEntry_(null, null, null);
-  callbackEntry.child = new goog.Promise(function(resolve, reject) {
-    callbackEntry.onFulfilled = onFulfilled ? function(value) {
-      try {
-        var result = onFulfilled.call(opt_context, value);
-        resolve(result);
-      } catch (err) {
-        reject(err);
-      }
-    } : resolve;
-    callbackEntry.onRejected = onRejected ? function(reason) {
-      try {
-        var result = onRejected.call(opt_context, reason);
-        if (!goog.isDef(result) && reason instanceof goog.Promise.CancellationError) {
-          reject(reason);
-        } else {
-          resolve(result);
-        }
-      } catch (err) {
-        reject(err);
-      }
-    } : reject;
-  });
-  callbackEntry.child.parent_ = this;
-  this.addCallbackEntry_(callbackEntry);
-  return callbackEntry.child;
-};
-goog.Promise.prototype.unblockAndFulfill_ = function(value) {
-  goog.asserts.assert(this.state_ == goog.Promise.State_.BLOCKED);
-  this.state_ = goog.Promise.State_.PENDING;
-  this.resolve_(goog.Promise.State_.FULFILLED, value);
-};
-goog.Promise.prototype.unblockAndReject_ = function(reason) {
-  goog.asserts.assert(this.state_ == goog.Promise.State_.BLOCKED);
-  this.state_ = goog.Promise.State_.PENDING;
-  this.resolve_(goog.Promise.State_.REJECTED, reason);
-};
-goog.Promise.prototype.resolve_ = function(state, x) {
-  if (this.state_ != goog.Promise.State_.PENDING) {
-    return;
-  }
-  if (this == x) {
-    state = goog.Promise.State_.REJECTED;
-    x = new TypeError("Promise cannot resolve to itself");
-  }
-  this.state_ = goog.Promise.State_.BLOCKED;
-  var isThenable = goog.Promise.maybeThen_(x, this.unblockAndFulfill_, this.unblockAndReject_, this);
-  if (isThenable) {
-    return;
-  }
-  this.result_ = x;
-  this.state_ = state;
-  this.parent_ = null;
-  this.scheduleCallbacks_();
-  if (state == goog.Promise.State_.REJECTED && !(x instanceof goog.Promise.CancellationError)) {
-    goog.Promise.addUnhandledRejection_(this, x);
-  }
-};
-goog.Promise.maybeThen_ = function(value, onFulfilled, onRejected, context) {
-  if (value instanceof goog.Promise) {
-    value.thenVoid(onFulfilled, onRejected, context);
-    return true;
-  } else {
-    if (goog.Thenable.isImplementedBy(value)) {
-      value = (value);
-      value.then(onFulfilled, onRejected, context);
-      return true;
-    } else {
-      if (goog.isObject(value)) {
-        try {
-          var then = value["then"];
-          if (goog.isFunction(then)) {
-            goog.Promise.tryThen_(value, then, onFulfilled, onRejected, context);
-            return true;
-          }
-        } catch (e) {
-          onRejected.call(context, e);
-          return true;
-        }
-      }
-    }
-  }
-  return false;
-};
-goog.Promise.tryThen_ = function(thenable, then, onFulfilled, onRejected, context) {
-  var called = false;
-  var resolve = function(value) {
-    if (!called) {
-      called = true;
-      onFulfilled.call(context, value);
-    }
-  };
-  var reject = function(reason) {
-    if (!called) {
-      called = true;
-      onRejected.call(context, reason);
-    }
-  };
-  try {
-    then.call(thenable, resolve, reject);
-  } catch (e) {
-    reject(e);
-  }
-};
-goog.Promise.prototype.scheduleCallbacks_ = function() {
-  if (!this.executing_) {
-    this.executing_ = true;
-    goog.async.run(this.executeCallbacks_, this);
-  }
-};
-goog.Promise.prototype.hasEntry_ = function() {
-  return !!this.callbackEntries_;
-};
-goog.Promise.prototype.queueEntry_ = function(entry) {
-  goog.asserts.assert(entry.onFulfilled != null);
-  if (this.callbackEntriesTail_) {
-    this.callbackEntriesTail_.next = entry;
-    this.callbackEntriesTail_ = entry;
-  } else {
-    this.callbackEntries_ = entry;
-    this.callbackEntriesTail_ = entry;
-  }
-};
-goog.Promise.prototype.popEntry_ = function() {
-  var entry = null;
-  if (this.callbackEntries_) {
-    entry = this.callbackEntries_;
-    this.callbackEntries_ = entry.next;
-    entry.next = null;
-  }
-  if (!this.callbackEntries_) {
-    this.callbackEntriesTail_ = null;
-  }
-  if (entry != null) {
-    goog.asserts.assert(entry.onFulfilled != null);
-  }
-  return entry;
-};
-goog.Promise.prototype.removeEntryAfter_ = function(previous) {
-  goog.asserts.assert(this.callbackEntries_);
-  goog.asserts.assert(previous != null);
-  if (previous.next == this.callbackEntriesTail_) {
-    this.callbackEntriesTail_ = previous;
-  }
-  previous.next = previous.next.next;
-};
-goog.Promise.prototype.executeCallbacks_ = function() {
-  var entry = null;
-  while (entry = this.popEntry_()) {
-    if (goog.Promise.LONG_STACK_TRACES) {
-      this.currentStep_++;
-    }
-    this.executeCallback_(entry, this.state_, this.result_);
-  }
-  this.executing_ = false;
-};
-goog.Promise.prototype.executeCallback_ = function(callbackEntry, state, result) {
-  if (state == goog.Promise.State_.REJECTED && callbackEntry.onRejected && !callbackEntry.always) {
-    this.removeUnhandledRejection_();
-  }
-  if (callbackEntry.child) {
-    callbackEntry.child.parent_ = null;
-    goog.Promise.invokeCallback_(callbackEntry, state, result);
-  } else {
-    try {
-      callbackEntry.always ? callbackEntry.onFulfilled.call(callbackEntry.context) : goog.Promise.invokeCallback_(callbackEntry, state, result);
-    } catch (err) {
-      goog.Promise.handleRejection_.call(null, err);
-    }
-  }
-  goog.Promise.returnEntry_(callbackEntry);
-};
-goog.Promise.invokeCallback_ = function(callbackEntry, state, result) {
-  if (state == goog.Promise.State_.FULFILLED) {
-    callbackEntry.onFulfilled.call(callbackEntry.context, result);
-  } else {
-    if (callbackEntry.onRejected) {
-      callbackEntry.onRejected.call(callbackEntry.context, result);
-    }
-  }
-};
-goog.Promise.prototype.addStackTrace_ = function(err) {
-  if (goog.Promise.LONG_STACK_TRACES && goog.isString(err.stack)) {
-    var trace = err.stack.split("\n", 4)[3];
-    var message = err.message;
-    message += Array(11 - message.length).join(" ");
-    this.stack_.push(message + trace);
-  }
-};
-goog.Promise.prototype.appendLongStack_ = function(err) {
-  if (goog.Promise.LONG_STACK_TRACES && err && goog.isString(err.stack) && this.stack_.length) {
-    var longTrace = ["Promise trace:"];
-    for (var promise = this;promise;promise = promise.parent_) {
-      for (var i = this.currentStep_;i >= 0;i--) {
-        longTrace.push(promise.stack_[i]);
-      }
-      longTrace.push("Value: " + "[" + (promise.state_ == goog.Promise.State_.REJECTED ? "REJECTED" : "FULFILLED") + "] " + "<" + String(promise.result_) + ">");
-    }
-    err.stack += "\n\n" + longTrace.join("\n");
-  }
-};
-goog.Promise.prototype.removeUnhandledRejection_ = function() {
-  if (goog.Promise.UNHANDLED_REJECTION_DELAY > 0) {
-    for (var p = this;p && p.unhandledRejectionId_;p = p.parent_) {
-      goog.global.clearTimeout(p.unhandledRejectionId_);
-      p.unhandledRejectionId_ = 0;
-    }
-  } else {
-    if (goog.Promise.UNHANDLED_REJECTION_DELAY == 0) {
-      for (var p = this;p && p.hadUnhandledRejection_;p = p.parent_) {
-        p.hadUnhandledRejection_ = false;
-      }
-    }
-  }
-};
-goog.Promise.addUnhandledRejection_ = function(promise, reason) {
-  if (goog.Promise.UNHANDLED_REJECTION_DELAY > 0) {
-    promise.unhandledRejectionId_ = goog.global.setTimeout(function() {
-      promise.appendLongStack_(reason);
-      goog.Promise.handleRejection_.call(null, reason);
-    }, goog.Promise.UNHANDLED_REJECTION_DELAY);
-  } else {
-    if (goog.Promise.UNHANDLED_REJECTION_DELAY == 0) {
-      promise.hadUnhandledRejection_ = true;
-      goog.async.run(function() {
-        if (promise.hadUnhandledRejection_) {
-          promise.appendLongStack_(reason);
-          goog.Promise.handleRejection_.call(null, reason);
-        }
-      });
-    }
-  }
-};
-goog.Promise.handleRejection_ = goog.async.throwException;
-goog.Promise.setUnhandledRejectionHandler = function(handler) {
-  goog.Promise.handleRejection_ = handler;
-};
-goog.Promise.CancellationError = function(opt_message) {
-  goog.Promise.CancellationError.base(this, "constructor", opt_message);
-};
-goog.inherits(goog.Promise.CancellationError, goog.debug.Error);
-goog.Promise.CancellationError.prototype.name = "cancel";
-goog.Promise.Resolver_ = function(promise, resolve, reject) {
-  this.promise = promise;
-  this.resolve = resolve;
-  this.reject = reject;
-};
-goog.provide("goog.Timer");
-goog.require("goog.Promise");
-goog.require("goog.events.EventTarget");
-goog.Timer = function(opt_interval, opt_timerObject) {
-  goog.events.EventTarget.call(this);
-  this.interval_ = opt_interval || 1;
-  this.timerObject_ = (opt_timerObject || goog.Timer.defaultTimerObject);
-  this.boundTick_ = goog.bind(this.tick_, this);
-  this.last_ = goog.now();
-};
-goog.inherits(goog.Timer, goog.events.EventTarget);
-goog.Timer.MAX_TIMEOUT_ = 2147483647;
-goog.Timer.INVALID_TIMEOUT_ID_ = -1;
-goog.Timer.prototype.enabled = false;
-goog.Timer.defaultTimerObject = goog.global;
-goog.Timer.intervalScale = .8;
-goog.Timer.prototype.timer_ = null;
-goog.Timer.prototype.getInterval = function() {
-  return this.interval_;
-};
-goog.Timer.prototype.setInterval = function(interval) {
-  this.interval_ = interval;
-  if (this.timer_ && this.enabled) {
-    this.stop();
-    this.start();
-  } else {
-    if (this.timer_) {
-      this.stop();
-    }
-  }
-};
-goog.Timer.prototype.tick_ = function() {
-  if (this.enabled) {
-    var elapsed = goog.now() - this.last_;
-    if (elapsed > 0 && elapsed < this.interval_ * goog.Timer.intervalScale) {
-      this.timer_ = this.timerObject_.setTimeout(this.boundTick_, this.interval_ - elapsed);
-      return;
-    }
-    if (this.timer_) {
-      this.timerObject_.clearTimeout(this.timer_);
-      this.timer_ = null;
-    }
-    this.dispatchTick();
-    if (this.enabled) {
-      this.timer_ = this.timerObject_.setTimeout(this.boundTick_, this.interval_);
-      this.last_ = goog.now();
-    }
-  }
-};
-goog.Timer.prototype.dispatchTick = function() {
-  this.dispatchEvent(goog.Timer.TICK);
-};
-goog.Timer.prototype.start = function() {
-  this.enabled = true;
-  if (!this.timer_) {
-    this.timer_ = this.timerObject_.setTimeout(this.boundTick_, this.interval_);
-    this.last_ = goog.now();
-  }
-};
-goog.Timer.prototype.stop = function() {
-  this.enabled = false;
-  if (this.timer_) {
-    this.timerObject_.clearTimeout(this.timer_);
-    this.timer_ = null;
-  }
-};
-goog.Timer.prototype.disposeInternal = function() {
-  goog.Timer.superClass_.disposeInternal.call(this);
-  this.stop();
-  delete this.timerObject_;
-};
-goog.Timer.TICK = "tick";
-goog.Timer.callOnce = function(listener, opt_delay, opt_handler) {
-  if (goog.isFunction(listener)) {
-    if (opt_handler) {
-      listener = goog.bind(listener, opt_handler);
-    }
-  } else {
-    if (listener && typeof listener.handleEvent == "function") {
-      listener = goog.bind(listener.handleEvent, listener);
-    } else {
-      throw Error("Invalid listener argument");
-    }
-  }
-  if (Number(opt_delay) > goog.Timer.MAX_TIMEOUT_) {
-    return goog.Timer.INVALID_TIMEOUT_ID_;
-  } else {
-    return goog.Timer.defaultTimerObject.setTimeout(listener, opt_delay || 0);
-  }
-};
-goog.Timer.clear = function(timerId) {
-  goog.Timer.defaultTimerObject.clearTimeout(timerId);
-};
-goog.Timer.promise = function(delay, opt_result) {
-  var timerKey = null;
-  return (new goog.Promise(function(resolve, reject) {
-    timerKey = goog.Timer.callOnce(function() {
-      resolve(opt_result);
-    }, delay);
-    if (timerKey == goog.Timer.INVALID_TIMEOUT_ID_) {
-      reject(new Error("Failed to schedule timer."));
-    }
-  })).thenCatch(function(error) {
-    goog.Timer.clear(timerKey);
-    throw error;
-  });
-};
 goog.provide("acgraph.utils.exporting");
 goog.require("goog.Timer");
 goog.require("goog.dom");
@@ -14378,6 +17546,7 @@ acgraph.utils.exporting.PdfPaperSize = {"a0":{width:2384, height:3370}, "a1":{wi
 "b5":{width:498, height:708}, "b6":{width:354, height:498}, "b7":{width:249, height:354}, "b8":{width:175, height:249}, "b9":{width:124, height:175}, "arch-a":{width:648, height:864}, "arch-b":{width:864, height:1296}, "arch-c":{width:1296, height:1728}, "arch-d":{width:1728, height:2592}, "arch-e":{width:2592, height:3456}, "crown-octavo":{width:348, height:527}, "crown-quarto":{width:535, height:697}, "demy-octavo":{width:391, height:612}, "demy-quarto":{width:620, height:782}, "royal-octavo":{width:442, 
 height:663}, "royal-quarto":{width:671, height:884}, "executive":{width:522, height:756}, "halfletter":{width:396, height:612}, "ledger":{width:1224, height:792}, "legal":{width:612, height:1008}, "letter":{width:612, height:792}, "tabloid":{width:792, height:1224}};
 acgraph.utils.exporting.printIFrame_ = null;
+acgraph.utils.exporting.printWindow_ = null;
 acgraph.utils.exporting.print = function(stage, opt_paperSizeOrWidth, opt_landscapeOrHeight) {
   if (goog.isDef(opt_paperSizeOrWidth) || goog.isDef(opt_landscapeOrHeight)) {
     acgraph.utils.exporting.fullPagePrint(stage, opt_paperSizeOrWidth, opt_landscapeOrHeight);
@@ -14450,10 +17619,35 @@ acgraph.utils.exporting.createPrint_ = function() {
 };
 acgraph.utils.exporting.openPrint_ = function() {
   if (acgraph.utils.exporting.printIFrame_) {
-    var iFrameWindow = acgraph.utils.exporting.printIFrame_["contentWindow"];
-    goog.Timer.callOnce(acgraph.utils.exporting.disposePrint_, 5);
-    iFrameWindow["focus"]();
-    iFrameWindow["print"]();
+    var iFrame = acgraph.utils.exporting.printIFrame_;
+    var iFrameWindow = iFrame["contentWindow"];
+    if (goog.userAgent.EDGE) {
+      acgraph.utils.exporting.printWindow_ = window.open();
+      acgraph.utils.exporting.printWindow_.document.write(iFrameWindow.document.documentElement.innerHTML);
+      acgraph.utils.exporting.disposePrint_();
+      acgraph.utils.exporting.printWindow_["onafterprint"] = function() {
+        setTimeout(function() {
+          acgraph.utils.exporting.printWindow_.close();
+        }, 0);
+      };
+      setTimeout(function() {
+        acgraph.utils.exporting.printWindow_["focus"]();
+        acgraph.utils.exporting.printWindow_["print"]();
+      }, 0);
+    } else {
+      if (goog.userAgent.IE) {
+        setTimeout(function() {
+          goog.style.setStyle(iFrame, "visibility", "");
+          iFrameWindow["onafterprint"] = acgraph.utils.exporting.disposePrint_;
+          iFrameWindow["focus"]();
+          iFrameWindow["print"]();
+        }, 0);
+      } else {
+        goog.Timer.callOnce(acgraph.utils.exporting.disposePrint_, 6);
+        iFrameWindow["focus"]();
+        iFrameWindow["print"]();
+      }
+    }
   }
 };
 acgraph.utils.exporting.onBeforePrint_ = function() {
@@ -14505,6 +17699,619 @@ acgraph.vector.Circle.prototype.serialize = function() {
 };
 goog.exportSymbol("acgraph.vector.Circle", acgraph.vector.Circle);
 acgraph.vector.Circle.prototype["radius"] = acgraph.vector.Circle.prototype.radius;
+goog.provide("goog.Uri");
+goog.provide("goog.Uri.QueryData");
+goog.require("goog.array");
+goog.require("goog.asserts");
+goog.require("goog.string");
+goog.require("goog.structs");
+goog.require("goog.structs.Map");
+goog.require("goog.uri.utils");
+goog.require("goog.uri.utils.ComponentIndex");
+goog.require("goog.uri.utils.StandardQueryParam");
+goog.Uri = function(opt_uri, opt_ignoreCase) {
+  this.scheme_ = "";
+  this.userInfo_ = "";
+  this.domain_ = "";
+  this.port_ = null;
+  this.path_ = "";
+  this.fragment_ = "";
+  this.isReadOnly_ = false;
+  this.ignoreCase_ = false;
+  this.queryData_;
+  var m;
+  if (opt_uri instanceof goog.Uri) {
+    this.ignoreCase_ = goog.isDef(opt_ignoreCase) ? opt_ignoreCase : opt_uri.getIgnoreCase();
+    this.setScheme(opt_uri.getScheme());
+    this.setUserInfo(opt_uri.getUserInfo());
+    this.setDomain(opt_uri.getDomain());
+    this.setPort(opt_uri.getPort());
+    this.setPath(opt_uri.getPath());
+    this.setQueryData(opt_uri.getQueryData().clone());
+    this.setFragment(opt_uri.getFragment());
+  } else {
+    if (opt_uri && (m = goog.uri.utils.split(String(opt_uri)))) {
+      this.ignoreCase_ = !!opt_ignoreCase;
+      this.setScheme(m[goog.uri.utils.ComponentIndex.SCHEME] || "", true);
+      this.setUserInfo(m[goog.uri.utils.ComponentIndex.USER_INFO] || "", true);
+      this.setDomain(m[goog.uri.utils.ComponentIndex.DOMAIN] || "", true);
+      this.setPort(m[goog.uri.utils.ComponentIndex.PORT]);
+      this.setPath(m[goog.uri.utils.ComponentIndex.PATH] || "", true);
+      this.setQueryData(m[goog.uri.utils.ComponentIndex.QUERY_DATA] || "", true);
+      this.setFragment(m[goog.uri.utils.ComponentIndex.FRAGMENT] || "", true);
+    } else {
+      this.ignoreCase_ = !!opt_ignoreCase;
+      this.queryData_ = new goog.Uri.QueryData(null, null, this.ignoreCase_);
+    }
+  }
+};
+goog.Uri.preserveParameterTypesCompatibilityFlag = false;
+goog.Uri.RANDOM_PARAM = goog.uri.utils.StandardQueryParam.RANDOM;
+goog.Uri.prototype.toString = function() {
+  var out = [];
+  var scheme = this.getScheme();
+  if (scheme) {
+    out.push(goog.Uri.encodeSpecialChars_(scheme, goog.Uri.reDisallowedInSchemeOrUserInfo_, true), ":");
+  }
+  var domain = this.getDomain();
+  if (domain || scheme == "file") {
+    out.push("//");
+    var userInfo = this.getUserInfo();
+    if (userInfo) {
+      out.push(goog.Uri.encodeSpecialChars_(userInfo, goog.Uri.reDisallowedInSchemeOrUserInfo_, true), "@");
+    }
+    out.push(goog.Uri.removeDoubleEncoding_(goog.string.urlEncode(domain)));
+    var port = this.getPort();
+    if (port != null) {
+      out.push(":", String(port));
+    }
+  }
+  var path = this.getPath();
+  if (path) {
+    if (this.hasDomain() && path.charAt(0) != "/") {
+      out.push("/");
+    }
+    out.push(goog.Uri.encodeSpecialChars_(path, path.charAt(0) == "/" ? goog.Uri.reDisallowedInAbsolutePath_ : goog.Uri.reDisallowedInRelativePath_, true));
+  }
+  var query = this.getEncodedQuery();
+  if (query) {
+    out.push("?", query);
+  }
+  var fragment = this.getFragment();
+  if (fragment) {
+    out.push("#", goog.Uri.encodeSpecialChars_(fragment, goog.Uri.reDisallowedInFragment_));
+  }
+  return out.join("");
+};
+goog.Uri.prototype.resolve = function(relativeUri) {
+  var absoluteUri = this.clone();
+  var overridden = relativeUri.hasScheme();
+  if (overridden) {
+    absoluteUri.setScheme(relativeUri.getScheme());
+  } else {
+    overridden = relativeUri.hasUserInfo();
+  }
+  if (overridden) {
+    absoluteUri.setUserInfo(relativeUri.getUserInfo());
+  } else {
+    overridden = relativeUri.hasDomain();
+  }
+  if (overridden) {
+    absoluteUri.setDomain(relativeUri.getDomain());
+  } else {
+    overridden = relativeUri.hasPort();
+  }
+  var path = relativeUri.getPath();
+  if (overridden) {
+    absoluteUri.setPort(relativeUri.getPort());
+  } else {
+    overridden = relativeUri.hasPath();
+    if (overridden) {
+      if (path.charAt(0) != "/") {
+        if (this.hasDomain() && !this.hasPath()) {
+          path = "/" + path;
+        } else {
+          var lastSlashIndex = absoluteUri.getPath().lastIndexOf("/");
+          if (lastSlashIndex != -1) {
+            path = absoluteUri.getPath().substr(0, lastSlashIndex + 1) + path;
+          }
+        }
+      }
+      path = goog.Uri.removeDotSegments(path);
+    }
+  }
+  if (overridden) {
+    absoluteUri.setPath(path);
+  } else {
+    overridden = relativeUri.hasQuery();
+  }
+  if (overridden) {
+    absoluteUri.setQueryData(relativeUri.getDecodedQuery());
+  } else {
+    overridden = relativeUri.hasFragment();
+  }
+  if (overridden) {
+    absoluteUri.setFragment(relativeUri.getFragment());
+  }
+  return absoluteUri;
+};
+goog.Uri.prototype.clone = function() {
+  return new goog.Uri(this);
+};
+goog.Uri.prototype.getScheme = function() {
+  return this.scheme_;
+};
+goog.Uri.prototype.setScheme = function(newScheme, opt_decode) {
+  this.enforceReadOnly();
+  this.scheme_ = opt_decode ? goog.Uri.decodeOrEmpty_(newScheme, true) : newScheme;
+  if (this.scheme_) {
+    this.scheme_ = this.scheme_.replace(/:$/, "");
+  }
+  return this;
+};
+goog.Uri.prototype.hasScheme = function() {
+  return !!this.scheme_;
+};
+goog.Uri.prototype.getUserInfo = function() {
+  return this.userInfo_;
+};
+goog.Uri.prototype.setUserInfo = function(newUserInfo, opt_decode) {
+  this.enforceReadOnly();
+  this.userInfo_ = opt_decode ? goog.Uri.decodeOrEmpty_(newUserInfo) : newUserInfo;
+  return this;
+};
+goog.Uri.prototype.hasUserInfo = function() {
+  return !!this.userInfo_;
+};
+goog.Uri.prototype.getDomain = function() {
+  return this.domain_;
+};
+goog.Uri.prototype.setDomain = function(newDomain, opt_decode) {
+  this.enforceReadOnly();
+  this.domain_ = opt_decode ? goog.Uri.decodeOrEmpty_(newDomain, true) : newDomain;
+  return this;
+};
+goog.Uri.prototype.hasDomain = function() {
+  return !!this.domain_;
+};
+goog.Uri.prototype.getPort = function() {
+  return this.port_;
+};
+goog.Uri.prototype.setPort = function(newPort) {
+  this.enforceReadOnly();
+  if (newPort) {
+    newPort = Number(newPort);
+    if (isNaN(newPort) || newPort < 0) {
+      throw Error("Bad port number " + newPort);
+    }
+    this.port_ = newPort;
+  } else {
+    this.port_ = null;
+  }
+  return this;
+};
+goog.Uri.prototype.hasPort = function() {
+  return this.port_ != null;
+};
+goog.Uri.prototype.getPath = function() {
+  return this.path_;
+};
+goog.Uri.prototype.setPath = function(newPath, opt_decode) {
+  this.enforceReadOnly();
+  this.path_ = opt_decode ? goog.Uri.decodeOrEmpty_(newPath, true) : newPath;
+  return this;
+};
+goog.Uri.prototype.hasPath = function() {
+  return !!this.path_;
+};
+goog.Uri.prototype.hasQuery = function() {
+  return this.queryData_.toString() !== "";
+};
+goog.Uri.prototype.setQueryData = function(queryData, opt_decode) {
+  this.enforceReadOnly();
+  if (queryData instanceof goog.Uri.QueryData) {
+    this.queryData_ = queryData;
+    this.queryData_.setIgnoreCase(this.ignoreCase_);
+  } else {
+    if (!opt_decode) {
+      queryData = goog.Uri.encodeSpecialChars_(queryData, goog.Uri.reDisallowedInQuery_);
+    }
+    this.queryData_ = new goog.Uri.QueryData(queryData, null, this.ignoreCase_);
+  }
+  return this;
+};
+goog.Uri.prototype.setQuery = function(newQuery, opt_decode) {
+  return this.setQueryData(newQuery, opt_decode);
+};
+goog.Uri.prototype.getEncodedQuery = function() {
+  return this.queryData_.toString();
+};
+goog.Uri.prototype.getDecodedQuery = function() {
+  return this.queryData_.toDecodedString();
+};
+goog.Uri.prototype.getQueryData = function() {
+  return this.queryData_;
+};
+goog.Uri.prototype.getQuery = function() {
+  return this.getEncodedQuery();
+};
+goog.Uri.prototype.setParameterValue = function(key, value) {
+  this.enforceReadOnly();
+  this.queryData_.set(key, value);
+  return this;
+};
+goog.Uri.prototype.setParameterValues = function(key, values) {
+  this.enforceReadOnly();
+  if (!goog.isArray(values)) {
+    values = [String(values)];
+  }
+  this.queryData_.setValues(key, values);
+  return this;
+};
+goog.Uri.prototype.getParameterValues = function(name) {
+  return this.queryData_.getValues(name);
+};
+goog.Uri.prototype.getParameterValue = function(paramName) {
+  return (this.queryData_.get(paramName));
+};
+goog.Uri.prototype.getFragment = function() {
+  return this.fragment_;
+};
+goog.Uri.prototype.setFragment = function(newFragment, opt_decode) {
+  this.enforceReadOnly();
+  this.fragment_ = opt_decode ? goog.Uri.decodeOrEmpty_(newFragment) : newFragment;
+  return this;
+};
+goog.Uri.prototype.hasFragment = function() {
+  return !!this.fragment_;
+};
+goog.Uri.prototype.hasSameDomainAs = function(uri2) {
+  return (!this.hasDomain() && !uri2.hasDomain() || this.getDomain() == uri2.getDomain()) && (!this.hasPort() && !uri2.hasPort() || this.getPort() == uri2.getPort());
+};
+goog.Uri.prototype.makeUnique = function() {
+  this.enforceReadOnly();
+  this.setParameterValue(goog.Uri.RANDOM_PARAM, goog.string.getRandomString());
+  return this;
+};
+goog.Uri.prototype.removeParameter = function(key) {
+  this.enforceReadOnly();
+  this.queryData_.remove(key);
+  return this;
+};
+goog.Uri.prototype.setReadOnly = function(isReadOnly) {
+  this.isReadOnly_ = isReadOnly;
+  return this;
+};
+goog.Uri.prototype.isReadOnly = function() {
+  return this.isReadOnly_;
+};
+goog.Uri.prototype.enforceReadOnly = function() {
+  if (this.isReadOnly_) {
+    throw Error("Tried to modify a read-only Uri");
+  }
+};
+goog.Uri.prototype.setIgnoreCase = function(ignoreCase) {
+  this.ignoreCase_ = ignoreCase;
+  if (this.queryData_) {
+    this.queryData_.setIgnoreCase(ignoreCase);
+  }
+  return this;
+};
+goog.Uri.prototype.getIgnoreCase = function() {
+  return this.ignoreCase_;
+};
+goog.Uri.parse = function(uri, opt_ignoreCase) {
+  return uri instanceof goog.Uri ? uri.clone() : new goog.Uri(uri, opt_ignoreCase);
+};
+goog.Uri.create = function(opt_scheme, opt_userInfo, opt_domain, opt_port, opt_path, opt_query, opt_fragment, opt_ignoreCase) {
+  var uri = new goog.Uri(null, opt_ignoreCase);
+  opt_scheme && uri.setScheme(opt_scheme);
+  opt_userInfo && uri.setUserInfo(opt_userInfo);
+  opt_domain && uri.setDomain(opt_domain);
+  opt_port && uri.setPort(opt_port);
+  opt_path && uri.setPath(opt_path);
+  opt_query && uri.setQueryData(opt_query);
+  opt_fragment && uri.setFragment(opt_fragment);
+  return uri;
+};
+goog.Uri.resolve = function(base, rel) {
+  if (!(base instanceof goog.Uri)) {
+    base = goog.Uri.parse(base);
+  }
+  if (!(rel instanceof goog.Uri)) {
+    rel = goog.Uri.parse(rel);
+  }
+  return base.resolve(rel);
+};
+goog.Uri.removeDotSegments = function(path) {
+  if (path == ".." || path == ".") {
+    return "";
+  } else {
+    if (!goog.string.contains(path, "./") && !goog.string.contains(path, "/.")) {
+      return path;
+    } else {
+      var leadingSlash = goog.string.startsWith(path, "/");
+      var segments = path.split("/");
+      var out = [];
+      for (var pos = 0;pos < segments.length;) {
+        var segment = segments[pos++];
+        if (segment == ".") {
+          if (leadingSlash && pos == segments.length) {
+            out.push("");
+          }
+        } else {
+          if (segment == "..") {
+            if (out.length > 1 || out.length == 1 && out[0] != "") {
+              out.pop();
+            }
+            if (leadingSlash && pos == segments.length) {
+              out.push("");
+            }
+          } else {
+            out.push(segment);
+            leadingSlash = true;
+          }
+        }
+      }
+      return out.join("/");
+    }
+  }
+};
+goog.Uri.decodeOrEmpty_ = function(val, opt_preserveReserved) {
+  if (!val) {
+    return "";
+  }
+  return opt_preserveReserved ? decodeURI(val.replace(/%25/g, "%2525")) : decodeURIComponent(val);
+};
+goog.Uri.encodeSpecialChars_ = function(unescapedPart, extra, opt_removeDoubleEncoding) {
+  if (goog.isString(unescapedPart)) {
+    var encoded = encodeURI(unescapedPart).replace(extra, goog.Uri.encodeChar_);
+    if (opt_removeDoubleEncoding) {
+      encoded = goog.Uri.removeDoubleEncoding_(encoded);
+    }
+    return encoded;
+  }
+  return null;
+};
+goog.Uri.encodeChar_ = function(ch) {
+  var n = ch.charCodeAt(0);
+  return "%" + (n >> 4 & 15).toString(16) + (n & 15).toString(16);
+};
+goog.Uri.removeDoubleEncoding_ = function(doubleEncodedString) {
+  return doubleEncodedString.replace(/%25([0-9a-fA-F]{2})/g, "%$1");
+};
+goog.Uri.reDisallowedInSchemeOrUserInfo_ = /[#\/\?@]/g;
+goog.Uri.reDisallowedInRelativePath_ = /[\#\?:]/g;
+goog.Uri.reDisallowedInAbsolutePath_ = /[\#\?]/g;
+goog.Uri.reDisallowedInQuery_ = /[\#\?@]/g;
+goog.Uri.reDisallowedInFragment_ = /#/g;
+goog.Uri.haveSameDomain = function(uri1String, uri2String) {
+  var pieces1 = goog.uri.utils.split(uri1String);
+  var pieces2 = goog.uri.utils.split(uri2String);
+  return pieces1[goog.uri.utils.ComponentIndex.DOMAIN] == pieces2[goog.uri.utils.ComponentIndex.DOMAIN] && pieces1[goog.uri.utils.ComponentIndex.PORT] == pieces2[goog.uri.utils.ComponentIndex.PORT];
+};
+goog.Uri.QueryData = function(opt_query, opt_uri, opt_ignoreCase) {
+  this.keyMap_ = null;
+  this.count_ = null;
+  this.encodedQuery_ = opt_query || null;
+  this.ignoreCase_ = !!opt_ignoreCase;
+};
+goog.Uri.QueryData.prototype.ensureKeyMapInitialized_ = function() {
+  if (!this.keyMap_) {
+    this.keyMap_ = new goog.structs.Map;
+    this.count_ = 0;
+    if (this.encodedQuery_) {
+      var self = this;
+      goog.uri.utils.parseQueryData(this.encodedQuery_, function(name, value) {
+        self.add(goog.string.urlDecode(name), value);
+      });
+    }
+  }
+};
+goog.Uri.QueryData.createFromMap = function(map, opt_uri, opt_ignoreCase) {
+  var keys = goog.structs.getKeys(map);
+  if (typeof keys == "undefined") {
+    throw Error("Keys are undefined");
+  }
+  var queryData = new goog.Uri.QueryData(null, null, opt_ignoreCase);
+  var values = goog.structs.getValues(map);
+  for (var i = 0;i < keys.length;i++) {
+    var key = keys[i];
+    var value = values[i];
+    if (!goog.isArray(value)) {
+      queryData.add(key, value);
+    } else {
+      queryData.setValues(key, value);
+    }
+  }
+  return queryData;
+};
+goog.Uri.QueryData.createFromKeysValues = function(keys, values, opt_uri, opt_ignoreCase) {
+  if (keys.length != values.length) {
+    throw Error("Mismatched lengths for keys/values");
+  }
+  var queryData = new goog.Uri.QueryData(null, null, opt_ignoreCase);
+  for (var i = 0;i < keys.length;i++) {
+    queryData.add(keys[i], values[i]);
+  }
+  return queryData;
+};
+goog.Uri.QueryData.prototype.getCount = function() {
+  this.ensureKeyMapInitialized_();
+  return this.count_;
+};
+goog.Uri.QueryData.prototype.add = function(key, value) {
+  this.ensureKeyMapInitialized_();
+  this.invalidateCache_();
+  key = this.getKeyName_(key);
+  var values = this.keyMap_.get(key);
+  if (!values) {
+    this.keyMap_.set(key, values = []);
+  }
+  values.push(value);
+  this.count_ = goog.asserts.assertNumber(this.count_) + 1;
+  return this;
+};
+goog.Uri.QueryData.prototype.remove = function(key) {
+  this.ensureKeyMapInitialized_();
+  key = this.getKeyName_(key);
+  if (this.keyMap_.containsKey(key)) {
+    this.invalidateCache_();
+    this.count_ = goog.asserts.assertNumber(this.count_) - this.keyMap_.get(key).length;
+    return this.keyMap_.remove(key);
+  }
+  return false;
+};
+goog.Uri.QueryData.prototype.clear = function() {
+  this.invalidateCache_();
+  this.keyMap_ = null;
+  this.count_ = 0;
+};
+goog.Uri.QueryData.prototype.isEmpty = function() {
+  this.ensureKeyMapInitialized_();
+  return this.count_ == 0;
+};
+goog.Uri.QueryData.prototype.containsKey = function(key) {
+  this.ensureKeyMapInitialized_();
+  key = this.getKeyName_(key);
+  return this.keyMap_.containsKey(key);
+};
+goog.Uri.QueryData.prototype.containsValue = function(value) {
+  var vals = this.getValues();
+  return goog.array.contains(vals, value);
+};
+goog.Uri.QueryData.prototype.getKeys = function() {
+  this.ensureKeyMapInitialized_();
+  var vals = (this.keyMap_.getValues());
+  var keys = this.keyMap_.getKeys();
+  var rv = [];
+  for (var i = 0;i < keys.length;i++) {
+    var val = vals[i];
+    for (var j = 0;j < val.length;j++) {
+      rv.push(keys[i]);
+    }
+  }
+  return rv;
+};
+goog.Uri.QueryData.prototype.getValues = function(opt_key) {
+  this.ensureKeyMapInitialized_();
+  var rv = [];
+  if (goog.isString(opt_key)) {
+    if (this.containsKey(opt_key)) {
+      rv = goog.array.concat(rv, this.keyMap_.get(this.getKeyName_(opt_key)));
+    }
+  } else {
+    var values = this.keyMap_.getValues();
+    for (var i = 0;i < values.length;i++) {
+      rv = goog.array.concat(rv, values[i]);
+    }
+  }
+  return rv;
+};
+goog.Uri.QueryData.prototype.set = function(key, value) {
+  this.ensureKeyMapInitialized_();
+  this.invalidateCache_();
+  key = this.getKeyName_(key);
+  if (this.containsKey(key)) {
+    this.count_ = goog.asserts.assertNumber(this.count_) - this.keyMap_.get(key).length;
+  }
+  this.keyMap_.set(key, [value]);
+  this.count_ = goog.asserts.assertNumber(this.count_) + 1;
+  return this;
+};
+goog.Uri.QueryData.prototype.get = function(key, opt_default) {
+  var values = key ? this.getValues(key) : [];
+  if (goog.Uri.preserveParameterTypesCompatibilityFlag) {
+    return values.length > 0 ? values[0] : opt_default;
+  } else {
+    return values.length > 0 ? String(values[0]) : opt_default;
+  }
+};
+goog.Uri.QueryData.prototype.setValues = function(key, values) {
+  this.remove(key);
+  if (values.length > 0) {
+    this.invalidateCache_();
+    this.keyMap_.set(this.getKeyName_(key), goog.array.clone(values));
+    this.count_ = goog.asserts.assertNumber(this.count_) + values.length;
+  }
+};
+goog.Uri.QueryData.prototype.toString = function() {
+  if (this.encodedQuery_) {
+    return this.encodedQuery_;
+  }
+  if (!this.keyMap_) {
+    return "";
+  }
+  var sb = [];
+  var keys = this.keyMap_.getKeys();
+  for (var i = 0;i < keys.length;i++) {
+    var key = keys[i];
+    var encodedKey = goog.string.urlEncode(key);
+    var val = this.getValues(key);
+    for (var j = 0;j < val.length;j++) {
+      var param = encodedKey;
+      if (val[j] !== "") {
+        param += "=" + goog.string.urlEncode(val[j]);
+      }
+      sb.push(param);
+    }
+  }
+  return this.encodedQuery_ = sb.join("&");
+};
+goog.Uri.QueryData.prototype.toDecodedString = function() {
+  return goog.Uri.decodeOrEmpty_(this.toString());
+};
+goog.Uri.QueryData.prototype.invalidateCache_ = function() {
+  this.encodedQuery_ = null;
+};
+goog.Uri.QueryData.prototype.filterKeys = function(keys) {
+  this.ensureKeyMapInitialized_();
+  this.keyMap_.forEach(function(value, key) {
+    if (!goog.array.contains(keys, key)) {
+      this.remove(key);
+    }
+  }, this);
+  return this;
+};
+goog.Uri.QueryData.prototype.clone = function() {
+  var rv = new goog.Uri.QueryData;
+  rv.encodedQuery_ = this.encodedQuery_;
+  if (this.keyMap_) {
+    rv.keyMap_ = this.keyMap_.clone();
+    rv.count_ = this.count_;
+  }
+  return rv;
+};
+goog.Uri.QueryData.prototype.getKeyName_ = function(arg) {
+  var keyName = String(arg);
+  if (this.ignoreCase_) {
+    keyName = keyName.toLowerCase();
+  }
+  return keyName;
+};
+goog.Uri.QueryData.prototype.setIgnoreCase = function(ignoreCase) {
+  var resetKeys = ignoreCase && !this.ignoreCase_;
+  if (resetKeys) {
+    this.ensureKeyMapInitialized_();
+    this.invalidateCache_();
+    this.keyMap_.forEach(function(value, key) {
+      var lowerCase = key.toLowerCase();
+      if (key != lowerCase) {
+        this.remove(key);
+        this.setValues(lowerCase, value);
+      }
+    }, this);
+  }
+  this.ignoreCase_ = ignoreCase;
+};
+goog.Uri.QueryData.prototype.extend = function(var_args) {
+  for (var i = 0;i < arguments.length;i++) {
+    var data = arguments[i];
+    goog.structs.forEach(data, function(value, key) {
+      this.add(key, value);
+    }, this);
+  }
+};
 goog.provide("acgraph.vector.Clip");
 goog.require("acgraph.math.Rect");
 goog.require("acgraph.vector.ILayer");
@@ -14696,11 +18503,527 @@ acgraph.vector.Clip.prototype.disposeInternal = function() {
 };
 acgraph.vector.Clip.prototype["shape"] = acgraph.vector.Clip.prototype.shape;
 acgraph.vector.Clip.prototype["dispose"] = acgraph.vector.Clip.prototype.dispose;
+goog.provide("goog.dom.InputType");
+goog.dom.InputType = {BUTTON:"button", CHECKBOX:"checkbox", COLOR:"color", DATE:"date", DATETIME:"datetime", DATETIME_LOCAL:"datetime-local", EMAIL:"email", FILE:"file", HIDDEN:"hidden", IMAGE:"image", MENU:"menu", MONTH:"month", NUMBER:"number", PASSWORD:"password", RADIO:"radio", RANGE:"range", RESET:"reset", SEARCH:"search", SELECT_MULTIPLE:"select-multiple", SELECT_ONE:"select-one", SUBMIT:"submit", TEL:"tel", TEXT:"text", TEXTAREA:"textarea", TIME:"time", URL:"url", WEEK:"week"};
+goog.provide("goog.net.IframeIo");
+goog.provide("goog.net.IframeIo.IncrementalDataEvent");
+goog.require("goog.Timer");
+goog.require("goog.Uri");
+goog.require("goog.array");
+goog.require("goog.asserts");
+goog.require("goog.debug");
+goog.require("goog.dom");
+goog.require("goog.dom.InputType");
+goog.require("goog.dom.TagName");
+goog.require("goog.dom.safe");
+goog.require("goog.events");
+goog.require("goog.events.Event");
+goog.require("goog.events.EventTarget");
+goog.require("goog.events.EventType");
+goog.require("goog.html.uncheckedconversions");
+goog.require("goog.json");
+goog.require("goog.log");
+goog.require("goog.log.Level");
+goog.require("goog.net.ErrorCode");
+goog.require("goog.net.EventType");
+goog.require("goog.reflect");
+goog.require("goog.string");
+goog.require("goog.string.Const");
+goog.require("goog.structs");
+goog.require("goog.userAgent");
+goog.net.IframeIo = function() {
+  goog.net.IframeIo.base(this, "constructor");
+  this.name_ = goog.net.IframeIo.getNextName_();
+  this.iframesForDisposal_ = [];
+  goog.net.IframeIo.instances_[this.name_] = this;
+};
+goog.inherits(goog.net.IframeIo, goog.events.EventTarget);
+goog.net.IframeIo.instances_ = {};
+goog.net.IframeIo.FRAME_NAME_PREFIX = "closure_frame";
+goog.net.IframeIo.INNER_FRAME_SUFFIX = "_inner";
+goog.net.IframeIo.IFRAME_DISPOSE_DELAY_MS = 2E3;
+goog.net.IframeIo.counter_ = 0;
+goog.net.IframeIo.form_;
+goog.net.IframeIo.send = function(uri, opt_callback, opt_method, opt_noCache, opt_data) {
+  var io = new goog.net.IframeIo;
+  goog.events.listen(io, goog.net.EventType.READY, io.dispose, false, io);
+  if (opt_callback) {
+    goog.events.listen(io, goog.net.EventType.COMPLETE, opt_callback);
+  }
+  io.send(uri, opt_method, opt_noCache, opt_data);
+};
+goog.net.IframeIo.getIframeByName = function(fname) {
+  return window.frames[fname];
+};
+goog.net.IframeIo.getInstanceByName = function(fname) {
+  return goog.net.IframeIo.instances_[fname];
+};
+goog.net.IframeIo.handleIncrementalData = function(win, data) {
+  var iframeName = goog.string.endsWith(win.name, goog.net.IframeIo.INNER_FRAME_SUFFIX) ? win.parent.name : win.name;
+  var iframeIoName = iframeName.substring(0, iframeName.lastIndexOf("_"));
+  var iframeIo = goog.net.IframeIo.getInstanceByName(iframeIoName);
+  if (iframeIo && iframeName == iframeIo.iframeName_) {
+    iframeIo.handleIncrementalData_(data);
+  } else {
+    var logger = goog.log.getLogger("goog.net.IframeIo");
+    goog.log.info(logger, "Incremental iframe data routed for unknown iframe");
+  }
+};
+goog.net.IframeIo.getNextName_ = function() {
+  return goog.net.IframeIo.FRAME_NAME_PREFIX + goog.net.IframeIo.counter_++;
+};
+goog.net.IframeIo.getForm_ = function() {
+  if (!goog.net.IframeIo.form_) {
+    goog.net.IframeIo.form_ = (goog.dom.createDom(goog.dom.TagName.FORM));
+    goog.net.IframeIo.form_.acceptCharset = "utf-8";
+    var s = goog.net.IframeIo.form_.style;
+    s.position = "absolute";
+    s.visibility = "hidden";
+    s.top = s.left = "-10px";
+    s.width = s.height = "10px";
+    s.overflow = "hidden";
+    goog.dom.getDocument().body.appendChild(goog.net.IframeIo.form_);
+  }
+  return goog.net.IframeIo.form_;
+};
+goog.net.IframeIo.addFormInputs_ = function(form, data) {
+  var helper = goog.dom.getDomHelper(form);
+  goog.structs.forEach(data, function(value, key) {
+    if (!goog.isArray(value)) {
+      value = [value];
+    }
+    goog.array.forEach(value, function(value) {
+      var inp = helper.createDom(goog.dom.TagName.INPUT, {"type":goog.dom.InputType.HIDDEN, "name":key, "value":value});
+      form.appendChild(inp);
+    });
+  });
+};
+goog.net.IframeIo.useIeReadyStateCodePath_ = function() {
+  return goog.userAgent.IE && !goog.userAgent.isVersionOrHigher("11");
+};
+goog.net.IframeIo.prototype.logger_ = goog.log.getLogger("goog.net.IframeIo");
+goog.net.IframeIo.prototype.form_ = null;
+goog.net.IframeIo.prototype.iframe_ = null;
+goog.net.IframeIo.prototype.iframeName_ = null;
+goog.net.IframeIo.prototype.nextIframeId_ = 0;
+goog.net.IframeIo.prototype.active_ = false;
+goog.net.IframeIo.prototype.complete_ = false;
+goog.net.IframeIo.prototype.success_ = false;
+goog.net.IframeIo.prototype.lastUri_ = null;
+goog.net.IframeIo.prototype.lastContent_ = null;
+goog.net.IframeIo.prototype.lastErrorCode_ = goog.net.ErrorCode.NO_ERROR;
+goog.net.IframeIo.prototype.firefoxSilentErrorTimeout_ = null;
+goog.net.IframeIo.prototype.iframeDisposalTimer_ = null;
+goog.net.IframeIo.prototype.errorHandled_;
+goog.net.IframeIo.prototype.ignoreResponse_ = false;
+goog.net.IframeIo.prototype.errorChecker_;
+goog.net.IframeIo.prototype.lastCustomError_;
+goog.net.IframeIo.prototype.lastContentHtml_;
+goog.net.IframeIo.prototype.send = function(uri, opt_method, opt_noCache, opt_data) {
+  if (this.active_) {
+    throw Error("[goog.net.IframeIo] Unable to send, already active.");
+  }
+  var uriObj = new goog.Uri(uri);
+  this.lastUri_ = uriObj;
+  var method = opt_method ? opt_method.toUpperCase() : "GET";
+  if (opt_noCache) {
+    uriObj.makeUnique();
+  }
+  goog.log.info(this.logger_, "Sending iframe request: " + uriObj + " [" + method + "]");
+  this.form_ = goog.net.IframeIo.getForm_();
+  if (method == "GET") {
+    goog.net.IframeIo.addFormInputs_(this.form_, uriObj.getQueryData());
+  }
+  if (opt_data) {
+    goog.net.IframeIo.addFormInputs_(this.form_, opt_data);
+  }
+  this.form_.action = uriObj.toString();
+  this.form_.method = method;
+  this.sendFormInternal_();
+  this.clearForm_();
+};
+goog.net.IframeIo.prototype.sendFromForm = function(form, opt_uri, opt_noCache) {
+  if (this.active_) {
+    throw Error("[goog.net.IframeIo] Unable to send, already active.");
+  }
+  var uri = new goog.Uri(opt_uri || form.action);
+  if (opt_noCache) {
+    uri.makeUnique();
+  }
+  goog.log.info(this.logger_, "Sending iframe request from form: " + uri);
+  this.lastUri_ = uri;
+  this.form_ = form;
+  this.form_.action = uri.toString();
+  this.sendFormInternal_();
+};
+goog.net.IframeIo.prototype.abort = function(opt_failureCode) {
+  if (this.active_) {
+    goog.log.info(this.logger_, "Request aborted");
+    var requestIframe = this.getRequestIframe();
+    goog.asserts.assert(requestIframe);
+    goog.events.removeAll(requestIframe);
+    this.complete_ = false;
+    this.active_ = false;
+    this.success_ = false;
+    this.lastErrorCode_ = opt_failureCode || goog.net.ErrorCode.ABORT;
+    this.dispatchEvent(goog.net.EventType.ABORT);
+    this.makeReady_();
+  }
+};
+goog.net.IframeIo.prototype.disposeInternal = function() {
+  goog.log.fine(this.logger_, "Disposing iframeIo instance");
+  if (this.active_) {
+    goog.log.fine(this.logger_, "Aborting active request");
+    this.abort();
+  }
+  goog.net.IframeIo.superClass_.disposeInternal.call(this);
+  if (this.iframe_) {
+    this.scheduleIframeDisposal_();
+  }
+  this.disposeForm_();
+  delete this.errorChecker_;
+  this.form_ = null;
+  this.lastCustomError_ = this.lastContent_ = this.lastContentHtml_ = null;
+  this.lastUri_ = null;
+  this.lastErrorCode_ = goog.net.ErrorCode.NO_ERROR;
+  delete goog.net.IframeIo.instances_[this.name_];
+};
+goog.net.IframeIo.prototype.isComplete = function() {
+  return this.complete_;
+};
+goog.net.IframeIo.prototype.isSuccess = function() {
+  return this.success_;
+};
+goog.net.IframeIo.prototype.isActive = function() {
+  return this.active_;
+};
+goog.net.IframeIo.prototype.getResponseText = function() {
+  return this.lastContent_;
+};
+goog.net.IframeIo.prototype.getResponseHtml = function() {
+  return this.lastContentHtml_;
+};
+goog.net.IframeIo.prototype.getResponseJson = function() {
+  return goog.json.parse(this.lastContent_);
+};
+goog.net.IframeIo.prototype.getResponseXml = function() {
+  if (!this.iframe_) {
+    return null;
+  }
+  return this.getContentDocument_();
+};
+goog.net.IframeIo.prototype.getLastUri = function() {
+  return this.lastUri_;
+};
+goog.net.IframeIo.prototype.getLastErrorCode = function() {
+  return this.lastErrorCode_;
+};
+goog.net.IframeIo.prototype.getLastError = function() {
+  return goog.net.ErrorCode.getDebugMessage(this.lastErrorCode_);
+};
+goog.net.IframeIo.prototype.getLastCustomError = function() {
+  return this.lastCustomError_;
+};
+goog.net.IframeIo.prototype.setErrorChecker = function(fn) {
+  this.errorChecker_ = fn;
+};
+goog.net.IframeIo.prototype.getErrorChecker = function() {
+  return this.errorChecker_;
+};
+goog.net.IframeIo.prototype.isIgnoringResponse = function() {
+  return this.ignoreResponse_;
+};
+goog.net.IframeIo.prototype.setIgnoreResponse = function(ignore) {
+  this.ignoreResponse_ = ignore;
+};
+goog.net.IframeIo.prototype.sendFormInternal_ = function() {
+  this.active_ = true;
+  this.complete_ = false;
+  this.lastErrorCode_ = goog.net.ErrorCode.NO_ERROR;
+  this.createIframe_();
+  if (goog.net.IframeIo.useIeReadyStateCodePath_()) {
+    this.form_.target = this.iframeName_ || "";
+    this.appendIframe_();
+    if (!this.ignoreResponse_) {
+      goog.events.listen(this.iframe_, goog.events.EventType.READYSTATECHANGE, this.onIeReadyStateChange_, false, this);
+    }
+    try {
+      this.errorHandled_ = false;
+      this.form_.submit();
+    } catch (e) {
+      if (!this.ignoreResponse_) {
+        goog.events.unlisten(this.iframe_, goog.events.EventType.READYSTATECHANGE, this.onIeReadyStateChange_, false, this);
+      }
+      this.handleError_(goog.net.ErrorCode.ACCESS_DENIED);
+    }
+  } else {
+    goog.log.fine(this.logger_, "Setting up iframes and cloning form");
+    this.appendIframe_();
+    var innerFrameName = this.iframeName_ + goog.net.IframeIo.INNER_FRAME_SUFFIX;
+    var doc = goog.dom.getFrameContentDocument(this.iframe_);
+    var html;
+    if (document.baseURI) {
+      html = goog.net.IframeIo.createIframeHtmlWithBaseUri_(innerFrameName);
+    } else {
+      html = goog.net.IframeIo.createIframeHtml_(innerFrameName);
+    }
+    if (goog.userAgent.OPERA && !goog.userAgent.WEBKIT) {
+      goog.dom.safe.setInnerHtml(doc.documentElement, html);
+    } else {
+      goog.dom.safe.documentWrite(doc, html);
+    }
+    if (!this.ignoreResponse_) {
+      goog.events.listen(doc.getElementById(innerFrameName), goog.events.EventType.LOAD, this.onIframeLoaded_, false, this);
+    }
+    var textareas = this.form_.getElementsByTagName(goog.dom.TagName.TEXTAREA);
+    for (var i = 0, n = textareas.length;i < n;i++) {
+      var value = textareas[i].value;
+      if (goog.dom.getRawTextContent(textareas[i]) != value) {
+        goog.dom.setTextContent(textareas[i], value);
+        textareas[i].value = value;
+      }
+    }
+    var clone = doc.importNode(this.form_, true);
+    clone.target = innerFrameName;
+    clone.action = this.form_.action;
+    doc.body.appendChild(clone);
+    var selects = this.form_.getElementsByTagName(goog.dom.TagName.SELECT);
+    var clones = clone.getElementsByTagName(goog.dom.TagName.SELECT);
+    for (var i = 0, n = selects.length;i < n;i++) {
+      var selectsOptions = selects[i].getElementsByTagName(goog.dom.TagName.OPTION);
+      var clonesOptions = clones[i].getElementsByTagName(goog.dom.TagName.OPTION);
+      for (var j = 0, m = selectsOptions.length;j < m;j++) {
+        clonesOptions[j].selected = selectsOptions[j].selected;
+      }
+    }
+    var inputs = this.form_.getElementsByTagName(goog.dom.TagName.INPUT);
+    var inputClones = clone.getElementsByTagName(goog.dom.TagName.INPUT);
+    for (var i = 0, n = inputs.length;i < n;i++) {
+      if (inputs[i].type == goog.dom.InputType.FILE) {
+        if (inputs[i].value != inputClones[i].value) {
+          goog.log.fine(this.logger_, "File input value not cloned properly.  Will " + "submit using original form.");
+          this.form_.target = innerFrameName;
+          clone = this.form_;
+          break;
+        }
+      }
+    }
+    goog.log.fine(this.logger_, "Submitting form");
+    try {
+      this.errorHandled_ = false;
+      clone.submit();
+      doc.close();
+      if (goog.userAgent.GECKO) {
+        this.firefoxSilentErrorTimeout_ = goog.Timer.callOnce(this.testForFirefoxSilentError_, 250, this);
+      }
+    } catch (e$3) {
+      goog.log.error(this.logger_, "Error when submitting form: " + goog.debug.exposeException(e$3));
+      if (!this.ignoreResponse_) {
+        goog.events.unlisten(doc.getElementById(innerFrameName), goog.events.EventType.LOAD, this.onIframeLoaded_, false, this);
+      }
+      doc.close();
+      this.handleError_(goog.net.ErrorCode.FILE_NOT_FOUND);
+    }
+  }
+};
+goog.net.IframeIo.createIframeHtml_ = function(innerFrameName) {
+  var innerFrameNameEscaped = goog.string.htmlEscape(innerFrameName);
+  return goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(goog.string.Const.from("Short HTML snippet, input escaped, for performance"), '<body><iframe id="' + innerFrameNameEscaped + '" name="' + innerFrameNameEscaped + '"></iframe>');
+};
+goog.net.IframeIo.createIframeHtmlWithBaseUri_ = function(innerFrameName) {
+  var innerFrameNameEscaped = goog.string.htmlEscape(innerFrameName);
+  return goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(goog.string.Const.from("Short HTML snippet, input escaped, safe URL, for performance"), '<head><base href="' + goog.string.htmlEscape((document.baseURI)) + '"></head>' + '<body><iframe id="' + innerFrameNameEscaped + '" name="' + innerFrameNameEscaped + '"></iframe>');
+};
+goog.net.IframeIo.prototype.onIeReadyStateChange_ = function(e) {
+  if (this.iframe_.readyState == "complete") {
+    goog.events.unlisten(this.iframe_, goog.events.EventType.READYSTATECHANGE, this.onIeReadyStateChange_, false, this);
+    var doc;
+    try {
+      doc = goog.dom.getFrameContentDocument(this.iframe_);
+      if (goog.userAgent.IE && doc.location == "about:blank" && !navigator.onLine) {
+        this.handleError_(goog.net.ErrorCode.OFFLINE);
+        return;
+      }
+    } catch (ex) {
+      this.handleError_(goog.net.ErrorCode.ACCESS_DENIED);
+      return;
+    }
+    this.handleLoad_((doc));
+  }
+};
+goog.net.IframeIo.prototype.onIframeLoaded_ = function(e) {
+  if (goog.userAgent.OPERA && !goog.userAgent.WEBKIT && this.getContentDocument_().location == "about:blank") {
+    return;
+  }
+  goog.events.unlisten(this.getRequestIframe(), goog.events.EventType.LOAD, this.onIframeLoaded_, false, this);
+  try {
+    this.handleLoad_(this.getContentDocument_());
+  } catch (ex) {
+    this.handleError_(goog.net.ErrorCode.ACCESS_DENIED);
+  }
+};
+goog.net.IframeIo.prototype.handleLoad_ = function(contentDocument) {
+  goog.log.fine(this.logger_, "Iframe loaded");
+  this.complete_ = true;
+  this.active_ = false;
+  var errorCode;
+  try {
+    var body = contentDocument.body;
+    this.lastContent_ = body.textContent || body.innerText;
+    this.lastContentHtml_ = body.innerHTML;
+  } catch (ex) {
+    errorCode = goog.net.ErrorCode.ACCESS_DENIED;
+  }
+  var customError;
+  if (!errorCode && typeof this.errorChecker_ == "function") {
+    customError = this.errorChecker_(contentDocument);
+    if (customError) {
+      errorCode = goog.net.ErrorCode.CUSTOM_ERROR;
+    }
+  }
+  goog.log.log(this.logger_, goog.log.Level.FINER, "Last content: " + this.lastContent_);
+  goog.log.log(this.logger_, goog.log.Level.FINER, "Last uri: " + this.lastUri_);
+  if (errorCode) {
+    goog.log.fine(this.logger_, "Load event occurred but failed");
+    this.handleError_(errorCode, customError);
+  } else {
+    goog.log.fine(this.logger_, "Load succeeded");
+    this.success_ = true;
+    this.lastErrorCode_ = goog.net.ErrorCode.NO_ERROR;
+    this.dispatchEvent(goog.net.EventType.COMPLETE);
+    this.dispatchEvent(goog.net.EventType.SUCCESS);
+    this.makeReady_();
+  }
+};
+goog.net.IframeIo.prototype.handleError_ = function(errorCode, opt_customError) {
+  if (!this.errorHandled_) {
+    this.success_ = false;
+    this.active_ = false;
+    this.complete_ = true;
+    this.lastErrorCode_ = errorCode;
+    if (errorCode == goog.net.ErrorCode.CUSTOM_ERROR) {
+      goog.asserts.assert(goog.isDef(opt_customError));
+      this.lastCustomError_ = opt_customError;
+    }
+    this.dispatchEvent(goog.net.EventType.COMPLETE);
+    this.dispatchEvent(goog.net.EventType.ERROR);
+    this.makeReady_();
+    this.errorHandled_ = true;
+  }
+};
+goog.net.IframeIo.prototype.handleIncrementalData_ = function(data) {
+  this.dispatchEvent(new goog.net.IframeIo.IncrementalDataEvent(data));
+};
+goog.net.IframeIo.prototype.makeReady_ = function() {
+  goog.log.info(this.logger_, "Ready for new requests");
+  this.scheduleIframeDisposal_();
+  this.disposeForm_();
+  this.dispatchEvent(goog.net.EventType.READY);
+};
+goog.net.IframeIo.prototype.createIframe_ = function() {
+  goog.log.fine(this.logger_, "Creating iframe");
+  this.iframeName_ = this.name_ + "_" + (this.nextIframeId_++).toString(36);
+  var iframeAttributes = {"name":this.iframeName_, "id":this.iframeName_};
+  if (goog.userAgent.IE && Number(goog.userAgent.VERSION) < 7) {
+    iframeAttributes.src = 'javascript:""';
+  }
+  this.iframe_ = (goog.dom.getDomHelper(this.form_).createDom(goog.dom.TagName.IFRAME, iframeAttributes));
+  var s = this.iframe_.style;
+  s.visibility = "hidden";
+  s.width = s.height = "10px";
+  s.display = "none";
+  if (!goog.userAgent.WEBKIT) {
+    s.position = "absolute";
+    s.top = s.left = "-10px";
+  } else {
+    s.marginTop = s.marginLeft = "-10px";
+  }
+};
+goog.net.IframeIo.prototype.appendIframe_ = function() {
+  goog.dom.getDomHelper(this.form_).getDocument().body.appendChild(this.iframe_);
+};
+goog.net.IframeIo.prototype.scheduleIframeDisposal_ = function() {
+  var iframe = this.iframe_;
+  if (iframe) {
+    iframe.onreadystatechange = null;
+    iframe.onload = null;
+    iframe.onerror = null;
+    this.iframesForDisposal_.push(iframe);
+  }
+  if (this.iframeDisposalTimer_) {
+    goog.Timer.clear(this.iframeDisposalTimer_);
+    this.iframeDisposalTimer_ = null;
+  }
+  if (goog.userAgent.GECKO || goog.userAgent.OPERA && !goog.userAgent.WEBKIT) {
+    this.iframeDisposalTimer_ = goog.Timer.callOnce(this.disposeIframes_, goog.net.IframeIo.IFRAME_DISPOSE_DELAY_MS, this);
+  } else {
+    this.disposeIframes_();
+  }
+  this.iframe_ = null;
+  this.iframeName_ = null;
+};
+goog.net.IframeIo.prototype.disposeIframes_ = function() {
+  if (this.iframeDisposalTimer_) {
+    goog.Timer.clear(this.iframeDisposalTimer_);
+    this.iframeDisposalTimer_ = null;
+  }
+  while (this.iframesForDisposal_.length != 0) {
+    var iframe = this.iframesForDisposal_.pop();
+    goog.log.info(this.logger_, "Disposing iframe");
+    goog.dom.removeNode(iframe);
+  }
+};
+goog.net.IframeIo.prototype.clearForm_ = function() {
+  if (this.form_ && this.form_ == goog.net.IframeIo.form_) {
+    goog.dom.removeChildren(this.form_);
+  }
+};
+goog.net.IframeIo.prototype.disposeForm_ = function() {
+  this.clearForm_();
+  this.form_ = null;
+};
+goog.net.IframeIo.prototype.getContentDocument_ = function() {
+  if (this.iframe_) {
+    return (goog.dom.getFrameContentDocument(this.getRequestIframe()));
+  }
+  return null;
+};
+goog.net.IframeIo.prototype.getRequestIframe = function() {
+  if (this.iframe_) {
+    return (goog.net.IframeIo.useIeReadyStateCodePath_() ? this.iframe_ : goog.dom.getFrameContentDocument(this.iframe_).getElementById(this.iframeName_ + goog.net.IframeIo.INNER_FRAME_SUFFIX));
+  }
+  return null;
+};
+goog.net.IframeIo.prototype.testForFirefoxSilentError_ = function() {
+  if (this.active_) {
+    var doc = this.getContentDocument_();
+    if (doc && !goog.reflect.canAccessProperty(doc, "documentUri")) {
+      if (!this.ignoreResponse_) {
+        goog.events.unlisten(this.getRequestIframe(), goog.events.EventType.LOAD, this.onIframeLoaded_, false, this);
+      }
+      if (navigator.onLine) {
+        goog.log.warning(this.logger_, "Silent Firefox error detected");
+        this.handleError_(goog.net.ErrorCode.FF_SILENT_ERROR);
+      } else {
+        goog.log.warning(this.logger_, "Firefox is offline so report offline error " + "instead of silent error");
+        this.handleError_(goog.net.ErrorCode.OFFLINE);
+      }
+      return;
+    }
+    this.firefoxSilentErrorTimeout_ = goog.Timer.callOnce(this.testForFirefoxSilentError_, 250, this);
+  }
+};
+goog.net.IframeIo.IncrementalDataEvent = function(data) {
+  goog.events.Event.call(this, goog.net.EventType.INCREMENTAL_DATA);
+  this.data = data;
+};
+goog.inherits(goog.net.IframeIo.IncrementalDataEvent, goog.events.Event);
 goog.provide("acgraph.utils.HelperElement");
 goog.provide("acgraph.utils.HelperElement.EventType");
 goog.require("acgraph.events");
 goog.require("goog.dom");
 goog.require("goog.events.EventTarget");
+goog.require("goog.net.IframeIo");
 goog.require("goog.style");
 goog.require("goog.userAgent");
 acgraph.utils.HelperElement = function(stage, container) {
@@ -14708,11 +19031,6 @@ acgraph.utils.HelperElement = function(stage, container) {
   this.stage_ = stage;
   this.sizeElement_ = goog.dom.getDomHelper().createDom("iframe", {"style":"position:absolute; width:10%; height:10%; top: -99em; border-style:none; overflow:none;", "frameborder":"0", "tabIndex":-1, "aria-hidden":"true"});
   this.handler_ = goog.bind(this.handleResize_, this);
-  this.form_ = null;
-  this.formData_ = null;
-  this.formDataType_ = null;
-  this.formResponseType_ = null;
-  this.optInputsMaps_ = {};
   this.renderToContainer(container);
 };
 goog.inherits(acgraph.utils.HelperElement, goog.events.EventTarget);
@@ -14745,34 +19063,8 @@ acgraph.utils.HelperElement.prototype.renderToContainer = function(value) {
   }
   this.resizeChecker_ = setInterval(this.handler_, 200);
 };
-acgraph.utils.HelperElement.prototype.sendRequestToExportServer = function(url, data, dataType, responseType, opt_arguments) {
-  if (!this.form_) {
-    this.form_ = goog.dom.getDomHelper().createDom(goog.dom.TagName.FORM, {"method":"POST"});
-    this.formData_ = goog.dom.getDomHelper().createDom(goog.dom.TagName.INPUT, {"type":"hidden", "name":"data"});
-    this.formDataType_ = goog.dom.getDomHelper().createDom(goog.dom.TagName.INPUT, {"type":"hidden", "name":"dataType"});
-    this.formResponseType_ = goog.dom.getDomHelper().createDom(goog.dom.TagName.INPUT, {"type":"hidden", "name":"responseType"});
-    goog.dom.appendChild(this.domElement(), this.form_);
-    goog.dom.appendChild(this.form_, this.formData_);
-    goog.dom.appendChild(this.form_, this.formDataType_);
-    goog.dom.appendChild(this.form_, this.formResponseType_);
-  }
-  goog.object.forEach(this.optInputsMaps_, goog.dom.removeNode);
-  if (goog.isDef(opt_arguments)) {
-    goog.object.forEach(opt_arguments, function(value, key) {
-      var input = this.optInputsMaps_[key];
-      if (!input) {
-        input = goog.dom.getDomHelper().createDom(goog.dom.TagName.INPUT, {"type":"hidden", "name":key});
-        this.optInputsMaps_[key] = input;
-      }
-      input["value"] = value;
-      goog.dom.appendChild(this.form_, input);
-    }, this);
-  }
-  this.form_["action"] = url;
-  this.formData_["value"] = data;
-  this.formDataType_["value"] = dataType;
-  this.formResponseType_["value"] = responseType;
-  this.form_["submit"]();
+acgraph.utils.HelperElement.prototype.sendRequestToExportServer = function(url, opt_arguments) {
+  goog.net.IframeIo.send(url, undefined, "POST", false, opt_arguments);
 };
 acgraph.utils.HelperElement.prototype.domElement = function() {
   return this.sizeElement_;
@@ -14784,11 +19076,6 @@ acgraph.utils.HelperElement.prototype.disposeInternal = function() {
   goog.dom.removeNode(this.sizeElement_);
   delete this.sizeElement_;
   delete this.container_;
-  delete this.form_;
-  delete this.formData_;
-  delete this.formDataType_;
-  delete this.formResponseType_;
-  delete this.optInputsMaps_;
   delete this.stage_;
   goog.base(this, "disposeInternal");
 };
@@ -14840,18 +19127,26 @@ goog.require("acgraph.vector.Path");
 goog.require("acgraph.vector.PatternFill");
 goog.require("acgraph.vector.Rect");
 goog.require("acgraph.vector.Text");
+goog.require("acgraph.vector.UnmanagedLayer");
+goog.require("goog.Uri.QueryData");
 goog.require("goog.array");
 goog.require("goog.dom");
 goog.require("goog.dom.classlist");
 goog.require("goog.events.EventHandler");
 goog.require("goog.events.EventTarget");
 goog.require("goog.events.Listenable");
+goog.require("goog.net.XhrIo");
+goog.require("goog.structs.Map");
 goog.require("goog.style");
 acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
   goog.base(this);
   this.suspended_ = 1;
   this.container_ = null;
   this.originContainer_ = null;
+  this.titleElement_ = null;
+  this.titleVal_ = void 0;
+  this.descElement_ = null;
+  this.descVal_ = void 0;
   this.asyncMode_ = false;
   this.eventHandler_ = new goog.events.EventHandler(this);
   this.registerDisposable(this.eventHandler_);
@@ -14978,11 +19273,14 @@ acgraph.vector.Stage.prototype.getRootLayer = function() {
 acgraph.vector.Stage.prototype.width = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
     this.originalWidth = opt_value;
+    if (this.container_) {
+      goog.style.setWidth(this.container_, this.originalWidth);
+    }
     this.isPercentWidth = goog.isString(opt_value) && goog.string.endsWith(opt_value, "%");
     var containerWidth = this.container_ ? goog.style.getContentBoxSize(this.container_).width || 0 : 0;
     if (this.isPercentWidth) {
       if (this.container_) {
-        this.setWidthInternal(containerWidth * parseFloat(opt_value) / 100, containerWidth);
+        this.setWidthInternal(Math.max(containerWidth, 0), containerWidth);
         this.startResizeMonitor();
       } else {
         this.setWidthInternal(0, containerWidth);
@@ -14993,6 +19291,7 @@ acgraph.vector.Stage.prototype.width = function(opt_value) {
     this.needUpdateSize_ = true;
     if (!this.suspended_ && this.container_) {
       this.render();
+      this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RESIZE);
     }
     return this;
   }
@@ -15005,11 +19304,14 @@ acgraph.vector.Stage.prototype.setWidthInternal = function(width, containerWidth
 acgraph.vector.Stage.prototype.height = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
     this.originalHeight = opt_value;
+    if (this.container_) {
+      goog.style.setHeight(this.container_, this.originalHeight);
+    }
     this.isPercentHeight = goog.isString(opt_value) && goog.string.endsWith(opt_value, "%");
     var containerHeight = this.container_ ? goog.style.getContentBoxSize(this.container_).height || 0 : 0;
     if (this.isPercentHeight) {
       if (this.container_) {
-        this.setHeightInternal(Math.max(containerHeight * parseFloat(opt_value) / 100, 0), containerHeight);
+        this.setHeightInternal(Math.max(containerHeight, 0), containerHeight);
         this.startResizeMonitor();
       } else {
         this.setHeightInternal(0, containerHeight);
@@ -15020,6 +19322,7 @@ acgraph.vector.Stage.prototype.height = function(opt_value) {
     this.needUpdateSize_ = true;
     if (!this.suspended_ && this.container()) {
       this.render();
+      this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RESIZE);
     }
     return this;
   }
@@ -15035,7 +19338,11 @@ acgraph.vector.Stage.prototype.container = function(opt_value) {
   }
   this.originContainer_ = goog.dom.getElement(opt_value || null);
   if (this.originContainer_) {
-    this.container_ = goog.dom.createDom(goog.dom.TagName.DIV, {style:"position: relative; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden;"});
+    if (!this.container_) {
+      this.container_ = goog.dom.createDom(goog.dom.TagName.DIV, {style:"position: relative; left: 0; top: 0; overflow: hidden;"});
+    }
+    goog.style.setWidth(this.container_, this.originalWidth);
+    goog.style.setHeight(this.container_, this.originalHeight);
     goog.dom.appendChild(this.originContainer_, this.container_);
     if (this.isPercentHeight || this.isPercentWidth) {
       this.startResizeMonitor();
@@ -15044,12 +19351,12 @@ acgraph.vector.Stage.prototype.container = function(opt_value) {
     var containerHeight = size.height || 0;
     var containerWidth = size.width || 0;
     if (this.isPercentHeight) {
-      this.setHeightInternal(containerHeight * parseFloat(this.originalHeight) / 100, containerHeight);
+      this.setHeightInternal(Math.max(containerHeight, 0), containerHeight);
     } else {
       this.lastContainerHeight = containerHeight;
     }
     if (this.isPercentWidth) {
-      this.setWidthInternal(containerWidth * parseFloat(this.originalWidth) / 100, containerWidth);
+      this.setWidthInternal(Math.max(containerWidth, 0), containerWidth);
     } else {
       this.lastContainerWidth = containerWidth;
     }
@@ -15151,9 +19458,6 @@ acgraph.vector.Stage.prototype.resize = function(width, height) {
   this.width(width);
   this.height(height);
 };
-acgraph.vector.Stage.prototype.resizeInternal = function() {
-  acgraph.getRenderer().setStageSize(this.domElement(), this.originalWidth, this.originalHeight);
-};
 acgraph.vector.Stage.prototype.startResizeMonitor = function() {
   var helperElement = this.getHelperElement();
   var domElement = helperElement.domElement();
@@ -15183,7 +19487,7 @@ acgraph.vector.Stage.prototype.id = function(opt_value) {
     var id = opt_value || "";
     if (this.id_ !== id) {
       this.id_ = id;
-      acgraph.getRenderer().setId(this.domElement_, this.id_);
+      acgraph.getRenderer().setId(this, this.id_);
     }
     return this;
   }
@@ -15193,7 +19497,7 @@ acgraph.vector.Stage.prototype.id = function(opt_value) {
   return (this.id_);
 };
 acgraph.vector.Stage.prototype.createInternal = function() {
-  this.resizeInternal();
+  acgraph.getRenderer().setStageSize(this.domElement(), "100%", "100%");
 };
 acgraph.vector.Stage.prototype.acquireDomChangesSync_ = function(wantedCount) {
   this.currentDomChangesCount += wantedCount;
@@ -15229,9 +19533,6 @@ acgraph.vector.Stage.prototype.render = function() {
     throw acgraph.error.getErrorMessage(acgraph.error.Code.CONTAINER_SHOULD_BE_DEFINED);
   }
   this.renderInternal();
-  if (this.needUpdateSize_) {
-    this.resizeInternal();
-  }
   if (!goog.dom.getParentElement(this.domElement_) || this.container_ != goog.dom.getParentElement(this.domElement_)) {
     goog.dom.appendChild(this.container_, this.domElement_);
     goog.style.setStyle(this.domElement_, "display", "block");
@@ -15271,6 +19572,9 @@ acgraph.vector.Stage.prototype.renderInternal = function() {
   }
   if (this.rootLayer_.isDirty()) {
     this.rootLayer_.render();
+  }
+  if (this.credits) {
+    this.credits().render();
   }
 };
 acgraph.vector.Stage.prototype.renderAsync = function() {
@@ -15340,23 +19644,203 @@ acgraph.vector.Stage.prototype.data = function(opt_value) {
     return this;
   }
 };
+acgraph.vector.Stage.ExportType = {SVG:"svg", JPG:"jpg", PNG:"png", PDF:"pdf"};
+acgraph.vector.Stage.prototype.shareUrl_ = function(type, data, asBase64, saveAndShare, onSuccess, opt_onError) {
+  if (asBase64) {
+    data["responseType"] = "base64";
+  }
+  if (saveAndShare) {
+    data["save"] = true;
+  }
+  var onError = opt_onError || goog.nullFunction;
+  var property = saveAndShare ? "url" : "result";
+  var callback = function(event) {
+    var xhr = (event.target);
+    if (xhr.isSuccess()) {
+      onSuccess((xhr.getResponseJson()[property]));
+    } else {
+      onError(xhr.getLastError());
+    }
+  };
+  data = goog.Uri.QueryData.createFromMap(new goog.structs.Map(data));
+  goog.net.XhrIo.send(acgraph.exportServer + "/" + type, callback, "POST", data.toString());
+};
+acgraph.vector.Stage.prototype.addPngData_ = function(data, opt_width, opt_height, opt_quality, opt_filename) {
+  data["data"] = this.toSvg();
+  data["dataType"] = "svg";
+  data["responseType"] = "file";
+  if (goog.isDef(opt_width)) {
+    data["width"] = opt_width;
+  }
+  if (goog.isDef(opt_height)) {
+    data["height"] = opt_height;
+  }
+  if (goog.isDef(opt_quality)) {
+    data["quality"] = opt_quality;
+  }
+  if (goog.isDef(opt_filename)) {
+    data["file-name"] = opt_filename;
+  }
+};
+acgraph.vector.Stage.prototype.shareAsPng = function(onSuccess, opt_onError, opt_asBase64, opt_width, opt_height, opt_quality, opt_filename) {
+  var type = acgraph.type();
+  if (type == acgraph.StageType.SVG) {
+    var data = {};
+    this.addPngData_(data, opt_width, opt_height, opt_quality, opt_filename);
+    this.shareUrl_(acgraph.vector.Stage.ExportType.PNG, data, !!opt_asBase64, true, onSuccess, opt_onError);
+  } else {
+    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
+  }
+};
+acgraph.vector.Stage.prototype.addJpgData_ = function(data, opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename) {
+  data["data"] = this.toSvg();
+  data["dataType"] = "svg";
+  data["responseType"] = "file";
+  if (goog.isDef(opt_width)) {
+    data["width"] = opt_width;
+  }
+  if (goog.isDef(opt_height)) {
+    data["height"] = opt_height;
+  }
+  if (goog.isDef(opt_quality)) {
+    data["quality"] = opt_quality;
+  }
+  if (goog.isDef(opt_forceTransparentWhite)) {
+    data["force-transparent-white"] = opt_forceTransparentWhite;
+  }
+  if (goog.isDef(opt_filename)) {
+    data["file-name"] = opt_filename;
+  }
+};
+acgraph.vector.Stage.prototype.shareAsJpg = function(onSuccess, opt_onError, opt_asBase64, opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename) {
+  var type = acgraph.type();
+  if (type == acgraph.StageType.SVG) {
+    var data = {};
+    this.addJpgData_(data, opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename);
+    this.shareUrl_(acgraph.vector.Stage.ExportType.JPG, data, !!opt_asBase64, true, onSuccess, opt_onError);
+  } else {
+    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
+  }
+};
+acgraph.vector.Stage.prototype.addSvgData_ = function(data, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename) {
+  data["data"] = this.toSvg(opt_paperSizeOrWidth, opt_landscapeOrHeight);
+  data["dataType"] = "svg";
+  data["responseType"] = "file";
+  if (goog.isDef(opt_filename)) {
+    data["file-name"] = opt_filename;
+  }
+};
+acgraph.vector.Stage.prototype.shareAsSvg = function(onSuccess, opt_onError, opt_asBase64, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename) {
+  var type = acgraph.type();
+  if (type == acgraph.StageType.SVG) {
+    var data = {};
+    this.addSvgData_(data, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename);
+    this.shareUrl_(acgraph.vector.Stage.ExportType.SVG, data, !!opt_asBase64, true, onSuccess, opt_onError);
+  } else {
+    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
+  }
+};
+acgraph.vector.Stage.prototype.addPdfData_ = function(data, opt_paperSizeOrWidth, opt_landscapeOrWidth, opt_x, opt_y, opt_filename) {
+  var formatSize = null;
+  var svgStr;
+  if (goog.isDef(opt_paperSizeOrWidth)) {
+    if (goog.isNumber(opt_paperSizeOrWidth)) {
+      data["pdf-width"] = opt_paperSizeOrWidth;
+      data["pdf-height"] = goog.isNumber(opt_landscapeOrWidth) ? opt_landscapeOrWidth : this.height();
+    } else {
+      if (goog.isString(opt_paperSizeOrWidth)) {
+        data["pdf-size"] = opt_paperSizeOrWidth || acgraph.vector.PaperSize.A4;
+        data["landscape"] = !!opt_landscapeOrWidth;
+        formatSize = acgraph.utils.exporting.PdfPaperSize[data["pdf-size"]];
+        if (data["landscape"]) {
+          formatSize = {width:formatSize.height, height:formatSize.width};
+        }
+      } else {
+        data["pdf-width"] = this.width();
+        data["pdf-height"] = this.height();
+      }
+    }
+  } else {
+    data["pdf-width"] = this.width();
+    data["pdf-height"] = this.height();
+  }
+  if (goog.isDef(opt_x)) {
+    data["pdf-x"] = opt_x;
+  }
+  if (goog.isDef(opt_y)) {
+    data["pdf-y"] = opt_y;
+  }
+  if (goog.isDef(opt_filename)) {
+    data["file-name"] = opt_filename;
+  }
+  if (formatSize) {
+    var proportionalSize = acgraph.math.fitWithProportion(formatSize.width, formatSize.height, (this.width()), (this.height()));
+    proportionalSize[0] -= opt_x || 0;
+    proportionalSize[1] -= opt_y || 0;
+    svgStr = this.toSvg(proportionalSize[0], proportionalSize[1]);
+  } else {
+    svgStr = this.toSvg();
+  }
+  data["data"] = svgStr;
+  data["dataType"] = "svg";
+  data["responseType"] = "file";
+};
+acgraph.vector.Stage.prototype.shareAsPdf = function(onSuccess, opt_onError, opt_asBase64, opt_paperSizeOrWidth, opt_landscapeOrWidth, opt_x, opt_y, opt_filename) {
+  var type = acgraph.type();
+  if (type == acgraph.StageType.SVG) {
+    var data = {};
+    this.addPdfData_(data, opt_paperSizeOrWidth, opt_landscapeOrWidth, opt_x, opt_y, opt_filename);
+    this.shareUrl_(acgraph.vector.Stage.ExportType.PDF, data, !!opt_asBase64, true, onSuccess, opt_onError);
+  } else {
+    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
+  }
+};
+acgraph.vector.Stage.prototype.getPngBase64String = function(onSuccess, opt_onError, opt_width, opt_height, opt_quality) {
+  var type = acgraph.type();
+  if (type == acgraph.StageType.SVG) {
+    var data = {};
+    this.addPngData_(data, opt_width, opt_height, opt_quality);
+    this.shareUrl_(acgraph.vector.Stage.ExportType.PNG, data, true, false, onSuccess, opt_onError);
+  } else {
+    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
+  }
+};
+acgraph.vector.Stage.prototype.getJpgBase64String = function(onSuccess, opt_onError, opt_width, opt_height, opt_quality, opt_forceTransparentWhite) {
+  var type = acgraph.type();
+  if (type == acgraph.StageType.SVG) {
+    var data = {};
+    this.addJpgData_(data, opt_width, opt_height, opt_quality, opt_forceTransparentWhite);
+    this.shareUrl_(acgraph.vector.Stage.ExportType.JPG, data, true, false, onSuccess, opt_onError);
+  } else {
+    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
+  }
+};
+acgraph.vector.Stage.prototype.getSvgBase64String = function(onSuccess, opt_onError, opt_paperSizeOrWidth, opt_landscapeOrHeight) {
+  var type = acgraph.type();
+  if (type == acgraph.StageType.SVG) {
+    var data = {};
+    this.addSvgData_(data, opt_paperSizeOrWidth, opt_landscapeOrHeight);
+    this.shareUrl_(acgraph.vector.Stage.ExportType.SVG, data, true, false, onSuccess, opt_onError);
+  } else {
+    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
+  }
+};
+acgraph.vector.Stage.prototype.getPdfBase64String = function(onSuccess, opt_onError, opt_paperSizeOrWidth, opt_landscapeOrWidth, opt_x, opt_y) {
+  var type = acgraph.type();
+  if (type == acgraph.StageType.SVG) {
+    var data = {};
+    this.addPdfData_(data, opt_paperSizeOrWidth, opt_landscapeOrWidth, opt_x, opt_y);
+    this.shareUrl_(acgraph.vector.Stage.ExportType.PDF, data, true, false, onSuccess, opt_onError);
+  } else {
+    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
+  }
+};
 acgraph.vector.Stage.prototype.saveAsPng = function(opt_width, opt_height, opt_quality, opt_filename) {
   var type = acgraph.type();
   if (type == acgraph.StageType.SVG) {
     var options = {};
-    if (goog.isDef(opt_width)) {
-      options["width"] = opt_width;
-    }
-    if (goog.isDef(opt_height)) {
-      options["height"] = opt_height;
-    }
-    if (goog.isDef(opt_quality)) {
-      options["quality"] = opt_quality;
-    }
-    if (goog.isDef(opt_filename)) {
-      options["file-name"] = opt_filename;
-    }
-    this.getHelperElement().sendRequestToExportServer(acgraph.exportServer + "/png", this.toSvg(), "svg", "file", options);
+    this.addPngData_(options, opt_width, opt_height, opt_quality, opt_filename);
+    this.getHelperElement().sendRequestToExportServer(acgraph.exportServer + "/png", options);
   } else {
     alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
   }
@@ -15365,22 +19849,8 @@ acgraph.vector.Stage.prototype.saveAsJpg = function(opt_width, opt_height, opt_q
   var type = acgraph.type();
   if (type == acgraph.StageType.SVG) {
     var options = {};
-    if (goog.isDef(opt_width)) {
-      options["width"] = opt_width;
-    }
-    if (goog.isDef(opt_height)) {
-      options["height"] = opt_height;
-    }
-    if (goog.isDef(opt_quality)) {
-      options["quality"] = opt_quality;
-    }
-    if (goog.isDef(opt_forceTransparentWhite)) {
-      options["force-transparent-white"] = opt_forceTransparentWhite;
-    }
-    if (goog.isDef(opt_filename)) {
-      options["file-name"] = opt_filename;
-    }
-    this.getHelperElement().sendRequestToExportServer(acgraph.exportServer + "/jpg", this.toSvg(), "svg", "file", options);
+    this.addJpgData_(options, opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename);
+    this.getHelperElement().sendRequestToExportServer(acgraph.exportServer + "/jpg", options);
   } else {
     alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
   }
@@ -15389,47 +19859,8 @@ acgraph.vector.Stage.prototype.saveAsPdf = function(opt_paperSizeOrWidth, opt_la
   var type = acgraph.type();
   if (type == acgraph.StageType.SVG) {
     var options = {};
-    var formatSize = null;
-    var svgStr;
-    if (goog.isDef(opt_paperSizeOrWidth)) {
-      if (goog.isNumber(opt_paperSizeOrWidth)) {
-        options["pdf-width"] = opt_paperSizeOrWidth;
-        options["pdf-height"] = goog.isNumber(opt_landscapeOrWidth) ? opt_landscapeOrWidth : this.height();
-      } else {
-        if (goog.isString(opt_paperSizeOrWidth)) {
-          options["pdf-size"] = opt_paperSizeOrWidth || acgraph.vector.PaperSize.A4;
-          options["landscape"] = !!opt_landscapeOrWidth;
-          formatSize = acgraph.utils.exporting.PdfPaperSize[options["pdf-size"]];
-          if (options["landscape"]) {
-            formatSize = {width:formatSize.height, height:formatSize.width};
-          }
-        } else {
-          options["pdf-width"] = this.width();
-          options["pdf-height"] = this.height();
-        }
-      }
-    } else {
-      options["pdf-width"] = this.width();
-      options["pdf-height"] = this.height();
-    }
-    if (goog.isDef(opt_x)) {
-      options["pdf-x"] = opt_x;
-    }
-    if (goog.isDef(opt_y)) {
-      options["pdf-y"] = opt_y;
-    }
-    if (goog.isDef(opt_filename)) {
-      options["file-name"] = opt_filename;
-    }
-    if (formatSize) {
-      var proportionalSize = acgraph.math.fitWithProportion(formatSize.width, formatSize.height, (this.width()), (this.height()));
-      proportionalSize[0] -= opt_x || 0;
-      proportionalSize[1] -= opt_y || 0;
-      svgStr = this.toSvg(proportionalSize[0], proportionalSize[1]);
-    } else {
-      svgStr = this.toSvg();
-    }
-    this.getHelperElement().sendRequestToExportServer(acgraph.exportServer + "/pdf", svgStr, "svg", "file", options);
+    this.addPdfData_(options, opt_paperSizeOrWidth, opt_landscapeOrWidth, opt_x, opt_y, opt_filename);
+    this.getHelperElement().sendRequestToExportServer(acgraph.exportServer + "/pdf", options);
   } else {
     alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
   }
@@ -15438,10 +19869,8 @@ acgraph.vector.Stage.prototype.saveAsSvg = function(opt_paperSizeOrWidth, opt_la
   var type = acgraph.type();
   if (type == acgraph.StageType.SVG) {
     var options = {};
-    if (goog.isDef(opt_filename)) {
-      options["file-name"] = opt_filename;
-    }
-    this.getHelperElement().sendRequestToExportServer(acgraph.exportServer + "/svg", this.toSvg(opt_paperSizeOrWidth, opt_landscapeOrHeight), "svg", "file", options);
+    this.addSvgData_(options, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename);
+    this.getHelperElement().sendRequestToExportServer(acgraph.exportServer + "/svg", options);
   } else {
     alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
   }
@@ -15485,6 +19914,7 @@ acgraph.vector.Stage.prototype.serializeToString_ = function(node) {
   return result;
 };
 acgraph.vector.Stage.prototype.layer = acgraph.vector.Layer.prototype.layer;
+acgraph.vector.Stage.prototype.unmanagedLayer = acgraph.vector.Layer.prototype.unmanagedLayer;
 acgraph.vector.Stage.prototype.text = acgraph.vector.Layer.prototype.text;
 acgraph.vector.Stage.prototype.html = acgraph.vector.Layer.prototype.html;
 acgraph.vector.Stage.prototype.rect = acgraph.vector.Layer.prototype.rect;
@@ -15503,6 +19933,8 @@ acgraph.vector.Stage.prototype.star7 = acgraph.vector.Layer.prototype.star7;
 acgraph.vector.Stage.prototype.star10 = acgraph.vector.Layer.prototype.star10;
 acgraph.vector.Stage.prototype.triangleUp = acgraph.vector.Layer.prototype.triangleUp;
 acgraph.vector.Stage.prototype.triangleDown = acgraph.vector.Layer.prototype.triangleDown;
+acgraph.vector.Stage.prototype.triangleRight = acgraph.vector.Layer.prototype.triangleRight;
+acgraph.vector.Stage.prototype.triangleLeft = acgraph.vector.Layer.prototype.triangleLeft;
 acgraph.vector.Stage.prototype.diamond = acgraph.vector.Layer.prototype.diamond;
 acgraph.vector.Stage.prototype.cross = acgraph.vector.Layer.prototype.cross;
 acgraph.vector.Stage.prototype.diagonalCross = acgraph.vector.Layer.prototype.diagonalCross;
@@ -15565,6 +19997,28 @@ acgraph.vector.Stage.prototype.notifyRemoved = function(child) {
   this.rootLayer_.notifyRemoved(child);
 };
 acgraph.vector.Stage.prototype.childClipChanged = goog.nullFunction;
+acgraph.vector.Stage.prototype.title = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (this.titleVal_ != opt_value) {
+      this.titleVal_ = opt_value;
+      acgraph.getRenderer().setTitle(this, this.titleVal_);
+    }
+    return this;
+  } else {
+    return this.titleVal_;
+  }
+};
+acgraph.vector.Stage.prototype.desc = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (this.descVal_ != opt_value) {
+      this.descVal_ = opt_value;
+      acgraph.getRenderer().setDesc(this, this.descVal_);
+    }
+    return this;
+  } else {
+    return this.descVal_;
+  }
+};
 acgraph.vector.Stage.prototype.getX = function() {
   return 0;
 };
@@ -15688,6 +20142,7 @@ acgraph.vector.Stage.prototype.dispose = function() {
   goog.base(this, "dispose");
 };
 acgraph.vector.Stage.prototype.disposeInternal = function() {
+  acgraph.vector.Stage.base(this, "disposeInternal");
   goog.dispose(this.helperElement_);
   this.helperElement_ = null;
   this.eventHandler_.removeAll();
@@ -15710,6 +20165,7 @@ acgraph.vector.Stage.prototype["container"] = acgraph.vector.Stage.prototype.con
 acgraph.vector.Stage.prototype["dispose"] = acgraph.vector.Stage.prototype.dispose;
 acgraph.vector.Stage.prototype["getBounds"] = acgraph.vector.Stage.prototype.getBounds;
 acgraph.vector.Stage.prototype["layer"] = acgraph.vector.Stage.prototype.layer;
+acgraph.vector.Stage.prototype["unmanagedLayer"] = acgraph.vector.Stage.prototype.unmanagedLayer;
 acgraph.vector.Stage.prototype["circle"] = acgraph.vector.Stage.prototype.circle;
 acgraph.vector.Stage.prototype["ellipse"] = acgraph.vector.Stage.prototype.ellipse;
 acgraph.vector.Stage.prototype["rect"] = acgraph.vector.Stage.prototype.rect;
@@ -15726,6 +20182,8 @@ acgraph.vector.Stage.prototype["star10"] = acgraph.vector.Stage.prototype.star10
 acgraph.vector.Stage.prototype["diamond"] = acgraph.vector.Stage.prototype.diamond;
 acgraph.vector.Stage.prototype["triangleUp"] = acgraph.vector.Stage.prototype.triangleUp;
 acgraph.vector.Stage.prototype["triangleDown"] = acgraph.vector.Stage.prototype.triangleDown;
+acgraph.vector.Stage.prototype["triangleRight"] = acgraph.vector.Stage.prototype.triangleRight;
+acgraph.vector.Stage.prototype["triangleLeft"] = acgraph.vector.Stage.prototype.triangleLeft;
 acgraph.vector.Stage.prototype["cross"] = acgraph.vector.Stage.prototype.cross;
 acgraph.vector.Stage.prototype["diagonalCross"] = acgraph.vector.Stage.prototype.diagonalCross;
 acgraph.vector.Stage.prototype["hLine"] = acgraph.vector.Stage.prototype.hLine;
@@ -15744,6 +20202,14 @@ acgraph.vector.Stage.prototype["saveAsPng"] = acgraph.vector.Stage.prototype.sav
 acgraph.vector.Stage.prototype["saveAsJpg"] = acgraph.vector.Stage.prototype.saveAsJpg;
 acgraph.vector.Stage.prototype["saveAsPdf"] = acgraph.vector.Stage.prototype.saveAsPdf;
 acgraph.vector.Stage.prototype["saveAsSvg"] = acgraph.vector.Stage.prototype.saveAsSvg;
+acgraph.vector.Stage.prototype["shareAsPng"] = acgraph.vector.Stage.prototype.shareAsPng;
+acgraph.vector.Stage.prototype["shareAsJpg"] = acgraph.vector.Stage.prototype.shareAsJpg;
+acgraph.vector.Stage.prototype["shareAsPdf"] = acgraph.vector.Stage.prototype.shareAsPdf;
+acgraph.vector.Stage.prototype["shareAsSvg"] = acgraph.vector.Stage.prototype.shareAsSvg;
+acgraph.vector.Stage.prototype["getPngBase64String"] = acgraph.vector.Stage.prototype.getPngBase64String;
+acgraph.vector.Stage.prototype["getJpgBase64String"] = acgraph.vector.Stage.prototype.getJpgBase64String;
+acgraph.vector.Stage.prototype["getSvgBase64String"] = acgraph.vector.Stage.prototype.getSvgBase64String;
+acgraph.vector.Stage.prototype["getPdfBase64String"] = acgraph.vector.Stage.prototype.getPdfBase64String;
 acgraph.vector.Stage.prototype["print"] = acgraph.vector.Stage.prototype.print;
 acgraph.vector.Stage.prototype["toSvg"] = acgraph.vector.Stage.prototype.toSvg;
 acgraph.vector.Stage.prototype["pattern"] = acgraph.vector.Stage.prototype.pattern;
@@ -15796,6 +20262,8 @@ acgraph.vector.Stage.prototype["listenOnce"] = acgraph.vector.Stage.prototype.li
 acgraph.vector.Stage.prototype["unlisten"] = acgraph.vector.Stage.prototype.unlisten;
 acgraph.vector.Stage.prototype["unlistenByKey"] = acgraph.vector.Stage.prototype.unlistenByKey;
 acgraph.vector.Stage.prototype["removeAllListeners"] = acgraph.vector.Stage.prototype.removeAllListeners;
+acgraph.vector.Stage.prototype["title"] = acgraph.vector.Stage.prototype.title;
+acgraph.vector.Stage.prototype["desc"] = acgraph.vector.Stage.prototype.desc;
 goog.exportSymbol("acgraph.events.EventType.RENDER_START", acgraph.vector.Stage.EventType.RENDER_START);
 goog.exportSymbol("acgraph.events.EventType.RENDER_FINISH", acgraph.vector.Stage.EventType.RENDER_FINISH);
 goog.exportSymbol("acgraph.vector.Stage.EventType.STAGE_RESIZE", acgraph.vector.Stage.EventType.STAGE_RESIZE);
@@ -16180,9 +20648,110 @@ goog.color.yiqBrightnessDiff_ = function(rgb1, rgb2) {
 goog.color.colorDiff_ = function(rgb1, rgb2) {
   return Math.abs(rgb1[0] - rgb2[0]) + Math.abs(rgb1[1] - rgb2[1]) + Math.abs(rgb1[2] - rgb2[2]);
 };
+goog.provide("goog.net.ImageLoader");
+goog.require("goog.array");
+goog.require("goog.dom");
+goog.require("goog.dom.TagName");
+goog.require("goog.events.EventHandler");
+goog.require("goog.events.EventTarget");
+goog.require("goog.events.EventType");
+goog.require("goog.net.EventType");
+goog.require("goog.object");
+goog.require("goog.userAgent");
+goog.net.ImageLoader = function(opt_parent) {
+  goog.events.EventTarget.call(this);
+  this.imageIdToRequestMap_ = {};
+  this.imageIdToImageMap_ = {};
+  this.handler_ = new goog.events.EventHandler(this);
+  this.parent_ = opt_parent;
+};
+goog.inherits(goog.net.ImageLoader, goog.events.EventTarget);
+goog.net.ImageLoader.CorsRequestType = {ANONYMOUS:"anonymous", USE_CREDENTIALS:"use-credentials"};
+goog.net.ImageLoader.ImageRequest_;
+goog.net.ImageLoader.IMAGE_LOAD_EVENTS_ = [goog.userAgent.IE && !goog.userAgent.isVersionOrHigher("11") ? goog.net.EventType.READY_STATE_CHANGE : goog.events.EventType.LOAD, goog.net.EventType.ABORT, goog.net.EventType.ERROR];
+goog.net.ImageLoader.prototype.addImage = function(id, image, opt_corsRequestType) {
+  var src = goog.isString(image) ? image : image.src;
+  if (src) {
+    this.imageIdToRequestMap_[id] = {src:src, corsRequestType:goog.isDef(opt_corsRequestType) ? opt_corsRequestType : null};
+  }
+};
+goog.net.ImageLoader.prototype.removeImage = function(id) {
+  delete this.imageIdToRequestMap_[id];
+  var image = this.imageIdToImageMap_[id];
+  if (image) {
+    delete this.imageIdToImageMap_[id];
+    this.handler_.unlisten(image, goog.net.ImageLoader.IMAGE_LOAD_EVENTS_, this.onNetworkEvent_);
+    if (goog.object.isEmpty(this.imageIdToImageMap_) && goog.object.isEmpty(this.imageIdToRequestMap_)) {
+      this.dispatchEvent(goog.net.EventType.COMPLETE);
+    }
+  }
+};
+goog.net.ImageLoader.prototype.start = function() {
+  var imageIdToRequestMap = this.imageIdToRequestMap_;
+  goog.array.forEach(goog.object.getKeys(imageIdToRequestMap), function(id) {
+    var imageRequest = imageIdToRequestMap[id];
+    if (imageRequest) {
+      delete imageIdToRequestMap[id];
+      this.loadImage_(imageRequest, id);
+    }
+  }, this);
+};
+goog.net.ImageLoader.prototype.loadImage_ = function(imageRequest, id) {
+  if (this.isDisposed()) {
+    return;
+  }
+  var image;
+  if (this.parent_) {
+    var dom = goog.dom.getDomHelper(this.parent_);
+    image = dom.createDom(goog.dom.TagName.IMG);
+  } else {
+    image = new Image;
+  }
+  if (imageRequest.corsRequestType) {
+    image.crossOrigin = imageRequest.corsRequestType;
+  }
+  this.handler_.listen(image, goog.net.ImageLoader.IMAGE_LOAD_EVENTS_, this.onNetworkEvent_);
+  this.imageIdToImageMap_[id] = image;
+  image.id = id;
+  image.src = imageRequest.src;
+};
+goog.net.ImageLoader.prototype.onNetworkEvent_ = function(evt) {
+  var image = (evt.currentTarget);
+  if (!image) {
+    return;
+  }
+  if (evt.type == goog.net.EventType.READY_STATE_CHANGE) {
+    if (image.readyState == goog.net.EventType.COMPLETE) {
+      evt.type = goog.events.EventType.LOAD;
+    } else {
+      return;
+    }
+  }
+  if (typeof image.naturalWidth == "undefined") {
+    if (evt.type == goog.events.EventType.LOAD) {
+      image.naturalWidth = image.width;
+      image.naturalHeight = image.height;
+    } else {
+      image.naturalWidth = 0;
+      image.naturalHeight = 0;
+    }
+  }
+  this.dispatchEvent({type:evt.type, target:image});
+  if (this.isDisposed()) {
+    return;
+  }
+  this.removeImage(image.id);
+};
+goog.net.ImageLoader.prototype.disposeInternal = function() {
+  delete this.imageIdToRequestMap_;
+  delete this.imageIdToImageMap_;
+  goog.dispose(this.handler_);
+  goog.net.ImageLoader.superClass_.disposeInternal.call(this);
+};
 goog.provide("acgraph.vector.Renderer");
 goog.require("acgraph.math.Rect");
 goog.require("goog.dom");
+goog.require("goog.net.ImageLoader");
 acgraph.vector.Renderer = function() {
   this.textBoundsCache = {};
   this.settingsAffectingSize = ["fontStyle", "fontVariant", "fontFamily", "fontSize", "fontWeight", "letterSpacing", "decoration"];
@@ -16271,6 +20840,10 @@ acgraph.vector.Renderer.prototype.saveGradientAngle = function(sourceAngle, boun
 acgraph.vector.Renderer.prototype.setId = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setDisableStrokeScaling = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setVisible = goog.abstractMethod;
+acgraph.vector.Renderer.prototype.setTitle = goog.abstractMethod;
+acgraph.vector.Renderer.prototype.setDesc = goog.abstractMethod;
+acgraph.vector.Renderer.prototype.setAttributes = goog.abstractMethod;
+acgraph.vector.Renderer.prototype.getAttribute = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.createStageElement = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setStageSize = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.createDefsElement = goog.abstractMethod;
@@ -16320,7 +20893,10 @@ acgraph.vector.Renderer.prototype.isImageLoading = function() {
   return false;
 };
 acgraph.vector.Renderer.prototype.getImageLoader = function() {
-  return null;
+  if (!this.imageLoader_) {
+    this.imageLoader_ = new goog.net.ImageLoader;
+  }
+  return this.imageLoader_;
 };
 acgraph.vector.Renderer.prototype.setTransformation = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setPathTransformation = goog.abstractMethod;
@@ -16594,6 +21170,8 @@ acgraph.vector.vml.Renderer.prototype.createMeasurement_ = function() {
   this.measurementImage_ = goog.dom.createDom(goog.dom.TagName.IMG);
   goog.style.setStyle(this.measurementImage_, {"position":"absolute", "left":0, "top":0});
   goog.dom.appendChild(this.measurement_, this.measurementImage_);
+  this.measurementGroupNode_ = goog.dom.createDom(goog.dom.TagName.DIV);
+  goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
 };
 acgraph.vector.vml.Renderer.prototype.measuringImage = function(src) {
   if (!this.measurement_) {
@@ -16721,6 +21299,19 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
   this.measurementText_.innerHTML = "";
   return boundsTargetText;
 };
+acgraph.vector.vml.Renderer.prototype.measureElement = function(element) {
+  if (!this.measurement_) {
+    this.createMeasurement_();
+  }
+  if (goog.isString(element)) {
+    this.measurementGroupNode_.innerHTML = element;
+  } else {
+    goog.dom.appendChild(this.measurementGroupNode_, element.cloneNode(true));
+  }
+  var bounds = goog.style.getBounds(this.measurementGroupNode_);
+  this.measurementGroupNode_.innerHTML = "";
+  return bounds;
+};
 acgraph.vector.vml.Renderer.prototype.setAttribute_ = function(element, key, value) {
   if (acgraph.vector.vml.Renderer.IE8_MODE) {
     element[key] = value;
@@ -16771,15 +21362,15 @@ acgraph.vector.vml.Renderer.prototype.getVmlPath_ = function(path, opt_transform
     switch(segment) {
       case acgraph.vector.PathBase.Segment.MOVETO:
         list.push("m");
-        acgraph.utils.arrayPush(list, goog.array.map(args, this.toSizeCoord_));
+        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(args, this.toSizeCoord_), list);
         break;
       case acgraph.vector.PathBase.Segment.LINETO:
         list.push("l");
-        acgraph.utils.arrayPush(list, goog.array.map(args, this.toSizeCoord_));
+        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(args, this.toSizeCoord_), list);
         break;
       case acgraph.vector.PathBase.Segment.CURVETO:
         list.push("c");
-        acgraph.utils.arrayPush(list, goog.array.map(args, this.toSizeCoord_));
+        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(args, this.toSizeCoord_), list);
         break;
       case acgraph.vector.PathBase.Segment.CLOSE:
         list.push("x");
@@ -16805,11 +21396,34 @@ acgraph.vector.vml.Renderer.prototype.isVMLClassDefined = function() {
   });
 };
 acgraph.vector.vml.Renderer.prototype.setId = function(element, id) {
-  if (id) {
-    this.setAttribute_(element, "id", id);
-  } else {
-    this.removeAttribute_(element, "id");
+  this.setIdInternal(element.domElement(), id);
+};
+acgraph.vector.vml.Renderer.prototype.setIdInternal = function(element, id) {
+  if (element) {
+    if (id) {
+      this.setAttribute_(element, "id", id);
+    } else {
+      this.removeAttribute_(element, "id");
+    }
   }
+};
+acgraph.vector.vml.Renderer.prototype.setTitle = goog.nullFunction;
+acgraph.vector.vml.Renderer.prototype.setDesc = goog.nullFunction;
+acgraph.vector.vml.Renderer.prototype.setAttributes = function(element, attrs) {
+  var domElement = element.domElement();
+  if (domElement && goog.isObject(attrs)) {
+    for (var key in attrs) {
+      var value = attrs[key];
+      if (goog.isNull(value)) {
+        this.removeAttribute_(domElement, key);
+      } else {
+        this.setAttribute_(domElement, key, (value));
+      }
+    }
+  }
+};
+acgraph.vector.vml.Renderer.prototype.getAttribute = function(element, key) {
+  return element ? element.getAttribute(key) : void 0;
 };
 acgraph.vector.vml.Renderer.prototype.getUserSpaceOnUseGradientVector_ = function(angle, bounds) {
   var angleTransform = angle % 90;
@@ -17094,7 +21708,7 @@ acgraph.vector.vml.Renderer.prototype.setRectProperties = function(rect) {
   }
   points = goog.array.map(points, this.toSizeCoord_);
   var pathData = ["m", points[6], points[7], "l"];
-  acgraph.utils.arrayPush(pathData, points);
+  acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, points, pathData);
   pathData.push("x");
   rect.clearDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
   rect.clearDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION);
@@ -17117,7 +21731,7 @@ acgraph.vector.vml.Renderer.prototype.setEllipseProperties = function(ellipse) {
     var len = curves.length;
     transform.transform(curves, 0, curves, 0, len / 2);
     list = ["m", this.toSizeCoord_(curves[len - 2]), this.toSizeCoord_(curves[len - 1]), "c"];
-    acgraph.utils.arrayPush(list, goog.array.map(curves, this.toSizeCoord_));
+    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(curves, this.toSizeCoord_), list);
   } else {
     list = ["ae", this.toSizeCoord_(cx), this.toSizeCoord_(cy), this.toSizeCoord_(rx), this.toSizeCoord_(ry), 0, Math.round(360 * -65536)];
   }
@@ -17155,11 +21769,10 @@ acgraph.vector.vml.Renderer.prototype.createTextNode = function(text) {
   textPath.setAttribute("string", text);
   return textPath;
 };
-acgraph.vector.vml.Renderer.prototype.setCursorProperties = function(domElement, cursor) {
-  if (goog.isNull(cursor)) {
-    domElement.style["cursor"] = "";
-  } else {
-    domElement.style["cursor"] = cursor;
+acgraph.vector.vml.Renderer.prototype.setCursorProperties = function(element, cursor) {
+  var domElement = element.domElement();
+  if (domElement) {
+    domElement.style["cursor"] = cursor || "";
   }
 };
 acgraph.vector.vml.Renderer.prototype.setTextPosition = function(element) {
@@ -17402,7 +22015,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
     var shapeTypeDomElement;
     if (!shapeType.rendered) {
       shapeTypeDomElement = this.createShapeTypeElement();
-      this.setId(shapeTypeDomElement, acgraph.utils.IdGenerator.getInstance().identify(shapeType));
+      this.setIdInternal(shapeTypeDomElement, acgraph.utils.IdGenerator.getInstance().identify(shapeType));
       this.appendChild(defs.domElement(), shapeTypeDomElement);
       shapeType.rendered = true;
       var fillDomElement = null;
@@ -17507,7 +22120,7 @@ acgraph.vector.vml.Renderer.prototype.setRectTransformation = function(element) 
   }
   points = goog.array.map(points, this.toSizeCoord_);
   var pathData = ["m", points[6], points[7], "l"];
-  acgraph.utils.arrayPush(pathData, points);
+  acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, points, pathData);
   pathData.push("x");
   this.setAttribute_(domElement, "path", pathData.join(" "));
 };
@@ -17524,7 +22137,7 @@ acgraph.vector.vml.Renderer.prototype.setEllipseTransformation = function(elemen
     var len = curves.length;
     transform.transform(curves, 0, curves, 0, len / 2);
     list = ["m", this.toSizeCoord_(curves[len - 2]), this.toSizeCoord_(curves[len - 1]), "c"];
-    acgraph.utils.arrayPush(list, goog.array.map(curves, this.toSizeCoord_));
+    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(curves, this.toSizeCoord_), list);
   } else {
     list = ["ae", this.toSizeCoord_(cx), this.toSizeCoord_(cy), this.toSizeCoord_(rx), this.toSizeCoord_(ry), 0, Math.round(360 * -65536)];
   }
@@ -17735,115 +22348,12 @@ goog.math.Line.prototype.getClosestPoint = function(x, opt_y) {
 goog.math.Line.prototype.getClosestSegmentPoint = function(x, opt_y) {
   return this.getInterpolatedPoint(goog.math.clamp(this.getClosestLinearInterpolation_(x, opt_y), 0, 1));
 };
-goog.provide("goog.net.EventType");
-goog.net.EventType = {COMPLETE:"complete", SUCCESS:"success", ERROR:"error", ABORT:"abort", READY:"ready", READY_STATE_CHANGE:"readystatechange", TIMEOUT:"timeout", INCREMENTAL_DATA:"incrementaldata", PROGRESS:"progress", DOWNLOAD_PROGRESS:"downloadprogress", UPLOAD_PROGRESS:"uploadprogress"};
-goog.provide("goog.net.ImageLoader");
-goog.require("goog.array");
-goog.require("goog.dom");
-goog.require("goog.dom.TagName");
-goog.require("goog.events.EventHandler");
-goog.require("goog.events.EventTarget");
-goog.require("goog.events.EventType");
-goog.require("goog.net.EventType");
-goog.require("goog.object");
-goog.require("goog.userAgent");
-goog.net.ImageLoader = function(opt_parent) {
-  goog.events.EventTarget.call(this);
-  this.imageIdToRequestMap_ = {};
-  this.imageIdToImageMap_ = {};
-  this.handler_ = new goog.events.EventHandler(this);
-  this.parent_ = opt_parent;
-};
-goog.inherits(goog.net.ImageLoader, goog.events.EventTarget);
-goog.net.ImageLoader.CorsRequestType = {ANONYMOUS:"anonymous", USE_CREDENTIALS:"use-credentials"};
-goog.net.ImageLoader.ImageRequest_;
-goog.net.ImageLoader.IMAGE_LOAD_EVENTS_ = [goog.userAgent.IE && !goog.userAgent.isVersionOrHigher("11") ? goog.net.EventType.READY_STATE_CHANGE : goog.events.EventType.LOAD, goog.net.EventType.ABORT, goog.net.EventType.ERROR];
-goog.net.ImageLoader.prototype.addImage = function(id, image, opt_corsRequestType) {
-  var src = goog.isString(image) ? image : image.src;
-  if (src) {
-    this.imageIdToRequestMap_[id] = {src:src, corsRequestType:goog.isDef(opt_corsRequestType) ? opt_corsRequestType : null};
-  }
-};
-goog.net.ImageLoader.prototype.removeImage = function(id) {
-  delete this.imageIdToRequestMap_[id];
-  var image = this.imageIdToImageMap_[id];
-  if (image) {
-    delete this.imageIdToImageMap_[id];
-    this.handler_.unlisten(image, goog.net.ImageLoader.IMAGE_LOAD_EVENTS_, this.onNetworkEvent_);
-    if (goog.object.isEmpty(this.imageIdToImageMap_) && goog.object.isEmpty(this.imageIdToRequestMap_)) {
-      this.dispatchEvent(goog.net.EventType.COMPLETE);
-    }
-  }
-};
-goog.net.ImageLoader.prototype.start = function() {
-  var imageIdToRequestMap = this.imageIdToRequestMap_;
-  goog.array.forEach(goog.object.getKeys(imageIdToRequestMap), function(id) {
-    var imageRequest = imageIdToRequestMap[id];
-    if (imageRequest) {
-      delete imageIdToRequestMap[id];
-      this.loadImage_(imageRequest, id);
-    }
-  }, this);
-};
-goog.net.ImageLoader.prototype.loadImage_ = function(imageRequest, id) {
-  if (this.isDisposed()) {
-    return;
-  }
-  var image;
-  if (this.parent_) {
-    var dom = goog.dom.getDomHelper(this.parent_);
-    image = dom.createDom(goog.dom.TagName.IMG);
-  } else {
-    image = new Image;
-  }
-  if (imageRequest.corsRequestType) {
-    image.crossOrigin = imageRequest.corsRequestType;
-  }
-  this.handler_.listen(image, goog.net.ImageLoader.IMAGE_LOAD_EVENTS_, this.onNetworkEvent_);
-  this.imageIdToImageMap_[id] = image;
-  image.id = id;
-  image.src = imageRequest.src;
-};
-goog.net.ImageLoader.prototype.onNetworkEvent_ = function(evt) {
-  var image = (evt.currentTarget);
-  if (!image) {
-    return;
-  }
-  if (evt.type == goog.net.EventType.READY_STATE_CHANGE) {
-    if (image.readyState == goog.net.EventType.COMPLETE) {
-      evt.type = goog.events.EventType.LOAD;
-    } else {
-      return;
-    }
-  }
-  if (typeof image.naturalWidth == "undefined") {
-    if (evt.type == goog.events.EventType.LOAD) {
-      image.naturalWidth = image.width;
-      image.naturalHeight = image.height;
-    } else {
-      image.naturalWidth = 0;
-      image.naturalHeight = 0;
-    }
-  }
-  this.dispatchEvent({type:evt.type, target:image});
-  if (this.isDisposed()) {
-    return;
-  }
-  this.removeImage(image.id);
-};
-goog.net.ImageLoader.prototype.disposeInternal = function() {
-  delete this.imageIdToRequestMap_;
-  delete this.imageIdToImageMap_;
-  goog.dispose(this.handler_);
-  goog.net.ImageLoader.superClass_.disposeInternal.call(this);
-};
 goog.provide("acgraph.vector.svg.Renderer");
 goog.require("acgraph.math.Rect");
 goog.require("acgraph.utils.IdGenerator");
 goog.require("acgraph.vector.Renderer");
 goog.require("goog.dom");
 goog.require("goog.math.Line");
-goog.require("goog.net.ImageLoader");
 goog.require("goog.object");
 goog.require("goog.userAgent");
 acgraph.vector.svg.Renderer = function() {
@@ -17856,6 +22366,7 @@ acgraph.vector.svg.Renderer.XLINK_NS_ = "http://www.w3.org/1999/xlink";
 acgraph.vector.svg.Renderer.prototype.measurement_ = null;
 acgraph.vector.svg.Renderer.prototype.measurementText_ = null;
 acgraph.vector.svg.Renderer.prototype.measurementTextNode_ = null;
+acgraph.vector.svg.Renderer.prototype.measurementGroupNode_ = null;
 acgraph.vector.svg.Renderer.prototype.imageLoader_ = null;
 acgraph.vector.svg.Renderer.prototype.createSVGElement_ = function(tag) {
   return goog.dom.getDocument().createElementNS(acgraph.vector.svg.Renderer.SVG_NS_, tag);
@@ -17882,6 +22393,8 @@ acgraph.vector.svg.Renderer.prototype.createMeasurement_ = function() {
   goog.dom.appendChild(this.measurement_, this.measurementText_);
   goog.dom.appendChild(goog.dom.getDocument().body, this.measurement_);
   this.setAttributes_(this.measurement_, {"display":"block", "width":0, "height":0});
+  this.measurementGroupNode_ = this.createLayerElement();
+  goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
 };
 acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
   if (!this.measurement_) {
@@ -17918,9 +22431,22 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
   }
   return new acgraph.math.Rect(bbox.x, bbox.y, bbox.width + additionWidth, bbox.height);
 };
+acgraph.vector.svg.Renderer.prototype.measureElement = function(element) {
+  if (!this.measurement_) {
+    this.createMeasurement_();
+  }
+  if (goog.isString(element)) {
+    this.measurementGroupNode_.innerHTML = element;
+  } else {
+    goog.dom.appendChild(this.measurementGroupNode_, element.cloneNode(true));
+  }
+  var bbox = this.measurementGroupNode_["getBBox"]();
+  goog.dom.removeChildren(this.measurementGroupNode_);
+  return new acgraph.math.Rect(bbox.x, bbox.y, bbox.width, bbox.height);
+};
 acgraph.vector.svg.Renderer.prototype.measuringImage = function(src, callback) {
-  if (!this.imageLoader_) {
-    this.imageLoader_ = new goog.net.ImageLoader;
+  if (!this.imageMap_) {
+    this.getImageLoader();
     this.imageMap_ = {};
     goog.events.listen(this.imageLoader_, goog.net.EventType.COMPLETE, function(e) {
       this.starLoadImage_ = false;
@@ -17945,9 +22471,6 @@ acgraph.vector.svg.Renderer.prototype.onImageLoadHandler_ = function(e) {
 acgraph.vector.svg.Renderer.prototype.isImageLoading = function() {
   return this.starLoadImage_;
 };
-acgraph.vector.svg.Renderer.prototype.getImageLoader = function() {
-  return this.imageLoader_;
-};
 acgraph.vector.svg.Renderer.prototype.getSvgPath_ = function(path) {
   if (path.isEmpty()) {
     return null;
@@ -17957,15 +22480,15 @@ acgraph.vector.svg.Renderer.prototype.getSvgPath_ = function(path) {
     switch(segment) {
       case acgraph.vector.PathBase.Segment.MOVETO:
         list.push("M");
-        acgraph.utils.arrayPush(list, args);
+        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, args, list);
         break;
       case acgraph.vector.PathBase.Segment.LINETO:
         list.push("L");
-        acgraph.utils.arrayPush(list, args);
+        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, args, list);
         break;
       case acgraph.vector.PathBase.Segment.CURVETO:
         list.push("C");
-        acgraph.utils.arrayPush(list, args);
+        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, args, list);
         break;
       case acgraph.vector.PathBase.Segment.ARCTO:
         var extent = args[3];
@@ -18084,11 +22607,10 @@ acgraph.vector.svg.Renderer.prototype.setImageProperties = function(element) {
   this.setAttributes_(domElement, {"x":bounds.left, "y":bounds.top, "width":bounds.width, "height":bounds.height, "image-rendering":"optimizeQuality", "preserveAspectRatio":element.align() + " " + element.fittingMode(), "opacity":element.opacity()});
   domElement.setAttributeNS(acgraph.vector.svg.Renderer.XLINK_NS_, "href", src);
 };
-acgraph.vector.svg.Renderer.prototype.setCursorProperties = function(domElement, cursor) {
-  if (goog.isNull(cursor)) {
-    domElement.style["cursor"] = "";
-  } else {
-    domElement.style["cursor"] = cursor;
+acgraph.vector.svg.Renderer.prototype.setCursorProperties = function(element, cursor) {
+  var domElement = element.domElement();
+  if (domElement) {
+    domElement.style["cursor"] = cursor || "";
   }
 };
 acgraph.vector.svg.Renderer.prototype.setTextPosition = function(element) {
@@ -18254,10 +22776,10 @@ acgraph.vector.svg.Renderer.prototype.createClipElement = function() {
   return this.createSVGElement_("clipPath");
 };
 acgraph.vector.svg.Renderer.prototype.renderRadialGradient = function(fill, defs) {
-  var gradient = defs.getRadialGradient(fill["keys"], fill["cx"], fill["cy"], fill["fx"], fill["fy"], fill["opacity"], fill["mode"]);
+  var gradient = defs.getRadialGradient(fill["keys"], fill["cx"], fill["cy"], fill["fx"], fill["fy"], fill["opacity"], fill["mode"], fill["transform"]);
   if (!gradient.rendered) {
     var fillDomElement = this.createRadialGradientElement();
-    this.setId(fillDomElement, gradient.id());
+    this.setIdInternal(fillDomElement, gradient.id());
     this.appendChild(defs.domElement(), fillDomElement);
     gradient.defs = defs;
     gradient.rendered = true;
@@ -18271,15 +22793,18 @@ acgraph.vector.svg.Renderer.prototype.renderRadialGradient = function(fill, defs
     } else {
       this.setAttributes_(fillDomElement, {"cx":gradient.cx, "cy":gradient.cy, "fx":gradient.fx, "fy":gradient.fy, "gradientUnits":"objectBoundingBox"});
     }
+    if (gradient.transform) {
+      this.setAttribute_(fillDomElement, "gradientTransform", gradient.transform.toString());
+    }
   }
   return gradient.id();
 };
 acgraph.vector.svg.Renderer.prototype.renderLinearGradient = function(fill, defs, elementBounds) {
   var angle = fill["mode"] === true ? this.saveGradientAngle(fill["angle"], elementBounds) : fill["angle"];
-  var gradient = defs.getLinearGradient(fill["keys"], fill["opacity"], angle, fill["mode"]);
+  var gradient = defs.getLinearGradient(fill["keys"], fill["opacity"], angle, fill["mode"], fill["transform"]);
   if (!gradient.rendered) {
     var fillDomElement = this.createLinearGradientElement();
-    this.setId(fillDomElement, gradient.id());
+    this.setIdInternal(fillDomElement, gradient.id());
     this.appendChild(defs.domElement(), fillDomElement);
     gradient.defs = defs;
     gradient.rendered = true;
@@ -18295,6 +22820,9 @@ acgraph.vector.svg.Renderer.prototype.renderLinearGradient = function(fill, defs
     } else {
       vector = this.getObjectBoundingBoxGradientVector_(gradient.angle);
       this.setAttributes_(fillDomElement, {"x1":vector.x0, "y1":vector.y0, "x2":vector.x1, "y2":vector.y1, "gradientUnits":"objectBoundingBox"});
+    }
+    if (gradient.transform) {
+      this.setAttribute_(fillDomElement, "gradientTransform", gradient.transform.toString());
     }
   }
   return gradient.id();
@@ -18450,17 +22978,79 @@ acgraph.vector.svg.Renderer.prototype.setStageSize = function(el, width, height)
   this.setAttributes_(el, {"width":width, "height":height});
 };
 acgraph.vector.svg.Renderer.prototype.setId = function(element, id) {
-  if (id) {
-    this.setAttribute_(element, "id", id);
-  } else {
-    this.removeAttribute_(element, "id");
+  this.setIdInternal(element.domElement(), id);
+};
+acgraph.vector.svg.Renderer.prototype.setIdInternal = function(element, id) {
+  if (element) {
+    if (id) {
+      this.setAttribute_(element, "id", id);
+    } else {
+      this.removeAttribute_(element, "id");
+    }
   }
 };
+acgraph.vector.svg.Renderer.prototype.setTitle = function(element, title) {
+  var domElement = element.domElement();
+  if (domElement) {
+    if (goog.isDefAndNotNull(title)) {
+      if (!element.titleElement) {
+        element.titleElement = this.createSVGElement_("title");
+        this.setAttribute_(element.titleElement, "aria-label", "");
+      }
+      if (!goog.dom.getParentElement(element.titleElement)) {
+        goog.dom.insertChildAt(domElement, element.titleElement, 0);
+      }
+      element.titleElement.innerHTML = title;
+    } else {
+      if (element.titleElement) {
+        domElement.removeChild(element.titleElement);
+      }
+    }
+  }
+};
+acgraph.vector.svg.Renderer.prototype.setDesc = function(element, desc) {
+  var domElement = element.domElement();
+  if (domElement) {
+    if (goog.isDefAndNotNull(desc)) {
+      if (!element.descElement) {
+        element.descElement = this.createSVGElement_("desc");
+        this.setAttribute_(element.descElement, "aria-label", "");
+      }
+      if (!goog.dom.getParentElement(element.descElement)) {
+        goog.dom.insertChildAt(domElement, element.descElement, 0);
+      }
+      element.descElement.innerHTML = desc;
+    } else {
+      if (element.descElement) {
+        domElement.removeChild(element.descElement);
+      }
+    }
+  }
+};
+acgraph.vector.svg.Renderer.prototype.setAttributes = function(element, attrs) {
+  var domElement = element.domElement();
+  if (domElement && goog.isObject(attrs)) {
+    for (var key in attrs) {
+      var value = attrs[key];
+      if (goog.isNull(value)) {
+        this.removeAttribute_(domElement, key);
+      } else {
+        this.setAttribute_(domElement, key, (value));
+      }
+    }
+  }
+};
+acgraph.vector.svg.Renderer.prototype.getAttribute = function(element, key) {
+  return element ? element.getAttribute(key) : void 0;
+};
 acgraph.vector.svg.Renderer.prototype.setDisableStrokeScaling = function(element, isDisabled) {
-  if (isDisabled) {
-    this.setAttribute_(element, "vector-effect", "non-scaling-stroke");
-  } else {
-    this.removeAttribute_(element, "vector-effect");
+  var domElement = element.domElement();
+  if (domElement) {
+    if (isDisabled) {
+      this.setAttribute_(domElement, "vector-effect", "non-scaling-stroke");
+    } else {
+      this.removeAttribute_(domElement, "vector-effect");
+    }
   }
 };
 acgraph.vector.svg.Renderer.prototype.setLayerSize = goog.nullFunction;
@@ -18489,13 +23079,13 @@ acgraph.vector.svg.Renderer.prototype.createClip_ = function(element, clipElemen
   var clipShapeElement;
   if (goog.dom.getParentElement(clipDomElement) != defs.domElement()) {
     this.setAttribute_(clipDomElement, "clip-rule", "nonzero");
-    this.setId(clipDomElement, id);
-    clipElement.stage(element.getStage());
-    clipElement.id(id);
-    var clipShape = clipElement.shape();
-    clipShape.render();
-    clipShapeElement = clipShape.domElement();
+    this.setIdInternal(clipDomElement, id);
   }
+  clipElement.stage(element.getStage());
+  clipElement.id(id);
+  var clipShape = clipElement.shape();
+  clipShape.render();
+  clipShapeElement = clipShape.domElement();
   if (clipShapeElement) {
     this.appendChild(clipDomElement, clipShapeElement);
     this.appendChild(defs.domElement(), clipDomElement);
@@ -19020,6 +23610,12 @@ acgraph.vector.primitives.triangleUp = function(stageOrPath, centerX, centerY, o
 acgraph.vector.primitives.triangleDown = function(stageOrPath, centerX, centerY, outerRadius) {
   return acgraph.vector.primitives.star(stageOrPath, centerX, centerY, outerRadius, outerRadius * .5, 3, 90);
 };
+acgraph.vector.primitives.triangleRight = function(stageOrPath, centerX, centerY, outerRadius) {
+  return acgraph.vector.primitives.star(stageOrPath, centerX, centerY, outerRadius, outerRadius * .5, 3, 0);
+};
+acgraph.vector.primitives.triangleLeft = function(stageOrPath, centerX, centerY, outerRadius) {
+  return acgraph.vector.primitives.star(stageOrPath, centerX, centerY, outerRadius, outerRadius * .5, 3, 180);
+};
 acgraph.vector.primitives.diamond = function(stageOrPath, centerX, centerY, outerRadius) {
   return acgraph.vector.primitives.star(stageOrPath, centerX, centerY, outerRadius, outerRadius * Math.SQRT1_2, 4);
 };
@@ -19218,6 +23814,8 @@ goog.exportSymbol("acgraph.vector.primitives.star10", acgraph.vector.primitives.
 goog.exportSymbol("acgraph.vector.primitives.diamond", acgraph.vector.primitives.diamond);
 goog.exportSymbol("acgraph.vector.primitives.triangleUp", acgraph.vector.primitives.triangleUp);
 goog.exportSymbol("acgraph.vector.primitives.triangleDown", acgraph.vector.primitives.triangleDown);
+goog.exportSymbol("acgraph.vector.primitives.triangleRight", acgraph.vector.primitives.triangleRight);
+goog.exportSymbol("acgraph.vector.primitives.triangleLeft", acgraph.vector.primitives.triangleLeft);
 goog.exportSymbol("acgraph.vector.primitives.cross", acgraph.vector.primitives.cross);
 goog.exportSymbol("acgraph.vector.primitives.diagonalCross", acgraph.vector.primitives.diagonalCross);
 goog.exportSymbol("acgraph.vector.primitives.hLine", acgraph.vector.primitives.hLine);
@@ -19241,6 +23839,7 @@ goog.require("acgraph.vector.PatternFill");
 goog.require("acgraph.vector.Rect");
 goog.require("acgraph.vector.Renderer");
 goog.require("acgraph.vector.Text");
+goog.require("acgraph.vector.UnmanagedLayer");
 goog.require("acgraph.vector.primitives");
 goog.require("acgraph.vector.svg.Renderer");
 goog.require("acgraph.vector.svg.Stage");
@@ -19359,6 +23958,9 @@ acgraph.patternFill = function(bounds) {
 };
 acgraph.clip = function(opt_leftOrShape, opt_top, opt_width, opt_height) {
   return acgraph.type_ == acgraph.StageType.VML ? new acgraph.vector.vml.Clip(null, opt_leftOrShape, opt_top, opt_width, opt_height) : new acgraph.vector.Clip(null, opt_leftOrShape, opt_top, opt_width, opt_height);
+};
+acgraph.unmanagedLayer = function(opt_content) {
+  return new acgraph.vector.UnmanagedLayer(opt_content);
 };
 acgraph.useAbsoluteReferences = function(opt_value) {
   if (goog.isDef(opt_value)) {

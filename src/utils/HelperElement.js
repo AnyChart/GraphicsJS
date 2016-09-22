@@ -4,6 +4,7 @@ goog.provide('acgraph.utils.HelperElement.EventType');
 goog.require('acgraph.events');
 goog.require('goog.dom');
 goog.require('goog.events.EventTarget');
+goog.require('goog.net.IframeIo');
 goog.require('goog.style');
 goog.require('goog.userAgent');
 
@@ -31,37 +32,6 @@ acgraph.utils.HelperElement = function(stage, container) {
       });
 
   this.handler_ = goog.bind(this.handleResize_, this);
-
-  /**
-   * @type {Element}
-   * @private
-   */
-  this.form_ = null;
-
-  /**
-   * @type {Element}
-   * @private
-   */
-  this.formData_ = null;
-
-  /**
-   * @type {Element}
-   * @private
-   */
-  this.formDataType_ = null;
-
-  /**
-   * @type {Element}
-   * @private
-   */
-  this.formResponseType_ = null;
-
-
-  /**
-   * @type {Object.<string, Element>}
-   * @private
-   */
-  this.optInputsMaps_ = {};
 
   this.renderToContainer(container);
 };
@@ -145,44 +115,10 @@ acgraph.utils.HelperElement.prototype.renderToContainer = function(value) {
 /**
  * Send form POST request on passed url with passed request params.
  * @param {string} url .
- * @param {string} data .
- * @param {string} dataType .
- * @param {string} responseType .
  * @param {Object.<string, *>=} opt_arguments .
  */
-acgraph.utils.HelperElement.prototype.sendRequestToExportServer = function(url, data, dataType, responseType, opt_arguments) {
-  if (!this.form_) {
-    this.form_ = goog.dom.getDomHelper().createDom(goog.dom.TagName.FORM, {'method': 'POST'});
-    this.formData_ = goog.dom.getDomHelper().createDom(goog.dom.TagName.INPUT, {'type': 'hidden', 'name': 'data'});
-    this.formDataType_ = goog.dom.getDomHelper().createDom(goog.dom.TagName.INPUT, {'type': 'hidden', 'name': 'dataType'});
-    this.formResponseType_ = goog.dom.getDomHelper().createDom(goog.dom.TagName.INPUT, {'type': 'hidden', 'name': 'responseType'});
-    goog.dom.appendChild(this.domElement(), this.form_);
-    goog.dom.appendChild(this.form_, this.formData_);
-    goog.dom.appendChild(this.form_, this.formDataType_);
-    goog.dom.appendChild(this.form_, this.formResponseType_);
-  }
-
-  //clean optional inputs from the form
-  goog.object.forEach(this.optInputsMaps_, goog.dom.removeNode);
-
-  //append optional inputs into the form
-  if (goog.isDef(opt_arguments)) {
-    goog.object.forEach(opt_arguments, function(value, key) {
-      var input = this.optInputsMaps_[key];
-      if (!input) {
-        input = goog.dom.getDomHelper().createDom(goog.dom.TagName.INPUT, {'type': 'hidden', 'name': key});
-        this.optInputsMaps_[key] = input;
-      }
-      input['value'] = value;
-      goog.dom.appendChild(this.form_, input);
-    }, this);
-  }
-
-  this.form_['action'] = url;
-  this.formData_['value'] = data;
-  this.formDataType_['value'] = dataType;
-  this.formResponseType_['value'] = responseType;
-  this.form_['submit']();
+acgraph.utils.HelperElement.prototype.sendRequestToExportServer = function(url, opt_arguments) {
+  goog.net.IframeIo.send(url, undefined, 'POST', false, opt_arguments);
 };
 
 
@@ -207,11 +143,6 @@ acgraph.utils.HelperElement.prototype.disposeInternal = function() {
   goog.dom.removeNode(this.sizeElement_);
   delete this.sizeElement_;
   delete this.container_;
-  delete this.form_;
-  delete this.formData_;
-  delete this.formDataType_;
-  delete this.formResponseType_;
-  delete this.optInputsMaps_;
   delete this.stage_;
 
   goog.base(this, 'disposeInternal');

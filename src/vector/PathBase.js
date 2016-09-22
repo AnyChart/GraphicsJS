@@ -889,7 +889,7 @@ acgraph.vector.PathBase.prototype.calcBounds_ = function(transform, calcMap, all
         rect = new acgraph.math.Rect(this.currentPoint_[0], this.currentPoint_[1], 0, 0);
       this.forEachSegment(
           function(segment, args) {
-            calcMap[segment].apply(this, args);
+            acgraph.utils.partialApplyingArgsToFunction(calcMap[segment], args, this);
           },
           {rect: rect, transform: transform}, true
       );

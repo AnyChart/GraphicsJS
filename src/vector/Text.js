@@ -1130,23 +1130,25 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
   var line = /** @type {!Array.<acgraph.vector.TextSegment>} */ (goog.array.peek(this.textLines_));
   var peekSegment = /** @type {!acgraph.vector.TextSegment} */ (goog.array.peek(line));
   var ellipsisBounds = this.getTextBounds(this.ellipsis_, peekSegment.getStyle());
+  // Copy ellipsis to avoid overwriting this.ellipsis_ because "..." can be ".." (cut) when resize happened.
+  var ellipsis = this.ellipsis_;
 
   if (ellipsisBounds.width > this.width_) {
     cutPos = this.cutTextSegment_(this.ellipsis_, peekSegment.getStyle(), 0, this.width_, ellipsisBounds);
-    this.ellipsis_ = this.ellipsis_.substring(0, cutPos);
+    ellipsis = this.ellipsis_.substring(0, cutPos);
   }
 
   var left = this.prevLineWidth_;
   var right = this.width_;
 
-  if (this.ellipsis_ == '') {
+  if (ellipsis == '') {
     index = goog.array.indexOf(this.segments_, peekSegment) + 1;
     goog.array.splice(this.segments_, index, this.segments_.length - index);
   } else if (right - left >= ellipsisBounds.width) {
     this.currentLine_ = line;
     index = goog.array.indexOf(this.segments_, peekSegment) + 1;
     goog.array.splice(this.segments_, index, this.segments_.length - index);
-    textSegmentEllipsis = this.createSegment_(this.ellipsis_, peekSegment.getStyle(), ellipsisBounds);
+    textSegmentEllipsis = this.createSegment_(ellipsis, peekSegment.getStyle(), ellipsisBounds);
 
     if (this.currentLine_.length == 2 && this.currentLine_[0].text == '') {
       textSegmentEllipsis.dy = this.accumulatedHeight_ - this.currentLine_[0].height;
@@ -1157,7 +1159,7 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
     var segmentBounds;
     while (!segment && i >= 0) {
       peekSegment = line[i];
-      ellipsisBounds = this.getTextBounds(this.ellipsis_, peekSegment.getStyle());
+      ellipsisBounds = this.getTextBounds(ellipsis, peekSegment.getStyle());
       segmentBounds = this.getTextBounds(peekSegment.text, peekSegment.getStyle());
 
       if (left - segmentBounds.width + ellipsisBounds.width <= this.width_) {
@@ -1199,10 +1201,10 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
 
       if (segment_bounds.width + ellipsisBounds.width > this.width_) {
         cutPos = this.cutTextSegment_(this.ellipsis_, peekSegment.getStyle(), segment_bounds.width, this.width_, ellipsisBounds);
-        this.ellipsis_ = this.ellipsis_.substring(0, cutPos);
+        ellipsis = this.ellipsis_.substring(0, cutPos);
       }
       if (cutPos > 0) {
-        textSegmentEllipsis = this.createSegment_(this.ellipsis_, segment.getStyle(), ellipsisBounds);
+        textSegmentEllipsis = this.createSegment_(ellipsis, segment.getStyle(), ellipsisBounds);
         textSegmentEllipsis.x = lastSegmentInline.x + segment_bounds.width;
         textSegmentEllipsis.y = lastSegmentInline.y;
       }

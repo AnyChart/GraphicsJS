@@ -303,9 +303,10 @@ acgraph.vector.Layer.prototype.forEachChild = function(callback, opt_this) {
   goog.array.forEach(this.children, callback, opt_this);
   return this;
 };
+
+
 //endregion
-
-
+//region --- Primitives and Layering ---
 //----------------------------------------------------------------------------------------------------------------------
 //
 //  Layering
@@ -325,6 +326,25 @@ acgraph.vector.Layer.prototype.layer = function() {
 };
 
 
+/**
+ Invokes {@link acgraph.vector.UnmanagedLayer} class constructor.<br/>
+ <strong>Note:</strong><br>acgraph.vector.Layer does nothing to delete an object after it is used.
+ You need to take care of used objects yourself.
+ @return {!acgraph.vector.UnmanagedLayer} {@link acgraph.vector.UnmanagedLayer} instance for method chaining.
+ @this {acgraph.vector.ILayer}
+ */
+acgraph.vector.Layer.prototype.unmanagedLayer = function() {
+  var layer = acgraph.unmanagedLayer();
+  layer.parent(this);
+  return layer;
+};
+
+
+//----------------------------------------------------------------------------------------------------------------------
+//
+//  Primitives
+//
+//----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
 //
 //  Text
@@ -375,11 +395,6 @@ acgraph.vector.Layer.prototype.html = function(opt_x, opt_y, opt_text, opt_style
 };
 
 
-//----------------------------------------------------------------------------------------------------------------------
-//
-//  Primitives
-//
-//----------------------------------------------------------------------------------------------------------------------
 /**
  Invokes {@link acgraph.vector.Rect} class constructor.<br/>
  <strong>Note:</strong><br>acgraph.vector.Layer does nothing to delete an object after it is used.
@@ -635,6 +650,36 @@ acgraph.vector.Layer.prototype.triangleDown = function(centerX, centerY, outerRa
 
 
 /**
+ Draws a triangle heading rightwards set by its circumscribed circle center and radius.<br/>
+ Read more at {@link acgraph.vector.primitives.triangleRight}
+ @param {number} centerX .
+ @param {number} centerY .
+ @param {number} outerRadius .
+ @return {!acgraph.vector.Path} .
+ @this {acgraph.vector.ILayer}
+ */
+acgraph.vector.Layer.prototype.triangleRight = function(centerX, centerY, outerRadius) {
+  return /** @type {!acgraph.vector.Path} */(acgraph.vector.primitives.triangleRight(this.path(),
+      centerX, centerY, outerRadius).parent(this));
+};
+
+
+/**
+ Draws a triangle heading leftwards set by its circumscribed circle center and radius.<br/>
+ Read more at {@link acgraph.vector.primitives.triangleLeft}
+ @param {number} centerX .
+ @param {number} centerY .
+ @param {number} outerRadius .
+ @return {!acgraph.vector.Path} .
+ @this {acgraph.vector.ILayer}
+ */
+acgraph.vector.Layer.prototype.triangleLeft = function(centerX, centerY, outerRadius) {
+  return /** @type {!acgraph.vector.Path} */(acgraph.vector.primitives.triangleLeft(this.path(),
+      centerX, centerY, outerRadius).parent(this));
+};
+
+
+/**
  Draws a diamond set by its circumscribed circle center and radius.<br/>
  Read more at {@link acgraph.vector.primitives.diamond}
  @param {number} centerX .
@@ -744,6 +789,8 @@ acgraph.vector.Layer.prototype.donut = function(cx, cy, outerR, innerR, start, e
 };
 
 
+//endregion
+//region --- Rendering ---
 //----------------------------------------------------------------------------------------------------------------------
 //
 //  DOM element creation
@@ -971,14 +1018,14 @@ acgraph.vector.Layer.prototype.renderChildrenDom = function(maxChanges) {
   }
 
   if (flagSuccess) {
-    this.domChildren = goog.array.slice(this.children, 0);
+    this.domChildren = goog.array.slice(children, 0);
     this.expectedChidrenHash_ = null;
     this.clearDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET);
   } else {
     for (i = removings.length; i--;)
       goog.array.splice(this.domChildren, removings[i], 1);
     for (i = 0; i < addings.length; i++)
-      this.domChildren.push(this.children[addings[i]]);
+      this.domChildren.push(children[addings[i]]);
   }
 
   return changesMade;
@@ -1227,6 +1274,7 @@ acgraph.vector.Layer.prototype['indexOfChild'] = acgraph.vector.Layer.prototype.
 acgraph.vector.Layer.prototype['numChildren'] = acgraph.vector.Layer.prototype.numChildren;
 acgraph.vector.Layer.prototype['circle'] = acgraph.vector.Layer.prototype.circle;
 acgraph.vector.Layer.prototype['layer'] = acgraph.vector.Layer.prototype.layer;
+acgraph.vector.Layer.prototype['unmanagedLayer'] = acgraph.vector.Layer.prototype.unmanagedLayer;
 acgraph.vector.Layer.prototype['ellipse'] = acgraph.vector.Layer.prototype.ellipse;
 acgraph.vector.Layer.prototype['rect'] = acgraph.vector.Layer.prototype.rect;
 acgraph.vector.Layer.prototype['truncatedRect'] = acgraph.vector.Layer.prototype.truncatedRect;
@@ -1242,6 +1290,8 @@ acgraph.vector.Layer.prototype['star10'] = acgraph.vector.Layer.prototype.star10
 acgraph.vector.Layer.prototype['diamond'] = acgraph.vector.Layer.prototype.diamond;
 acgraph.vector.Layer.prototype['triangleUp'] = acgraph.vector.Layer.prototype.triangleUp;
 acgraph.vector.Layer.prototype['triangleDown'] = acgraph.vector.Layer.prototype.triangleDown;
+acgraph.vector.Layer.prototype['triangleRight'] = acgraph.vector.Layer.prototype.triangleRight;
+acgraph.vector.Layer.prototype['triangleLeft'] = acgraph.vector.Layer.prototype.triangleLeft;
 acgraph.vector.Layer.prototype['cross'] = acgraph.vector.Layer.prototype.cross;
 acgraph.vector.Layer.prototype['diagonalCross'] = acgraph.vector.Layer.prototype.diagonalCross;
 acgraph.vector.Layer.prototype['hLine'] = acgraph.vector.Layer.prototype.hLine;

@@ -16,35 +16,42 @@ goog.require('goog.userAgent');
  */
 acgraph.utils.recursiveClone = function(obj) {
   var res;
-  if (goog.isArray(obj)) {
-    res = new Array(obj.length);
-  } else if (goog.isObject(obj)) {
+  var type = goog.typeOf(obj);
+  if (type == 'array') {
+    res = [];
+    for (var i = 0; i < obj.length; i++) {
+      if (i in obj)
+        res[i] = acgraph.utils.recursiveClone(obj[i]);
+    }
+  } else if (type == 'object') {
     res = {};
-  } else
+    for (var key in obj) {
+      if (obj.hasOwnProperty(key))
+        res[key] = acgraph.utils.recursiveClone(obj[key]);
+    }
+  } else {
     return obj;
-  for (var key in obj)
-    res[key] = acgraph.utils.recursiveClone(obj[key]);
+  }
+
   return res;
 };
 
 
 /**
- * Allows push to array a large number of elements. Optimized for browsers.
- *
- * @param {Array} array Array to push.
- * @param {Array} args Array of elements.
+ * Allows call passed function with large number of parameters.
+ * Optimized for browsers.
+ * @param {Function} func Function to call.
+ * @param {Array} args Array of parameters that is going to be passed to function.
+ * @param {Object=} opt_obj This object for function.
  */
-acgraph.utils.arrayPush = function(array, args) {
-  if (goog.userAgent.GECKO) {
-    Array.prototype.push.apply(array, args);
-  } else if (goog.userAgent.IE) {
-    if (goog.userAgent.VERSION >= 11) {
-      for (var j = 0, len = args.length; j < len; j++) {
-        array.push(args[j]);
-      }
-    } else {
-      Array.prototype.push.apply(array, args);
+acgraph.utils.partialApplyingArgsToFunction = function(func, args, opt_obj) {
+  /*if (goog.userAgent.IE && goog.userAgent.VERSION >= 11) {
+    for (var j = 0, len = args.length; j < len; j++) {
+      func.call(opt_obj, args[j]);
     }
+  } else */
+  if (goog.userAgent.GECKO || goog.userAgent.IE) {
+    func.apply(opt_obj, args);
   } else {
     var start = 0;
     var count = 50000;
@@ -52,10 +59,11 @@ acgraph.utils.arrayPush = function(array, args) {
     var step = Math.ceil(args.length / count);
 
     for (var i = 0; i < step; i++) {
-      Array.prototype.push.apply(array, args.slice(start, end));
+      func.apply(opt_obj, args.slice(start, end));
       start += count;
       end += count;
     }
   }
 };
+
 

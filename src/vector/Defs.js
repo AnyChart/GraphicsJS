@@ -219,9 +219,10 @@ acgraph.vector.Defs.prototype.removeHatchFill = function(element) {
  * @param {number=} opt_angle Gradient angle.
  * @param {(boolean|acgraph.math.Rect)=} opt_mode Gradient mode. More about mode
  * in {@see acgraph.vector.LinearGradient...number}.
+ * @param {goog.graphics.AffineTransform=} opt_transform Gradient transform.
  * @return {!acgraph.vector.LinearGradient} Linear gradient object.
  */
-acgraph.vector.Defs.prototype.getLinearGradient = function(keys, opt_opacity, opt_angle, opt_mode) {
+acgraph.vector.Defs.prototype.getLinearGradient = function(keys, opt_opacity, opt_angle, opt_mode, opt_transform) {
   // TODO(Anton Saukh): in theory this normalization is done in shape.fill(), so we don't do it here
   //  goog.array.forEach(keys, function(a) {
   //    a.offset = goog.isDefAndNotNull(a['offset']) ? goog.math.clamp(a['offset'], 0, 1) : 1;
@@ -230,11 +231,11 @@ acgraph.vector.Defs.prototype.getLinearGradient = function(keys, opt_opacity, op
   //  });
   //  goog.array.sortObjectsByKey(keys, 'offset');
 
-  var id = acgraph.vector.LinearGradient.serialize(keys, opt_opacity, opt_angle, opt_mode);
+  var id = acgraph.vector.LinearGradient.serialize(keys, opt_opacity, opt_angle, opt_mode, opt_transform);
 
   if (goog.object.containsKey(this.linearGradients_, id)) return this.linearGradients_[id];
 
-  return this.linearGradients_[id] = new acgraph.vector.LinearGradient(keys, opt_opacity, opt_angle, opt_mode);
+  return this.linearGradients_[id] = new acgraph.vector.LinearGradient(keys, opt_opacity, opt_angle, opt_mode, opt_transform);
 };
 
 
@@ -243,7 +244,7 @@ acgraph.vector.Defs.prototype.getLinearGradient = function(keys, opt_opacity, op
  * @param {!acgraph.vector.LinearGradient} element Linear gradient to remove.
  */
 acgraph.vector.Defs.prototype.removeLinearGradient = function(element) {
-  var id = acgraph.vector.LinearGradient.serialize(element.keys, element.opacity, element.angle, element.mode);
+  var id = acgraph.vector.LinearGradient.serialize(element.keys, element.opacity, element.angle, element.mode, element.transform);
   if (goog.object.containsKey(this.linearGradients_, id)) goog.object.remove(this.linearGradients_, id);
   var linearGradientDomElement = goog.dom.getElement(element.id());
   goog.dom.removeNode(linearGradientDomElement);
@@ -259,9 +260,10 @@ acgraph.vector.Defs.prototype.removeLinearGradient = function(element) {
  * @param {number} fy Y coordinate of the gradient focal point.
  * @param {number=} opt_opacity Opacity of the gradient.
  * @param {acgraph.math.Rect=} opt_mode If defined then userSpaceOnUse mode else objectBoundingBox.
+ * @param {goog.graphics.AffineTransform=} opt_transform Gradient transform.
  * @return {!acgraph.vector.RadialGradient} Radial gradient object.
  */
-acgraph.vector.Defs.prototype.getRadialGradient = function(keys, cx, cy, fx, fy, opt_opacity, opt_mode) {
+acgraph.vector.Defs.prototype.getRadialGradient = function(keys, cx, cy, fx, fy, opt_opacity, opt_mode, opt_transform) {
   // TODO(Anton Saukh): in theory this normalization is done in shape.fill(), so we don't do it here
   //  goog.array.forEach(keys, function(a) {
   //    a.offset = goog.isDefAndNotNull(a['offset']) ? goog.math.clamp(a['offset'], 0, 1) : 1;
@@ -270,11 +272,11 @@ acgraph.vector.Defs.prototype.getRadialGradient = function(keys, cx, cy, fx, fy,
   //  });
   //  goog.array.sortObjectsByKey(keys, 'offset');
 
-  var id = acgraph.vector.RadialGradient.serialize(keys, cx, cy, fx, fy, opt_opacity, opt_mode);
+  var id = acgraph.vector.RadialGradient.serialize(keys, cx, cy, fx, fy, opt_opacity, opt_mode, opt_transform);
 
   if (goog.object.containsKey(this.radialGradients_, id)) return this.radialGradients_[id];
 
-  return this.radialGradients_[id] = new acgraph.vector.RadialGradient(keys, cx, cy, fx, fy, opt_opacity, opt_mode);
+  return this.radialGradients_[id] = new acgraph.vector.RadialGradient(keys, cx, cy, fx, fy, opt_opacity, opt_mode, opt_transform);
 };
 
 
@@ -284,7 +286,7 @@ acgraph.vector.Defs.prototype.getRadialGradient = function(keys, cx, cy, fx, fy,
  */
 acgraph.vector.Defs.prototype.removeRadialGradient = function(element) {
   var id = acgraph.vector.RadialGradient.serialize(
-      element.keys, element.cx, element.cy, element.fx, element.fy, element.opacity, element.bounds);
+      element.keys, element.cx, element.cy, element.fx, element.fy, element.opacity, element.bounds, element.transform);
   if (goog.object.containsKey(this.radialGradients_, id)) goog.object.remove(this.radialGradients_, id);
   var radialGradientDomElement = goog.dom.getElement(element.id());
   goog.dom.removeNode(radialGradientDomElement);
