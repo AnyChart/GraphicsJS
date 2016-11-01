@@ -1658,7 +1658,7 @@ acgraph.vector.Stage.prototype.toSvg = function(opt_paperSizeOrWidth, opt_landsc
     acgraph.getRenderer().setStageSize(this.domElement(), this.originalWidth, this.originalHeight);
   }
 
-  return result;
+  return '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + result;
 };
 
 
