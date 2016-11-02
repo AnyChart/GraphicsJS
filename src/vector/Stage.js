@@ -1419,10 +1419,6 @@ acgraph.vector.Stage.prototype.addPdfData_ = function(data, opt_paperSizeOrWidth
     svgStr = this.toSvg();
   }
 
-  //fix for magic bug with svg to pdf converter. This fill-opacity attr applyed to clipPath element that affected
-  //opacity of text elements below (DVF-2550 (p9 and p10)).
-  svgStr = svgStr.replace(/fill="#FFFFFF" fill-opacity="0\.0+1"/g, 'fill="none"');
-
   data['data'] = svgStr;
   data['dataType'] = 'svg';
   data['responseType'] = 'file';
