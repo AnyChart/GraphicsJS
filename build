@@ -12,9 +12,10 @@ import time
 #=======================================================================================================================
 #           Project paths
 #=======================================================================================================================
+COMPILER_VERSION = '20161024'
 PROJECT_PATH = os.path.abspath(os.path.dirname(__file__))
 CONTRIB_PATH = os.path.join(PROJECT_PATH, 'contrib')
-COMPILER_PATH = os.path.join(CONTRIB_PATH, 'compiler', 'compiler.jar')
+COMPILER_PATH = os.path.join(CONTRIB_PATH, 'compiler', 'closure-compiler-v%s.jar' % COMPILER_VERSION)
 SRC_PATH = os.path.join(PROJECT_PATH, 'src')
 OUT_PATH = os.path.join(PROJECT_PATH, 'out')
 CLOSURE_LIBRARY_PATH = os.path.join(CONTRIB_PATH, 'closure-library')
@@ -74,10 +75,10 @@ def __sync_contrib():
 
     #Download closure compiler
     if not os.path.exists(COMPILER_PATH):
-        print 'Downloading Google Closure Compiler v.20151216'
+        print 'Downloading Google Closure Compiler v.' + COMPILER_VERSION
         try:
             __download_and_unzip_from_http(
-                'http://dl.google.com/closure-compiler/compiler-20151216.zip',
+                "http://dl.google.com/closure-compiler/compiler-%s.zip" % COMPILER_VERSION,
                 'compiler'
             )
         except StandardError as e:
@@ -152,53 +153,56 @@ def __getNotOptimizedCompilerArgs():
 def __getOptimizedCompilerArgs():
     compilerArgs = [
         '--compilation_level ADVANCED_OPTIMIZATIONS',
-        '--warning_level VERBOSE',
         '--output_wrapper "(function(){%output%})();"',
+        '--assume_function_wrapper',
+        # '--output_manifest',
+        # '--new_type_inf',
+        '--env BROWSER',
+        '--warning_level VERBOSE',
         '--jscomp_warning accessControls',
         '--jscomp_warning ambiguousFunctionDecl',
-        '--jscomp_warning checkDebuggerStatement',
         '--jscomp_warning checkEventfulObjectDisposal',
         '--jscomp_warning checkRegExp',
         '--jscomp_warning checkTypes',
         '--jscomp_warning checkVars',
-        '--jscomp_warning closureDepMethodUsageChecks',
+        '--jscomp_warning commonJsModuleLoad',
         '--jscomp_warning conformanceViolations',
         '--jscomp_warning const',
         '--jscomp_warning constantProperty',
         '--jscomp_warning deprecated',
         '--jscomp_warning deprecatedAnnotations',
-        '--jscomp_warning duplicate',
         '--jscomp_warning duplicateMessage',
         '--jscomp_warning es3',
         '--jscomp_warning es5Strict',
         '--jscomp_warning externsValidation',
-        '--jscomp_warning extraRequire',
         '--jscomp_warning fileoverviewTags',
+        '--jscomp_warning functionParams',
         '--jscomp_warning globalThis',
-        '--jscomp_warning inferredConstCheck',
         '--jscomp_warning internetExplorerChecks',
         '--jscomp_warning invalidCasts',
         '--jscomp_warning misplacedTypeAnnotation',
         '--jscomp_warning missingGetCssName',
+        # '--jscomp_warning missingOverride',
+        '--jscomp_warning missingPolyfill',
         '--jscomp_warning missingProperties',
         '--jscomp_warning missingProvide',
         '--jscomp_warning missingRequire',
         '--jscomp_warning missingReturn',
+        '--jscomp_warning msgDescriptions',
         '--jscomp_warning newCheckTypes',
-        #'--jscomp_warning msgDescriptionsNewCheckTypes',
         '--jscomp_warning nonStandardJsDocs',
-        #'--jscomp_warning reportUnknownTypes',
+        # '--jscomp_warning reportUnknownTypes',
         '--jscomp_warning suspiciousCode',
         '--jscomp_warning strictModuleDepCheck',
-        '--jscomp_warning tweakValidation',
         '--jscomp_warning typeInvalidation',
         '--jscomp_warning undefinedNames',
         '--jscomp_warning undefinedVars',
         '--jscomp_warning unknownDefines',
-        #+'--jscomp_warning unnecessaryCasts',
+        '--jscomp_warning unusedLocalVariables',
+        # '--jscomp_warning unusedPrivateMembers',
         '--jscomp_warning uselessCode',
-        #+'--jscomp_warning useOfGoogBase',
-        '--jscomp_warning violatedModuleDep',
+        # '--jscomp_warning useOfGoogBase',
+        '--jscomp_warning underscore',
         '--jscomp_warning visibility',
     ]
     return compilerArgs
@@ -208,13 +212,14 @@ def __getDefaultCompilerArgs(outputFile):
     result = [
         'java -jar',
         COMPILER_PATH,
-        '--charset UTF-8',
-        '--only_closure_dependencies',
         '--externs ' + EXTERNS_PATH,
         '--js="%s"' % os.path.join(SRC_PATH, '**.js'),
         '--js="%s"' % os.path.join(CLOSURE_LIBRARY_PATH, '**.js'),
-        '--closure_entry_point acgraph',
-        '--js_output_file ' + outputFile
+        '--js_output_file ' + outputFile,
+        '--charset UTF-8',
+        '--dependency_mode=STRICT',
+        '--entry_point acgraph',
+        '--hide_warnings_for="contrib"'
     ]
     return result
 
