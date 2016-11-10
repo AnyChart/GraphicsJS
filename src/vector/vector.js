@@ -823,7 +823,7 @@ acgraph.vector.normalizeStroke = function(opt_strokeOrFill, opt_thickness, opt_d
         (setAsComplexStroke && ('thickness' in opt_strokeOrFill)) ?
             opt_strokeOrFill['thickness'] :
             opt_thickness);
-    if (thickness == 0) // if thickness is set and set to 0
+    if (!isNaN(thickness) && !thickness) // if thickness is set and set to 0
       return 'none';
 
     var hasDash = setAsComplexStroke && ('dash' in opt_strokeOrFill);
