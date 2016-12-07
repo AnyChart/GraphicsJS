@@ -251,21 +251,21 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
       this.setAttribute_(this.measurementText_, 'text-decoration', style['decoration']) :
       this.removeAttribute_(this.measurementText_, 'text-decoration');
 
-  // this.measurementTextNode_.nodeValue = text;
-  // var bbox = this.measurementText_['getBBox']();
-  // this.measurementTextNode_.nodeValue = '';
+  this.measurementTextNode_.nodeValue = text;
+  var bbox = this.measurementText_['getBBox']();
+  this.measurementTextNode_.nodeValue = '';
 
-  // if (style['fontVariant'] && goog.userAgent.OPERA) {
-  //   this.measurementTextNode_.nodeValue = text.charAt(0).toUpperCase();
-  //   bbox.height = this.measurementText_['getBBox']().height;
-  // }
+  if (style['fontVariant'] && goog.userAgent.OPERA) {
+    this.measurementTextNode_.nodeValue = text.charAt(0).toUpperCase();
+    bbox.height = this.measurementText_['getBBox']().height;
+  }
 
   var bbox_html = this.measuringHTMLText(text, style);
-  console.log(bbox_html);
-  // console.log(bbox, bbox_html);
+  // console.log(bbox_html);
+  console.log(bbox, bbox_html);
 
-  // return new acgraph.math.Rect(bbox.x, bbox.y, bbox.width + additionWidth, bbox.height);
-  return bbox_html;
+  return new acgraph.math.Rect(bbox.x, bbox.y, bbox.width + additionWidth, bbox.height);
+  // return bbox_html;
 };
 
 
@@ -294,7 +294,7 @@ acgraph.vector.svg.Renderer.prototype.measuringHTMLText = function(text, style) 
   }
   if (style['width']) goog.style.setStyle(this.measurementText_ex, 'width', style['width']);
 
-  goog.style.setStyle(this.measurement_ex, {'left': 0, 'top': 0, 'width': 'auto', height: 'auto'});
+  goog.style.setStyle(this.measurement_ex, {'left': 0, 'top': 0, 'width': 'auto', 'height': 'auto'});
   // goog.style.setStyle(this.measurementText_ex, {
   //   'border': '0 solid',
   //   'position': 'absolute',
