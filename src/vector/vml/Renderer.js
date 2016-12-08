@@ -138,7 +138,7 @@ acgraph.vector.vml.Renderer.VML_IMPORT_ = '#default#VML';
  * IE8 mode indicator. IE8 treats VML differently, so we need to know if we are there.
  * @type {boolean}
  */
-acgraph.vector.vml.Renderer.IE8_MODE = document.documentMode && document.documentMode >= 8;
+acgraph.vector.vml.Renderer.IE8_MODE = goog.global.document && goog.global.document.documentMode && goog.global.document.documentMode >= 8;
 
 
 /**
