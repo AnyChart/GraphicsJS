@@ -262,7 +262,7 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
 
   // var bbox_html = this.measuringHTMLText(text, style);
   // console.log(bbox_html);
-  console.log(bbox);
+  // console.log(bbox);
 
   // return bbox_html;
   return new acgraph.math.Rect(bbox.x, bbox.y, bbox.width + additionWidth, bbox.height);
