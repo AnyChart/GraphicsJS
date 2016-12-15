@@ -420,7 +420,6 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
   var boundsMicroText = goog.style.getBounds(this.virtualBaseLine_);
   goog.style.setPosition(this.measurement_, 0, -(boundsMicroText.top + boundsMicroText.height));
 
-  var size = goog.style.getFontSize(this.measurementText_);
   var boundsTargetText = goog.style.getBounds(this.measurementText_);
 
   boundsTargetText.width = width + additionWidth;
@@ -1444,7 +1443,6 @@ acgraph.vector.vml.Renderer.prototype.setTextProperties = function(element) {
   } else {
     var text = element.getSimpleText();
     if (text == null) return;
-    var style = element.style();
 
     if (element.fontSize()) goog.style.setStyle(domElement, 'font-size', /** @type {number|string} */ (element.fontSize()));
     if (element.color()) goog.style.setStyle(domElement, 'color', /** @type {string} */ (element.color()));
@@ -1989,7 +1987,6 @@ acgraph.vector.vml.Renderer.prototype.setEllipseTransformation = function(elemen
 /** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.setImageTransformation = function(element) {
   var style = element.domElement()['style'];
-  var bounds = element.getBoundsWithoutTransform();
 
   /** @type {goog.graphics.AffineTransform} */
   var tx = element.getFullTransformation();

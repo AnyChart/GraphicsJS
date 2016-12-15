@@ -53,11 +53,11 @@ goog.inherits(acgraph.vector.PathBase, acgraph.vector.Shape);
  * @enum {number}
  */
 acgraph.vector.PathBase.Segment = {
-  MOVETO: 0,
-  LINETO: 1,
-  CURVETO: 2,
-  ARCTO: 3,
-  CLOSE: 4
+  MOVETO: 1,
+  LINETO: 2,
+  CURVETO: 3,
+  ARCTO: 4,
+  CLOSE: 5
 };
 
 
@@ -408,15 +408,6 @@ acgraph.vector.PathBase.prototype.simple_ = true;
 
 
 /**
- * Flag showing if there are any CURVETO elements in path.
- *
- * @type {boolean}
- * @private
- */
-acgraph.vector.PathBase.prototype.hasCurves_ = false;
-
-
-/**
  * Transformed path arguments cache. Resets upon changes and transformations.
  * @type {Array.<number>}
  * @private
@@ -606,8 +597,6 @@ acgraph.vector.PathBase.prototype.curveToInternal = function(control1X, control1
   // Caches are reset
   this.dropBoundsCache();
   this.transformedPathCache_ = null;
-
-  this.hasCurves_ = true;
 
   return this;
 };
@@ -1039,20 +1028,20 @@ acgraph.vector.PathBase.boundsCalculationMap_ = (function() {
 })();
 
 
-/**
- * Types of segment and functions to calculate bounds.
- * @type {!Array.<Function>}
- * @private
- */
-acgraph.vector.PathBase.boundsRoughCalculationMap_ = (function() {
-  var map = [];
-  map[acgraph.vector.PathBase.Segment.MOVETO] = goog.nullFunction;
-  map[acgraph.vector.PathBase.Segment.LINETO] = acgraph.vector.PathBase.calcLineBounds_;
-  map[acgraph.vector.PathBase.Segment.CLOSE] = goog.nullFunction;
-  map[acgraph.vector.PathBase.Segment.CURVETO] = acgraph.vector.PathBase.calcRoughCurveBounds_;
-  map[acgraph.vector.PathBase.Segment.ARCTO] = acgraph.vector.PathBase.calcArcBounds_;
-  return map;
-})();
+// /**
+//  * Types of segment and functions to calculate bounds.
+//  * @type {!Array.<Function>}
+//  * @private
+//  */
+// acgraph.vector.PathBase.boundsRoughCalculationMap_ = (function() {
+//   var map = [];
+//   map[acgraph.vector.PathBase.Segment.MOVETO] = goog.nullFunction;
+//   map[acgraph.vector.PathBase.Segment.LINETO] = acgraph.vector.PathBase.calcLineBounds_;
+//   map[acgraph.vector.PathBase.Segment.CLOSE] = goog.nullFunction;
+//   map[acgraph.vector.PathBase.Segment.CURVETO] = acgraph.vector.PathBase.calcRoughCurveBounds_;
+//   map[acgraph.vector.PathBase.Segment.ARCTO] = acgraph.vector.PathBase.calcArcBounds_;
+//   return map;
+// })();
 
 
 //----------------------------------------------------------------------------------------------------------------------
