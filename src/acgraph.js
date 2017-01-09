@@ -536,7 +536,6 @@ acgraph.updateReferences = function() {
 
 //exports
 goog.exportSymbol('acgraph.create', acgraph.create);
-goog.exportSymbol('acgraph.getRenderer', acgraph.getRenderer);
 goog.exportSymbol('acgraph.type', acgraph.type);
 goog.exportSymbol('acgraph.server', acgraph.server);
 goog.exportSymbol('acgraph.StageType.SVG', acgraph.StageType.SVG);

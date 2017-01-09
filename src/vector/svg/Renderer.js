@@ -178,22 +178,6 @@ acgraph.vector.svg.Renderer.prototype.createMeasurement_ = function() {
 
   this.measurementGroupNode_ = this.createLayerElement();
   goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
-
-
-
-  this.measurement_ex = goog.dom.createDom(goog.dom.TagName.DIV);
-  this.virtualBaseLine_ = goog.dom.createDom(goog.dom.TagName.SPAN);
-  this.measurementText_ex = goog.dom.createDom(goog.dom.TagName.SPAN);
-
-  goog.style.setStyle(this.measurement_ex, {'position': 'absolute', 'visibility': 'hidden', 'left': 0, 'top': 0});
-  goog.style.setStyle(this.measurementText_ex, {'font-size': '0px', 'border': '0 solid'});
-  this.measurementText_ex.innerHTML = 'a';
-  goog.style.setStyle(this.virtualBaseLine_, {'font-size': '0px', 'border': '0 solid'});
-  this.virtualBaseLine_.innerHTML = 'a';
-
-  goog.dom.appendChild(document.body, this.measurement_ex);
-  goog.dom.appendChild(this.measurement_ex, this.virtualBaseLine_);
-  goog.dom.appendChild(this.measurement_ex, this.measurementText_ex);
 };
 
 
@@ -260,57 +244,7 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
     bbox.height = this.measurementText_['getBBox']().height;
   }
 
-  // var bbox_html = this.measuringHTMLText(text, style);
-  // console.log(bbox_html);
-  // console.log(bbox);
-
-  // return bbox_html;
   return new acgraph.math.Rect(bbox.x, bbox.y, bbox.width + additionWidth, bbox.height);
-};
-
-
-/**
- * Measure simple text.
- * @param {string} text The text to measure.
- * @param {Object} style The style of text.
- * @return {acgraph.math.Rect} Text bounds.
- */
-acgraph.vector.svg.Renderer.prototype.measuringHTMLText = function(text, style) {
-  this.measurementText_ex.style.cssText = '';
-
-  if (style['fontStyle']) goog.style.setStyle(this.measurementText_ex, 'font-style', style['fontStyle']);
-  if (style['fontVariant']) goog.style.setStyle(this.measurementText_ex, 'font-variant', style['fontVariant']);
-  if (style['fontFamily']) goog.style.setStyle(this.measurementText_ex, 'font-family', style['fontFamily']);
-  if (style['fontSize']) goog.style.setStyle(this.measurementText_ex, 'font-size', style['fontSize']);
-  if (style['fontWeight']) goog.style.setStyle(this.measurementText_ex, 'font-weight', style['fontWeight']);
-  if (style['letterSpacing']) goog.style.setStyle(this.measurementText_ex, 'letter-spacing', style['letterSpacing']);
-  if (style['decoration']) goog.style.setStyle(this.measurementText_ex, 'text-decoration', style['decoration']);
-  if (style['textIndent']) goog.style.setStyle(this.measurementText_ex, 'text-indent', style['textIndent']);
-
-  if (style['textWrap'] && style['width'] && style['textWrap'] == acgraph.vector.Text.TextWrap.BY_LETTER) {
-    goog.style.setStyle(this.measurementText_ex, 'word-break', 'break-all');
-  } else {
-    goog.style.setStyle(this.measurementText_ex, 'white-space', 'nowrap');
-  }
-  if (style['width']) goog.style.setStyle(this.measurementText_ex, 'width', style['width']);
-
-  goog.style.setStyle(this.measurement_ex, {'left': 0, 'top': 0, 'width': 'auto', 'height': 'auto'});
-  // goog.style.setStyle(this.measurementText_ex, {
-  //   'border': '0 solid',
-  //   'position': 'absolute',
-  //   'left': 0,
-  //   'top': 0
-  // });
-
-  this.measurementText_ex.innerHTML = text;
-
-  var boundsMicroText = goog.style.getBounds(this.virtualBaseLine_);
-  goog.style.setPosition(this.measurement_ex, 0, -(boundsMicroText.top + boundsMicroText.height));
-
-  var boundsTargetText = goog.style.getBounds(this.measurementText_ex);
-  this.measurementText_ex.innerHTML = '';
-
-  return boundsTargetText;
 };
 
 
@@ -1512,7 +1446,3 @@ acgraph.vector.svg.Renderer.prototype.setPrintAttributes = function(element, sta
   goog.style.setStyle(element, 'height', '');
   goog.style.setStyle(element, 'max-height', '100%');
 };
-
-
-//exports
-acgraph.vector.svg.Renderer.prototype['measuringHTMLText'] = acgraph.vector.svg.Renderer.prototype.measuringHTMLText;

@@ -2750,6 +2750,11 @@ acgraph.vector.Stage.prototype.disposeInternal = function() {
   this.domElement_ = null;
   this.container_ = null;
   this.originContainer_ = null;
+
+  if (this.credits_) {
+    this.credits_.dispose();
+    this.credits_ = null;
+  }
 };
 
 

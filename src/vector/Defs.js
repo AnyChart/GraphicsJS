@@ -303,6 +303,10 @@ acgraph.vector.Defs.prototype.disposeInternal = function() {
   acgraph.getRenderer().removeNode(this.domElement_);
   this.domElement_ = null;
 
-  this.linearGradients_ = null;
+  goog.disposeAll(this.linearGradients_);
+  goog.disposeAll(this.radialGradients_);
+  goog.disposeAll(this.imageFills_);
+  // goog.disposeAll(this.hatchFills_);
+
   delete this.stage;
 };

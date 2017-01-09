@@ -605,9 +605,10 @@ acgraph.vector.HatchFill.prototype.getElementTypePrefix = function() {
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.HatchFill.prototype.disposeInternal = function() {
+  goog.base(this, 'disposeInternal');
+
   if (this.getStage())
     this.getStage().getDefs().removeHatchFill(this);
-  goog.base(this, 'disposeInternal');
 };
 
 
