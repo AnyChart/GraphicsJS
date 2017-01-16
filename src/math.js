@@ -1,7 +1,9 @@
 goog.provide('acgraph.math');
 
-goog.require('acgraph.math.Rect');
 goog.require('goog.math');
+goog.require('goog.math.Coordinate');
+goog.require('goog.math.Rect');
+goog.require('goog.math.Size');
 
 
 /**
@@ -75,7 +77,7 @@ acgraph.math.arcToBezier = function(cx, cy, rx, ry, fromAngle, extent, opt_addFi
  *
  * @param {...number} var_args The coordinates defining the curves. First pair is the initial point, then there are sets of 3 pairs,
  *      each including 2 control points and an endpoint. Each point is defined by a pair of coordinates – X and Y.
- * @return {!acgraph.math.Rect} The bounding rectangle for a set of Bézier curves.
+ * @return {!goog.math.Rect} The bounding rectangle for a set of Bézier curves.
  */
 acgraph.math.calcCurveBounds = function(var_args) {
   /**
@@ -202,8 +204,8 @@ acgraph.math.calcCurveBounds = function(var_args) {
   }
 
   // Then, according to the resulting list of the suspected coordinates, the bounding rectangle is found.
-  /** @type {acgraph.math.Rect} */
-  var rect = new acgraph.math.Rect(Math.min.apply(null, bounds[0]), Math.min.apply(null, bounds[1]), 0, 0);
+  /** @type {goog.math.Rect} */
+  var rect = new goog.math.Rect(Math.min.apply(null, bounds[0]), Math.min.apply(null, bounds[1]), 0, 0);
   rect.width = Math.max.apply(null, bounds[0]) - rect.left;
   rect.height = Math.max.apply(null, bounds[1]) - rect.top;
 
@@ -213,12 +215,12 @@ acgraph.math.calcCurveBounds = function(var_args) {
 
 /**
  * Multiplication of N matrices.
- * @param {...goog.graphics.AffineTransform} var_args The matrices to be multiplied.
- * @return {goog.graphics.AffineTransform} The resulting transformation matrix.
+ * @param {...goog.math.AffineTransform} var_args The matrices to be multiplied.
+ * @return {goog.math.AffineTransform} The resulting transformation matrix.
  */
 acgraph.math.concatMatrixes = function(var_args) {
   if (arguments.length == 0) return null;
-  /** @type {goog.graphics.AffineTransform} */
+  /** @type {goog.math.AffineTransform} */
   var resultMatrix = null;
   var cloneResultMatrix = false;
   for (var i = 0, len = arguments.length; i < len; i++) {
@@ -237,9 +239,9 @@ acgraph.math.concatMatrixes = function(var_args) {
 /**
  * Transforms a given rectangle and returns a bounding rectangle for it in the initial coordinate system.
  * If transformation is not assigned or not essential, the given rectangle is returned, otherwise a new instance is created.
- * @param {!acgraph.math.Rect} rect The rectangle to be transformed.
- * @param {goog.graphics.AffineTransform} tx The transformation to be applied.
- * @return {!acgraph.math.Rect} The bounding rectangle for the transformed one.
+ * @param {!goog.math.Rect} rect The rectangle to be transformed.
+ * @param {goog.math.AffineTransform} tx The transformation to be applied.
+ * @return {!goog.math.Rect} The bounding rectangle for the transformed one.
  */
 acgraph.math.getBoundsOfRectWithTransform = function(rect, tx) {
   if (!tx || tx.isIdentity()) return rect;
@@ -258,7 +260,7 @@ acgraph.math.getBoundsOfRectWithTransform = function(rect, tx) {
   top = Math.min(points[1], points[3], points[5], points[7]);
   right = Math.max(points[0], points[2], points[4], points[6]);
   bottom = Math.max(points[1], points[3], points[5], points[7]);
-  return new acgraph.math.Rect(left, top, right - left, bottom - top);
+  return new goog.math.Rect(left, top, right - left, bottom - top);
 };
 
 
@@ -294,7 +296,7 @@ acgraph.math.angleBetweenVectors = function(ux, uy, vx, vy) {
 
 /**
  * Extracts the rotation angle in degrees from a transformation matrix.
- * @param {goog.graphics.AffineTransform} transform The target transformation. May be null.
+ * @param {goog.math.AffineTransform} transform The target transformation. May be null.
  * @return {number} The rotation angle in degrees.
  */
 acgraph.math.getRotationAngle = function(transform) {
@@ -322,3 +324,144 @@ acgraph.math.fitWithProportion = function(targetWidth, targetHeight, sourceWidth
   }
 };
 //endregion
+
+
+//region --- Coordinate
+//------------------------------------------------------------------------------
+//
+//  Coordinate
+//
+//------------------------------------------------------------------------------
+/**
+ Getter for the X-coordinate.
+ @this {goog.math.Coordinate}
+ @return {number} X-coordinate.
+ */
+goog.math.Coordinate.prototype.getX = function() {
+  return this.x;
+};
+
+
+/**
+ Getter for the Y-coordinate.
+ @this {goog.math.Coordinate}
+ @return {number} The Y-coordinate.
+ */
+goog.math.Coordinate.prototype.getY = function() {
+  return this.y;
+};
+
+
+//endregion
+//region --- Rect
+//------------------------------------------------------------------------------
+//
+//  Rect
+//
+//------------------------------------------------------------------------------
+/**
+ Getter for the X-coordinate of a rectangle.
+ @this {goog.math.Rect}
+ @return {number} The X-coordinate of the left side of a rectangle.
+ */
+goog.math.Rect.prototype.getLeft = function() {
+  return this.left;
+};
+
+
+/**
+ Getter for the top of a rectangle.
+ @this {goog.math.Rect}
+ @return {number} The Y-coordinate of the top of a rectangle.
+ */
+goog.math.Rect.prototype.getTop = function() {
+  return this.top;
+};
+
+
+/**
+ Getter for the width of a rectangle.
+ @this {goog.math.Rect}
+ @return {number} The width of a rectangle.
+ */
+goog.math.Rect.prototype.getWidth = function() {
+  return this.width;
+};
+
+
+/**
+ Getter for the height of a rectangle.
+ @this {goog.math.Rect}
+ @return {number} The height of a rectangle.
+ */
+goog.math.Rect.prototype.getHeight = function() {
+  return this.height;
+};
+
+
+/**
+ Getter for the right side of a rectangle.
+ @this {goog.math.Rect}
+ @return {number} The X-coordinate of the right side of a rectangle.
+ */
+goog.math.Rect.prototype.getRight = function() {
+  return this.left + this.width;
+};
+
+
+/**
+ Getter for the bottom of a rectangle.
+ @this {goog.math.Rect}
+ @return {number} The Y-coordinate of the bottom of a rectangle.
+ */
+goog.math.Rect.prototype.getBottom = function() {
+  return this.top + this.height;
+};
+
+
+//endregion
+//region --- Size
+//------------------------------------------------------------------------------
+//
+//  Size
+//
+//------------------------------------------------------------------------------
+/**
+ Getter for the width.
+ @this {goog.math.Size}
+ @return {number} Width.
+ */
+goog.math.Size.prototype.getWidth = function() {
+  return this.width;
+};
+
+
+/**
+ Getter for the height.
+ @this {goog.math.Size}
+ @return {number} Height.
+ */
+goog.math.Size.prototype.getHeight = function() {
+  return this.height;
+};
+
+
+//endregion
+//exports
+(function() {
+  goog.exportSymbol('acgraph.math.Coordinate', goog.math.Coordinate);
+  goog.exportSymbol('acgraph.math.Rect', goog.math.Rect);
+  goog.exportSymbol('acgraph.math.Size', goog.math.Size);
+  var proto = goog.math.Coordinate.prototype;
+  proto['getX'] = proto.getX;
+  proto['getY'] = proto.getY;
+  proto = goog.math.Rect.prototype;
+  proto['getWidth'] = proto.getWidth;
+  proto['getHeight'] = proto.getHeight;
+  proto['getLeft'] = proto.getLeft;
+  proto['getTop'] = proto.getTop;
+  proto['getWidth'] = proto.getWidth;
+  proto['getHeight'] = proto.getHeight;
+  proto['getRight'] = proto.getRight;
+  proto['getBottom'] = proto.getBottom;
+})();

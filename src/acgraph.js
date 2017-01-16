@@ -19,12 +19,8 @@ goog.require('acgraph.vector.Renderer');
 goog.require('acgraph.vector.Text');
 goog.require('acgraph.vector.UnmanagedLayer');
 goog.require('acgraph.vector.primitives');
-goog.require('acgraph.vector.svg.Renderer');
-goog.require('acgraph.vector.svg.Stage');
-goog.require('acgraph.vector.vml.Clip');
-goog.require('acgraph.vector.vml.Renderer');
-goog.require('acgraph.vector.vml.Stage');
-goog.require('acgraph.vector.vml.Text');
+goog.require('acgraph.vector.svg');
+goog.require('acgraph.vector.vml');
 goog.require('goog.dom');
 goog.require('goog.userAgent');
 
@@ -412,7 +408,7 @@ acgraph.hatchFill = function(opt_type, opt_color, opt_thickness, opt_size) {
 /**
  Creates an instance of the{@link acgraph.vector.PatternFill} class.<br/>
  To learn more about working with pattern fills, see: {@link acgraph.vector.PatternFill}
- @param {!acgraph.math.Rect} bounds The bounds of the pattern. Defines the size and offset of the pattern.
+ @param {!goog.math.Rect} bounds The bounds of the pattern. Defines the size and offset of the pattern.
  @return {!acgraph.vector.PatternFill} An instance of the {@link acgraph.vector.PatternFill} class for method chaining.
  */
 acgraph.patternFill = function(bounds) {
@@ -422,7 +418,7 @@ acgraph.patternFill = function(bounds) {
 
 /**
  Creates an instance ot the {@link acgraph.vector.Clip} class.
- @param {(number|Array.<number>|acgraph.math.Rect|Object|null|acgraph.vector.Shape)=} opt_leftOrShape Left coordinate of bounds
+ @param {(number|Array.<number>|goog.math.Rect|Object|null|acgraph.vector.Shape)=} opt_leftOrShape Left coordinate of bounds
  or rect or array or object representing bounds.
  @param {number=} opt_top Top coordinate.
  @param {number=} opt_width Width of the rect.
@@ -535,20 +531,22 @@ acgraph.updateReferences = function() {
 };
 
 //exports
-goog.exportSymbol('acgraph.create', acgraph.create);
-goog.exportSymbol('acgraph.type', acgraph.type);
-goog.exportSymbol('acgraph.server', acgraph.server);
-goog.exportSymbol('acgraph.StageType.SVG', acgraph.StageType.SVG);
-goog.exportSymbol('acgraph.StageType.VML', acgraph.StageType.VML);
-goog.exportSymbol('acgraph.rect', acgraph.rect);
-goog.exportSymbol('acgraph.circle', acgraph.circle);
-goog.exportSymbol('acgraph.ellipse', acgraph.ellipse);
-goog.exportSymbol('acgraph.path', acgraph.path);
-goog.exportSymbol('acgraph.text', acgraph.text);
-goog.exportSymbol('acgraph.layer', acgraph.layer);
-goog.exportSymbol('acgraph.image', acgraph.image);
-goog.exportSymbol('acgraph.hatchFill', acgraph.hatchFill);
-goog.exportSymbol('acgraph.patternFill', acgraph.patternFill);
-goog.exportSymbol('acgraph.clip', acgraph.clip);
-goog.exportSymbol('acgraph.useAbsoluteReferences', acgraph.useAbsoluteReferences);
-goog.exportSymbol('acgraph.updateReferences', acgraph.updateReferences);
+(function() {
+  goog.exportSymbol('acgraph.create', acgraph.create);
+  goog.exportSymbol('acgraph.type', acgraph.type);
+  goog.exportSymbol('acgraph.server', acgraph.server);
+  goog.exportSymbol('acgraph.StageType.SVG', acgraph.StageType.SVG);
+  goog.exportSymbol('acgraph.StageType.VML', acgraph.StageType.VML);
+  goog.exportSymbol('acgraph.rect', acgraph.rect);
+  goog.exportSymbol('acgraph.circle', acgraph.circle);
+  goog.exportSymbol('acgraph.ellipse', acgraph.ellipse);
+  goog.exportSymbol('acgraph.path', acgraph.path);
+  goog.exportSymbol('acgraph.text', acgraph.text);
+  goog.exportSymbol('acgraph.layer', acgraph.layer);
+  goog.exportSymbol('acgraph.image', acgraph.image);
+  goog.exportSymbol('acgraph.hatchFill', acgraph.hatchFill);
+  goog.exportSymbol('acgraph.patternFill', acgraph.patternFill);
+  goog.exportSymbol('acgraph.clip', acgraph.clip);
+  goog.exportSymbol('acgraph.useAbsoluteReferences', acgraph.useAbsoluteReferences);
+  goog.exportSymbol('acgraph.updateReferences', acgraph.updateReferences);
+})();

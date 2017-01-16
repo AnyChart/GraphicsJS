@@ -152,10 +152,12 @@ def __getNotOptimizedCompilerArgs():
 
 def __getOptimizedCompilerArgs():
     compilerArgs = [
+        # '--variable_renaming_report out/vars.txt',
+        # '--property_renaming_report out/props.txt',
+        # '--output_manifest out/involved.txt',
         '--compilation_level ADVANCED_OPTIMIZATIONS',
         '--output_wrapper "(function(){%output%})();"',
         '--assume_function_wrapper',
-        # '--output_manifest',
         # '--new_type_inf',
         '--env BROWSER',
         '--warning_level VERBOSE',
@@ -215,11 +217,13 @@ def __getDefaultCompilerArgs(outputFile):
         '--externs ' + EXTERNS_PATH,
         '--js="%s"' % os.path.join(SRC_PATH, '**.js'),
         '--js="%s"' % os.path.join(CLOSURE_LIBRARY_PATH, '**.js'),
+        '--define "goog.DEBUG=false"',
         '--js_output_file ' + outputFile,
+        '--language_in ECMASCRIPT3',
         '--charset UTF-8',
         '--dependency_mode=STRICT',
         '--entry_point acgraph',
-        '--hide_warnings_for="contrib"'
+        '--hide_warnings_for="goog"'
     ]
     return result
 

@@ -2,11 +2,11 @@ goog.provide('acgraph.vector.Text');
 goog.provide('acgraph.vector.Text.TextOverflow');
 goog.provide('acgraph.vector.Text.TextWrap');
 
-goog.require('acgraph.math.Rect');
 goog.require('acgraph.utils.HTMLParser');
 goog.require('acgraph.utils.IdGenerator');
 goog.require('acgraph.vector.Element');
 goog.require('acgraph.vector.TextSegment');
+goog.require('goog.math.Rect');
 
 
 
@@ -49,10 +49,10 @@ acgraph.vector.Text = function(opt_x, opt_y) {
   /**
    * Element bounds.
    * acgraph.vector.Element.DirtyState.DATA must be set with any changes.
-   * @type {acgraph.math.Rect}
+   * @type {goog.math.Rect}
    * @protected
    */
-  this.bounds = new acgraph.math.Rect(this.x_, this.y_, 0, 0);
+  this.bounds = new goog.math.Rect(this.x_, this.y_, 0, 0);
 
   /**
    *
@@ -954,7 +954,7 @@ acgraph.vector.Text.prototype.getBoundsWithTransform = function(transform) {
   else if (this.absoluteBoundsCache && isFullTransform)
     return this.absoluteBoundsCache.clone();
   else {
-    /** @type {!acgraph.math.Rect} */
+    /** @type {!goog.math.Rect} */
     var rect = acgraph.math.getBoundsOfRectWithTransform(this.bounds.clone(), transform);
     if (isSelfTransform)
       this.boundsCache = rect.clone();
@@ -968,17 +968,17 @@ acgraph.vector.Text.prototype.getBoundsWithTransform = function(transform) {
 /**
  * Gets bounds of current rect as is.
  * Ignores width and height set, just takes a text value and applies current style.
- * @return {acgraph.math.Rect} - Measure of text got by current renderer.
+ * @return {goog.math.Rect} - Measure of text got by current renderer.
  */
 acgraph.vector.Text.prototype.getOriginalBounds = function() {
   if (goog.isDefAndNotNull(this.text_)) {
     //Patches bounds because measure() method returns bbox's bounds.
-    var measure = /** @type {acgraph.math.Rect} */ (acgraph.getRenderer().measure(this.text(), this.style()));
+    var measure = /** @type {goog.math.Rect} */ (acgraph.getRenderer().measure(this.text(), this.style()));
     measure.left = this.x_;
     measure.top = this.y_;
     return measure;
   }
-  return new acgraph.math.Rect(0, 0, 0, 0);
+  return new goog.math.Rect(0, 0, 0, 0);
 };
 
 
@@ -1524,7 +1524,7 @@ acgraph.vector.Text.prototype.textDefragmentation = function() {
   this.calculateY();
 
   // text bounds.
-  this.bounds = new acgraph.math.Rect(this.x_, this.y_, this.width_, this.height_);
+  this.bounds = new goog.math.Rect(this.x_, this.y_, this.width_, this.height_);
   this.defragmented = true;
 };
 
@@ -1653,52 +1653,55 @@ acgraph.vector.Text.prototype.disposeInternal = function() {
 
 
 //exports
-goog.exportSymbol('acgraph.vector.Text', acgraph.vector.Text);
-acgraph.vector.Text.prototype['text'] = acgraph.vector.Text.prototype.text;
-acgraph.vector.Text.prototype['style'] = acgraph.vector.Text.prototype.style;
-acgraph.vector.Text.prototype['htmlText'] = acgraph.vector.Text.prototype.htmlText;
-acgraph.vector.Text.prototype['x'] = acgraph.vector.Text.prototype.x;
-acgraph.vector.Text.prototype['y'] = acgraph.vector.Text.prototype.y;
-acgraph.vector.Text.prototype['fontSize'] = acgraph.vector.Text.prototype.fontSize;
-acgraph.vector.Text.prototype['color'] = acgraph.vector.Text.prototype.color;
-acgraph.vector.Text.prototype['fontFamily'] = acgraph.vector.Text.prototype.fontFamily;
-acgraph.vector.Text.prototype['direction'] = acgraph.vector.Text.prototype.direction;
-acgraph.vector.Text.prototype['fontStyle'] = acgraph.vector.Text.prototype.fontStyle;
-acgraph.vector.Text.prototype['fontVariant'] = acgraph.vector.Text.prototype.fontVariant;
-acgraph.vector.Text.prototype['fontWeight'] = acgraph.vector.Text.prototype.fontWeight;
-acgraph.vector.Text.prototype['letterSpacing'] = acgraph.vector.Text.prototype.letterSpacing;
-acgraph.vector.Text.prototype['decoration'] = acgraph.vector.Text.prototype.decoration;
-acgraph.vector.Text.prototype['opacity'] = acgraph.vector.Text.prototype.opacity;
-acgraph.vector.Text.prototype['lineHeight'] = acgraph.vector.Text.prototype.lineHeight;
-acgraph.vector.Text.prototype['textIndent'] = acgraph.vector.Text.prototype.textIndent;
-acgraph.vector.Text.prototype['vAlign'] = acgraph.vector.Text.prototype.vAlign;
-acgraph.vector.Text.prototype['hAlign'] = acgraph.vector.Text.prototype.hAlign;
-acgraph.vector.Text.prototype['width'] = acgraph.vector.Text.prototype.width;
-acgraph.vector.Text.prototype['height'] = acgraph.vector.Text.prototype.height;
-acgraph.vector.Text.prototype['textWrap'] = acgraph.vector.Text.prototype.textWrap;
-acgraph.vector.Text.prototype['textOverflow'] = acgraph.vector.Text.prototype.textOverflow;
-acgraph.vector.Text.prototype['selectable'] = acgraph.vector.Text.prototype.selectable;
-goog.exportSymbol('acgraph.vector.Text.TextWrap.NO_WRAP', acgraph.vector.Text.TextWrap.NO_WRAP);
-goog.exportSymbol('acgraph.vector.Text.TextWrap.BY_LETTER', acgraph.vector.Text.TextWrap.BY_LETTER);
-goog.exportSymbol('acgraph.vector.Text.TextOverflow.CLIP', acgraph.vector.Text.TextOverflow.CLIP);
-goog.exportSymbol('acgraph.vector.Text.TextOverflow.ELLIPSIS', acgraph.vector.Text.TextOverflow.ELLIPSIS);
-goog.exportSymbol('acgraph.vector.Text.FontStyle.ITALIC', acgraph.vector.Text.FontStyle.ITALIC);
-goog.exportSymbol('acgraph.vector.Text.FontStyle.NORMAL', acgraph.vector.Text.FontStyle.NORMAL);
-goog.exportSymbol('acgraph.vector.Text.FontStyle.OBLIQUE', acgraph.vector.Text.FontStyle.OBLIQUE);
-goog.exportSymbol('acgraph.vector.Text.FontVariant.NORMAL', acgraph.vector.Text.FontVariant.NORMAL);
-goog.exportSymbol('acgraph.vector.Text.FontVariant.SMALL_CAP', acgraph.vector.Text.FontVariant.SMALL_CAP);
-goog.exportSymbol('acgraph.vector.Text.Direction.LTR', acgraph.vector.Text.Direction.LTR);
-goog.exportSymbol('acgraph.vector.Text.Direction.RTL', acgraph.vector.Text.Direction.RTL);
-goog.exportSymbol('acgraph.vector.Text.Decoration.BLINK', acgraph.vector.Text.Decoration.BLINK);
-goog.exportSymbol('acgraph.vector.Text.Decoration.LINE_THROUGH', acgraph.vector.Text.Decoration.LINE_THROUGH);
-goog.exportSymbol('acgraph.vector.Text.Decoration.OVERLINE', acgraph.vector.Text.Decoration.OVERLINE);
-goog.exportSymbol('acgraph.vector.Text.Decoration.UNDERLINE', acgraph.vector.Text.Decoration.UNDERLINE);
-goog.exportSymbol('acgraph.vector.Text.Decoration.NONE', acgraph.vector.Text.Decoration.NONE);
-goog.exportSymbol('acgraph.vector.Text.HAlign.START', acgraph.vector.Text.HAlign.START);
-goog.exportSymbol('acgraph.vector.Text.HAlign.LEFT', acgraph.vector.Text.HAlign.LEFT);
-goog.exportSymbol('acgraph.vector.Text.HAlign.CENTER', acgraph.vector.Text.HAlign.CENTER);
-goog.exportSymbol('acgraph.vector.Text.HAlign.END', acgraph.vector.Text.HAlign.END);
-goog.exportSymbol('acgraph.vector.Text.HAlign.RIGHT', acgraph.vector.Text.HAlign.RIGHT);
-goog.exportSymbol('acgraph.vector.Text.VAlign.TOP', acgraph.vector.Text.VAlign.TOP);
-goog.exportSymbol('acgraph.vector.Text.VAlign.MIDDLE', acgraph.vector.Text.VAlign.MIDDLE);
-goog.exportSymbol('acgraph.vector.Text.VAlign.BOTTOM', acgraph.vector.Text.VAlign.BOTTOM);
+(function() {
+  var proto = acgraph.vector.Text.prototype;
+  goog.exportSymbol('acgraph.vector.Text', acgraph.vector.Text);
+  proto['text'] = proto.text;
+  proto['style'] = proto.style;
+  proto['htmlText'] = proto.htmlText;
+  proto['x'] = proto.x;
+  proto['y'] = proto.y;
+  proto['fontSize'] = proto.fontSize;
+  proto['color'] = proto.color;
+  proto['fontFamily'] = proto.fontFamily;
+  proto['direction'] = proto.direction;
+  proto['fontStyle'] = proto.fontStyle;
+  proto['fontVariant'] = proto.fontVariant;
+  proto['fontWeight'] = proto.fontWeight;
+  proto['letterSpacing'] = proto.letterSpacing;
+  proto['decoration'] = proto.decoration;
+  proto['opacity'] = proto.opacity;
+  proto['lineHeight'] = proto.lineHeight;
+  proto['textIndent'] = proto.textIndent;
+  proto['vAlign'] = proto.vAlign;
+  proto['hAlign'] = proto.hAlign;
+  proto['width'] = proto.width;
+  proto['height'] = proto.height;
+  proto['textWrap'] = proto.textWrap;
+  proto['textOverflow'] = proto.textOverflow;
+  proto['selectable'] = proto.selectable;
+  goog.exportSymbol('acgraph.vector.Text.TextWrap.NO_WRAP', acgraph.vector.Text.TextWrap.NO_WRAP);
+  goog.exportSymbol('acgraph.vector.Text.TextWrap.BY_LETTER', acgraph.vector.Text.TextWrap.BY_LETTER);
+  goog.exportSymbol('acgraph.vector.Text.TextOverflow.CLIP', acgraph.vector.Text.TextOverflow.CLIP);
+  goog.exportSymbol('acgraph.vector.Text.TextOverflow.ELLIPSIS', acgraph.vector.Text.TextOverflow.ELLIPSIS);
+  goog.exportSymbol('acgraph.vector.Text.FontStyle.ITALIC', acgraph.vector.Text.FontStyle.ITALIC);
+  goog.exportSymbol('acgraph.vector.Text.FontStyle.NORMAL', acgraph.vector.Text.FontStyle.NORMAL);
+  goog.exportSymbol('acgraph.vector.Text.FontStyle.OBLIQUE', acgraph.vector.Text.FontStyle.OBLIQUE);
+  goog.exportSymbol('acgraph.vector.Text.FontVariant.NORMAL', acgraph.vector.Text.FontVariant.NORMAL);
+  goog.exportSymbol('acgraph.vector.Text.FontVariant.SMALL_CAP', acgraph.vector.Text.FontVariant.SMALL_CAP);
+  goog.exportSymbol('acgraph.vector.Text.Direction.LTR', acgraph.vector.Text.Direction.LTR);
+  goog.exportSymbol('acgraph.vector.Text.Direction.RTL', acgraph.vector.Text.Direction.RTL);
+  goog.exportSymbol('acgraph.vector.Text.Decoration.BLINK', acgraph.vector.Text.Decoration.BLINK);
+  goog.exportSymbol('acgraph.vector.Text.Decoration.LINE_THROUGH', acgraph.vector.Text.Decoration.LINE_THROUGH);
+  goog.exportSymbol('acgraph.vector.Text.Decoration.OVERLINE', acgraph.vector.Text.Decoration.OVERLINE);
+  goog.exportSymbol('acgraph.vector.Text.Decoration.UNDERLINE', acgraph.vector.Text.Decoration.UNDERLINE);
+  goog.exportSymbol('acgraph.vector.Text.Decoration.NONE', acgraph.vector.Text.Decoration.NONE);
+  goog.exportSymbol('acgraph.vector.Text.HAlign.START', acgraph.vector.Text.HAlign.START);
+  goog.exportSymbol('acgraph.vector.Text.HAlign.LEFT', acgraph.vector.Text.HAlign.LEFT);
+  goog.exportSymbol('acgraph.vector.Text.HAlign.CENTER', acgraph.vector.Text.HAlign.CENTER);
+  goog.exportSymbol('acgraph.vector.Text.HAlign.END', acgraph.vector.Text.HAlign.END);
+  goog.exportSymbol('acgraph.vector.Text.HAlign.RIGHT', acgraph.vector.Text.HAlign.RIGHT);
+  goog.exportSymbol('acgraph.vector.Text.VAlign.TOP', acgraph.vector.Text.VAlign.TOP);
+  goog.exportSymbol('acgraph.vector.Text.VAlign.MIDDLE', acgraph.vector.Text.VAlign.MIDDLE);
+  goog.exportSymbol('acgraph.vector.Text.VAlign.BOTTOM', acgraph.vector.Text.VAlign.BOTTOM);
+})();

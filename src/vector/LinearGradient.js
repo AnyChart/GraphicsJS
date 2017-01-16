@@ -15,7 +15,7 @@ goog.require('goog.Disposable');
  * @param {number=} opt_opacity Gradient opacity. Defaults to 1.
  * @param {number=} opt_angle Gradient angle. 0 degrees means gradient line is horizontal
  * and goes left to right (think of 3 o'clock). Defaults to 1.
- * @param {(boolean|acgraph.math.Rect)=} opt_mode Gradient mode. (ObjectBoundingBox with angle preservation,
+ * @param {(boolean|goog.math.Rect)=} opt_mode Gradient mode. (ObjectBoundingBox with angle preservation,
  * ObjectBoundingBox without angle and UserSpaceOnUse)
  * <h4>Modes:</h4>
  * <b>ObjectBoundingBox with angle preservation</b>
@@ -29,12 +29,12 @@ goog.require('goog.Disposable');
  * can be changed if the object proportion is not 1:1 in the browser. So visually the result gradient angle may not correspond
  * to the original settings.
  * <b>UserSpaceOnUse</b>
- * Activated when acgraph.math.Rect object is passed.
+ * Activated when goog.math.Rect object is passed.
  * In this mode gradient settings are added by gradient size and borders/coordinates, and rendering is calculated within those
  * borders. After that, the fill is executed on the element figure according to its coordinates.
  * Read more at <a href='http://www.w3.org/TR/SVG/pservers.html#LinearGradientElementGradientUnitsAttribute'>
  * gradientUnits</a>. Angle is always preserved in this mode.
- * @param {goog.graphics.AffineTransform=} opt_transform Gradient transform.
+ * @param {goog.math.AffineTransform=} opt_transform Gradient transform.
  * @constructor
  * @extends {goog.Disposable}
  */
@@ -58,7 +58,7 @@ acgraph.vector.LinearGradient = function(keys, opt_opacity, opt_angle, opt_mode,
   this.angle = goog.isDefAndNotNull(opt_angle) ? goog.math.standardAngle(opt_angle) : 0;
   /**
    * Gradient mode.
-   * @type {(boolean|!acgraph.math.Rect)}
+   * @type {(boolean|!goog.math.Rect)}
    */
   this.mode = goog.isDefAndNotNull(opt_mode) ? opt_mode : false;
   /**
@@ -68,13 +68,13 @@ acgraph.vector.LinearGradient = function(keys, opt_opacity, opt_angle, opt_mode,
   this.saveAngle = !!opt_mode;
   /**
    * Gradient bounds. If set - gradient is in userSpaceOnUse mode (see opt_bounds description).
-   * @type {acgraph.math.Rect}
+   * @type {goog.math.Rect}
    */
-  this.bounds = (opt_mode && (opt_mode instanceof acgraph.math.Rect)) ?
-      /** @type {acgraph.math.Rect} */(opt_mode) : null;
+  this.bounds = (opt_mode && (opt_mode instanceof goog.math.Rect)) ?
+      /** @type {goog.math.Rect} */(opt_mode) : null;
   /**
    * Gradient transform.
-   * @type {goog.graphics.AffineTransform}
+   * @type {goog.math.AffineTransform}
    */
   this.transform = goog.isDefAndNotNull(opt_transform) ? opt_transform : null;
 };
@@ -94,8 +94,8 @@ goog.inherits(acgraph.vector.LinearGradient, goog.Disposable);
  * @param {Array.<acgraph.vector.GradientKey>} keys Gradient keys.
  * @param {number=} opt_opacity Gradient opacity.
  * @param {number=} opt_angle Gradient angle.
- * @param {(boolean|acgraph.math.Rect)=} opt_mode Gradient mode.
- * @param {goog.graphics.AffineTransform=} opt_transform Gradient transform.
+ * @param {(boolean|goog.math.Rect)=} opt_mode Gradient mode.
+ * @param {goog.math.AffineTransform=} opt_transform Gradient transform.
  * @return {string} String id.
  */
 acgraph.vector.LinearGradient.serialize = function(keys, opt_opacity, opt_angle, opt_mode, opt_transform) {
@@ -107,9 +107,9 @@ acgraph.vector.LinearGradient.serialize = function(keys, opt_opacity, opt_angle,
   var opacity = goog.isDefAndNotNull(opt_opacity) ? goog.math.clamp(opt_opacity, 0, 1) : 1;
   /** @type {boolean}*/
   var saveAngle = !!opt_mode;
-  /** @type {acgraph.math.Rect}*/
+  /** @type {goog.math.Rect}*/
   var bounds = goog.isDefAndNotNull(opt_mode) ?
-      opt_mode instanceof acgraph.math.Rect ?
+      opt_mode instanceof goog.math.Rect ?
           opt_mode :
           null :
       null;
@@ -213,4 +213,7 @@ acgraph.vector.LinearGradient.prototype.disposeInternal = function() {
 
 
 //exports
-acgraph.vector.LinearGradient.prototype['dispose'] = acgraph.vector.LinearGradient.prototype.dispose;
+(function() {
+  var proto = acgraph.vector.LinearGradient.prototype;
+  proto['dispose'] = proto.dispose;
+})();

@@ -2,12 +2,12 @@ goog.provide('acgraph.vector.PathBase');
 
 goog.require('acgraph.error');
 goog.require('acgraph.math');
-goog.require('acgraph.math.Coordinate');
 goog.require('acgraph.utils.IdGenerator');
 goog.require('acgraph.vector.Shape');
 goog.require('goog.array');
-goog.require('goog.graphics.AffineTransform');
 goog.require('goog.math');
+goog.require('goog.math.AffineTransform');
+goog.require('goog.math.Coordinate');
 
 
 
@@ -142,14 +142,14 @@ acgraph.vector.PathBase.forEachSegment_ = function(callback, segments, count, po
  * Calculates path bounds. Each part of path is defined by the last point
  * (two coordinates). First to params are always start point coordinates.
  * @param {...number} var_args Segments coordinates.
- * @this {{rect: acgraph.math.Rect, transform: goog.graphics.AffineTransform}} Assumed context
+ * @this {{rect: goog.math.Rect, transform: goog.math.AffineTransform}} Assumed context
  *      is a special object that contains a rectangle which is to be extended and which
  *      will contains the result, as well as trasformation object, if needed.
  * @private
  */
 acgraph.vector.PathBase.calcLineBounds_ = function(var_args) {
-  /** @type {acgraph.math.Rect} */
-  var rect = new acgraph.math.Rect(0, 0, 0, 0);
+  /** @type {goog.math.Rect} */
+  var rect = new goog.math.Rect(0, 0, 0, 0);
   if (this.transform) {
     /** @type {!Array.<number>} */
     var arr = /** @type {!Array.<number>} */(/** @type {Object} */(arguments));
@@ -175,14 +175,14 @@ acgraph.vector.PathBase.calcLineBounds_ = function(var_args) {
  * @param {number} extent Arc extent.
  * @param {number} endX X coordinate of end.
  * @param {number} endY Y coordinate of coordinate.
- * @this {{rect: acgraph.math.Rect, transform: goog.graphics.AffineTransform}} Assumed context
+ * @this {{rect: goog.math.Rect, transform: goog.math.AffineTransform}} Assumed context
  *      is a special object that contains a rectangle which is to be extended and which
  *      will contains the result, as well as trasformation object, if needed.
  * @private
  */
 acgraph.vector.PathBase.calcArcBounds_ = function(startX, startY, rx, ry, angle, extent, endX, endY) {
-  /** @type {acgraph.math.Rect} */
-  var rect = new acgraph.math.Rect(0, 0, 0, 0);
+  /** @type {goog.math.Rect} */
+  var rect = new goog.math.Rect(0, 0, 0, 0);
   /**
    * X coordinates suspected to be bounds.
    * @type {Array.<number>}
@@ -255,7 +255,7 @@ acgraph.vector.PathBase.calcArcBounds_ = function(startX, startY, rx, ry, angle,
  *
  * @param {...number} var_args The coordinates defining the curves. First pair is the initial point, then there are sets of 3 pairs,
  *      each including 2 control points and an endpoint. Each point is defined by a pair of coordinates – X and Y.
- * @this {{rect: acgraph.math.Rect, transform: goog.graphics.AffineTransform}} Assumed context
+ * @this {{rect: goog.math.Rect, transform: goog.math.AffineTransform}} Assumed context
  *      is a special object that contains a rectangle which is to be extended and which
  *      will contains the result, as well as trasformation object, if needed.
  * @private
@@ -281,14 +281,14 @@ acgraph.vector.PathBase.calcCurveBounds_ = function(var_args) {
  *
  * @param {...number} var_args The coordinates defining the curves. First pair is the initial point, then there are sets of 3 pairs,
  *      each including 2 control points and an endpoint. Each point is defined by a pair of coordinates – X and Y.
- * @this {{rect: acgraph.math.Rect, transform: goog.graphics.AffineTransform}} Assumed context
+ * @this {{rect: goog.math.Rect, transform: goog.math.AffineTransform}} Assumed context
  *      is a special object that contains a rectangle which is to be extended and which
  *      will contains the result, as well as trasformation object, if needed.
  * @private
  */
 acgraph.vector.PathBase.calcRoughCurveBounds_ = function(var_args) {
-  /** @type {acgraph.math.Rect} */
-  var rect = new acgraph.math.Rect(0, 0, 0, 0);
+  /** @type {goog.math.Rect} */
+  var rect = new goog.math.Rect(0, 0, 0, 0);
   if (this.transform) {
     /** @type {!Array.<number>} */
     var arr = /** @type {!Array.<number>} */(/** @type {Object} */(arguments));
@@ -851,10 +851,10 @@ acgraph.vector.PathBase.prototype.getBoundsWithTransform = function(transform) {
 
 /**
  * Calculates path bounds with transformation.
- * @param {goog.graphics.AffineTransform} transform Transformation.
+ * @param {goog.math.AffineTransform} transform Transformation.
  * @param {!Array.<Function>} calcMap Hash-map of functions to calculate bounds of segment.
  * @param {boolean} allowCache Allows to cache result if transformation coincide with own or absolute.
- * @return {!acgraph.math.Rect} Bounds.
+ * @return {!goog.math.Rect} Bounds.
  * @private
  */
 acgraph.vector.PathBase.prototype.calcBounds_ = function(transform, calcMap, allowCache) {
@@ -865,17 +865,17 @@ acgraph.vector.PathBase.prototype.calcBounds_ = function(transform, calcMap, all
   else if (this.absoluteBoundsCache && isFullTransform)
     return this.absoluteBoundsCache.clone();
   else {
-    /** @type {acgraph.math.Rect} */
+    /** @type {goog.math.Rect} */
     var rect;
 
     if (this.currentPoint_) {
       if (transform) {
         var arr = [this.currentPoint_[0], this.currentPoint_[1]];
         transform.transform(arr, 0, arr, 0, 1);
-        rect = new acgraph.math.Rect(arr[0], arr[1], 0, 0);
+        rect = new goog.math.Rect(arr[0], arr[1], 0, 0);
         this.simplify();
       } else
-        rect = new acgraph.math.Rect(this.currentPoint_[0], this.currentPoint_[1], 0, 0);
+        rect = new goog.math.Rect(this.currentPoint_[0], this.currentPoint_[1], 0, 0);
       this.forEachSegment(
           function(segment, args) {
             acgraph.utils.partialApplyingArgsToFunction(calcMap[segment], args, this);
@@ -883,7 +883,7 @@ acgraph.vector.PathBase.prototype.calcBounds_ = function(transform, calcMap, all
           {rect: rect, transform: transform}, true
       );
     } else {
-      rect = new acgraph.math.Rect(NaN, NaN, NaN, NaN);
+      rect = new goog.math.Rect(NaN, NaN, NaN, NaN);
     }
     if (isSelfTransform && allowCache)
       this.boundsCache = rect.clone();
@@ -897,11 +897,11 @@ acgraph.vector.PathBase.prototype.calcBounds_ = function(transform, calcMap, all
 
 /**
  Returns the last coordinates added to the path.
- @return {acgraph.math.Coordinate} The current coordinates of the cursor.
+ @return {goog.math.Coordinate} The current coordinates of the cursor.
  */
 acgraph.vector.PathBase.prototype.getCurrentPointInternal = function() {
   if (this.currentPoint_) {
-    return new acgraph.math.Coordinate(this.currentPoint_[0], this.currentPoint_[1]);
+    return new goog.math.Coordinate(this.currentPoint_[0], this.currentPoint_[1]);
   }
 
   return null;
@@ -912,11 +912,11 @@ acgraph.vector.PathBase.prototype.getCurrentPointInternal = function() {
  * Returns point to which the path is "closed" using close command.
  * (coordinates of start of the last open-ended shape or last moveTo() coordinates).
  *
- * @return {acgraph.math.Coordinate} Current cursor coordinat in {@code [x, y] format}.
+ * @return {goog.math.Coordinate} Current cursor coordinat in {@code [x, y] format}.
  */
 acgraph.vector.PathBase.prototype.getClosePoint = function() {
   if (this.closePoint_) {
-    return new acgraph.math.Coordinate(this.closePoint_[0], this.closePoint_[1]);
+    return new goog.math.Coordinate(this.closePoint_[0], this.closePoint_[1]);
   }
 
   return null;

@@ -1,8 +1,8 @@
 goog.provide('acgraph.vector.Rect');
 
-goog.require('acgraph.math.Rect');
 goog.require('acgraph.utils.IdGenerator');
 goog.require('acgraph.vector.PathBase');
+goog.require('goog.math.Rect');
 
 
 
@@ -26,10 +26,10 @@ acgraph.vector.Rect = function(opt_x, opt_y, opt_width, opt_height) {
   /**
    * Bounds.
    * acgraph.vector.Element.DirtyState.DATA must be set whenevr data is changed.
-   * @type {acgraph.math.Rect}
+   * @type {goog.math.Rect}
    * @private
    */
-  this.rect_ = new acgraph.math.Rect(opt_x || 0, opt_y || 0, opt_width || 0, opt_height || 0);
+  this.rect_ = new goog.math.Rect(opt_x || 0, opt_y || 0, opt_width || 0, opt_height || 0);
 
 
   /**
@@ -136,11 +136,11 @@ acgraph.vector.Rect.prototype.setHeight = function(value) {
 
 /**
  Sets bounds.
- @param {acgraph.math.Rect} value Bounds.
+ @param {goog.math.Rect} value Bounds.
  @return {!acgraph.vector.Rect} {@link acgraph.vector.Rect} instance for method chaining.
  */
 acgraph.vector.Rect.prototype.setBounds = function(value) {
-  if (!acgraph.math.Rect.equals(this.rect_, value)) {
+  if (!goog.math.Rect.equals(this.rect_, value)) {
     // clone is not used to avoid extra object creation
     this.rect_.left = value.left;
     this.rect_.top = value.top;
@@ -388,12 +388,15 @@ acgraph.vector.Rect.prototype.disposeInternal = function() {
 
 
 //exports
-goog.exportSymbol('acgraph.vector.Rect', acgraph.vector.Rect);
-acgraph.vector.Rect.prototype['setX'] = acgraph.vector.Rect.prototype.setX;
-acgraph.vector.Rect.prototype['setY'] = acgraph.vector.Rect.prototype.setY;
-acgraph.vector.Rect.prototype['setWidth'] = acgraph.vector.Rect.prototype.setWidth;
-acgraph.vector.Rect.prototype['setHeight'] = acgraph.vector.Rect.prototype.setHeight;
-acgraph.vector.Rect.prototype['setBounds'] = acgraph.vector.Rect.prototype.setBounds;
-acgraph.vector.Rect.prototype['cut'] = acgraph.vector.Rect.prototype.cut;
-acgraph.vector.Rect.prototype['round'] = acgraph.vector.Rect.prototype.round;
-acgraph.vector.Rect.prototype['roundInner'] = acgraph.vector.Rect.prototype.roundInner;
+(function() {
+  var proto = acgraph.vector.Rect.prototype;
+  goog.exportSymbol('acgraph.vector.Rect', acgraph.vector.Rect);
+  proto['setX'] = proto.setX;
+  proto['setY'] = proto.setY;
+  proto['setWidth'] = proto.setWidth;
+  proto['setHeight'] = proto.setHeight;
+  proto['setBounds'] = proto.setBounds;
+  proto['cut'] = proto.cut;
+  proto['round'] = proto.round;
+  proto['roundInner'] = proto.roundInner;
+})();

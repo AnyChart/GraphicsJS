@@ -12,8 +12,8 @@ goog.require('goog.Disposable');
  * @param {number} fx X coordinate of focal point.
  * @param {number} fy Y coordinate of focal point.
  * @param {number=} opt_opacity Opacity of the gradient.
- * @param {acgraph.math.Rect=} opt_mode If defined then userSpaceOnUse mode else objectBoundingBox.
- * @param {goog.graphics.AffineTransform=} opt_transform Gradient transform.
+ * @param {goog.math.Rect=} opt_mode If defined then userSpaceOnUse mode else objectBoundingBox.
+ * @param {goog.math.AffineTransform=} opt_transform Gradient transform.
  * @extends {goog.Disposable}
  * @constructor
  */
@@ -53,12 +53,12 @@ acgraph.vector.RadialGradient = function(keys, cx, cy, fx, fy, opt_opacity, opt_
   /**
    * Gradient rectangel. If set - gradient works in
    * userSpaceOnUse mode (see opt_bounds description).
-   * @type {acgraph.math.Rect}
+   * @type {goog.math.Rect}
    */
   this.bounds = goog.isDefAndNotNull(opt_mode) ? opt_mode : null;
   /**
    * Gradient transform.
-   * @type {goog.graphics.AffineTransform}
+   * @type {goog.math.AffineTransform}
    */
   this.transform = goog.isDefAndNotNull(opt_transform) ? opt_transform : null;
 };
@@ -81,8 +81,8 @@ goog.inherits(acgraph.vector.RadialGradient, goog.Disposable);
  * @param {number} fx Focal point X.
  * @param {number} fy Focal point Y.
  * @param {number=} opt_opacity Gradient opacity.
- * @param {acgraph.math.Rect=} opt_mode Gradient mode.
- * @param {goog.graphics.AffineTransform=} opt_transform Gradient transform.
+ * @param {goog.math.Rect=} opt_mode Gradient mode.
+ * @param {goog.math.AffineTransform=} opt_transform Gradient transform.
  * @return {string} String id.
  */
 acgraph.vector.RadialGradient.serialize = function(keys, cx, cy, fx, fy, opt_opacity, opt_mode, opt_transform) {
@@ -185,4 +185,7 @@ acgraph.vector.RadialGradient.prototype.disposeInternal = function() {
 
 
 //exports
-acgraph.vector.RadialGradient.prototype['dispose'] = acgraph.vector.RadialGradient.prototype.dispose;
+(function() {
+  var proto = acgraph.vector.RadialGradient.prototype;
+  proto['dispose'] = proto.dispose;
+})();

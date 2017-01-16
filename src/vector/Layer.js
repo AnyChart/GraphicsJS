@@ -1,10 +1,10 @@
 goog.provide('acgraph.vector.Layer');
 
 goog.require('acgraph.error');
-goog.require('acgraph.math.Rect');
 goog.require('acgraph.utils.IdGenerator');
 goog.require('acgraph.vector.Element');
 goog.require('acgraph.vector.ILayer');
+goog.require('goog.math.Rect');
 
 
 
@@ -435,7 +435,7 @@ acgraph.vector.Layer.prototype.image = function(opt_src, opt_x, opt_y, opt_width
 /**
  Draws rectangle with rounded corners..<br/>
  Read more at {@link acgraph.vector.primitives.roundedRect}
- @param {!acgraph.math.Rect} rect Rectangle.
+ @param {!goog.math.Rect} rect Rectangle.
  @param {...number} var_args Set of param which defines corners radius.
  @return {!acgraph.vector.Path} {@link acgraph.vector.Path} instance for method chaining.
  @this {acgraph.vector.ILayer}
@@ -449,7 +449,7 @@ acgraph.vector.Layer.prototype.roundedRect = function(rect, var_args) {
 /**
  Draws rectangle with corners rounded inside.<br/>
  Read more at {@link acgraph.vector.primitives.roundedInnerRect}
- @param {!acgraph.math.Rect} rect Rect which corners will be truncated.
+ @param {!goog.math.Rect} rect Rect which corners will be truncated.
  @param {...number} var_args Set of param which define corners radius of rectangle.
  @return {!acgraph.vector.Path} {@link acgraph.vector.Path} instance for method chaining.
  @this {acgraph.vector.ILayer}
@@ -463,7 +463,7 @@ acgraph.vector.Layer.prototype.roundedInnerRect = function(rect, var_args) {
 /**
  Draws rectangle with cut corners.<br/>
  Read more at {@link acgraph.vector.primitives.truncatedRect}
- @param {!acgraph.math.Rect} rect Rect which corners will be cut.
+ @param {!goog.math.Rect} rect Rect which corners will be cut.
  @param {...number} var_args Set of params which define corners radius.
  @return {!acgraph.vector.Path} {@link acgraph.vector.Path} instance for method chaining.
  @this {acgraph.vector.ILayer}
@@ -1086,12 +1086,12 @@ acgraph.vector.Layer.prototype.getBoundsWithTransform = function(transform) {
   else if (this.absoluteBoundsCache && isFullTransform)
     return this.absoluteBoundsCache.clone();
   else {
-    /** @type {acgraph.math.Rect} */
+    /** @type {goog.math.Rect} */
     var bounds = null;
     for (var i = 0, len = this.children.length; i < len; i++) {
       /** @type {acgraph.vector.Element} */
       var child = this.children[i];
-      /** @type {!acgraph.math.Rect} */
+      /** @type {!goog.math.Rect} */
       var childBounds = child.getBoundsWithTransform(acgraph.math.concatMatrixes(transform,
           child.getSelfTransformation()));
       if (!isNaN(childBounds.left) && !isNaN(childBounds.top) && !isNaN(childBounds.width) && !isNaN(childBounds.height))
@@ -1101,7 +1101,7 @@ acgraph.vector.Layer.prototype.getBoundsWithTransform = function(transform) {
           bounds = childBounds;
     }
     if (!bounds)
-      bounds = acgraph.math.getBoundsOfRectWithTransform(new acgraph.math.Rect(0, 0, 0, 0), transform);
+      bounds = acgraph.math.getBoundsOfRectWithTransform(new goog.math.Rect(0, 0, 0, 0), transform);
     if (isSelfTransform)
       this.boundsCache = bounds.clone();
     if (isFullTransform)
@@ -1259,45 +1259,48 @@ acgraph.vector.Layer.prototype.finalizeDisposing = function() {
 
 
 //exports
-goog.exportSymbol('acgraph.vector.Layer', acgraph.vector.Layer);
-acgraph.vector.Layer.prototype['addChild'] = acgraph.vector.Layer.prototype.addChild;
-acgraph.vector.Layer.prototype['addChildAt'] = acgraph.vector.Layer.prototype.addChildAt;
-acgraph.vector.Layer.prototype['removeChild'] = acgraph.vector.Layer.prototype.removeChild;
-acgraph.vector.Layer.prototype['removeChildAt'] = acgraph.vector.Layer.prototype.removeChildAt;
-acgraph.vector.Layer.prototype['removeChildren'] = acgraph.vector.Layer.prototype.removeChildren;
-acgraph.vector.Layer.prototype['swapChildren'] = acgraph.vector.Layer.prototype.swapChildren;
-acgraph.vector.Layer.prototype['swapChildrenAt'] = acgraph.vector.Layer.prototype.swapChildrenAt;
-acgraph.vector.Layer.prototype['getChildAt'] = acgraph.vector.Layer.prototype.getChildAt;
-acgraph.vector.Layer.prototype['hasChild'] = acgraph.vector.Layer.prototype.hasChild;
-acgraph.vector.Layer.prototype['forEachChild'] = acgraph.vector.Layer.prototype.forEachChild;
-acgraph.vector.Layer.prototype['indexOfChild'] = acgraph.vector.Layer.prototype.indexOfChild;
-acgraph.vector.Layer.prototype['numChildren'] = acgraph.vector.Layer.prototype.numChildren;
-acgraph.vector.Layer.prototype['circle'] = acgraph.vector.Layer.prototype.circle;
-acgraph.vector.Layer.prototype['layer'] = acgraph.vector.Layer.prototype.layer;
-acgraph.vector.Layer.prototype['unmanagedLayer'] = acgraph.vector.Layer.prototype.unmanagedLayer;
-acgraph.vector.Layer.prototype['ellipse'] = acgraph.vector.Layer.prototype.ellipse;
-acgraph.vector.Layer.prototype['rect'] = acgraph.vector.Layer.prototype.rect;
-acgraph.vector.Layer.prototype['truncatedRect'] = acgraph.vector.Layer.prototype.truncatedRect;
-acgraph.vector.Layer.prototype['roundedRect'] = acgraph.vector.Layer.prototype.roundedRect;
-acgraph.vector.Layer.prototype['roundedInnerRect'] = acgraph.vector.Layer.prototype.roundedInnerRect;
-acgraph.vector.Layer.prototype['path'] = acgraph.vector.Layer.prototype.path;
-acgraph.vector.Layer.prototype['star'] = acgraph.vector.Layer.prototype.star;
-acgraph.vector.Layer.prototype['star4'] = acgraph.vector.Layer.prototype.star4;
-acgraph.vector.Layer.prototype['star5'] = acgraph.vector.Layer.prototype.star5;
-acgraph.vector.Layer.prototype['star6'] = acgraph.vector.Layer.prototype.star6;
-acgraph.vector.Layer.prototype['star7'] = acgraph.vector.Layer.prototype.star7;
-acgraph.vector.Layer.prototype['star10'] = acgraph.vector.Layer.prototype.star10;
-acgraph.vector.Layer.prototype['diamond'] = acgraph.vector.Layer.prototype.diamond;
-acgraph.vector.Layer.prototype['triangleUp'] = acgraph.vector.Layer.prototype.triangleUp;
-acgraph.vector.Layer.prototype['triangleDown'] = acgraph.vector.Layer.prototype.triangleDown;
-acgraph.vector.Layer.prototype['triangleRight'] = acgraph.vector.Layer.prototype.triangleRight;
-acgraph.vector.Layer.prototype['triangleLeft'] = acgraph.vector.Layer.prototype.triangleLeft;
-acgraph.vector.Layer.prototype['cross'] = acgraph.vector.Layer.prototype.cross;
-acgraph.vector.Layer.prototype['diagonalCross'] = acgraph.vector.Layer.prototype.diagonalCross;
-acgraph.vector.Layer.prototype['hLine'] = acgraph.vector.Layer.prototype.hLine;
-acgraph.vector.Layer.prototype['vLine'] = acgraph.vector.Layer.prototype.vLine;
-acgraph.vector.Layer.prototype['pie'] = acgraph.vector.Layer.prototype.pie;
-acgraph.vector.Layer.prototype['donut'] = acgraph.vector.Layer.prototype.donut;
-acgraph.vector.Layer.prototype['text'] = acgraph.vector.Layer.prototype.text;
-acgraph.vector.Layer.prototype['html'] = acgraph.vector.Layer.prototype.html;
-acgraph.vector.Layer.prototype['image'] = acgraph.vector.Layer.prototype.image;
+(function() {
+  var proto = acgraph.vector.Layer.prototype;
+  goog.exportSymbol('acgraph.vector.Layer', acgraph.vector.Layer);
+  proto['addChild'] = proto.addChild;
+  proto['addChildAt'] = proto.addChildAt;
+  proto['removeChild'] = proto.removeChild;
+  proto['removeChildAt'] = proto.removeChildAt;
+  proto['removeChildren'] = proto.removeChildren;
+  proto['swapChildren'] = proto.swapChildren;
+  proto['swapChildrenAt'] = proto.swapChildrenAt;
+  proto['getChildAt'] = proto.getChildAt;
+  proto['hasChild'] = proto.hasChild;
+  proto['forEachChild'] = proto.forEachChild;
+  proto['indexOfChild'] = proto.indexOfChild;
+  proto['numChildren'] = proto.numChildren;
+  proto['circle'] = proto.circle;
+  proto['layer'] = proto.layer;
+  proto['unmanagedLayer'] = proto.unmanagedLayer;
+  proto['ellipse'] = proto.ellipse;
+  proto['rect'] = proto.rect;
+  proto['truncatedRect'] = proto.truncatedRect;
+  proto['roundedRect'] = proto.roundedRect;
+  proto['roundedInnerRect'] = proto.roundedInnerRect;
+  proto['path'] = proto.path;
+  proto['star'] = proto.star;
+  acgraph.vector.Layer.prototype['star4'] = acgraph.vector.Layer.prototype.star4;
+  acgraph.vector.Layer.prototype['star5'] = acgraph.vector.Layer.prototype.star5;
+  acgraph.vector.Layer.prototype['star6'] = acgraph.vector.Layer.prototype.star6;
+  acgraph.vector.Layer.prototype['star7'] = acgraph.vector.Layer.prototype.star7;
+  acgraph.vector.Layer.prototype['star10'] = acgraph.vector.Layer.prototype.star10;
+  proto['diamond'] = proto.diamond;
+  proto['triangleUp'] = proto.triangleUp;
+  proto['triangleDown'] = proto.triangleDown;
+  proto['triangleRight'] = proto.triangleRight;
+  proto['triangleLeft'] = proto.triangleLeft;
+  proto['cross'] = proto.cross;
+  proto['diagonalCross'] = proto.diagonalCross;
+  proto['hLine'] = proto.hLine;
+  proto['vLine'] = proto.vLine;
+  proto['pie'] = proto.pie;
+  proto['donut'] = proto.donut;
+  proto['text'] = proto.text;
+  proto['html'] = proto.html;
+  proto['image'] = proto.image;
+})();

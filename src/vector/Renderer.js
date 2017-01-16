@@ -1,6 +1,6 @@
 goog.provide('acgraph.vector.Renderer');
-goog.require('acgraph.math.Rect');
 goog.require('goog.dom');
+goog.require('goog.math.Rect');
 goog.require('goog.net.ImageLoader');
 
 
@@ -11,7 +11,7 @@ goog.require('goog.net.ImageLoader');
  * @constructor
  */
 acgraph.vector.Renderer = function() {
-  /** @type {Object.<string, Object.<string, acgraph.math.Rect>>} **/
+  /** @type {Object.<string, Object.<string, goog.math.Rect>>} **/
   this.textBoundsCache = {};
 
   /** @type {Array.<string>} */
@@ -28,7 +28,7 @@ goog.addSingletonGetter(acgraph.vector.Renderer);
 //----------------------------------------------------------------------------------------------------------------------
 /**
  * @param {Object} style The style of text.
- * @return {acgraph.math.Rect} The width of space.
+ * @return {goog.math.Rect} The width of space.
  */
 acgraph.vector.Renderer.prototype.getSpaceBounds = function(style) {
   var bounds;
@@ -38,7 +38,7 @@ acgraph.vector.Renderer.prototype.getSpaceBounds = function(style) {
     var boundsStringWithSpace = this.measure('a a', style);
     var boundsStringWithoutSpace = this.measure('aa', style);
     var width = boundsStringWithSpace.width - boundsStringWithoutSpace.width;
-    bounds = new acgraph.math.Rect(0, boundsStringWithSpace.top, width, boundsStringWithSpace.height);
+    bounds = new goog.math.Rect(0, boundsStringWithSpace.top, width, boundsStringWithSpace.height);
     this.textBounds(' ', style, bounds);
   }
 
@@ -48,7 +48,7 @@ acgraph.vector.Renderer.prototype.getSpaceBounds = function(style) {
 
 /**
  * @param {Object} style The style of text.
- * @return {acgraph.math.Rect} The width of space.
+ * @return {goog.math.Rect} The width of space.
  */
 acgraph.vector.Renderer.prototype.getEmptyStringBounds = function(style) {
   var bounds;
@@ -56,7 +56,7 @@ acgraph.vector.Renderer.prototype.getEmptyStringBounds = function(style) {
     bounds = this.textBounds('', style);
   } else {
     var boundsStringWithSpace = this.measure('a', style);
-    bounds = new acgraph.math.Rect(0, boundsStringWithSpace.top, 0, boundsStringWithSpace.height);
+    bounds = new goog.math.Rect(0, boundsStringWithSpace.top, 0, boundsStringWithSpace.height);
     this.textBounds('', style, bounds);
   }
 
@@ -87,8 +87,8 @@ acgraph.vector.Renderer.prototype.getStyleHash_ = function(value) {
  * nothing will be done and will be returned bounds from cache.
  * @param {string} text Text for getting bounds.
  * @param {Object} style Text style object.
- * @param {acgraph.math.Rect=} opt_bounds Text bounds.
- * @return {acgraph.math.Rect}
+ * @param {goog.math.Rect=} opt_bounds Text bounds.
+ * @return {goog.math.Rect}
  */
 acgraph.vector.Renderer.prototype.textBounds = function(text, style, opt_bounds) {
   var boundsCache = this.textBoundsCache;
@@ -123,7 +123,7 @@ acgraph.vector.Renderer.prototype.isInBoundsCache = function(text, style) {
  * duplication (so, for objects that do not have 1:1 proportion with the original figure, the gradient angle
  * will correspond to the initial value due to internal calculations).
  * @param {number} sourceAngle Source angle in degrees.
- * @param {!acgraph.math.Rect} bounds Bounds.
+ * @param {!goog.math.Rect} bounds Bounds.
  * @return {number} Calculated angle in degrees.
  */
 acgraph.vector.Renderer.prototype.saveGradientAngle = function(sourceAngle, bounds) {

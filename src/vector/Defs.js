@@ -1,10 +1,10 @@
 goog.provide('acgraph.vector.Defs');
-goog.require('acgraph.math.Rect');
 goog.require('acgraph.vector.HatchFill');
 goog.require('acgraph.vector.LinearGradient');
 goog.require('acgraph.vector.PatternFill');
 goog.require('acgraph.vector.RadialGradient');
 goog.require('goog.Disposable');
+goog.require('goog.math.Rect');
 
 
 
@@ -107,7 +107,7 @@ acgraph.vector.Defs.prototype.getLinearGradients = function() {
 /**
  * Returns fill as an image. If a fill with the given parameters already exists - returns an existing object.
  * @param {string} src Image src.
- * @param {acgraph.math.Rect} bounds Bounds.
+ * @param {goog.math.Rect} bounds Bounds.
  * @param {acgraph.vector.ImageFillMode=} opt_mode Mode.
  * @param {number=} opt_opacity Image opacity.
  * @param {Function=} opt_callback If mode is acgraph.vector.ImageFillMode.TILE, the result is passed to a
@@ -117,7 +117,7 @@ acgraph.vector.Defs.prototype.getLinearGradients = function() {
 acgraph.vector.Defs.prototype.getImageFill = function(src, bounds, opt_mode, opt_opacity, opt_callback) {
   opt_opacity = goog.isDef(opt_opacity) ? opt_opacity : 1;
   var mode = goog.isDefAndNotNull(opt_mode) ? opt_mode : acgraph.vector.ImageFillMode.STRETCH;
-  var id = [src, bounds.toString(), mode, opt_opacity].join(',');
+  var id = [src, bounds.left, bounds.top, bounds.width, bounds.height, mode, opt_opacity].join(',');
   var pattern = null;
 
   var callback = goog.nullFunction;
@@ -129,7 +129,7 @@ acgraph.vector.Defs.prototype.getImageFill = function(src, bounds, opt_mode, opt
         pattern = ths.imageFills_[id];
       else {
         pattern = new acgraph.vector.PatternFill(
-            new acgraph.math.Rect(bounds.left, bounds.top, imageWidth, imageHeight));
+            new goog.math.Rect(bounds.left, bounds.top, imageWidth, imageHeight));
 
         pattern.image()
             .src(src)
@@ -217,9 +217,9 @@ acgraph.vector.Defs.prototype.removeHatchFill = function(element) {
  * @param {!Array.<acgraph.vector.GradientKey>} keys Gradient keys.
  * @param {number=} opt_opacity Gradient opacity.
  * @param {number=} opt_angle Gradient angle.
- * @param {(boolean|acgraph.math.Rect)=} opt_mode Gradient mode. More about mode
+ * @param {(boolean|goog.math.Rect)=} opt_mode Gradient mode. More about mode
  * in {@see acgraph.vector.LinearGradient...number}.
- * @param {goog.graphics.AffineTransform=} opt_transform Gradient transform.
+ * @param {goog.math.AffineTransform=} opt_transform Gradient transform.
  * @return {!acgraph.vector.LinearGradient} Linear gradient object.
  */
 acgraph.vector.Defs.prototype.getLinearGradient = function(keys, opt_opacity, opt_angle, opt_mode, opt_transform) {
@@ -259,8 +259,8 @@ acgraph.vector.Defs.prototype.removeLinearGradient = function(element) {
  * @param {number} fx X coordinate of the gradient focal point.
  * @param {number} fy Y coordinate of the gradient focal point.
  * @param {number=} opt_opacity Opacity of the gradient.
- * @param {acgraph.math.Rect=} opt_mode If defined then userSpaceOnUse mode else objectBoundingBox.
- * @param {goog.graphics.AffineTransform=} opt_transform Gradient transform.
+ * @param {goog.math.Rect=} opt_mode If defined then userSpaceOnUse mode else objectBoundingBox.
+ * @param {goog.math.AffineTransform=} opt_transform Gradient transform.
  * @return {!acgraph.vector.RadialGradient} Radial gradient object.
  */
 acgraph.vector.Defs.prototype.getRadialGradient = function(keys, cx, cy, fx, fy, opt_opacity, opt_mode, opt_transform) {

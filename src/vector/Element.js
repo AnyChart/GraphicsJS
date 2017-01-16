@@ -4,12 +4,12 @@ goog.provide('acgraph.vector.Element.DirtyState');
 goog.require('acgraph.error');
 goog.require('acgraph.events');
 goog.require('acgraph.events.Dragger');
-goog.require('acgraph.math.Rect');
 goog.require('acgraph.utils.IdGenerator');
 goog.require('acgraph.vector');
 goog.require('goog.events.EventTarget');
 goog.require('goog.events.Listenable');
-goog.require('goog.graphics.AffineTransform');
+goog.require('goog.math.AffineTransform');
+goog.require('goog.math.Rect');
 
 
 
@@ -28,8 +28,8 @@ acgraph.vector.Element = function() {
 
   /**
    * Defines whether element can be moved (drag) or not.
-   * If it is True or instance of acgraph.math.Rect - element can be moved (draggable), otherwise - not.
-   * @type {boolean|acgraph.math.Rect}
+   * If it is True or instance of goog.math.Rect - element can be moved (draggable), otherwise - not.
+   * @type {boolean|goog.math.Rect}
    * @private
    */
   this.draggable_ = false;
@@ -267,7 +267,7 @@ acgraph.vector.Element.prototype.diablePointerEvents_ = false;
 
 /**
  * Element transformation.
- * @type {goog.graphics.AffineTransform}
+ * @type {goog.math.AffineTransform}
  * @protected
  */
 acgraph.vector.Element.prototype.transformation = null;
@@ -275,7 +275,7 @@ acgraph.vector.Element.prototype.transformation = null;
 
 /**
  * Inverse transformation cache.
- * @type {goog.graphics.AffineTransform}
+ * @type {goog.math.AffineTransform}
  * @private
  */
 acgraph.vector.Element.prototype.inverseTransform_ = null;
@@ -283,10 +283,18 @@ acgraph.vector.Element.prototype.inverseTransform_ = null;
 
 /**
  * Full transformation cache.
- * @type {goog.graphics.AffineTransform}
+ * @type {goog.math.AffineTransform}
  * @private
  */
 acgraph.vector.Element.prototype.fullTransform_ = null;
+
+
+/**
+ * Full inverse transformation cache.
+ * @type {goog.math.AffineTransform}
+ * @private
+ */
+acgraph.vector.Element.prototype.fullInverseTransform_ = null;
 
 
 /**
@@ -689,6 +697,7 @@ acgraph.vector.Element.prototype.beforeTransformationChanged = goog.nullFunction
 acgraph.vector.Element.prototype.transformationChanged = function() {
   this.inverseTransform_ = null;
   this.fullTransform_ = null;
+  this.inverseFullTransform_ = null;
   this.dropBoundsCache();
   this.setDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
   if (acgraph.getRenderer().needsReClipOnBoundsChange()) {
@@ -720,7 +729,7 @@ acgraph.vector.Element.prototype.parentTransformationChanged = function() {
 
 /**
  * Returns inverted transformation.
- * @return {goog.graphics.AffineTransform} Transformation inversion.
+ * @return {goog.math.AffineTransform} Transformation inversion.
  * @protected
  */
 acgraph.vector.Element.prototype.getInverseTransform = function() {
@@ -732,7 +741,7 @@ acgraph.vector.Element.prototype.getInverseTransform = function() {
 
 /**
  * Returns self element transformation.
- * @return {goog.graphics.AffineTransform} Element transformation.
+ * @return {goog.math.AffineTransform} Element transformation.
  */
 acgraph.vector.Element.prototype.getSelfTransformation = function() {
   return this.transformation;
@@ -741,7 +750,7 @@ acgraph.vector.Element.prototype.getSelfTransformation = function() {
 
 /**
  * Returns full transformation (self and parent transformations combined).
- * @return {goog.graphics.AffineTransform} Full transformation.
+ * @return {goog.math.AffineTransform} Full transformation.
  */
 acgraph.vector.Element.prototype.getFullTransformation = function() {
   if (!this.fullTransform_) {
@@ -754,6 +763,19 @@ acgraph.vector.Element.prototype.getFullTransformation = function() {
 
 
 /**
+ * Returns inverted full transformation (self and parent transformations combined).
+ * @return {goog.math.AffineTransform} Full transformation.
+ */
+acgraph.vector.Element.prototype.getInverseFullTransformation = function() {
+  if (!this.inverseFullTransform_) {
+    var tx = this.getFullTransformation();
+    this.inverseFullTransform_ = tx ? tx.createInverse() : null;
+  }
+  return this.inverseFullTransform_;
+};
+
+
+/**
  Rotates a shape around the given rotation point.
  @param {number} degrees Rotation angle in degrees.
  @param {number=} opt_cx Rotation point X.
@@ -762,7 +784,7 @@ acgraph.vector.Element.prototype.getFullTransformation = function() {
  */
 acgraph.vector.Element.prototype.rotate = function(degrees, opt_cx, opt_cy) {
   this.beforeTransformationChanged();
-  var rotation = goog.graphics.AffineTransform.getRotateInstance(goog.math.toRadians(degrees), opt_cx || 0, opt_cy || 0);
+  var rotation = goog.math.AffineTransform.getRotateInstance(goog.math.toRadians(degrees), opt_cx || 0, opt_cy || 0);
   if (this.transformation) {
     this.transformation.preConcatenate(rotation);
   } else
@@ -829,7 +851,7 @@ acgraph.vector.Element.prototype.translate = function(tx, ty) {
   if (this.transformation)
     this.transformation.translate(tx, ty);
   else
-    this.transformation = goog.graphics.AffineTransform.getTranslateInstance(tx, ty);
+    this.transformation = goog.math.AffineTransform.getTranslateInstance(tx, ty);
 
   this.transformationChanged();
   return this;
@@ -872,7 +894,7 @@ acgraph.vector.Element.prototype.setTranslation = function(x, y) {
       return this;
     this.transformation.preTranslate(x - oldX, y - oldY);
   } else
-    this.transformation = goog.graphics.AffineTransform.getTranslateInstance(x, y);
+    this.transformation = goog.math.AffineTransform.getTranslateInstance(x, y);
   this.transformationChanged();
   return this;
 };
@@ -889,7 +911,7 @@ acgraph.vector.Element.prototype.setTranslation = function(x, y) {
 acgraph.vector.Element.prototype.scale = function(sx, sy, opt_cx, opt_cy) {
   this.beforeTransformationChanged();
   if (!this.transformation)
-    this.transformation = new goog.graphics.AffineTransform();
+    this.transformation = new goog.math.AffineTransform();
   this.transformation.preScale(sx, sy);
   this.transformation.preTranslate((opt_cx || 0) * (1 - sx), (opt_cy || 0) * (1 - sy));
   this.transformationChanged();
@@ -925,9 +947,9 @@ acgraph.vector.Element.prototype.scaleByAnchor = function(sx, sy, opt_anchor) {
 acgraph.vector.Element.prototype.appendTransformationMatrix = function(m00, m10, m01, m11, m02, m12) {
   this.beforeTransformationChanged();
   if (this.transformation)
-    this.transformation.concatenate(new goog.graphics.AffineTransform(m00, m10, m01, m11, m02, m12));
+    this.transformation.concatenate(new goog.math.AffineTransform(m00, m10, m01, m11, m02, m12));
   else
-    this.transformation = new goog.graphics.AffineTransform(m00, m10, m01, m11, m02, m12);
+    this.transformation = new goog.math.AffineTransform(m00, m10, m01, m11, m02, m12);
   this.transformationChanged();
   return this;
 };
@@ -952,7 +974,7 @@ acgraph.vector.Element.prototype.setTransformationMatrix = function(m00, m10, m0
   if (this.transformation)
     this.transformation.setTransform(m00, m10, m01, m11, m02, m12);
   else
-    this.transformation = new goog.graphics.AffineTransform(m00, m10, m01, m11, m02, m12);
+    this.transformation = new goog.math.AffineTransform(m00, m10, m01, m11, m02, m12);
   this.transformationChanged();
   return this;
 };
@@ -1435,12 +1457,12 @@ acgraph.vector.Element.prototype.disableStrokeScaling = function(opt_value) {
 //----------------------------------------------------------------------------------------------------------------------
 /**
  Gets/sets clipping rectangle.
- @param {(acgraph.vector.Shape|acgraph.math.Rect|acgraph.vector.Clip|string)=} opt_value .
+ @param {(acgraph.vector.Shape|goog.math.Rect|acgraph.vector.Clip|string)=} opt_value .
  @return {acgraph.vector.Element|acgraph.vector.Clip} .
  */
 acgraph.vector.Element.prototype.clip = function(opt_value) {
   if (arguments.length == 0) return this.clipElement_;
-  var clipShape = /** @type {acgraph.vector.Shape|acgraph.math.Rect|acgraph.vector.Clip} */ (opt_value == 'none' ? null : opt_value);
+  var clipShape = /** @type {acgraph.vector.Shape|goog.math.Rect|acgraph.vector.Clip} */ (opt_value == 'none' ? null : opt_value);
   if ((!this.clipElement_ && !clipShape) || (this.clipElement_ && this.clipElement_ === clipShape))
     return this;
 
@@ -1485,7 +1507,7 @@ acgraph.vector.Element.prototype.clipChanged = function() {
 //----------------------------------------------------------------------------------------------------------------------
 /**
  * Bounds cache with transformation taken into account. Resets when shape changes.
- * @type {acgraph.math.Rect}
+ * @type {goog.math.Rect}
  * @protected
  */
 acgraph.vector.Element.prototype.boundsCache = null;
@@ -1496,7 +1518,7 @@ acgraph.vector.Element.prototype.boundsCache = null;
  @return {number} X in the coordinate system of the parent.
  */
 acgraph.vector.Element.prototype.getX = function() {
-  /** @type {!acgraph.math.Rect} */
+  /** @type {!goog.math.Rect} */
   var bounds = this.boundsCache || this.getBounds();
   return bounds.left;
 };
@@ -1507,7 +1529,7 @@ acgraph.vector.Element.prototype.getX = function() {
  @return {number} Y in the coordinate system of the parent.
  */
 acgraph.vector.Element.prototype.getY = function() {
-  /** @type {!acgraph.math.Rect} */
+  /** @type {!goog.math.Rect} */
   var bounds = this.boundsCache || this.getBounds();
   return bounds.top;
 };
@@ -1518,7 +1540,7 @@ acgraph.vector.Element.prototype.getY = function() {
  @return {number} Width.
  */
 acgraph.vector.Element.prototype.getWidth = function() {
-  /** @type {!acgraph.math.Rect} */
+  /** @type {!goog.math.Rect} */
   var bounds = this.boundsCache || this.getBounds();
   return bounds.width;
 };
@@ -1529,7 +1551,7 @@ acgraph.vector.Element.prototype.getWidth = function() {
  @return {number} Height.
  */
 acgraph.vector.Element.prototype.getHeight = function() {
-  /** @type {!acgraph.math.Rect} */
+  /** @type {!goog.math.Rect} */
   var bounds = this.boundsCache || this.getBounds();
   return bounds.height;
 };
@@ -1537,7 +1559,7 @@ acgraph.vector.Element.prototype.getHeight = function() {
 
 /**
  Returns bounds.
- @return {!acgraph.math.Rect} Bounds.
+ @return {!goog.math.Rect} Bounds.
  */
 acgraph.vector.Element.prototype.getBounds = function() {
   return this.getBoundsWithTransform(this.getSelfTransformation());
@@ -1546,7 +1568,7 @@ acgraph.vector.Element.prototype.getBounds = function() {
 
 /**
  * Bounds cache with transformation taken into account. Resets when shape changes.
- * @type {acgraph.math.Rect}
+ * @type {goog.math.Rect}
  * @protected
  */
 acgraph.vector.Element.prototype.absoluteBoundsCache = null;
@@ -1557,7 +1579,7 @@ acgraph.vector.Element.prototype.absoluteBoundsCache = null;
  @return {number} Absolute X.
  */
 acgraph.vector.Element.prototype.getAbsoluteX = function() {
-  /** @type {!acgraph.math.Rect} */
+  /** @type {!goog.math.Rect} */
   var bounds = this.absoluteBoundsCache || this.getAbsoluteBounds();
   return bounds.left;
 };
@@ -1568,7 +1590,7 @@ acgraph.vector.Element.prototype.getAbsoluteX = function() {
  @return {number} Absolute Y.
  */
 acgraph.vector.Element.prototype.getAbsoluteY = function() {
-  /** @type {!acgraph.math.Rect} */
+  /** @type {!goog.math.Rect} */
   var bounds = this.absoluteBoundsCache || this.getAbsoluteBounds();
   return bounds.top;
 };
@@ -1579,7 +1601,7 @@ acgraph.vector.Element.prototype.getAbsoluteY = function() {
  @return {number} Width.
  */
 acgraph.vector.Element.prototype.getAbsoluteWidth = function() {
-  /** @type {!acgraph.math.Rect} */
+  /** @type {!goog.math.Rect} */
   var bounds = this.absoluteBoundsCache || this.getAbsoluteBounds();
   return bounds.width;
 };
@@ -1590,7 +1612,7 @@ acgraph.vector.Element.prototype.getAbsoluteWidth = function() {
  @return {number} Height.
  */
 acgraph.vector.Element.prototype.getAbsoluteHeight = function() {
-  /** @type {!acgraph.math.Rect} */
+  /** @type {!goog.math.Rect} */
   var bounds = this.absoluteBoundsCache || this.getAbsoluteBounds();
   return bounds.height;
 };
@@ -1598,7 +1620,7 @@ acgraph.vector.Element.prototype.getAbsoluteHeight = function() {
 
 /**
  Gets element bounds in absolute coordinates (root element coordinate system).
- @return {!acgraph.math.Rect} Absolute element bounds.
+ @return {!goog.math.Rect} Absolute element bounds.
  */
 acgraph.vector.Element.prototype.getAbsoluteBounds = function() {
   return this.getBoundsWithTransform(this.getFullTransformation());
@@ -1608,15 +1630,15 @@ acgraph.vector.Element.prototype.getAbsoluteBounds = function() {
 /**
  * Returns element bounds with a given transformation. Current transformation IS NOT TAKEN INTO ACCOUNT.
  * This method is used to check bounds after the transformation.
- * @param {goog.graphics.AffineTransform} transform Transformation.
- * @return {!acgraph.math.Rect} Bounds.
+ * @param {goog.math.AffineTransform} transform Transformation.
+ * @return {!goog.math.Rect} Bounds.
  */
 acgraph.vector.Element.prototype.getBoundsWithTransform = goog.abstractMethod;
 
 
 /**
  * Bounds of an element without the current transformation.
- * @return {!acgraph.math.Rect} Bounds.
+ * @return {!goog.math.Rect} Bounds.
  */
 acgraph.vector.Element.prototype.getBoundsWithoutTransform = function() {
   return this.getBoundsWithTransform(null);
@@ -1640,20 +1662,21 @@ acgraph.vector.Element.prototype.dropBoundsCache = function() {
 //----------------------------------------------------------------------------------------------------------------------
 /**
  Returns current state flag.
- @param {(boolean|acgraph.math.Rect)=} opt_value .
- @return {boolean|acgraph.math.Rect|acgraph.vector.Element} .
+ @param {(boolean|goog.math.Rect)=} opt_value .
+ @return {boolean|goog.math.Rect|acgraph.vector.Element} .
  */
 acgraph.vector.Element.prototype.drag = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
     this.draggable_ = opt_value;
     if (opt_value && !this.hasDirtyState(acgraph.vector.Element.DirtyState.DOM_MISSING)) {
-      var isLimited = opt_value instanceof acgraph.math.Rect;
+      var isLimited = opt_value instanceof goog.math.Rect;
       var limit = isLimited ? this.draggable_ : null;
-      var dragger = this.dragger_ ? this.dragger_ : this.dragger_ = new acgraph.events.Dragger(this);
-      dragger.enabled(true);
-      dragger.setLimits(limit);
+      if (!this.dragger_)
+        this.dragger_ = new acgraph.events.Dragger(this);
+      this.dragger_.setEnabled(true);
+      this.dragger_.setLimits(limit);
     } else if (this.dragger_)
-      this.dragger_.enabled(false);
+      this.dragger_.setEnabled(false);
     return this;
   }
   return this.draggable_;
@@ -1680,7 +1703,7 @@ acgraph.vector.Element.prototype.deserialize = function(data) {
   }
   if ('drag' in data) {
     var drag = data['drag'];
-    this.drag(goog.isBoolean(drag) ? drag : new acgraph.math.Rect(drag.left, drag.top, drag.width, drag.height));
+    this.drag(goog.isBoolean(drag) ? drag : new goog.math.Rect(drag.left, drag.top, drag.width, drag.height));
   }
   if ('cursor' in data) this.cursor(data['cursor']);
   if ('transformation' in data) {
@@ -1762,48 +1785,52 @@ acgraph.vector.Element.prototype.finalizeDisposing = function() {
 
 
 //exports
-acgraph.vector.Element.prototype['id'] = acgraph.vector.Element.prototype.id;
-acgraph.vector.Element.prototype['visible'] = acgraph.vector.Element.prototype.visible;
-acgraph.vector.Element.prototype['disableStrokeScaling'] = acgraph.vector.Element.prototype.disableStrokeScaling;
-acgraph.vector.Element.prototype['domElement'] = acgraph.vector.Element.prototype.domElement;
-acgraph.vector.Element.prototype['parent'] = acgraph.vector.Element.prototype.parent;
-acgraph.vector.Element.prototype['hasParent'] = acgraph.vector.Element.prototype.hasParent;
-acgraph.vector.Element.prototype['remove'] = acgraph.vector.Element.prototype.remove;
-acgraph.vector.Element.prototype['attr'] = acgraph.vector.Element.prototype.attr;
-acgraph.vector.Element.prototype['title'] = acgraph.vector.Element.prototype.title;
-acgraph.vector.Element.prototype['desc'] = acgraph.vector.Element.prototype.desc;
-acgraph.vector.Element.prototype['getStage'] = acgraph.vector.Element.prototype.getStage;
-acgraph.vector.Element.prototype['cursor'] = acgraph.vector.Element.prototype.cursor;
-acgraph.vector.Element.prototype['disablePointerEvents'] = acgraph.vector.Element.prototype.disablePointerEvents;
-acgraph.vector.Element.prototype['rotate'] = acgraph.vector.Element.prototype.rotate;
-acgraph.vector.Element.prototype['rotateByAnchor'] = acgraph.vector.Element.prototype.rotateByAnchor;
-acgraph.vector.Element.prototype['setRotation'] = acgraph.vector.Element.prototype.setRotation;
-acgraph.vector.Element.prototype['setRotationByAnchor'] = acgraph.vector.Element.prototype.setRotationByAnchor;
-acgraph.vector.Element.prototype['translate'] = acgraph.vector.Element.prototype.translate;
-acgraph.vector.Element.prototype['setTranslation'] = acgraph.vector.Element.prototype.setTranslation;
-acgraph.vector.Element.prototype['setPosition'] = acgraph.vector.Element.prototype.setPosition;
-acgraph.vector.Element.prototype['scale'] = acgraph.vector.Element.prototype.scale;
-acgraph.vector.Element.prototype['scaleByAnchor'] = acgraph.vector.Element.prototype.scaleByAnchor;
-acgraph.vector.Element.prototype['appendTransformationMatrix'] = acgraph.vector.Element.prototype.appendTransformationMatrix;
-acgraph.vector.Element.prototype['setTransformationMatrix'] = acgraph.vector.Element.prototype.setTransformationMatrix;
-acgraph.vector.Element.prototype['getRotationAngle'] = acgraph.vector.Element.prototype.getRotationAngle;
-acgraph.vector.Element.prototype['getTransformationMatrix'] = acgraph.vector.Element.prototype.getTransformationMatrix;
-acgraph.vector.Element.prototype['clip'] = acgraph.vector.Element.prototype.clip;
-acgraph.vector.Element.prototype['zIndex'] = acgraph.vector.Element.prototype.zIndex;
-acgraph.vector.Element.prototype['getX'] = acgraph.vector.Element.prototype.getX;
-acgraph.vector.Element.prototype['getY'] = acgraph.vector.Element.prototype.getY;
-acgraph.vector.Element.prototype['getWidth'] = acgraph.vector.Element.prototype.getWidth;
-acgraph.vector.Element.prototype['getHeight'] = acgraph.vector.Element.prototype.getHeight;
-acgraph.vector.Element.prototype['getBounds'] = acgraph.vector.Element.prototype.getBounds;
-acgraph.vector.Element.prototype['getAbsoluteX'] = acgraph.vector.Element.prototype.getAbsoluteX;
-acgraph.vector.Element.prototype['getAbsoluteY'] = acgraph.vector.Element.prototype.getAbsoluteY;
-acgraph.vector.Element.prototype['getAbsoluteWidth'] = acgraph.vector.Element.prototype.getAbsoluteWidth;
-acgraph.vector.Element.prototype['getAbsoluteHeight'] = acgraph.vector.Element.prototype.getAbsoluteHeight;
-acgraph.vector.Element.prototype['getAbsoluteBounds'] = acgraph.vector.Element.prototype.getAbsoluteBounds;
-acgraph.vector.Element.prototype['listen'] = acgraph.vector.Element.prototype.listen;
-acgraph.vector.Element.prototype['listenOnce'] = acgraph.vector.Element.prototype.listenOnce;
-acgraph.vector.Element.prototype['unlisten'] = acgraph.vector.Element.prototype.unlisten;
-acgraph.vector.Element.prototype['unlistenByKey'] = acgraph.vector.Element.prototype.unlistenByKey;
-acgraph.vector.Element.prototype['removeAllListeners'] = acgraph.vector.Element.prototype.removeAllListeners;
-acgraph.vector.Element.prototype['drag'] = acgraph.vector.Element.prototype.drag;
-acgraph.vector.Element.prototype['dispose'] = acgraph.vector.Element.prototype.dispose;
+/** @suppress {deprecated} */
+(function() {
+  var proto = acgraph.vector.Element.prototype;
+  proto['id'] = proto.id;
+  proto['visible'] = proto.visible;
+  proto['disableStrokeScaling'] = proto.disableStrokeScaling;
+  proto['domElement'] = proto.domElement;
+  proto['parent'] = proto.parent;
+  proto['hasParent'] = proto.hasParent;
+  proto['remove'] = proto.remove;
+  proto['attr'] = proto.attr;
+  proto['title'] = proto.title;
+  proto['desc'] = proto.desc;
+  proto['getStage'] = proto.getStage;
+  proto['cursor'] = proto.cursor;
+  proto['disablePointerEvents'] = proto.disablePointerEvents;
+  proto['rotate'] = proto.rotate;
+  proto['rotateByAnchor'] = proto.rotateByAnchor;
+  proto['setRotation'] = proto.setRotation;
+  proto['setRotationByAnchor'] = proto.setRotationByAnchor;
+  proto['translate'] = proto.translate;
+  proto['setTranslation'] = proto.setTranslation;
+  proto['setPosition'] = proto.setPosition;
+  proto['scale'] = proto.scale;
+  proto['scaleByAnchor'] = proto.scaleByAnchor;
+  proto['appendTransformationMatrix'] = proto.appendTransformationMatrix;
+  proto['setTransformationMatrix'] = proto.setTransformationMatrix;
+  proto['getRotationAngle'] = proto.getRotationAngle;
+  proto['getTransformationMatrix'] = proto.getTransformationMatrix;
+  proto['clip'] = proto.clip;
+  proto['zIndex'] = proto.zIndex;
+  proto['getX'] = proto.getX;
+  proto['getY'] = proto.getY;
+  proto['getWidth'] = proto.getWidth;
+  proto['getHeight'] = proto.getHeight;
+  proto['getBounds'] = proto.getBounds;
+  proto['getAbsoluteX'] = proto.getAbsoluteX;
+  proto['getAbsoluteY'] = proto.getAbsoluteY;
+  proto['getAbsoluteWidth'] = proto.getAbsoluteWidth;
+  proto['getAbsoluteHeight'] = proto.getAbsoluteHeight;
+  proto['getAbsoluteBounds'] = proto.getAbsoluteBounds;
+  proto['listen'] = proto.listen;
+  proto['listenOnce'] = proto.listenOnce;
+  proto['unlisten'] = proto.unlisten;
+  proto['unlistenByKey'] = proto.unlistenByKey;
+  proto['removeAllListeners'] = proto.removeAllListeners;
+  proto['drag'] = proto.drag;
+  proto['dispose'] = proto.dispose;
+})();

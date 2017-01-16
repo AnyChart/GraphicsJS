@@ -1,9 +1,9 @@
 goog.provide('acgraph.vector.Ellipse');
 
-goog.require('acgraph.math.Coordinate');
-goog.require('acgraph.math.Rect');
 goog.require('acgraph.utils.IdGenerator');
 goog.require('acgraph.vector.Shape');
+goog.require('goog.math.Coordinate');
+goog.require('goog.math.Rect');
 
 
 
@@ -26,10 +26,10 @@ goog.require('acgraph.vector.Shape');
 acgraph.vector.Ellipse = function(opt_cx, opt_cy, opt_rx, opt_ry) {
   /**
    * Ellipse center.
-   * @type {acgraph.math.Coordinate}
+   * @type {goog.math.Coordinate}
    * @private
    */
-  this.center_ = new acgraph.math.Coordinate(
+  this.center_ = new goog.math.Coordinate(
       opt_cx || 0,
       opt_cy || 0);
   /**
@@ -108,12 +108,12 @@ acgraph.vector.Ellipse.prototype.centerY = function(opt_value) {
 
 /**
  Returns Center Cooridnates.
- @param {acgraph.math.Coordinate=} opt_value .
- @return {!acgraph.vector.Ellipse|acgraph.math.Coordinate} .
+ @param {goog.math.Coordinate=} opt_value .
+ @return {!acgraph.vector.Ellipse|goog.math.Coordinate} .
  */
 acgraph.vector.Ellipse.prototype.center = function(opt_value) {
   if (goog.isDef(opt_value)) {
-    if (!acgraph.math.Coordinate.equals(this.center_, opt_value)) {
+    if (!goog.math.Coordinate.equals(this.center_, opt_value)) {
       // clone is not used to avoid creating new objects
       this.center_.x = opt_value.x;
       this.center_.y = opt_value.y;
@@ -182,7 +182,7 @@ acgraph.vector.Ellipse.prototype.setRadius = function(rx, ry) {
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.Ellipse.prototype.getBoundsWithoutTransform = function() {
-  return new acgraph.math.Rect(
+  return new goog.math.Rect(
       this.center_.x - this.radiusX_,
       this.center_.y - this.radiusY_,
       this.radiusX_ + this.radiusX_,
@@ -199,7 +199,7 @@ acgraph.vector.Ellipse.prototype.getBoundsWithTransform = function(transform) {
   else if (this.absoluteBoundsCache && isFullTransform)
     return this.absoluteBoundsCache.clone();
   else {
-    /** @type {acgraph.math.Rect} */
+    /** @type {goog.math.Rect} */
     var rect;
 
     if (transform) {
@@ -310,10 +310,13 @@ acgraph.vector.Ellipse.prototype.disposeInternal = function() {
 
 
 //exports
-goog.exportSymbol('acgraph.vector.Ellipse', acgraph.vector.Ellipse);
-acgraph.vector.Ellipse.prototype['center'] = acgraph.vector.Ellipse.prototype.center;
-acgraph.vector.Ellipse.prototype['centerX'] = acgraph.vector.Ellipse.prototype.centerX;
-acgraph.vector.Ellipse.prototype['centerY'] = acgraph.vector.Ellipse.prototype.centerY;
-acgraph.vector.Ellipse.prototype['radiusX'] = acgraph.vector.Ellipse.prototype.radiusX;
-acgraph.vector.Ellipse.prototype['radiusY'] = acgraph.vector.Ellipse.prototype.radiusY;
-acgraph.vector.Ellipse.prototype['setRadius'] = acgraph.vector.Ellipse.prototype.setRadius;
+(function() {
+  goog.exportSymbol('acgraph.vector.Ellipse', acgraph.vector.Ellipse);
+  var proto = acgraph.vector.Ellipse.prototype;
+  proto['center'] = proto.center;
+  proto['centerX'] = proto.centerX;
+  proto['centerY'] = proto.centerY;
+  proto['radiusX'] = proto.radiusX;
+  proto['radiusY'] = proto.radiusY;
+  proto['setRadius'] = proto.setRadius;
+})();

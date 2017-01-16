@@ -108,6 +108,9 @@ acgraph.events.BrowserEvent.prototype.getOriginalEvent = function() {
 };
 
 //exports
-acgraph.events.BrowserEvent.prototype['stopPropagation'] = acgraph.events.BrowserEvent.prototype.stopPropagation;
-acgraph.events.BrowserEvent.prototype['stopWrapperPropagation'] = acgraph.events.BrowserEvent.prototype.stopWrapperPropagation;
-acgraph.events.BrowserEvent.prototype['preventDefault'] = acgraph.events.BrowserEvent.prototype.preventDefault;
+(function() {
+  var proto = acgraph.events.BrowserEvent.prototype;
+  proto['stopPropagation'] = proto.stopPropagation;
+  proto['stopWrapperPropagation'] = proto.stopWrapperPropagation;
+  proto['preventDefault'] = proto.preventDefault;
+})();

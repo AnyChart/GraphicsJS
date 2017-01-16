@@ -1,6 +1,4 @@
 goog.provide('acgraph.vector.vml.Renderer');
-goog.require('acgraph.math.Coordinate');
-goog.require('acgraph.math.Rect');
 goog.require('acgraph.utils.IdGenerator');
 goog.require('acgraph.vector.LinearGradient');
 goog.require('acgraph.vector.Renderer');
@@ -9,6 +7,8 @@ goog.require('goog.array');
 goog.require('goog.color');
 goog.require('goog.cssom');
 goog.require('goog.dom');
+goog.require('goog.math.Coordinate');
+goog.require('goog.math.Rect');
 goog.require('goog.object');
 
 
@@ -290,7 +290,7 @@ acgraph.vector.vml.Renderer.prototype.createMeasurement_ = function() {
 /**
  * Measures bounds of image.
  * @param {string} src URI image.
- * @return {acgraph.math.Rect} Image bounds.
+ * @return {goog.math.Rect} Image bounds.
  */
 acgraph.vector.vml.Renderer.prototype.measuringImage = function(src) {
   if (!this.measurement_) this.createMeasurement_();
@@ -304,7 +304,7 @@ acgraph.vector.vml.Renderer.prototype.measuringImage = function(src) {
  * @param {string} text Text to measure.
  * @param {acgraph.vector.TextSegmentStyle} segmentStyle Segment style.
  * @param {acgraph.vector.TextStyle} textStyle Text style.
- * @return {acgraph.math.Rect} Text bounds.
+ * @return {goog.math.Rect} Text bounds.
  */
 acgraph.vector.vml.Renderer.prototype.measuringSimpleText = function(text, segmentStyle, textStyle) {
   if (!this.measurement_) this.createMeasurement_();
@@ -346,10 +346,10 @@ acgraph.vector.vml.Renderer.prototype.measuringSimpleText = function(text, segme
  * Measures text.
  * @param {string} text Text to measure.
  * @param {Object} style Text style.
- * @return {acgraph.math.Rect} Text bounds.
+ * @return {goog.math.Rect} Text bounds.
  */
 acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
-  if (text == '') return new acgraph.math.Rect(0, 0, 0, 0);
+  if (text == '') return new goog.math.Rect(0, 0, 0, 0);
   if (!this.measurement_) this.createMeasurement_();
 
   goog.dom.removeNode(this.measurementVMLTextPath_);
@@ -434,7 +434,7 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
 /**
  * Measure any svg nodes.
  * @param {string|Node} element .
- * @return {acgraph.math.Rect} .
+ * @return {goog.math.Rect} .
  */
 acgraph.vector.vml.Renderer.prototype.measureElement = function(element) {
   if (!this.measurement_) this.createMeasurement_();
@@ -518,42 +518,7 @@ acgraph.vector.vml.Renderer.prototype.removeAttribute_ = function(element, key) 
  */
 acgraph.vector.vml.Renderer.prototype.toCssSize_ = function(size) {
   return goog.isString(size) && goog.string.endsWith(size, '%') ?
-      parseFloat(size) + '%' : parseFloat(size.toString()) + 'px';
-};
-
-
-/**
- * Transform coordinates to pixel values.
- * @param {number} number Cooridinate.
- * @return {string} Coordinate in pixels.
- * @private
- */
-acgraph.vector.vml.Renderer.prototype.toPosPx_ = function(number) {
-  return this.toPosCoord_(number).toFixed(6) + 'px';
-};
-
-
-/**
- * Transforming coordinates with COORD_MULTIPLIER for fractional
- * coordinates. 0.5 shift is also applied to sharpen the image.
- * @param {number} number Cooridinate.
- * @return {number} Coordinate transformed with COORD_MULTIPLIER.
- * @private
- */
-acgraph.vector.vml.Renderer.prototype.toPosCoord_ = function(number) {
-  return Math.round((parseFloat(number.toString()) - acgraph.vector.vml.Renderer.SHIFT_) *
-      acgraph.vector.vml.Renderer.COORD_MULTIPLIER_);
-};
-
-
-/**
- * Convert size in numbers to size in pixels.
- * @param {number} number Size in numbers.
- * @return {string} Size in pixels.
- * @private
- */
-acgraph.vector.vml.Renderer.prototype.toSizePx_ = function(number) {
-  return this.toSizeCoord_(number) + 'px';
+      parseFloat(size) + '%' : parseFloat(String(size)) + 'px';
 };
 
 
@@ -565,8 +530,7 @@ acgraph.vector.vml.Renderer.prototype.toSizePx_ = function(number) {
  * @private
  */
 acgraph.vector.vml.Renderer.prototype.toSizeCoord_ = function(number) {
-  return Math.round(parseFloat(number.toString()) *
-      acgraph.vector.vml.Renderer.COORD_MULTIPLIER_);
+  return Math.round(number) * acgraph.vector.vml.Renderer.COORD_MULTIPLIER_;
 };
 
 
@@ -711,8 +675,8 @@ acgraph.vector.vml.Renderer.prototype.getAttribute = function(element, key) {
 /**
  * Calcualtes linear gradient vector in UserSpaceOnUse mode.
  * @param {number} angle Angle.
- * @param {!acgraph.math.Rect} bounds Bounds.
- * @return {!{p1: !acgraph.math.Coordinate, p2: !acgraph.math.Coordinate}} Vector coordinates.
+ * @param {!goog.math.Rect} bounds Bounds.
+ * @return {!{p1: !goog.math.Coordinate, p2: !goog.math.Coordinate}} Vector coordinates.
  * @private
  */
 acgraph.vector.vml.Renderer.prototype.getUserSpaceOnUseGradientVector_ = function(angle, bounds) {
@@ -766,16 +730,16 @@ acgraph.vector.vml.Renderer.prototype.getUserSpaceOnUseGradientVector_ = functio
     dy = -dy;
   }
   return {
-    p1: new acgraph.math.Coordinate(Math.round(centerX - dx), Math.round(centerY + dy)),
-    p2: new acgraph.math.Coordinate(Math.round(centerX + dx), Math.round(centerY - dy))
+    p1: new goog.math.Coordinate(Math.round(centerX - dx), Math.round(centerY + dy)),
+    p2: new goog.math.Coordinate(Math.round(centerX + dx), Math.round(centerY - dy))
   };
 };
 
 
 /**
  * Calculates offset of point with regard to gradient vector in UserSpaceOnUse mode.
- * @param {acgraph.math.Coordinate} point Point.
- * @param {{p1: !acgraph.math.Coordinate, p2: !acgraph.math.Coordinate}} vector Gradient vector.
+ * @param {goog.math.Coordinate} point Point.
+ * @param {{p1: !goog.math.Coordinate, p2: !goog.math.Coordinate}} vector Gradient vector.
  * @return {number} Offset for perpendicular dropped from point to gradient vector (from vector start).
  * @private
  */
@@ -798,9 +762,9 @@ acgraph.vector.vml.Renderer.prototype.getOffsetOfPointRelativeGradientVector_ = 
   }
   /**
    * Perpendicular base. Offset point for the first angle of shape bounds.
-   * @type {acgraph.math.Coordinate}
+   * @type {goog.math.Coordinate}
    */
-  var baseNormal = new acgraph.math.Coordinate(baseNormal_x, baseNormal_y);
+  var baseNormal = new goog.math.Coordinate(baseNormal_x, baseNormal_y);
 
   // Calculate parameters to find point position.
   /**
@@ -843,8 +807,8 @@ acgraph.vector.vml.Renderer.prototype.getOffsetOfPointRelativeGradientVector_ = 
   }
 
   return outsideOfVector < 0 ?
-      - acgraph.math.Coordinate.distance(vector.p1, baseNormal) :
-      acgraph.math.Coordinate.distance(vector.p1, baseNormal);
+      - goog.math.Coordinate.distance(vector.p1, baseNormal) :
+      goog.math.Coordinate.distance(vector.p1, baseNormal);
 };
 
 
@@ -852,16 +816,16 @@ acgraph.vector.vml.Renderer.prototype.getOffsetOfPointRelativeGradientVector_ = 
  * Implements SVG gradient UserSpaceInUse mode for VML gradient.
  * TODO: need to optimize.
  * @param {!Array.<acgraph.vector.GradientKey>} keys Gradient keys.
- * @param {!acgraph.math.Rect} bounds Gradient bounds.
+ * @param {!goog.math.Rect} bounds Gradient bounds.
  * @param {number} angle Angle in [0, 360) range.
- * @param {!acgraph.math.Rect} shapeBounds Shape bounds.
+ * @param {!goog.math.Rect} shapeBounds Shape bounds.
  * @return {!Array.<acgraph.vector.GradientKey>} Gradient keys for shape.
  * @private
  */
 acgraph.vector.vml.Renderer.prototype.userSpaceOnUse_ = function(keys, bounds, angle, shapeBounds) {
   /**
    * Gradient vector for gradient bounds.
-   * @type {!{p1: !acgraph.math.Coordinate, p2: !acgraph.math.Coordinate}}
+   * @type {!{p1: !goog.math.Coordinate, p2: !goog.math.Coordinate}}
    */
   var shapeGradientVector = this.getUserSpaceOnUseGradientVector_(angle, shapeBounds);
   /**
@@ -871,7 +835,7 @@ acgraph.vector.vml.Renderer.prototype.userSpaceOnUse_ = function(keys, bounds, a
   var shapeGradientVectorLength = goog.math.Coordinate.distance(shapeGradientVector.p1, shapeGradientVector.p2);
   /**
    * Gradient vector for shape bounds.
-   * @type {!{p1: !acgraph.math.Coordinate, p2: !acgraph.math.Coordinate}}
+   * @type {!{p1: !goog.math.Coordinate, p2: !goog.math.Coordinate}}
    */
   var gradientVector = this.getUserSpaceOnUseGradientVector_(angle, bounds);
   /**
@@ -971,9 +935,9 @@ acgraph.vector.vml.Renderer.prototype.userSpaceOnUse_ = function(keys, bounds, a
     /** @type {number} */
     var lengthBetween1 = Math.abs(offsetStopNextAfterFirst - offsetStopPrev);
     /** @type {goog.color.Rgb} */
-    var startColor1 = goog.color.hexToRgb(stopPrev['color'].toString());
+    var startColor1 = goog.color.hexToRgb(String(stopPrev['color']));
     /** @type {goog.color.Rgb} */
-    var endColor1 = goog.color.hexToRgb(keysForShape[1]['color'].toString());
+    var endColor1 = goog.color.hexToRgb(String(keysForShape[1]['color']));
 
     offset1 -= lengthBetween1 == 0 ? 0 : Math.abs(offsetStartShapeVectorPoint - offsetStopPrev) / lengthBetween1;
     stopFirst['color'] = goog.color.rgbArrayToHex(goog.color.blend(startColor1, endColor1, offset1));
@@ -986,9 +950,9 @@ acgraph.vector.vml.Renderer.prototype.userSpaceOnUse_ = function(keys, bounds, a
     /** @type {number} */
     var lengthBetween2 = Math.abs(offsetStopPenultimate - offsetStopNext);
     /** @type {goog.color.Rgb} */
-    var startColor2 = goog.color.hexToRgb(keysForShape[keysForShape.length - 2]['color'].toString());
+    var startColor2 = goog.color.hexToRgb(String(keysForShape[keysForShape.length - 2]['color']));
     /** @type {goog.color.Rgb} */
-    var endColor2 = goog.color.hexToRgb(stopNext['color'].toString());
+    var endColor2 = goog.color.hexToRgb(String(stopNext['color']));
 
     offset2 -= lengthBetween2 == 0 ? 0 : Math.abs(offsetEndShapeVectorPoint - offsetStopPenultimate) / lengthBetween2;
     stopLast['color'] = goog.color.rgbArrayToHex(goog.color.blend(startColor2, endColor2, offset2));
@@ -999,9 +963,9 @@ acgraph.vector.vml.Renderer.prototype.userSpaceOnUse_ = function(keys, bounds, a
     offsetStopPrev = gradientVectorLength * stopPrev['offset'];
     offsetStopNext = gradientVectorLength * stopNext['offset'];
     /** @type {goog.color.Rgb} */
-    var startColor = goog.color.hexToRgb(stopPrev['color'].toString());
+    var startColor = goog.color.hexToRgb(String(stopPrev['color']));
     /** @type {goog.color.Rgb} */
-    var endColor = goog.color.hexToRgb(stopNext['color'].toString());
+    var endColor = goog.color.hexToRgb(String(stopNext['color']));
     /** @type {number} */
     var lengthBetween = Math.abs(offsetStopNext - offsetStopPrev);
 
@@ -1271,34 +1235,6 @@ acgraph.vector.vml.Renderer.prototype.setImageProperties = function(element) {
 
 
 /** @inheritDoc */
-acgraph.vector.vml.Renderer.prototype.setRectProperties = function(rect) {
-  var bounds = rect.getBoundsWithoutTransform();
-  var element = rect.domElement();
-
-  this.setPositionAndSize_(element, 0, 0, 1, 1);
-
-  var left = bounds.left;
-  var top = bounds.top;
-  var right = left + bounds.width;
-  var bottom = top + bounds.height;
-  var points = [right, top, right, bottom, left, bottom, left, top];
-  var transform = rect.getFullTransformation();
-  if (transform && !transform.isIdentity())
-    transform.transform(points, 0, points, 0, points.length / 2);
-
-  points = goog.array.map(points, this.toSizeCoord_);
-  var pathData = ['m', points[6], points[7], 'l'];
-  acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, points, pathData);
-  pathData.push('x');
-
-  rect.clearDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
-  rect.clearDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION);
-
-  this.setAttribute_(element, 'path', pathData.join(' '));
-};
-
-
-/** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.setCircleProperties = function(circle) {
   this.setEllipseProperties(circle);
 };
@@ -1485,8 +1421,8 @@ acgraph.vector.vml.Renderer.prototype.setTextProperties = function(element) {
 
     goog.style.setUnselectable(domElement, !element.selectable());
     domElement.innerHTML = element.getSimpleText();
-    this.setAttribute_(domElementStyle, 'width', (element.width() ? this.toCssSize_(/** @type {string|number} */ (element.width())) : element.getBounds().width).toString());
-    this.setAttribute_(domElementStyle, 'height', (element.height() ? this.toCssSize_(/** @type {string|number} */ (element.height())) : element.getBounds().height).toString());
+    this.setAttribute_(domElementStyle, 'width', String(element.width() ? this.toCssSize_(/** @type {string|number} */ (element.width())) : element.getBounds().width));
+    this.setAttribute_(domElementStyle, 'height', String(element.height() ? this.toCssSize_(/** @type {string|number} */ (element.height())) : element.getBounds().height));
   }
 };
 
@@ -1670,10 +1606,10 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
   } else {
     var stage = element.getStage();
     var defs = stage.getDefs();
-    /** @type {!acgraph.math.Rect} */
+    /** @type {!goog.math.Rect} */
     var elBounds;
     if (element instanceof acgraph.vector.Path && (/** @type {acgraph.vector.Path} */(element)).isEmpty())
-      elBounds = new acgraph.math.Rect(0, 0, 1, 1);
+      elBounds = new goog.math.Rect(0, 0, 1, 1);
     else
       elBounds = element.getBounds();
 
@@ -1682,7 +1618,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
 
     // Transform gradient for userSpaceOnUse and saveAngle modes.
     if (isLinearGradient) {
-      userSpaceOnUse = fill['mode'] instanceof acgraph.math.Rect;
+      userSpaceOnUse = fill['mode'] instanceof goog.math.Rect;
       keys = goog.array.slice(fill['keys'], 0);
       // we need lasr and first key (with 0 and 1 offset);
       if (keys[0]['offset'] != 0)
@@ -1988,12 +1924,12 @@ acgraph.vector.vml.Renderer.prototype.setEllipseTransformation = function(elemen
 acgraph.vector.vml.Renderer.prototype.setImageTransformation = function(element) {
   var style = element.domElement()['style'];
 
-  /** @type {goog.graphics.AffineTransform} */
+  /** @type {goog.math.AffineTransform} */
   var tx = element.getFullTransformation();
   if (!tx) return;
 
   var angle = acgraph.math.getRotationAngle(tx);
-  this.setAttribute_(style, 'rotation', angle.toString());
+  this.setAttribute_(style, 'rotation', String(angle));
 
   // Leave it here for a while
   /*this.setAttributes_(element.domElement()['style'], {
@@ -2023,7 +1959,7 @@ acgraph.vector.vml.Renderer.prototype.setLayerTransformation = goog.nullFunction
 
 /** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.setTextTransformation = function(element) {
-  /** @type {goog.graphics.AffineTransform} */
+  /** @type {goog.math.AffineTransform} */
   var tx = element.getFullTransformation();
   if (!tx) return;
 
@@ -2117,11 +2053,11 @@ acgraph.vector.vml.Renderer.prototype.needsReRenderOnParentTransformationChange 
 /**
  * Sets transformation to VML element.
  * @param {!acgraph.vector.Element} element Element.
- * @param {acgraph.math.Rect} bounds Browser opinion of element bounds.
+ * @param {goog.math.Rect} bounds Browser opinion of element bounds.
  * @private
  */
 acgraph.vector.vml.Renderer.prototype.setTransform_ = function(element, bounds) {
-  /** @type {goog.graphics.AffineTransform} */
+  /** @type {goog.math.AffineTransform} */
   var tx = element.getFullTransformation();
   if (!tx) {
     // if there is a skew node attaches to element
@@ -2184,7 +2120,7 @@ acgraph.vector.vml.Renderer.prototype.setDisableStrokeScaling = goog.nullFunctio
 /**
  * Adds clipping attributes to element clipping to element.
  * @param {!acgraph.vector.Element} element Element.
- * @param {!acgraph.math.Rect} clipRect Bounds of clipping rectangle.
+ * @param {!goog.math.Rect} clipRect Bounds of clipping rectangle.
  * @param {boolean|undefined} isLayer Whether clip adding for layer.
  * @private
  */
@@ -2238,7 +2174,7 @@ acgraph.vector.vml.Renderer.prototype.setClip = function(element) {
   if (clipElement) {
     var shape = /** @type {acgraph.vector.Shape} */(clipElement.shape());
     var clipShape = shape.getBoundsWithTransform(shape.getSelfTransformation());
-    this.addClip_(element, /** @type {!acgraph.math.Rect} */ (clipShape), isLayer);
+    this.addClip_(element, /** @type {!goog.math.Rect} */ (clipShape), isLayer);
   } else
     this.removeClip_(element);
 };

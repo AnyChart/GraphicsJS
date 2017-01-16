@@ -7,7 +7,7 @@ goog.require('acgraph.vector.Layer');
 /**
  Pattern fill class.<br/>
  <b>Do not invoke constructor directly.</b> Use {@link acgraph.patternFill}.
- @param {acgraph.math.Rect} bounds Bounds of the pattern. Defines size and offset of the pattern.
+ @param {goog.math.Rect} bounds Bounds of the pattern. Defines size and offset of the pattern.
  @see acgraph.patternFill
  @name acgraph.vector.PatternFill
  @constructor
@@ -16,7 +16,7 @@ goog.require('acgraph.vector.Layer');
 acgraph.vector.PatternFill = function(bounds) {
   /**
    * Bounds of pattern. Defines size and offset of pattern.
-   * @type {acgraph.math.Rect}
+   * @type {goog.math.Rect}
    * @protected
    */
   this.bounds = bounds;
@@ -86,7 +86,7 @@ acgraph.vector.PatternFill.prototype.getBoundsWithTransform = function(transform
   else if (this.absoluteBoundsCache && isFullTransform)
     return this.absoluteBoundsCache.clone();
   else {
-    /** @type {!acgraph.math.Rect} */
+    /** @type {!goog.math.Rect} */
     var bounds = acgraph.math.getBoundsOfRectWithTransform(this.bounds.clone(), transform);
     if (isSelfTransform)
       this.boundsCache = bounds.clone();
@@ -173,6 +173,9 @@ acgraph.vector.PatternFill.prototype.disposeInternal = function() {
 
 
 //exports
-goog.exportSymbol('acgraph.vector.PatternFill', acgraph.vector.PatternFill);
-acgraph.vector.PatternFill.prototype['addChild'] = acgraph.vector.PatternFill.prototype.addChild;
-acgraph.vector.PatternFill.prototype['dispose'] = acgraph.vector.PatternFill.prototype.dispose;
+(function() {
+  var proto = acgraph.vector.PatternFill.prototype;
+  goog.exportSymbol('acgraph.vector.PatternFill', acgraph.vector.PatternFill);
+  proto['addChild'] = proto.addChild;
+  proto['dispose'] = proto.dispose;
+})();

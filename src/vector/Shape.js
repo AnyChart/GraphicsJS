@@ -1,7 +1,7 @@
 goog.provide('acgraph.vector.Shape');
-goog.require('acgraph.math.Rect');
 goog.require('acgraph.utils');
 goog.require('acgraph.vector.Element');
+goog.require('goog.math.Rect');
 
 
 
@@ -52,8 +52,8 @@ acgraph.vector.Shape.prototype.SUPPORTED_DIRTY_STATES =
  Sets fill as an object or a string.
  @param {(!acgraph.vector.Fill|!Array.<(acgraph.vector.GradientKey|string)>|null)=} opt_fillOrColorOrKeys .
  @param {number=} opt_opacityOrAngleOrCx .
- @param {(number|boolean|!acgraph.math.Rect|!{left:number,top:number,width:number,height:number})=} opt_modeOrCy .
- @param {(number|!acgraph.math.Rect|!{left:number,top:number,width:number,height:number}|null)=} opt_opacityOrMode .
+ @param {(number|boolean|!goog.math.Rect|!{left:number,top:number,width:number,height:number})=} opt_modeOrCy .
+ @param {(number|!goog.math.Rect|!{left:number,top:number,width:number,height:number}|null)=} opt_opacityOrMode .
  @param {number=} opt_opacity .
  @param {number=} opt_fx .
  @param {number=} opt_fy .
@@ -176,7 +176,7 @@ acgraph.vector.Shape.prototype.deserialize = function(data) {
     var fill;
     if (type == 'pattern') {
       var bounds = fillData['bounds'];
-      fill = acgraph.patternFill(new acgraph.math.Rect(bounds.left, bounds.top, bounds.width, bounds.height));
+      fill = acgraph.patternFill(new goog.math.Rect(bounds.left, bounds.top, bounds.width, bounds.height));
       fill.deserialize(fillData);
     } else if (type == 'hatchFill') {
       fill = acgraph.hatchFill(fillData['hatchType'], fillData['color'], fillData['thickness'],
@@ -256,7 +256,10 @@ acgraph.vector.Shape.prototype.disposeInternal = function() {
 
 
 //exports
-acgraph.vector.Shape.prototype['stroke'] = acgraph.vector.Shape.prototype.stroke;
-acgraph.vector.Shape.prototype['strokeThickness'] = acgraph.vector.Shape.prototype.strokeThickness;
-acgraph.vector.Shape.prototype['fill'] = acgraph.vector.Shape.prototype.fill;
-acgraph.vector.Shape.prototype['attr'] = acgraph.vector.Shape.prototype.attr; //overridden method
+(function() {
+  var proto = acgraph.vector.Shape.prototype;
+  proto['stroke'] = proto.stroke;
+  proto['strokeThickness'] = proto.strokeThickness;
+  proto['fill'] = proto.fill;
+  proto['attr'] = proto.attr;
+})();

@@ -533,7 +533,7 @@ acgraph.vector.primitives.normalizeCornerRadiiSet_ = function(radiusOfCorners) {
  Draws a rect with truncated corners.
  @param {!(acgraph.vector.Stage|acgraph.vector.Path)} stageOrPath to create a path or a Path to append a rect.
  Path is not cleared before rect drawing, so you need to clear it manually.
- @param {!acgraph.math.Rect} rect Rect which corners will be truncated.
+ @param {!goog.math.Rect} rect Rect which corners will be truncated.
  @param {...number} var_args Set of param which define corners radius of rectangle.
  <table>
    <tr>
@@ -611,7 +611,7 @@ acgraph.vector.primitives.truncatedRect = function(stageOrPath, rect, var_args) 
  Draws a rect with rounded inner corners.
  @param {!(acgraph.vector.Stage|acgraph.vector.Path)} stageOrPath to create a path or a Path to append a rect.
  Path is not cleared before rect drawing, so you need to clear it manually.
- @param {!acgraph.math.Rect} rect Rect which corners will be truncated.
+ @param {!goog.math.Rect} rect Rect which corners will be truncated.
  @param {...number} var_args Set of param which define corners radius of rectangle:
  <table>
   <tr>
@@ -691,7 +691,7 @@ acgraph.vector.primitives.roundedRect = function(stageOrPath, rect, var_args) {
  Draws a rect with rounded corners.
  @param {!(acgraph.vector.Stage|acgraph.vector.Path)} stageOrPath to create a path or a Path to append a rect.
  Path is not cleared before rect drawing, so you need to clear it manually.
- @param {!acgraph.math.Rect} rect Rect which corners will be truncated.
+ @param {!goog.math.Rect} rect Rect which corners will be truncated.
  @param {...number} var_args Set of param which define corners radius of rectangle:
  <table>
   <tr>

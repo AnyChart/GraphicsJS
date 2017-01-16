@@ -1,9 +1,9 @@
 goog.provide('acgraph.vector.svg.Renderer');
-goog.require('acgraph.math.Rect');
 goog.require('acgraph.utils.IdGenerator');
 goog.require('acgraph.vector.Renderer');
 goog.require('goog.dom');
 goog.require('goog.math.Line');
+goog.require('goog.math.Rect');
 goog.require('goog.object');
 goog.require('goog.userAgent');
 
@@ -185,10 +185,10 @@ acgraph.vector.svg.Renderer.prototype.createMeasurement_ = function() {
  * Measures text.
  * @param {string} text The text to measure.
  * @param {Object} style The style of text.
- * @return {acgraph.math.Rect} Text borders.
+ * @return {goog.math.Rect} Text borders.
  */
 acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
-  //if (text == '') return new acgraph.math.Rect(0, 0, 0, 0);
+  //if (text == '') return new goog.math.Rect(0, 0, 0, 0);
   if (!this.measurement_) this.createMeasurement_();
 
   var spaceWidth = null;
@@ -244,14 +244,14 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
     bbox.height = this.measurementText_['getBBox']().height;
   }
 
-  return new acgraph.math.Rect(bbox.x, bbox.y, bbox.width + additionWidth, bbox.height);
+  return new goog.math.Rect(bbox.x, bbox.y, bbox.width + additionWidth, bbox.height);
 };
 
 
 /**
  * Measure any svg nodes.
  * @param {string|Node} element .
- * @return {acgraph.math.Rect} .
+ * @return {goog.math.Rect} .
  */
 acgraph.vector.svg.Renderer.prototype.measureElement = function(element) {
   if (!this.measurement_) this.createMeasurement_();
@@ -264,7 +264,7 @@ acgraph.vector.svg.Renderer.prototype.measureElement = function(element) {
   var bbox = this.measurementGroupNode_['getBBox']();
   goog.dom.removeChildren(this.measurementGroupNode_);
 
-  return new acgraph.math.Rect(bbox.x, bbox.y, bbox.width, bbox.height);
+  return new goog.math.Rect(bbox.x, bbox.y, bbox.width, bbox.height);
 };
 
 
@@ -415,7 +415,7 @@ acgraph.vector.svg.Renderer.prototype.getObjectBoundingBoxGradientVector_ = func
 /**
  * Calculation of a linear gradient vector for the UserSpaceOnUse mode.
  * @param {number} angle The angle of the vector.
- * @param {!acgraph.math.Rect} bounds The bounds of the shape.
+ * @param {!goog.math.Rect} bounds The bounds of the shape.
  * @return {!goog.math.Line} The coordinates of the vector.
  * @private
  */
@@ -889,7 +889,7 @@ acgraph.vector.svg.Renderer.prototype.renderRadialGradient = function(fill, defs
  * Linear gradient fill rendering.
  * @param {acgraph.vector.LinearGradientFill} fill The linear gradient fill instance.
  * @param {acgraph.vector.Defs} defs The radial gradient instance.
- * @param {!acgraph.math.Rect} elementBounds The bounds of the element.
+ * @param {!goog.math.Rect} elementBounds The bounds of the element.
  * @return {string} The identifier of the rendered linear gradient.
  */
 acgraph.vector.svg.Renderer.prototype.renderLinearGradient = function(fill, defs, elementBounds) {
@@ -971,7 +971,7 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
       b.left = b.left || 0;
       b.top = b.top || 0;
     } else {
-      b = new acgraph.math.Rect(0, 0, 0, 0);
+      b = new goog.math.Rect(0, 0, 0, 0);
     }
 
     if (fill['mode'] == acgraph.vector.ImageFillMode.TILE) {
@@ -1081,7 +1081,7 @@ acgraph.vector.svg.Renderer.prototype.setVisible = function(element) {
 
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setTransformation = function(element) {
-  /** @type {goog.graphics.AffineTransform} */
+  /** @type {goog.math.AffineTransform} */
   var transformation = element.getSelfTransformation();
   if (transformation && !transformation.isIdentity()) {
     this.setAttribute_(element.domElement(), 'transform', transformation.toString());
@@ -1093,7 +1093,7 @@ acgraph.vector.svg.Renderer.prototype.setTransformation = function(element) {
 
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setPatternTransformation = function(element) {
-  /** @type {goog.graphics.AffineTransform} */
+  /** @type {goog.math.AffineTransform} */
   var transformation = element.getSelfTransformation();
   if (transformation && !transformation.isIdentity()) {
     this.setAttribute_(element.domElement(), 'patternTransform', transformation.toString());
@@ -1410,7 +1410,7 @@ acgraph.vector.svg.Renderer.prototype.setPointerEvents = function(element) {
 
 /**
  * Transforms a rectangle into a path string which can be set as a path data.
- * @param {!acgraph.math.Rect} rect The rectangle to transformed.
+ * @param {!goog.math.Rect} rect The rectangle to transformed.
  * @return {string} The string describing the rectangle, which can be set as a path data.
  * @private
  */

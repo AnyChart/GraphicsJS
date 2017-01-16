@@ -2,8 +2,10 @@ goog.provide('acgraph.vector');
 goog.provide('acgraph.vector.Anchor');
 goog.provide('acgraph.vector.Cursor');
 goog.provide('acgraph.vector.ILayer');
-goog.require('acgraph.math.Rect');
-goog.require('goog.graphics.AffineTransform');
+
+goog.require('acgraph.math');
+goog.require('goog.math.AffineTransform');
+goog.require('goog.math.Rect');
 
 /**
  A namespace for working with vector graphics.
@@ -113,7 +115,7 @@ acgraph.vector.Cursor = {
 
 /**
  * Gets the coordinates of the anchor at the bound.
- * @param {acgraph.math.Rect} bounds The bound rectangle.
+ * @param {goog.math.Rect} bounds The bound rectangle.
  * @param {(acgraph.vector.Anchor|string)} anchor The anchor for which it is necessary to get the coordinates.
  * @return {Array.<number>} The coordinates of the anchor as [x, y].
  */
@@ -251,7 +253,7 @@ acgraph.vector.SolidFill;
  @typedef {{
       keys: !Array.<(acgraph.vector.GradientKey|string)>,
       angle: (number|undefined),
-      mode: (boolean|!acgraph.math.Rect|undefined),
+      mode: (boolean|!goog.math.Rect|undefined),
       opacity: (number|undefined)
     }}
  */
@@ -264,7 +266,7 @@ acgraph.vector.LinearGradientFill;
        keys: !Array.<(acgraph.vector.GradientKey|string)>,
        cx: number,
        cy: number,
-       mode: (acgraph.math.Rect|undefined),
+       mode: (goog.math.Rect|undefined),
        fx: (number|undefined),
        fy: (number|undefined),
        opacity: (number|undefined)
@@ -329,7 +331,7 @@ acgraph.vector.SolidStroke;
  @typedef {{
       keys: !Array.<(acgraph.vector.GradientKey|string)>,
       angle: (number|undefined),
-      mode: (boolean|!acgraph.math.Rect|undefined),
+      mode: (boolean|!goog.math.Rect|undefined),
       opacity: (number|undefined),
       thickness: (number|undefined),
       dash: (string|undefined),
@@ -346,7 +348,7 @@ acgraph.vector.LinearGradientStroke;
       keys: !Array.<(acgraph.vector.GradientKey|string)>,
       cx: number,
       cy: number,
-      mode: (acgraph.math.Rect|undefined),
+      mode: (goog.math.Rect|undefined),
       fx: (number|undefined),
       fy: (number|undefined),
       opacity: (number|undefined),
@@ -518,9 +520,9 @@ acgraph.vector.PaperSize = {
 
 
 /**
- * Converts string representation of transformations to goog.graphics.AffineTransform object.
+ * Converts string representation of transformations to goog.math.AffineTransform object.
  * @param {string} value
- * @return {goog.graphics.AffineTransform}
+ * @return {goog.math.AffineTransform}
  */
 acgraph.vector.parseTransformationString = function(value) {
   var i, j, len, len_;
@@ -532,7 +534,7 @@ acgraph.vector.parseTransformationString = function(value) {
       .replace(/(\)),*(\w)/gi, '$1 $2')
       .split(' ');
 
-  var tx = new goog.graphics.AffineTransform();
+  var tx = new goog.math.AffineTransform();
 
   for (j = 0, len_ = transforms.length; j < len_; j++) {
     var transform = transforms[j];
@@ -547,7 +549,7 @@ acgraph.vector.parseTransformationString = function(value) {
 
     switch (type) {
       case 'matrix':
-        var new_tx = new goog.graphics.AffineTransform(params[0], params[1], params[2], params[3], params[4], params[5]);
+        var new_tx = new goog.math.AffineTransform(params[0], params[1], params[2], params[3], params[4], params[5]);
         tx.concatenate(new_tx);
         break;
       case 'translate':
@@ -576,8 +578,8 @@ acgraph.vector.parseTransformationString = function(value) {
  * Normalizes stroke params. Look at vector.Shape.fill() params for details.
  * @param {(!acgraph.vector.Fill|!Array.<(acgraph.vector.GradientKey|string)>|null)=} opt_fillOrColorOrKeys .
  * @param {number=} opt_opacityOrAngleOrCx .
- * @param {(number|boolean|!acgraph.math.Rect|!{left:number,top:number,width:number,height:number})=} opt_modeOrCy .
- * @param {(number|!acgraph.math.Rect|!{left:number,top:number,width:number,height:number}|null)=} opt_opacityOrMode .
+ * @param {(number|boolean|!goog.math.Rect|!{left:number,top:number,width:number,height:number})=} opt_modeOrCy .
+ * @param {(number|!goog.math.Rect|!{left:number,top:number,width:number,height:number}|null)=} opt_opacityOrMode .
  * @param {number=} opt_opacity .
  * @param {number=} opt_fx .
  * @param {number=} opt_fy .
@@ -671,7 +673,7 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
     } else if (opt_fillOrColorOrKeys['type'] == 'pattern') {
       delete opt_fillOrColorOrKeys['id'];
       var bounds = opt_fillOrColorOrKeys['bounds'];
-      bounds = new acgraph.math.Rect(bounds['left'], bounds['top'], bounds['width'], bounds['height']);
+      bounds = new goog.math.Rect(bounds['left'], bounds['top'], bounds['width'], bounds['height']);
       newFill = acgraph.patternFill(bounds);
       newFill.deserialize(opt_fillOrColorOrKeys);
     } else if ('keys' in opt_fillOrColorOrKeys) { // gradient
@@ -751,10 +753,10 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
       }
       var transform = opt_fillOrColorOrKeys['transform'];
       if (goog.isDefAndNotNull(transform)) {
-        if (transform instanceof goog.graphics.AffineTransform) {
+        if (transform instanceof goog.math.AffineTransform) {
           newFill['transform'] = transform;
         } else if (goog.isObject(transform)) {
-          newFill['transform'] = new goog.graphics.AffineTransform();
+          newFill['transform'] = new goog.math.AffineTransform();
           newFill['transform'].setTransform(
               transform['m00'],
               transform['m10'],
@@ -895,7 +897,7 @@ acgraph.vector.normalizeHatchFill = function(opt_patternFillOrType, opt_color, o
     if (opt_patternFillOrType['type'] == 'pattern') {
       delete opt_patternFillOrType['id'];
       var bounds = opt_patternFillOrType['bounds'];
-      bounds = new acgraph.math.Rect(bounds['left'], bounds['top'], bounds['width'], bounds['height']);
+      bounds = new goog.math.Rect(bounds['left'], bounds['top'], bounds['width'], bounds['height']);
       newFill = acgraph.patternFill(bounds);
       newFill.deserialize(opt_patternFillOrType);
     } else {
@@ -939,15 +941,15 @@ acgraph.vector.normalizePageSize = function(opt_paperSizeOrWidth, opt_landscapeO
         }
       }
     } else {
-      result.width = opt_paperSizeOrWidth.toString();
-      result.height = opt_landscapeOrHeight.toString();
+      result.width = String(opt_paperSizeOrWidth);
+      result.height = String(opt_landscapeOrHeight);
     }
   } else if (goog.isDef(opt_paperSizeOrWidth)) {
-    size = acgraph.utils.exporting.PaperSize[opt_paperSizeOrWidth.toString()];
+    size = acgraph.utils.exporting.PaperSize[String(opt_paperSizeOrWidth)];
     if (size) {
       result = size;
     } else {
-      result.width = opt_paperSizeOrWidth.toString();
+      result.width = String(opt_paperSizeOrWidth);
     }
   }
 
@@ -960,16 +962,16 @@ acgraph.vector.normalizePageSize = function(opt_paperSizeOrWidth, opt_landscapeO
 
 /**
  * Reduce to a rectangle. If it is not possible (null or boolean), returns null.
- * @param {null|number|boolean|acgraph.math.Rect|{left:number,top:number,width:number,height:number}|undefined} mode Gradient
+ * @param {null|number|boolean|goog.math.Rect|{left:number,top:number,width:number,height:number}|undefined} mode Gradient
  *    mode to normalize.
- * @return {acgraph.math.Rect} Normalized gradient rectangle (no extra objects created).
+ * @return {goog.math.Rect} Normalized gradient rectangle (no extra objects created).
  */
 acgraph.vector.normalizeGradientMode = function(mode) {
   if (goog.isDefAndNotNull(mode)) { // mode is set
-    if (mode instanceof acgraph.math.Rect)
+    if (mode instanceof goog.math.Rect)
       return mode;
     else if (goog.isObject(mode) && !isNaN(mode['left']) && !isNaN(mode['top']) && !isNaN(mode['width']) && !isNaN(mode['height']))
-      return new acgraph.math.Rect(mode['left'], mode['top'], mode['width'], mode['height']);
+      return new goog.math.Rect(mode['left'], mode['top'], mode['width'], mode['height']);
   }
   return null;
 };
@@ -1037,48 +1039,50 @@ acgraph.vector.getThickness = function(stroke) {
 
 
 //exports
-goog.exportSymbol('acgraph.vector.Anchor.CENTER', acgraph.vector.Anchor.CENTER);
-goog.exportSymbol('acgraph.vector.Anchor.CENTER_BOTTOM', acgraph.vector.Anchor.CENTER_BOTTOM);
-goog.exportSymbol('acgraph.vector.Anchor.CENTER_TOP', acgraph.vector.Anchor.CENTER_TOP);
-goog.exportSymbol('acgraph.vector.Anchor.LEFT_BOTTOM', acgraph.vector.Anchor.LEFT_BOTTOM);
-goog.exportSymbol('acgraph.vector.Anchor.LEFT_CENTER', acgraph.vector.Anchor.LEFT_CENTER);
-goog.exportSymbol('acgraph.vector.Anchor.LEFT_TOP', acgraph.vector.Anchor.LEFT_TOP);
-goog.exportSymbol('acgraph.vector.Anchor.RIGHT_BOTTOM', acgraph.vector.Anchor.RIGHT_BOTTOM);
-goog.exportSymbol('acgraph.vector.Anchor.RIGHT_CENTER', acgraph.vector.Anchor.RIGHT_CENTER);
-goog.exportSymbol('acgraph.vector.Anchor.RIGHT_TOP', acgraph.vector.Anchor.RIGHT_TOP);
-goog.exportSymbol('acgraph.vector.Cursor.DEFAULT', acgraph.vector.Cursor.DEFAULT);
-goog.exportSymbol('acgraph.vector.Cursor.CROSSHAIR', acgraph.vector.Cursor.CROSSHAIR);
-goog.exportSymbol('acgraph.vector.Cursor.POINTER', acgraph.vector.Cursor.POINTER);
-goog.exportSymbol('acgraph.vector.Cursor.MOVE', acgraph.vector.Cursor.MOVE);
-goog.exportSymbol('acgraph.vector.Cursor.TEXT', acgraph.vector.Cursor.TEXT);
-goog.exportSymbol('acgraph.vector.Cursor.WAIT', acgraph.vector.Cursor.WAIT);
-goog.exportSymbol('acgraph.vector.Cursor.HELP', acgraph.vector.Cursor.HELP);
-goog.exportSymbol('acgraph.vector.Cursor.N_RESIZE', acgraph.vector.Cursor.N_RESIZE);
-goog.exportSymbol('acgraph.vector.Cursor.NE_RESIZE', acgraph.vector.Cursor.NE_RESIZE);
-goog.exportSymbol('acgraph.vector.Cursor.E_RESIZE', acgraph.vector.Cursor.E_RESIZE);
-goog.exportSymbol('acgraph.vector.Cursor.SE_RESIZE', acgraph.vector.Cursor.SE_RESIZE);
-goog.exportSymbol('acgraph.vector.Cursor.S_RESIZE', acgraph.vector.Cursor.S_RESIZE);
-goog.exportSymbol('acgraph.vector.Cursor.SW_RESIZE', acgraph.vector.Cursor.SW_RESIZE);
-goog.exportSymbol('acgraph.vector.Cursor.W_RESIZE', acgraph.vector.Cursor.W_RESIZE);
-goog.exportSymbol('acgraph.vector.Cursor.NW_RESIZE', acgraph.vector.Cursor.NW_RESIZE);
-goog.exportSymbol('acgraph.vector.ImageFillMode.FIT', acgraph.vector.ImageFillMode.FIT);
-goog.exportSymbol('acgraph.vector.ImageFillMode.FIT_MAX', acgraph.vector.ImageFillMode.FIT_MAX);
-goog.exportSymbol('acgraph.vector.ImageFillMode.STRETCH', acgraph.vector.ImageFillMode.STRETCH);
-goog.exportSymbol('acgraph.vector.ImageFillMode.TILE', acgraph.vector.ImageFillMode.TILE);
-goog.exportSymbol('acgraph.vector.PaperSize.US_LETTER', acgraph.vector.PaperSize.US_LETTER);
-goog.exportSymbol('acgraph.vector.PaperSize.A0', acgraph.vector.PaperSize.A0);
-goog.exportSymbol('acgraph.vector.PaperSize.A1', acgraph.vector.PaperSize.A1);
-goog.exportSymbol('acgraph.vector.PaperSize.A2', acgraph.vector.PaperSize.A2);
-goog.exportSymbol('acgraph.vector.PaperSize.A3', acgraph.vector.PaperSize.A3);
-goog.exportSymbol('acgraph.vector.PaperSize.A4', acgraph.vector.PaperSize.A4);
-goog.exportSymbol('acgraph.vector.PaperSize.A5', acgraph.vector.PaperSize.A5);
-goog.exportSymbol('acgraph.vector.PaperSize.A6', acgraph.vector.PaperSize.A6);
-goog.exportSymbol('acgraph.vector.StrokeLineJoin.MITER', acgraph.vector.StrokeLineJoin.MITER);
-goog.exportSymbol('acgraph.vector.StrokeLineJoin.ROUND', acgraph.vector.StrokeLineJoin.ROUND);
-goog.exportSymbol('acgraph.vector.StrokeLineJoin.BEVEL', acgraph.vector.StrokeLineJoin.BEVEL);
-goog.exportSymbol('acgraph.vector.StrokeLineCap.BUTT', acgraph.vector.StrokeLineCap.BUTT);
-goog.exportSymbol('acgraph.vector.StrokeLineCap.ROUND', acgraph.vector.StrokeLineCap.ROUND);
-goog.exportSymbol('acgraph.vector.StrokeLineCap.SQUARE', acgraph.vector.StrokeLineCap.SQUARE);
-goog.exportSymbol('acgraph.vector.normalizeFill', acgraph.vector.normalizeFill);
-goog.exportSymbol('acgraph.vector.normalizeStroke', acgraph.vector.normalizeStroke);
-goog.exportSymbol('acgraph.vector.normalizeHatchFill', acgraph.vector.normalizeHatchFill);
+(function() {
+  goog.exportSymbol('acgraph.vector.Anchor.CENTER', acgraph.vector.Anchor.CENTER);
+  goog.exportSymbol('acgraph.vector.Anchor.CENTER_BOTTOM', acgraph.vector.Anchor.CENTER_BOTTOM);
+  goog.exportSymbol('acgraph.vector.Anchor.CENTER_TOP', acgraph.vector.Anchor.CENTER_TOP);
+  goog.exportSymbol('acgraph.vector.Anchor.LEFT_BOTTOM', acgraph.vector.Anchor.LEFT_BOTTOM);
+  goog.exportSymbol('acgraph.vector.Anchor.LEFT_CENTER', acgraph.vector.Anchor.LEFT_CENTER);
+  goog.exportSymbol('acgraph.vector.Anchor.LEFT_TOP', acgraph.vector.Anchor.LEFT_TOP);
+  goog.exportSymbol('acgraph.vector.Anchor.RIGHT_BOTTOM', acgraph.vector.Anchor.RIGHT_BOTTOM);
+  goog.exportSymbol('acgraph.vector.Anchor.RIGHT_CENTER', acgraph.vector.Anchor.RIGHT_CENTER);
+  goog.exportSymbol('acgraph.vector.Anchor.RIGHT_TOP', acgraph.vector.Anchor.RIGHT_TOP);
+  goog.exportSymbol('acgraph.vector.Cursor.DEFAULT', acgraph.vector.Cursor.DEFAULT);
+  goog.exportSymbol('acgraph.vector.Cursor.CROSSHAIR', acgraph.vector.Cursor.CROSSHAIR);
+  goog.exportSymbol('acgraph.vector.Cursor.POINTER', acgraph.vector.Cursor.POINTER);
+  goog.exportSymbol('acgraph.vector.Cursor.MOVE', acgraph.vector.Cursor.MOVE);
+  goog.exportSymbol('acgraph.vector.Cursor.TEXT', acgraph.vector.Cursor.TEXT);
+  goog.exportSymbol('acgraph.vector.Cursor.WAIT', acgraph.vector.Cursor.WAIT);
+  goog.exportSymbol('acgraph.vector.Cursor.HELP', acgraph.vector.Cursor.HELP);
+  goog.exportSymbol('acgraph.vector.Cursor.N_RESIZE', acgraph.vector.Cursor.N_RESIZE);
+  goog.exportSymbol('acgraph.vector.Cursor.NE_RESIZE', acgraph.vector.Cursor.NE_RESIZE);
+  goog.exportSymbol('acgraph.vector.Cursor.E_RESIZE', acgraph.vector.Cursor.E_RESIZE);
+  goog.exportSymbol('acgraph.vector.Cursor.SE_RESIZE', acgraph.vector.Cursor.SE_RESIZE);
+  goog.exportSymbol('acgraph.vector.Cursor.S_RESIZE', acgraph.vector.Cursor.S_RESIZE);
+  goog.exportSymbol('acgraph.vector.Cursor.SW_RESIZE', acgraph.vector.Cursor.SW_RESIZE);
+  goog.exportSymbol('acgraph.vector.Cursor.W_RESIZE', acgraph.vector.Cursor.W_RESIZE);
+  goog.exportSymbol('acgraph.vector.Cursor.NW_RESIZE', acgraph.vector.Cursor.NW_RESIZE);
+  goog.exportSymbol('acgraph.vector.ImageFillMode.FIT', acgraph.vector.ImageFillMode.FIT);
+  goog.exportSymbol('acgraph.vector.ImageFillMode.FIT_MAX', acgraph.vector.ImageFillMode.FIT_MAX);
+  goog.exportSymbol('acgraph.vector.ImageFillMode.STRETCH', acgraph.vector.ImageFillMode.STRETCH);
+  goog.exportSymbol('acgraph.vector.ImageFillMode.TILE', acgraph.vector.ImageFillMode.TILE);
+  goog.exportSymbol('acgraph.vector.PaperSize.US_LETTER', acgraph.vector.PaperSize.US_LETTER);
+  goog.exportSymbol('acgraph.vector.PaperSize.A0', acgraph.vector.PaperSize.A0);
+  goog.exportSymbol('acgraph.vector.PaperSize.A1', acgraph.vector.PaperSize.A1);
+  goog.exportSymbol('acgraph.vector.PaperSize.A2', acgraph.vector.PaperSize.A2);
+  goog.exportSymbol('acgraph.vector.PaperSize.A3', acgraph.vector.PaperSize.A3);
+  goog.exportSymbol('acgraph.vector.PaperSize.A4', acgraph.vector.PaperSize.A4);
+  goog.exportSymbol('acgraph.vector.PaperSize.A5', acgraph.vector.PaperSize.A5);
+  goog.exportSymbol('acgraph.vector.PaperSize.A6', acgraph.vector.PaperSize.A6);
+  goog.exportSymbol('acgraph.vector.StrokeLineJoin.MITER', acgraph.vector.StrokeLineJoin.MITER);
+  goog.exportSymbol('acgraph.vector.StrokeLineJoin.ROUND', acgraph.vector.StrokeLineJoin.ROUND);
+  goog.exportSymbol('acgraph.vector.StrokeLineJoin.BEVEL', acgraph.vector.StrokeLineJoin.BEVEL);
+  goog.exportSymbol('acgraph.vector.StrokeLineCap.BUTT', acgraph.vector.StrokeLineCap.BUTT);
+  goog.exportSymbol('acgraph.vector.StrokeLineCap.ROUND', acgraph.vector.StrokeLineCap.ROUND);
+  goog.exportSymbol('acgraph.vector.StrokeLineCap.SQUARE', acgraph.vector.StrokeLineCap.SQUARE);
+  goog.exportSymbol('acgraph.vector.normalizeFill', acgraph.vector.normalizeFill);
+  goog.exportSymbol('acgraph.vector.normalizeStroke', acgraph.vector.normalizeStroke);
+  goog.exportSymbol('acgraph.vector.normalizeHatchFill', acgraph.vector.normalizeHatchFill);
+})();
