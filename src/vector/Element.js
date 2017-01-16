@@ -483,7 +483,7 @@ acgraph.vector.Element.prototype.getFullChildrenCount = function() {
 
 /**
  * Gets/sets element's title value.
- * @param {(string|null)=} opt_value - Value to be set.
+ * @param {?string=} opt_value - Value to be set.
  * @return {(string|null|acgraph.vector.Element|undefined)} - Current value or itself for method chaining.
  */
 acgraph.vector.Element.prototype.title = function(opt_value) {
@@ -500,7 +500,7 @@ acgraph.vector.Element.prototype.title = function(opt_value) {
 
 /**
  * Gets/sets element's desc value.
- * @param {(string|null)=} opt_value - Value to be set.
+ * @param {?string=} opt_value - Value to be set.
  * @return {(string|null|acgraph.vector.Element|undefined)} - Current value or itself for method chaining.
  */
 acgraph.vector.Element.prototype.desc = function(opt_value) {

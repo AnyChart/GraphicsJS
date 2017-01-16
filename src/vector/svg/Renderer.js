@@ -328,7 +328,7 @@ acgraph.vector.svg.Renderer.prototype.isImageLoading = function() {
 /**
  * Serializes a given Path and converts its data to a String which can be used in SVG.
  * @param {acgraph.vector.PathBase} path The Path to serialize.
- * @return {(string|null)} A representation which can be used in SVG.
+ * @return {?string} A representation which can be used in SVG.
  * @private
  */
 acgraph.vector.svg.Renderer.prototype.getSvgPath_ = function(path) {

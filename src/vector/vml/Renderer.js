@@ -595,7 +595,7 @@ acgraph.vector.vml.Renderer.prototype.setPositionAndSize_ = function(element, x,
  * Serializes Path and converts it into string that can be used in VML.
  * @param {acgraph.vector.PathBase} path Path.
  * @param {boolean=} opt_transformed Use transformed instead of original.
- * @return {(string|null)} VML acceptable path.
+ * @return {?string} VML acceptable path.
  * @private
  */
 acgraph.vector.vml.Renderer.prototype.getVmlPath_ = function(path, opt_transformed) {
