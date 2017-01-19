@@ -932,6 +932,7 @@ acgraph.vector.normalizePageSize = function(opt_paperSizeOrWidth, opt_landscapeO
   //if both parameters passed, try to recognize by second param
   if (goog.isDef(opt_paperSizeOrWidth) && goog.isDef(opt_landscapeOrHeight)) {
     if (goog.isString(opt_paperSizeOrWidth) && goog.isBoolean(opt_landscapeOrHeight)) {
+      opt_paperSizeOrWidth = opt_paperSizeOrWidth.toLowerCase();
       size = acgraph.utils.exporting.PaperSize[opt_paperSizeOrWidth];
       if (size) {
         if (opt_landscapeOrHeight) {
@@ -948,13 +949,11 @@ acgraph.vector.normalizePageSize = function(opt_paperSizeOrWidth, opt_landscapeO
     size = acgraph.utils.exporting.PaperSize[String(opt_paperSizeOrWidth)];
     if (size) {
       result = size;
-    } else {
-      result.width = String(opt_paperSizeOrWidth);
     }
   }
 
-  if (!goog.string.endsWith(result.width, 'px')) result.width += 'px';
-  if (!goog.string.endsWith(result.height, 'px')) result.height += 'px';
+  if (!goog.string.endsWith(result.width, 'px') && !goog.string.endsWith(result.width, 'mm')) result.width += 'px';
+  if (!goog.string.endsWith(result.height, 'px') && !goog.string.endsWith(result.height, 'mm')) result.height += 'px';
 
   return result;
 };
