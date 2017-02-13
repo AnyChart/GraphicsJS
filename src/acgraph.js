@@ -22,6 +22,7 @@ goog.require('acgraph.vector.primitives');
 goog.require('acgraph.vector.svg');
 goog.require('acgraph.vector.vml');
 goog.require('goog.dom');
+goog.require('goog.net.IframeIo');
 goog.require('goog.userAgent');
 
 
@@ -212,6 +213,16 @@ acgraph.server = function(opt_address) {
     acgraph.exportServer = opt_address;
   }
   return acgraph.exportServer;
+};
+
+
+/**
+ * Send form POST request on passed url with passed request params.
+ * @param {string} url .
+ * @param {Object.<string, *>=} opt_arguments .
+ */
+acgraph.sendRequestToExportServer = function(url, opt_arguments) {
+  goog.net.IframeIo.send(url, undefined, 'POST', false, opt_arguments);
 };
 
 
