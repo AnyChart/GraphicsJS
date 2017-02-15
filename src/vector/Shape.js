@@ -27,6 +27,14 @@ acgraph.vector.Shape = function() {
    */
   this.stroke_ = 'black';
 
+  /**
+   * If the fill or stroke needs update on DATA invalidation.
+   * 0 - no need, 1 - fill needs to be update, 2 - stroke, 3 - both.
+   * @type {number}
+   * @private
+   */
+  this.boundsAffectedColors_ = 0;
+
   goog.base(this);
 };
 goog.inherits(acgraph.vector.Shape, acgraph.vector.Element);
@@ -73,7 +81,7 @@ acgraph.vector.Shape.prototype.fill = function(opt_fillOrColorOrKeys, opt_opacit
   // TODO(Anton Saukh): comparison must be more complex here
   if (this.fill_ != newFill) {
     this.fill_ = newFill;
-    // Flag to show that fill changed
+    this.boundsAffectedColors_ = (this.boundsAffectedColors_ & 2) | !!(newFill['mode'] || newFill['src']);
     this.setDirtyState(acgraph.vector.Element.DirtyState.FILL);
   }
   return this;
@@ -98,7 +106,7 @@ acgraph.vector.Shape.prototype.stroke = function(opt_strokeOrFill, opt_thickness
   // TODO(Anton Saukh): comparison must be more complex here
   if (this.stroke_ != newStroke) {
     this.stroke_ = /** @type {acgraph.vector.Stroke} */(newStroke);
-    // set flag that stroke has changed
+    this.boundsAffectedColors_ = (this.boundsAffectedColors_ & 1) | (newStroke['mode'] << 1);
     this.setDirtyState(acgraph.vector.Element.DirtyState.STROKE);
   }
   return this;
@@ -138,6 +146,13 @@ acgraph.vector.Shape.prototype.strokeThickness = function(opt_value) {
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.Shape.prototype.renderInternal = function() {
+  if (this.boundsAffectedColors_ && this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
+    if (!!(this.boundsAffectedColors_ & 1))
+      this.setDirtyState(acgraph.vector.Element.DirtyState.FILL);
+    if (!!(this.boundsAffectedColors_ & 2))
+      this.setDirtyState(acgraph.vector.Element.DirtyState.STROKE);
+  }
+
   goog.base(this, 'renderInternal');
 
   // Apply stroke and fill settings if they were changed

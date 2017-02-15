@@ -515,8 +515,11 @@ acgraph.vector.Text.prototype.transformAfterChange = function() {
  */
 acgraph.vector.Text.prototype.width = function(opt_value) {
   if (goog.isDef(opt_value)) {
-    if (this.setStyleProperty('width') != opt_value)
-      this.width_ = opt_value = (Math.max(opt_value, 0) || 0);
+    if (this.setStyleProperty('width') != opt_value) {
+      if (!goog.isNull(opt_value))
+        opt_value = (Math.max(opt_value, 0) || 0);
+      this.width_ = opt_value;
+    }
   }
   return /** @type {number|string|acgraph.vector.Text} */ (this.setStyleProperty('width', opt_value));
 };
@@ -532,7 +535,9 @@ acgraph.vector.Text.prototype.width = function(opt_value) {
 acgraph.vector.Text.prototype.height = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (this.setStyleProperty('height') != opt_value)
-      this.height_ = opt_value = (Math.max(opt_value, 0) || 0);
+      if (!goog.isNull(opt_value))
+        opt_value = (Math.max(opt_value, 0) || 0);
+      this.height_ = opt_value;
   }
   return /** @type {number|string|acgraph.vector.Text} */ (this.setStyleProperty('height', opt_value));
 };
