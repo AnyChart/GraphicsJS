@@ -1225,7 +1225,6 @@ acgraph.vector.Layer.prototype.serialize = function() {
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.Layer.prototype.disposeInternal = function() {
-
   if (this.children) {
     goog.disposeAll.apply(null, this.children);
   }
@@ -1243,11 +1242,11 @@ acgraph.vector.Layer.prototype.disposeInternal = function() {
 acgraph.vector.Layer.prototype.finalizeDisposing = function() {
   // TODO(Anton Saukh): as far as I see this finalization of children has been already invoked in notifyPrevParent()
   // upon the real disposing. If so - we dont need to add finalizeDisposing into Element.
-  //  if (this.children) {
-  //    goog.array.forEach(this.children, function(child) {
-  //      child.finalizeDisposing();
-  //    });
-  //  }
+  if (this.children) {
+    goog.array.forEach(this.children, function(child) {
+      child.finalizeDisposing();
+    });
+  }
 
   // we use these arrays for rendering, so we need to remove them here
   delete this.domChildren;
