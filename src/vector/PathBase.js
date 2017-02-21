@@ -352,7 +352,7 @@ acgraph.vector.PathBase.prototype.forEachTransformedSegment = function(callback,
     args = this.transformedPathCache_;
   } else {
     var tx = this.getFullTransformation();
-    if (tx) {
+    if (tx && !tx.isIdentity()) {
       args = [];
       this.simplify();
       tx.transform(this.arguments_, 0, args, 0, this.arguments_.length / 2);
@@ -869,7 +869,7 @@ acgraph.vector.PathBase.prototype.calcBounds_ = function(transform, calcMap, all
     var rect;
 
     if (this.currentPoint_) {
-      if (transform) {
+      if (transform && !transform.isIdentity()) {
         var arr = [this.currentPoint_[0], this.currentPoint_[1]];
         transform.transform(arr, 0, arr, 0, 1);
         rect = new goog.math.Rect(arr[0], arr[1], 0, 0);
