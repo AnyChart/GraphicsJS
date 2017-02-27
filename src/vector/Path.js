@@ -168,7 +168,7 @@ acgraph.vector.Path.prototype.close = function() {
 
 /**
  Returns the last coordinates added to the path.
- @return {acgraph.math.Coordinate} The current coordinates of the cursor.
+ @return {goog.math.Coordinate} The current coordinates of the cursor.
  */
 acgraph.vector.Path.prototype.getCurrentPoint = function() {
   return this.getCurrentPointInternal();
@@ -176,15 +176,18 @@ acgraph.vector.Path.prototype.getCurrentPoint = function() {
 
 
 //exports
-goog.exportSymbol('acgraph.vector.Path', acgraph.vector.Path);
-acgraph.vector.Path.prototype['moveTo'] = acgraph.vector.Path.prototype.moveTo;
-acgraph.vector.Path.prototype['lineTo'] = acgraph.vector.Path.prototype.lineTo;
-acgraph.vector.Path.prototype['curveTo'] = acgraph.vector.Path.prototype.curveTo;
-acgraph.vector.Path.prototype['quadraticCurveTo'] = acgraph.vector.Path.prototype.quadraticCurveTo;
-acgraph.vector.Path.prototype['arcTo'] = acgraph.vector.Path.prototype.arcTo;
-acgraph.vector.Path.prototype['arcToByEndPoint'] = acgraph.vector.Path.prototype.arcToByEndPoint;
-acgraph.vector.Path.prototype['arcToAsCurves'] = acgraph.vector.Path.prototype.arcToAsCurves;
-acgraph.vector.Path.prototype['circularArc'] = acgraph.vector.Path.prototype.circularArc;
-acgraph.vector.Path.prototype['close'] = acgraph.vector.Path.prototype.close;
-acgraph.vector.Path.prototype['clear'] = acgraph.vector.Path.prototype.clear;
-acgraph.vector.Path.prototype['getCurrentPoint'] = acgraph.vector.Path.prototype.getCurrentPoint;
+(function() {
+  var proto = acgraph.vector.Path.prototype;
+  goog.exportSymbol('acgraph.vector.Path', acgraph.vector.Path);
+  proto['moveTo'] = proto.moveTo;
+  proto['lineTo'] = proto.lineTo;
+  proto['curveTo'] = proto.curveTo;
+  proto['quadraticCurveTo'] = proto.quadraticCurveTo;
+  proto['arcTo'] = proto.arcTo;
+  proto['arcToByEndPoint'] = proto.arcToByEndPoint;
+  proto['arcToAsCurves'] = proto.arcToAsCurves;
+  proto['circularArc'] = proto.circularArc;
+  proto['close'] = proto.close;
+  proto['clear'] = proto.clear;
+  proto['getCurrentPoint'] = proto.getCurrentPoint;
+})();

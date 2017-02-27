@@ -14,7 +14,7 @@ acgraph.utils.exporting.PaperSize = {
   'a1': {width: '594mm', height: '841mm'},
   'a2': {width: '420mm', height: '594mm'},
   'a3': {width: '297mm', height: '420mm'},
-  'a4': {width: '210mm', height: '297mm'},
+  'a4': {width: '210mm', height: '279mm'}, // Less than real A4 height (297mm) to fit page
   'a5': {width: '148mm', height: '210mm'},
   'a6': {width: '105mm', height: '148mm'}
 };
@@ -102,9 +102,10 @@ acgraph.utils.exporting.fitToPagePrint = function(stage) {
   var iFrameDocument = iFrame['contentWindow'].document;
 
   //clone stage content
+  var stageClone;
+  var stageDomClone;
   var stageDom = stage.domElement();
   if (stageDom.tagName == 'svg') {
-    var stageClone, stageDomClone;
     if (stageDom.cloneNode) {
       stageDomClone = stageDom.cloneNode(true);
     } else {
@@ -144,13 +145,11 @@ acgraph.utils.exporting.fullPagePrint = function(stage, opt_paperSizeOrWidth, op
   });
   iFrameDocument.body.appendChild(div);
 
-  var sourceDiv = goog.dom.getParentElement(stage.domElement());
-  var sourceWidth = goog.style.getStyle(sourceDiv, 'width');
-  var sourceHeight = goog.style.getStyle(sourceDiv, 'height');
+  var sourceStageWidth = stage.width();
+  var sourceStageHeight = stage.height();
+  var printStageSize = goog.style.getContentBoxSize(div);
 
-  //resize source stage
-  goog.style.setSize(sourceDiv, size.width, size.height);
-  stage.updateSizeFromContainer();
+  stage.resize(printStageSize.width, printStageSize.height);
 
   //take result from source stage
   var stageDom = stage.domElement();
@@ -162,9 +161,7 @@ acgraph.utils.exporting.fullPagePrint = function(stage, opt_paperSizeOrWidth, op
   }
 
   //restore source size
-  goog.style.setStyle(sourceDiv, 'width', sourceWidth);
-  goog.style.setStyle(sourceDiv, 'height', sourceHeight);
-  stage.updateSizeFromContainer();
+  stage.resize(/** @type {number} */(sourceStageWidth), /** @type {number} */(sourceStageHeight));
 
   //open print dialog
   acgraph.utils.exporting.openPrint_();
@@ -198,7 +195,7 @@ acgraph.utils.exporting.createPrint_ = function() {
       }
     }
 
-    acgraph.embedCss('body{padding:0;margin:0;height:100%;}', iFrame['contentWindow'].document);
+    acgraph.embedCss('body{padding:0;margin:0;height:100%;}@page {size: auto; margin: 0; padding:0}', iFrame['contentWindow'].document);
   }
 
   return acgraph.utils.exporting.printIFrame_;

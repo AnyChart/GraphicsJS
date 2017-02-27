@@ -1,8 +1,8 @@
 goog.provide('acgraph.vector.Image');
 
-goog.require('acgraph.math.Rect');
 goog.require('acgraph.utils.IdGenerator');
 goog.require('acgraph.vector.Element');
+goog.require('goog.math.Rect');
 
 
 
@@ -45,10 +45,10 @@ acgraph.vector.Image = function(opt_src, opt_x, opt_y, opt_width, opt_height, op
 
   /**
    * Bounds.
-   * @type {acgraph.math.Rect}
+   * @type {goog.math.Rect}
    * @private
    */
-  this.bounds_ = new acgraph.math.Rect(opt_x || 0, opt_y || 0, opt_width || 0, opt_height || 0);
+  this.bounds_ = new goog.math.Rect(opt_x || 0, opt_y || 0, opt_width || 0, opt_height || 0);
 
   /**
    * Image opacity.
@@ -327,7 +327,7 @@ acgraph.vector.Image.prototype.getBoundsWithTransform = function(transform) {
   else if (this.absoluteBoundsCache && isFullTransform)
     return this.absoluteBoundsCache.clone();
   else {
-    /** @type {!acgraph.math.Rect} */
+    /** @type {!goog.math.Rect} */
     var rect = acgraph.math.getBoundsOfRectWithTransform(this.bounds_.clone(), transform);
     if (isSelfTransform)
       this.boundsCache = rect.clone();
@@ -435,23 +435,26 @@ acgraph.vector.Image.prototype.disposeInternal = function() {
 
 
 //exports
-goog.exportSymbol('acgraph.vector.Image', acgraph.vector.Image);
-acgraph.vector.Image.prototype['fittingMode'] = acgraph.vector.Image.prototype.fittingMode;
-acgraph.vector.Image.prototype['align'] = acgraph.vector.Image.prototype.align;
-acgraph.vector.Image.prototype['x'] = acgraph.vector.Image.prototype.x;
-acgraph.vector.Image.prototype['y'] = acgraph.vector.Image.prototype.y;
-acgraph.vector.Image.prototype['width'] = acgraph.vector.Image.prototype.width;
-acgraph.vector.Image.prototype['height'] = acgraph.vector.Image.prototype.height;
-acgraph.vector.Image.prototype['src'] = acgraph.vector.Image.prototype.src;
-goog.exportSymbol('acgraph.vector.Image.Fitting.MEET', acgraph.vector.Image.Fitting.MEET);
-goog.exportSymbol('acgraph.vector.Image.Fitting.SLICE', acgraph.vector.Image.Fitting.SLICE);
-goog.exportSymbol('acgraph.vector.Image.Align.NONE', acgraph.vector.Image.Align.NONE);
-goog.exportSymbol('acgraph.vector.Image.Align.X_MIN_Y_MIN', acgraph.vector.Image.Align.X_MIN_Y_MIN);
-goog.exportSymbol('acgraph.vector.Image.Align.X_MID_Y_MIN', acgraph.vector.Image.Align.X_MID_Y_MIN);
-goog.exportSymbol('acgraph.vector.Image.Align.X_MAX_Y_MIN', acgraph.vector.Image.Align.X_MAX_Y_MIN);
-goog.exportSymbol('acgraph.vector.Image.Align.X_MIN_Y_MID', acgraph.vector.Image.Align.X_MIN_Y_MID);
-goog.exportSymbol('acgraph.vector.Image.Align.X_MID_Y_MID', acgraph.vector.Image.Align.X_MID_Y_MID);
-goog.exportSymbol('acgraph.vector.Image.Align.X_MAX_Y_MID', acgraph.vector.Image.Align.X_MAX_Y_MID);
-goog.exportSymbol('acgraph.vector.Image.Align.X_MIN_Y_MAX', acgraph.vector.Image.Align.X_MIN_Y_MAX);
-goog.exportSymbol('acgraph.vector.Image.Align.X_MID_Y_MAX', acgraph.vector.Image.Align.X_MID_Y_MAX);
-goog.exportSymbol('acgraph.vector.Image.Align.X_MAX_Y_MAX', acgraph.vector.Image.Align.X_MAX_Y_MAX);
+(function() {
+  goog.exportSymbol('acgraph.vector.Image', acgraph.vector.Image);
+  var proto = acgraph.vector.Image.prototype;
+  proto['fittingMode'] = proto.fittingMode;
+  proto['align'] = proto.align;
+  proto['x'] = proto.x;
+  proto['y'] = proto.y;
+  proto['width'] = proto.width;
+  proto['height'] = proto.height;
+  proto['src'] = proto.src;
+  goog.exportSymbol('acgraph.vector.Image.Fitting.MEET', acgraph.vector.Image.Fitting.MEET);
+  goog.exportSymbol('acgraph.vector.Image.Fitting.SLICE', acgraph.vector.Image.Fitting.SLICE);
+  goog.exportSymbol('acgraph.vector.Image.Align.NONE', acgraph.vector.Image.Align.NONE);
+  goog.exportSymbol('acgraph.vector.Image.Align.X_MIN_Y_MIN', acgraph.vector.Image.Align.X_MIN_Y_MIN);
+  goog.exportSymbol('acgraph.vector.Image.Align.X_MID_Y_MIN', acgraph.vector.Image.Align.X_MID_Y_MIN);
+  goog.exportSymbol('acgraph.vector.Image.Align.X_MAX_Y_MIN', acgraph.vector.Image.Align.X_MAX_Y_MIN);
+  goog.exportSymbol('acgraph.vector.Image.Align.X_MIN_Y_MID', acgraph.vector.Image.Align.X_MIN_Y_MID);
+  goog.exportSymbol('acgraph.vector.Image.Align.X_MID_Y_MID', acgraph.vector.Image.Align.X_MID_Y_MID);
+  goog.exportSymbol('acgraph.vector.Image.Align.X_MAX_Y_MID', acgraph.vector.Image.Align.X_MAX_Y_MID);
+  goog.exportSymbol('acgraph.vector.Image.Align.X_MIN_Y_MAX', acgraph.vector.Image.Align.X_MIN_Y_MAX);
+  goog.exportSymbol('acgraph.vector.Image.Align.X_MID_Y_MAX', acgraph.vector.Image.Align.X_MID_Y_MAX);
+  goog.exportSymbol('acgraph.vector.Image.Align.X_MAX_Y_MAX', acgraph.vector.Image.Align.X_MAX_Y_MAX);
+})();

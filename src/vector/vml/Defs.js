@@ -103,7 +103,7 @@ acgraph.vector.vml.Defs.prototype.serializeFill = function(fill) {
  * @param {number} size_x The size of the radial gradient along the X-axis.
  * @param {number} size_y The size of the radial gradient along the Y-axis.
  * @param {number} opacity The opacity of the gradient.
- * @param {acgraph.math.Rect=} opt_mode If defined, then the userSpaceOnUse mode is used, otherwise objectBoundingBox is used.
+ * @param {goog.math.Rect=} opt_mode If defined, then the userSpaceOnUse mode is used, otherwise objectBoundingBox is used.
  * @return {!acgraph.vector.vml.RadialGradient} The object of the radial gradient.
  */
 acgraph.vector.vml.Defs.prototype.getVMLRadialGradient = function(keys, cx, cy, size_x, size_y, opacity, opt_mode) {

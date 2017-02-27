@@ -6,7 +6,7 @@ goog.require('acgraph.vector.Clip');
 /**
  * Class for VML clip.
  * @param {acgraph.vector.Stage} stage Stage where clip is creating.
- * @param {(number|Array.<number>|acgraph.math.Rect|Object|null)=} opt_leftOrRect Left coordinate of bounds
+ * @param {(number|Array.<number>|goog.math.Rect|Object|null)=} opt_leftOrRect Left coordinate of bounds
  * or rect or array or object representing bounds.
  * @param {number=} opt_top Top coordinate.
  * @param {number=} opt_width Width of the rect.

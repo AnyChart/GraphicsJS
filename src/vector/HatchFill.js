@@ -1,8 +1,8 @@
 goog.provide('acgraph.vector.HatchFill');
-goog.require('acgraph.math.Rect');
 goog.require('acgraph.utils.IdGenerator');
 goog.require('acgraph.vector.Path');
 goog.require('acgraph.vector.PatternFill');
+goog.require('goog.math.Rect');
 
 
 
@@ -45,7 +45,7 @@ acgraph.vector.HatchFill = function(opt_type, opt_color, opt_thickness, opt_size
    */
   this.size = goog.isDefAndNotNull(opt_size) ? opt_size : 10;
 
-  goog.base(this, new acgraph.math.Rect(0, 0, this.size, this.size));
+  goog.base(this, new goog.math.Rect(0, 0, this.size, this.size));
   this.create_();
 };
 goog.inherits(acgraph.vector.HatchFill, acgraph.vector.PatternFill);
@@ -364,7 +364,7 @@ acgraph.vector.HatchFill.prototype.create_ = function() {
       break;
 
     case acgraph.vector.HatchFill.HatchFillType.PERCENT_05:
-      this.bounds = new acgraph.math.Rect(0, 0, 8, 8);
+      this.bounds = new goog.math.Rect(0, 0, 8, 8);
       this.rect(0, 0, 1, 1)
           .fill(this.color)
           .stroke('none');
@@ -373,7 +373,7 @@ acgraph.vector.HatchFill.prototype.create_ = function() {
           .stroke('none');
       break;
     case acgraph.vector.HatchFill.HatchFillType.PERCENT_10:
-      this.bounds = new acgraph.math.Rect(0, 0, 8, 4);
+      this.bounds = new goog.math.Rect(0, 0, 8, 4);
       rect = this.rect(0, 0, 1, 1);
       rect.fill(this.color);
       rect.stroke('none');
@@ -382,7 +382,7 @@ acgraph.vector.HatchFill.prototype.create_ = function() {
       rect.stroke('none');
       break;
     case acgraph.vector.HatchFill.HatchFillType.PERCENT_20:
-      this.bounds = new acgraph.math.Rect(0, 0, 4, 4);
+      this.bounds = new goog.math.Rect(0, 0, 4, 4);
       rect = this.rect(0, 0, 1, 1);
       rect.fill(this.color);
       rect.stroke('none');
@@ -391,7 +391,7 @@ acgraph.vector.HatchFill.prototype.create_ = function() {
       rect.stroke('none');
       break;
     case acgraph.vector.HatchFill.HatchFillType.PERCENT_25:
-      this.bounds = new acgraph.math.Rect(0, 0, 4, 2);
+      this.bounds = new goog.math.Rect(0, 0, 4, 2);
       rect = this.rect(0, 0, 1, 1);
       rect.fill(this.color);
       rect.stroke('none');
@@ -400,7 +400,7 @@ acgraph.vector.HatchFill.prototype.create_ = function() {
       rect.stroke('none');
       break;
     case acgraph.vector.HatchFill.HatchFillType.PERCENT_30:
-      this.bounds = new acgraph.math.Rect(0, 0, 4, 4);
+      this.bounds = new goog.math.Rect(0, 0, 4, 4);
       rect = this.rect(0, 0, 1, 1);
       rect.fill(this.color);
       rect.stroke('none');
@@ -421,7 +421,7 @@ acgraph.vector.HatchFill.prototype.create_ = function() {
       rect.stroke('none');
       break;
     case acgraph.vector.HatchFill.HatchFillType.PERCENT_40:
-      this.bounds = new acgraph.math.Rect(0, 0, 4, 8);
+      this.bounds = new goog.math.Rect(0, 0, 4, 8);
       rect = this.rect(0, 0, 1, 1);
       rect.fill(this.color);
       rect.stroke('none');
@@ -469,7 +469,7 @@ acgraph.vector.HatchFill.prototype.create_ = function() {
       rect.stroke('none');
       break;
     case acgraph.vector.HatchFill.HatchFillType.PERCENT_50:
-      this.bounds = new acgraph.math.Rect(0, 0, 2, 2);
+      this.bounds = new goog.math.Rect(0, 0, 2, 2);
       rect = this.rect(0, 0, 1, 1);
       rect.fill(this.color);
       rect.stroke('none');
@@ -478,7 +478,7 @@ acgraph.vector.HatchFill.prototype.create_ = function() {
       rect.stroke('none');
       break;
     case acgraph.vector.HatchFill.HatchFillType.PERCENT_60:
-      this.bounds = new acgraph.math.Rect(0, 0, 4, 4);
+      this.bounds = new goog.math.Rect(0, 0, 4, 4);
       rect = this.rect(0, 0, 1, 1);
       rect.fill(this.color);
       rect.stroke('none');
@@ -511,7 +511,7 @@ acgraph.vector.HatchFill.prototype.create_ = function() {
       rect.stroke('none');
       break;
     case acgraph.vector.HatchFill.HatchFillType.PERCENT_70:
-      this.bounds = new acgraph.math.Rect(0, 0, 4, 4);
+      this.bounds = new goog.math.Rect(0, 0, 4, 4);
       this.path()
           .moveTo(0, 0).lineTo(0, 1).lineTo(1, 1).lineTo(1, 0).close()
           .moveTo(2, 0).lineTo(2, 1).lineTo(3, 1).lineTo(3, 0).close()
@@ -529,7 +529,7 @@ acgraph.vector.HatchFill.prototype.create_ = function() {
           .stroke('none');
       break;
     case acgraph.vector.HatchFill.HatchFillType.PERCENT_75:
-      this.bounds = new acgraph.math.Rect(0, 0, 4, 4);
+      this.bounds = new goog.math.Rect(0, 0, 4, 4);
       rect = this.rect(0, 0, 4, 4);
       rect.fill(this.color);
       rect.stroke('none');
@@ -541,7 +541,7 @@ acgraph.vector.HatchFill.prototype.create_ = function() {
       rect.stroke('none');
       break;
     case acgraph.vector.HatchFill.HatchFillType.PERCENT_80:
-      this.bounds = new acgraph.math.Rect(0, 0, 8, 4);
+      this.bounds = new goog.math.Rect(0, 0, 8, 4);
       rect = this.rect(0, 0, 8, 4);
       rect.fill(this.color);
       rect.stroke('none');
@@ -553,7 +553,7 @@ acgraph.vector.HatchFill.prototype.create_ = function() {
       rect.stroke('none');
       break;
     case acgraph.vector.HatchFill.HatchFillType.PERCENT_90:
-      this.bounds = new acgraph.math.Rect(0, 0, 8, 8);
+      this.bounds = new goog.math.Rect(0, 0, 8, 8);
       rect = this.rect(0, 0, 8, 8);
       rect.fill(this.color);
       rect.stroke('none');
@@ -605,14 +605,18 @@ acgraph.vector.HatchFill.prototype.getElementTypePrefix = function() {
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.HatchFill.prototype.disposeInternal = function() {
+  goog.base(this, 'disposeInternal');
+
   if (this.getStage())
     this.getStage().getDefs().removeHatchFill(this);
-  goog.base(this, 'disposeInternal');
 };
 
 
 //exports
-acgraph.vector.HatchFill.prototype['dispose'] = acgraph.vector.HatchFill.prototype.dispose;
+(function() {
+  var proto = acgraph.vector.HatchFill.prototype;
+  proto['dispose'] = proto.dispose;
+})();
 goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.BACKWARD_DIAGONAL', acgraph.vector.HatchFill.HatchFillType.BACKWARD_DIAGONAL);
 goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.FORWARD_DIAGONAL', acgraph.vector.HatchFill.HatchFillType.FORWARD_DIAGONAL);
 goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.HORIZONTAL', acgraph.vector.HatchFill.HatchFillType.HORIZONTAL);

@@ -43,7 +43,7 @@ acgraph.vector.svg.Defs.prototype.clear = function() {
 
 /**
  * Finds in the cache or creates an element describing the clipping defined by a given rectangle.
- * @param {!(acgraph.vector.Shape|acgraph.math.Rect|acgraph.vector.Clip)} clipShape The rectangle for which it is needed to get a DOM element.
+ * @param {!(acgraph.vector.Shape|goog.math.Rect|acgraph.vector.Clip)} clipShape The rectangle for which it is needed to get a DOM element.
  * @return {!Element} The DOM element describing the clipping.
  */
 acgraph.vector.svg.Defs.prototype.getClipPathElement = function(clipShape) {

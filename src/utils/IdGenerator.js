@@ -65,7 +65,7 @@ acgraph.utils.IdGenerator.prototype.nextId_ = 0;
  * @type {string}
  * @private
  */
-acgraph.utils.IdGenerator.prototype.prefix_ = '#ac';
+acgraph.utils.IdGenerator.prototype.prefix_ = 'ac';
 
 
 /**

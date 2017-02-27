@@ -1,6 +1,6 @@
 goog.provide('acgraph.vector.vml.Text');
-goog.require('acgraph.math.Rect');
 goog.require('acgraph.vector.Text');
+goog.require('goog.math.Rect');
 
 
 
@@ -34,7 +34,7 @@ acgraph.vector.vml.Text = function(opt_x, opt_y) {
 
   /**
    * Transformation cache.
-   * @type {goog.graphics.AffineTransform}
+   * @type {goog.math.AffineTransform}
    */
   this.transformationCache = null;
 };
@@ -255,7 +255,7 @@ acgraph.vector.vml.Text.prototype.transformationChanged_ = function() {
     this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
     this.setDirtyState(acgraph.vector.Element.DirtyState.POSITION);
     this.setDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
-    this.bounds = new acgraph.math.Rect(/** @type {number} */ (this.x()), /** @type {number} */ (this.y()), this.width_, this.height_);
+    this.bounds = new goog.math.Rect(/** @type {number} */ (this.x()), /** @type {number} */ (this.y()), this.width_, this.height_);
   } else if (switchToSimple) {
     this.setDirtyState(acgraph.vector.Element.DirtyState.STYLE);
     this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
@@ -308,6 +308,9 @@ acgraph.vector.vml.Text.prototype.disposeInternal = function() {
 
 
 //exports
-acgraph.vector.vml.Text.prototype['color'] = acgraph.vector.vml.Text.prototype.color;
-acgraph.vector.vml.Text.prototype['opacity'] = acgraph.vector.vml.Text.prototype.opacity;
-acgraph.vector.vml.Text.prototype['textOverflow'] = acgraph.vector.vml.Text.prototype.textOverflow;
+(function() {
+  var proto = acgraph.vector.vml.Text.prototype;
+  proto['color'] = proto.color;
+  proto['opacity'] = proto.opacity;
+  proto['textOverflow'] = proto.textOverflow;
+})();

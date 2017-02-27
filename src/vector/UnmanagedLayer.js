@@ -139,6 +139,9 @@ acgraph.vector.UnmanagedLayer.prototype.serialize = function() {
 
 
 //exports
-acgraph.vector.UnmanagedLayer.prototype['content'] = acgraph.vector.UnmanagedLayer.prototype.content;
+(function() {
+  var proto = acgraph.vector.UnmanagedLayer.prototype;
+  proto['content'] = proto.content;
+})();
 
 

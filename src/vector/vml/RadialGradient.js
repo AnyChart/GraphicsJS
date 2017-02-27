@@ -20,7 +20,7 @@ goog.require('acgraph.vector.RadialGradient');
  * @param {number} size_x The size of the gradient along the X-axis.
  * @param {number} size_y The size of the gradient along the Y-axis.
  * @param {number=} opt_opacity The opacity of the gradient.
- * @param {acgraph.math.Rect=} opt_mode If defined, then the userSpaceOnUse mode is used, otherwise objectBoundingBox is used.
+ * @param {goog.math.Rect=} opt_mode If defined, then the userSpaceOnUse mode is used, otherwise objectBoundingBox is used.
  * @extends {acgraph.vector.RadialGradient}
  * @constructor
  */
@@ -48,7 +48,7 @@ goog.inherits(acgraph.vector.vml.RadialGradient, acgraph.vector.RadialGradient);
  * @param {number} size_x The size of the gradient along the X-axis.
  * @param {number} size_y The size of the gradient along the Y-axis.
  * @param {number=} opt_opacity The opacity of the gradient.
- * @param {acgraph.math.Rect=} opt_mode If defined, then the userSpaceOnUse mode is used, otherwise objectBoundingBox is used.
+ * @param {goog.math.Rect=} opt_mode If defined, then the userSpaceOnUse mode is used, otherwise objectBoundingBox is used.
  * @return {string} String ID for radial gradient object.
  */
 acgraph.vector.vml.RadialGradient.serialize = function(keys, cx, cy, size_x, size_y, opt_opacity, opt_mode) {

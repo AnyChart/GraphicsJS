@@ -1,8 +1,8 @@
 goog.provide('acgraph.vector.Clip');
-goog.require('acgraph.math.Rect');
 goog.require('acgraph.vector.ILayer');
 goog.require('goog.Disposable');
 goog.require('goog.array');
+goog.require('goog.math.Rect');
 
 
 
@@ -10,7 +10,7 @@ goog.require('goog.array');
  * Class representing independent clip, that can be applied to any element.
  * Used to set one clip to many elements, and updates only clip.
  * @param {acgraph.vector.Stage} stage Stage where clip is creating.
- * @param {(number|Array.<number>|acgraph.vector.Shape|acgraph.math.Rect|Object|null)=} opt_leftOrShape Left coordinate of bounds
+ * @param {(number|Array.<number>|acgraph.vector.Shape|goog.math.Rect|Object|null)=} opt_leftOrShape Left coordinate of bounds
  * or rect or array or object representing bounds.
  * @param {number=} opt_top Top coordinate.
  * @param {number=} opt_width Width of the rect.
@@ -80,7 +80,7 @@ acgraph.vector.Clip.prototype.stage = function(opt_value) {
 
 /**
  * Shape to clip.
- * @param {(number|Array.<number>|acgraph.vector.Shape|acgraph.math.Rect|Object|null)=} opt_leftOrShape Left coordinate of bounds
+ * @param {(number|Array.<number>|acgraph.vector.Shape|goog.math.Rect|Object|null)=} opt_leftOrShape Left coordinate of bounds
  * or rect or vector shape or array or object representing bounds.
  * @param {number=} opt_top Top coordinate.
  * @param {number=} opt_width Width of the rect.
@@ -109,7 +109,7 @@ acgraph.vector.Clip.prototype.shape = function(opt_leftOrShape, opt_top, opt_wid
       }
     } else {
       var left, top, width, height;
-      if (opt_leftOrShape instanceof acgraph.math.Rect) {
+      if (opt_leftOrShape instanceof goog.math.Rect) {
         left = opt_leftOrShape.left;
         top = opt_leftOrShape.top;
         width = opt_leftOrShape.width;
@@ -298,7 +298,7 @@ acgraph.vector.Clip.prototype.removeChild = function(element) {
 
 /**
  * Returns full transformation (self and parent transformations combined).
- * @return {goog.graphics.AffineTransform} Full transformation.
+ * @return {goog.math.AffineTransform} Full transformation.
  */
 acgraph.vector.Clip.prototype.getFullTransformation = function() {
   return null;
@@ -361,5 +361,8 @@ acgraph.vector.Clip.prototype.disposeInternal = function() {
 
 
 //exports
-acgraph.vector.Clip.prototype['shape'] = acgraph.vector.Clip.prototype.shape;
-acgraph.vector.Clip.prototype['dispose'] = acgraph.vector.Clip.prototype.dispose;
+(function() {
+  var proto = acgraph.vector.Clip.prototype;
+  proto['shape'] = proto.shape;
+  proto['dispose'] = proto.dispose;
+})();

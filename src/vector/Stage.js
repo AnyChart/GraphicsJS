@@ -2,8 +2,6 @@ goog.provide('acgraph.vector.Stage');
 
 goog.require('acgraph.error');
 goog.require('acgraph.events.BrowserEvent');
-goog.require('acgraph.math.Rect');
-goog.require('acgraph.utils.HelperElement');
 goog.require('acgraph.utils.IdGenerator');
 goog.require('acgraph.utils.exporting');
 goog.require('acgraph.vector.Circle');
@@ -26,6 +24,9 @@ goog.require('goog.dom.classlist');
 goog.require('goog.events.EventHandler');
 goog.require('goog.events.EventTarget');
 goog.require('goog.events.Listenable');
+goog.require('goog.math.Coordinate');
+goog.require('goog.math.Rect');
+goog.require('goog.math.Size');
 goog.require('goog.net.XhrIo');
 goog.require('goog.structs.Map');
 goog.require('goog.style');
@@ -60,75 +61,22 @@ goog.require('goog.style');
 acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
   goog.base(this);
 
-  /**
-   * Rendering mode (>0 - suspended, 0 - instant)
-   * Initially we suspend to render root layer and stage,
-   * then release.
-   * @type {number}
-   * @private
-   */
-  this.suspended_ = 1;
+  this.renderAsync_ = goog.bind(this.renderAsync_, this);
+  this.checkSize_ = goog.bind(this.checkSize_, this);
 
   /**
-   * Container DOM element.
-   * @type {Element}
+   * Event handler of the stage.
+   * @type {goog.events.EventHandler}
    * @private
    */
-  this.container_ = null;
-
-  /**
-   * Origin container DOM element.
-   * @type {Element}
-   * @private
-   */
-  this.originContainer_ = null;
-
-  /**
-   * Title element. A subnode.
-   * @type {?Element}
-   * @private
-   */
-  this.titleElement_ = null;
-
-  /**
-   * Text of title.
-   * @type {string|null|undefined}
-   * @private
-   */
-  this.titleVal_ = void 0;
-
-  /**
-   * Desc element. A subnode.
-   * @type {?Element}
-   * @private
-   */
-  this.descElement_ = null;
-
-  /**
-   * Text of desc.
-   * @type {string|null|undefined}
-   * @private
-   */
-  this.descVal_ = void 0;
-
-  /**
-   * If the stage is in async mode.
-   * @type {boolean}
-   * @private
-   */
-  this.asyncMode_ = false;
-
   this.eventHandler_ = new goog.events.EventHandler(this);
-  this.registerDisposable(this.eventHandler_);
 
-  var domElement = this.createDomElement();
-  if (!domElement) {
-    throw acgraph.error.getErrorMessage(acgraph.error.Code.STAGE_SHOULD_HAVE_DOM_ELEMENT);
-  }
-
-  this.width(opt_width || '100%');
-  this.height(opt_height || '100%');
-  this.container(opt_container);
+  /**
+   * Wrapper container DOM element.
+   * @type {!Element}
+   * @private
+   */
+  this.internalContainer_ = goog.dom.createDom(goog.dom.TagName.DIV, {style: 'position:relative;left:0;top:0;overflow:hidden;'});
 
   /**
    * Root DOM element of stage object.
@@ -137,9 +85,14 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
    * @type {Element}
    * @private
    */
-  this.domElement_ = domElement;
+  this.domElement_ = acgraph.getRenderer().createStageElement();
   acgraph.register(this);
-  this.createInternal();
+  acgraph.getRenderer().setStageSize(this.domElement_, '100%', '100%');
+  //We need set 'display: block' for <svg> element to prevent scrollbar on 100% height of parent container (see DVF-620)
+  goog.style.setStyle(this.domElement_, 'display', 'block');
+  // Add class for check anychart-ui.css attached. (DVF-1619)
+  goog.dom.classlist.add(this.domElement_, 'anychart-ui-support');
+  goog.dom.appendChild(this.internalContainer_, this.domElement_);
 
   /**
    * Array of clips that should be rendered when stage is rendering.
@@ -147,58 +100,6 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
    * @private
    */
   this.clipsToRender_ = [];
-
-  /**
-   * Async rendering method. We create it here and not in prototype
-   * because we need to encapsulate it in Stage to pass to setTimeout().
-   * @type {function(this:acgraph.vector.Stage)}
-   * @private
-   */
-  this.renderAsync_ = goog.bind(function() {
-    // Resetting the number of changes in frame.
-    this.currentDomChangesCount = 0;
-    // Setting async algorithm of reservation of DOM changes.
-    this.acquireDomChanges = this.acquireDomChangesAsync_;
-    // Calling internal rendering.
-    this.renderInternal();
-    // If the root element of graphics had not been added in document or container had been changed.
-    if (!goog.dom.getParentElement(this.domElement()) || this.container() != goog.dom.getParentElement(this.domElement())) {
-      // Then add DOM element into an actual container.
-      // If container is changed then move DOM element to new container (don't remove from DOM)
-      acgraph.getRenderer().appendChild(/** @type {Element} */ (this.container()), this.domElement());
-    }
-    // If state is still dirty, make browser handle the sequence of events and call again.
-    if (this.isDirty())
-      setTimeout(this.renderAsync_, 0);
-    else { // Else: dispatch RENDER_FINISH event.
-      if (goog.events.hasListener(this, acgraph.vector.Stage.EventType.STAGE_RESIZE, false) ||
-          goog.events.hasListener(this, acgraph.vector.Stage.EventType.STAGE_RESIZE, true))
-        this.startResizeMonitor();
-      this.dispatchRenderEvent(acgraph.vector.Stage.EventType.RENDER_FINISH);
-
-      var imageLoader = acgraph.getRenderer().getImageLoader();
-      var isImageLoading = acgraph.getRenderer().isImageLoading();
-      if (imageLoader && isImageLoading) {
-        if (!this.imageLoadingListener_)
-          this.imageLoadingListener_ = goog.events.listenOnce(imageLoader, goog.net.EventType.COMPLETE, function(e) {
-            this.stageRenderedDispatcher_.call();
-            this.imageLoadingListener_ = null;
-          }, false, this);
-      } else
-        this.stageRenderedDispatcher_.call();
-    }
-  }, this);
-
-  /**
-   * Dispatcher STAGE_RENDERED event. We create it here and not in prototype
-   * because we need to encapsulate it in Stage to pass to setTimeout().
-   * @type {function(this:acgraph.vector.Stage)}
-   * @private
-   */
-  this.stageRenderedDispatcher_ = goog.bind(function() {
-    if (!this.isRendering_)
-      this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RENDERED);
-  }, this);
 
   /**
    * Container to store elements which can be reused by reference in other elements.
@@ -209,7 +110,7 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
    */
   this.defs_ = this.createDefs();
   this.defs_.createDom();
-  acgraph.getRenderer().appendChild(this.domElement(), this.defs_.domElement());
+  acgraph.getRenderer().appendChild(this.domElement_, this.defs_.domElement());
 
   /**
    * Root layer for Stage. All layer and elements added to stage go in this layer.
@@ -219,7 +120,7 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
    */
   this.rootLayer_ = new acgraph.vector.Layer();
   this.rootLayer_.setParent(this).render();
-  acgraph.getRenderer().appendChild(this.domElement(), this.rootLayer_.domElement());
+  acgraph.getRenderer().appendChild(this.domElement_, this.rootLayer_.domElement());
 
   this.eventHandler_.listen(this.domElement(), [
     goog.events.EventType.MOUSEDOWN,
@@ -237,15 +138,22 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
     goog.events.EventType.CONTEXTMENU
   ], this.handleMouseEvent_, false);
 
+  this.setWidth_(opt_width || '100%');
+  this.setHeight_(opt_height || '100%');
+  this.container_ = goog.dom.getElement(opt_container || null);
+  if (this.container_)
+    this.updateContainer_();
+  this.checkSize_(true, true);
+
   this.resume();
 };
 goog.inherits(acgraph.vector.Stage, goog.events.EventTarget);
 
 
-//region --- Section Enums ---
+//region --- Enums and consts
 //----------------------------------------------------------------------------------------------------------------------
 //
-//  Enums
+//  Enums and consts
 //
 //----------------------------------------------------------------------------------------------------------------------
 /**
@@ -307,110 +215,96 @@ acgraph.vector.Stage.EventType = {
 
 
 /**
- * MAGIC NUMBERS!!! MAGIC NUMBERS!!!111
+ * Export types.
+ * @enum {string}
+ */
+acgraph.vector.Stage.ExportType = {
+  SVG: 'svg',
+  JPG: 'jpg',
+  PNG: 'png',
+  PDF: 'pdf'
+};
+
+
+/**
  * This is a lsh (<< - left shift) second argument to convert simple HANDLED_EVENT_TYPES code to a
- * CAPTURE HANDLED_EVENT_TYPES code! Tada!
+ * CAPTURE HANDLED_EVENT_TYPES code.
  * @type {number}
  */
 acgraph.vector.Stage.HANDLED_EVENT_TYPES_CAPTURE_SHIFT = 12;
 
 
-/**
- * Events redispatcher.
- * @param {goog.events.BrowserEvent} e
- * @private
- */
-acgraph.vector.Stage.prototype.handleMouseEvent_ = function(e) {
-  var event = new acgraph.events.BrowserEvent(e, this);
-  if (event['target'] instanceof acgraph.vector.Element) {
-    var el = /** @type {acgraph.vector.Element} */(event['target']);
-    el.dispatchEvent(event);
-    if (event.defaultPrevented) e.preventDefault();
-    // we do the binding and unbinding of event only if relatedTarget doesn't belong to the same stage
-    if (!(event['relatedTarget'] instanceof acgraph.vector.Element) ||
-        (/** @type {acgraph.vector.Element} */(event['relatedTarget'])).getStage() != this) {
-      if (event['type'] == acgraph.events.EventType.MOUSEOVER) {
-        this.eventHandler_.listen(goog.dom.getDocument(), acgraph.events.EventType.MOUSEMOVE, this.handleMouseEvent_,
-            false);
-      } else if (event['type'] == acgraph.events.EventType.MOUSEOUT) {
-        this.eventHandler_.unlisten(goog.dom.getDocument(), acgraph.events.EventType.MOUSEMOVE, this.handleMouseEvent_,
-            false);
-      }
-    }
-    if (event['type'] == acgraph.events.EventType.MOUSEDOWN) {
-      this.eventHandler_.listen(goog.dom.getDocument(), acgraph.events.EventType.MOUSEUP, this.handleMouseEvent_,
-          false);
-    } else if (event['type'] == acgraph.events.EventType.MOUSEUP) {
-      this.eventHandler_.unlisten(goog.dom.getDocument(), acgraph.events.EventType.MOUSEUP, this.handleMouseEvent_,
-          false);
-    } else if (event['type'] == acgraph.events.EventType.TOUCHSTART) {
-      this.eventHandler_.listen(goog.dom.getDocument(), acgraph.events.EventType.TOUCHMOVE, this.handleMouseEvent_,
-          false);
-    } else if (event['type'] == acgraph.events.EventType.TOUCHEND) {
-      this.eventHandler_.unlisten(goog.dom.getDocument(), acgraph.events.EventType.TOUCHMOVE, this.handleMouseEvent_,
-          false);
-    } else if (event['type'] == goog.events.EventType.POINTERDOWN) {
-      this.eventHandler_.listen(goog.dom.getDocument(), goog.events.EventType.POINTERMOVE, this.handleMouseEvent_,
-          false);
-    } else if (event['type'] == goog.events.EventType.POINTERUP) {
-      this.eventHandler_.unlisten(goog.dom.getDocument(), goog.events.EventType.POINTERMOVE, this.handleMouseEvent_,
-          false);
-    }
-  }
-};
 //endregion
-
-
-//region --- Section Properties ---
+//region --- Properties
 //----------------------------------------------------------------------------------------------------------------------
 //
 //  Properties
 //
 //----------------------------------------------------------------------------------------------------------------------
 /**
- * Stage width. Anything displayed on stage must be within this
+ * Actual pixel stage width. Anything displayed on stage must be within this
  * range or it will be clipped.
  * @type {number}
  * @private
  */
-acgraph.vector.Stage.prototype.width_ = 0;
+acgraph.vector.Stage.prototype.width_ = NaN;
 
 
 /**
- * Stage height. Anything displayed on stage must be within this
+ * Actual pixel stage height. Anything displayed on stage must be within this
  * range or it will be clipped.
  * @type {number}
  * @private
  */
-acgraph.vector.Stage.prototype.height_ = 0;
+acgraph.vector.Stage.prototype.height_ = NaN;
 
 
 /**
- * The original width value - width cache. The width set by the user.
+ * Contains fixed width value. If the width is set in percent - contains NaN.
+ * @type {number}
+ * @private
+ */
+acgraph.vector.Stage.prototype.fixedWidth_ = NaN;
+
+
+/**
+ * Contains fixed height value. If the height is set in percent - contains NaN.
+ * @type {number}
+ * @private
+ */
+acgraph.vector.Stage.prototype.fixedHeight_ = NaN;
+
+
+/**
+ * Current width settings.
  * @type {number|string}
+ * @private
  */
-acgraph.vector.Stage.prototype.originalWidth = 0;
+acgraph.vector.Stage.prototype.currentWidth_ = NaN;
 
 
 /**
- * The original height value - height cache. The height set by the user.
+ * Current height settings.
  * @type {number|string}
+ * @private
  */
-acgraph.vector.Stage.prototype.originalHeight = 0;
+acgraph.vector.Stage.prototype.currentHeight_ = NaN;
 
 
 /**
- * Define whether the specified width in percent.
- * @type {boolean}
+ * Max resize reaction delay.
+ * @type {number}
+ * @private
  */
-acgraph.vector.Stage.prototype.isPercentWidth = false;
+acgraph.vector.Stage.prototype.maxResizeDelay_ = 100;
 
 
 /**
- * Define whether the specified height in percent.
- * @type {boolean}
+ * Resize timeout handler.
+ * @type {number}
+ * @private
  */
-acgraph.vector.Stage.prototype.isPercentHeight = false;
+acgraph.vector.Stage.prototype.checkSizeTimer_ = NaN;
 
 
 /**
@@ -447,17 +341,112 @@ acgraph.vector.Stage.prototype['pathToRadialGradientImage'] = 'RadialGradient.pn
 acgraph.vector.Stage.prototype.id_ = undefined;
 
 
-//----------------------------------------------------------------------------------------------------------------------
-//
-//  Common.
-//
-//----------------------------------------------------------------------------------------------------------------------
 /**
- * Returns type prefix.
- * @return {acgraph.utils.IdGenerator.ElementTypePrefix} Type prefix.
+ * Rendering mode (>0 - suspended, 0 - instant)
+ * Initially we suspend to render root layer and stage,
+ * then release.
+ * @type {number}
+ * @private
  */
-acgraph.vector.Stage.prototype.getElementTypePrefix = function() {
-  return acgraph.utils.IdGenerator.ElementTypePrefix.STAGE;
+acgraph.vector.Stage.prototype.suspended_ = 1;
+
+
+/**
+ * Container DOM element.
+ * @type {Element}
+ * @private
+ */
+acgraph.vector.Stage.prototype.container_ = null;
+
+
+/**
+ * Title element. A subnode.
+ * @type {?Element}
+ */
+acgraph.vector.Stage.prototype.titleElement = null;
+
+
+/**
+ * Text of title.
+ * @type {string|null|undefined}
+ * @private
+ */
+acgraph.vector.Stage.prototype.titleVal_ = void 0;
+
+
+/**
+ * Desc element. A subnode.
+ * @type {?Element}
+ */
+acgraph.vector.Stage.prototype.descElement = null;
+
+
+/**
+ * Text of desc.
+ * @type {string|null|undefined}
+ * @private
+ */
+acgraph.vector.Stage.prototype.descVal_ = void 0;
+
+
+/**
+ * If the stage is in async mode.
+ * @type {boolean}
+ * @private
+ */
+acgraph.vector.Stage.prototype.asyncMode_ = false;
+
+
+/**
+ * Whether the stage is in process of rendering.
+ * @type {boolean}
+ * @private
+ */
+acgraph.vector.Stage.prototype.isRendering_ = false;
+
+
+//endregion
+//region --- Published methods
+//------------------------------------------------------------------------------
+//
+//  Published methods
+//
+//------------------------------------------------------------------------------
+/**
+ Gets stage identifier. If it was not set, than it will be generated.
+ @param {string=} opt_value Custom id.
+ @return {(!acgraph.vector.Stage|string)} Returns element identifier.
+ */
+acgraph.vector.Stage.prototype.id = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    var id = opt_value || '';
+    if (this.id_ !== id) {
+      this.id_ = id;
+      acgraph.getRenderer().setId(this, this.id_);
+    }
+    return this;
+  }
+  if (!goog.isDef(this.id_))
+    this.id(acgraph.utils.IdGenerator.getInstance().generateId(this));
+  return /** @type {string} */(this.id_);
+};
+
+
+/**
+ Returns self. We need this method to sync layer and stage api.
+ @return {!acgraph.vector.Stage} {@link acgraph.vector.Stage} for method chaining.
+ */
+acgraph.vector.Stage.prototype.getStage = function() {
+  return this;
+};
+
+
+/**
+ Returns self. We need this method to sync layer and stage api.
+ @return {!acgraph.vector.Stage} {@link acgraph.vector.Stage} for method chaining.
+ */
+acgraph.vector.Stage.prototype.parent = function() {
+  return this;
 };
 
 
@@ -471,20 +460,6 @@ acgraph.vector.Stage.prototype.domElement = function() {
 
 
 /**
- * Returns root layer element.
- * @return {!acgraph.vector.Layer} Root layer element.
- */
-acgraph.vector.Stage.prototype.getRootLayer = function() {
-  return this.rootLayer_;
-};
-
-
-//----------------------------------------------------------------------------------------------------------------------
-//
-//  Size.
-//
-//----------------------------------------------------------------------------------------------------------------------
-/**
  * If opt_value defined then it will be set as stage width else returns current stage width.
  * Stage width can be defined as pixel or percent value.
  * @param {(string|number)=} opt_value Width of stage.
@@ -492,39 +467,15 @@ acgraph.vector.Stage.prototype.getRootLayer = function() {
  *
  */
 acgraph.vector.Stage.prototype.width = function(opt_value) {
-  if (goog.isDefAndNotNull(opt_value)) {
-    this.originalWidth = opt_value;
-    if (this.container_) goog.style.setWidth(this.container_, this.originalWidth);
-    this.isPercentWidth = goog.isString(opt_value) && goog.string.endsWith(opt_value, '%');
-    var containerWidth = this.container_ ? goog.style.getContentBoxSize(this.container_).width || 0 : 0;
-    if (this.isPercentWidth) {
-      if (this.container_) {
-        this.setWidthInternal(Math.max(containerWidth, 0), containerWidth);
-        this.startResizeMonitor();
-      } else {
-        this.setWidthInternal(0, containerWidth);
-      }
-    } else {
-      this.setWidthInternal(parseFloat(opt_value.toString()), containerWidth);
-    }
-    this.needUpdateSize_ = true;
-    if (!this.suspended_ && this.container_) {
-      this.render();
-      this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RESIZE);
+  if (goog.isDef(opt_value)) {
+    if (this.setWidth_(opt_value)) {
+      this.checkSize_(true);
+      // it seems that we have no need to initialize rendering here
+      // this.render();
     }
     return this;
   }
-  return this.width_;
-};
-
-
-/**
- * @param {number} width Width of stage.
- * @param {number} containerWidth Width of container.
- */
-acgraph.vector.Stage.prototype.setWidthInternal = function(width, containerWidth) {
-  this.width_ = Math.max(width, 0);
-  this.lastContainerWidth = containerWidth;
+  return this.width_ || 0;
 };
 
 
@@ -535,137 +486,92 @@ acgraph.vector.Stage.prototype.setWidthInternal = function(width, containerWidth
  * @return {number|acgraph.vector.Stage} Height of stage.
  */
 acgraph.vector.Stage.prototype.height = function(opt_value) {
-  if (goog.isDefAndNotNull(opt_value)) {
-    this.originalHeight = opt_value;
-    if (this.container_) goog.style.setHeight(this.container_, this.originalHeight);
-    this.isPercentHeight = goog.isString(opt_value) && goog.string.endsWith(opt_value, '%');
-    var containerHeight = this.container_ ? goog.style.getContentBoxSize(this.container_).height || 0 : 0;
-    if (this.isPercentHeight) {
-      if (this.container_) {
-        this.setHeightInternal(Math.max(containerHeight, 0), containerHeight);
-        this.startResizeMonitor();
-      } else {
-        this.setHeightInternal(0, containerHeight);
-      }
-    } else {
-      this.setHeightInternal(parseFloat(opt_value.toString()), containerHeight);
-    }
-    this.needUpdateSize_ = true;
-    if (!this.suspended_ && this.container()) {
-      this.render();
-      this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RESIZE);
+  if (goog.isDef(opt_value)) {
+    if (this.setHeight_(opt_value)) {
+      this.checkSize_(true);
+      // it seems that we have no need to initialize rendering here
+      // this.render();
     }
     return this;
   }
-  return this.height_;
+  return this.height_ || 0;
 };
 
 
 /**
- * @param {number} height Height of stage.
- * @param {number} containerHeight Height of container.
+ * Stage resize. Anything drawn on stage must fit in it
+ * So any part that doesn't fit will be clipped.
+ * @param {number|string} width Width.
+ * @param {number|string} height Height.
  */
-acgraph.vector.Stage.prototype.setHeightInternal = function(height, containerHeight) {
-  this.height_ = Math.max(height, 0);
-  this.lastContainerHeight = containerHeight;
+acgraph.vector.Stage.prototype.resize = function(width, height) {
+  var widthChanged = this.setWidth_(width);
+  var heightChanged = this.setHeight_(height);
+  if (widthChanged || heightChanged) {
+    this.checkSize_(true);
+    // it seems that we have no need to initialize rendering here
+    // this.render();
+  }
 };
 
 
-//----------------------------------------------------------------------------------------------------------------------
-//
-//                  Container.
-//
-//----------------------------------------------------------------------------------------------------------------------
+/**
+ * Getter and setter for max delay in milliseconds between the container resize and
+ * the stage reaction on it.
+ * @param {number=} opt_value
+ * @return {number|acgraph.vector.Stage}
+ */
+acgraph.vector.Stage.prototype.maxResizeDelay = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    var val = parseFloat(opt_value);
+    if (val >= 0) {
+      if (this.maxResizeDelay_ > val && !isNaN(this.checkSizeTimer_))
+        clearTimeout(this.checkSizeTimer_);
+      this.maxResizeDelay_ = val;
+      this.checkSize_(true);
+    }
+    return this;
+  }
+  return this.maxResizeDelay_;
+};
+
+
 /**
  Returns DOM element where everything is drawn upon rendering.
  @param {(Element|string)=} opt_value Container element.
  @return {Element|acgraph.vector.Stage} Stage.
  */
 acgraph.vector.Stage.prototype.container = function(opt_value) {
-  if (!goog.isDef(opt_value))
-    return this.container_;
-
-  // wrapping <svg> to div with position:relative and size of parent container
-  // need to correctly position credits <a> dom element
-
-  this.originContainer_ = goog.dom.getElement(opt_value || null);
-  if (this.originContainer_) {
-    if (!this.container_) {
-      this.container_ = goog.dom.createDom(goog.dom.TagName.DIV, {
-        style: 'position: relative; left: 0; top: 0; overflow: hidden;'
-      });
+  if (goog.isDef(opt_value)) {
+    var container = goog.dom.getElement(opt_value || null);
+    if (this.container_ != container) {
+      this.container_ = container;
+      this.updateContainer_();
+      this.checkSize_(true);
+      this.render();
     }
-
-    goog.style.setWidth(this.container_, this.originalWidth);
-    goog.style.setHeight(this.container_, this.originalHeight);
-
-    goog.dom.appendChild(this.originContainer_, this.container_);
-    if (this.isPercentHeight || this.isPercentWidth) this.startResizeMonitor();
-    var size = goog.style.getContentBoxSize(this.container_);
-    var containerHeight = size.height || 0;
-    var containerWidth = size.width || 0;
-    if (this.isPercentHeight) {
-      this.setHeightInternal(Math.max(containerHeight, 0), containerHeight);
-    } else {
-      this.lastContainerHeight = containerHeight;
-    }
-    if (this.isPercentWidth) {
-      this.setWidthInternal(Math.max(containerWidth, 0), containerWidth);
-    } else {
-      this.lastContainerWidth = containerWidth;
-    }
-  } else {
-    this.container_ = null;
+    return this;
   }
-  if (this.isPercentHeight || this.isPercentWidth) this.needUpdateSize_ = true;
-  if (!this.isSuspended() && this.container_) this.render();
-  return this;
-};
-
-
-//----------------------------------------------------------------------------------------------------------------------
-//
-//  Events
-//
-//----------------------------------------------------------------------------------------------------------------------
-/**
- * Resize monitor.
- * @type {acgraph.utils.HelperElement}
- * @private
- */
-acgraph.vector.Stage.prototype.helperElement_ = null;
-
-
-/**
- * @return {acgraph.utils.HelperElement} .
- */
-acgraph.vector.Stage.prototype.getHelperElement = function() {
-  if (!this.helperElement_) {
-    if (this.originContainer_) {
-      this.helperElement_ = new acgraph.utils.HelperElement(this, /** @type {Element} */ (this.originContainer_));
-      this.registerDisposable(this.helperElement_);
-    } else {
-      return null;
-    }
-  }
-  return this.helperElement_;
+  return this.container_ ? this.internalContainer_ : null;
 };
 
 
 /**
- * Event handler.
- * @type {goog.events.EventHandler}
- * @private
+ * Returns stage container element.
+ * @return {Element}
  */
-acgraph.vector.Stage.prototype.eventHandler_ = null;
+acgraph.vector.Stage.prototype.getContainerElement = function() {
+  return this.container_;
+};
 
 
 /**
- * Whether the stage is in process of rendering.
- * @type {boolean}
- * @private
+ * Returns wrapper div that contains.
+ * @return {!Element}
  */
-acgraph.vector.Stage.prototype.isRendering_ = false;
+acgraph.vector.Stage.prototype.getDomWrapper = function() {
+  return this.internalContainer_;
+};
 
 
 /**
@@ -689,12 +595,7 @@ acgraph.vector.Stage.prototype.suspend = function() {
  */
 acgraph.vector.Stage.prototype.resume = function(opt_force) {
   this.suspended_ = opt_force ? 0 : Math.max(this.suspended_ - 1, 0);
-  if (!this.suspended_ && this.container()) {
-    if (this.asyncMode_)
-      this.renderAsync();
-    else
-      this.render();
-  }
+  this.render();
   return this;
 };
 
@@ -734,125 +635,273 @@ acgraph.vector.Stage.prototype.isRendering = function() {
 
 
 /**
- * Sets stage rendering flag depending on the event dispatched.
- * @param {string} type Event.
+ * Gets/sets element's title value.
+ * @param {?string=} opt_value - Value to be set.
+ * @return {(string|null|!acgraph.vector.Stage|undefined)} - Current value or itself for method chaining.
  */
-acgraph.vector.Stage.prototype.dispatchRenderEvent = function(type) {
-  switch (type) {
-    case acgraph.vector.Stage.EventType.RENDER_START:
-      this.isRendering_ = true;
-      break;
-    case acgraph.vector.Stage.EventType.RENDER_FINISH:
-      this.isRendering_ = false;
-      break;
+acgraph.vector.Stage.prototype.title = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (this.titleVal_ != opt_value) {
+      this.titleVal_ = opt_value;
+      acgraph.getRenderer().setTitle(this, this.titleVal_);
+    }
+    return this;
+  } else {
+    return this.titleVal_;
   }
-  this.dispatchEvent(type);
 };
+
+
+/**
+ * Gets/sets element's desc value.
+ * @param {?string=} opt_value - Value to be set.
+ * @return {(string|null|!acgraph.vector.Stage|undefined)} - Current value or itself for method chaining.
+ */
+acgraph.vector.Stage.prototype.desc = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (this.descVal_ != opt_value) {
+      this.descVal_ = opt_value;
+      acgraph.getRenderer().setDesc(this, this.descVal_);
+    }
+    return this;
+  } else {
+    return this.descVal_;
+  }
+};
+
+
+/**
+ Returns stage visibility.
+ @param {boolean=} opt_isVisible Visibility.
+ @return {!acgraph.vector.Stage|boolean} Returns self for method chaining, if
+ opt_visible is set, current state otherwise.
+ */
+acgraph.vector.Stage.prototype.visible = function(opt_isVisible) {
+  if (arguments.length == 0) return /** @type {boolean} */ (this.rootLayer_.visible());
+  this.rootLayer_.visible(opt_isVisible);
+  return this;
+};
+
+
+/**
+ Returns Stage JSON. Serializes stage and all its object in JSON.
+ @param {Object=} opt_value .
+ @return {acgraph.vector.Stage|Object} JSON data of stage.
+ */
+acgraph.vector.Stage.prototype.data = function(opt_value) {
+  if (arguments.length == 0) {
+    return this.serialize();
+  } else {
+    var primitive;
+    var type = opt_value['type'];
+    if (!type) this.deserialize(opt_value);
+    else {
+      switch (type) {
+        case 'rect':
+          primitive = this.rect();
+          break;
+        case 'circle':
+          primitive = this.circle();
+          break;
+        case 'ellipse':
+          primitive = this.ellipse();
+          break;
+        case 'image':
+          primitive = this.image();
+          break;
+        case 'text':
+          primitive = this.text();
+          break;
+        case 'path':
+          primitive = this.path();
+          break;
+        case 'layer':
+          primitive = this.layer();
+          break;
+        default:
+          primitive = null;
+          break;
+      }
+    }
+
+    if (primitive) primitive.deserialize(opt_value);
+    return this;
+  }
+};
+
+
+/**
+ Removes everything.
+ @return {!acgraph.vector.Stage} {@link acgraph.vector.Stage} for method chaining.
+ */
+acgraph.vector.Stage.prototype.remove = function() {
+  return /** @type {!acgraph.vector.Stage} */(this.container(null));
+};
+
+
+/**
+ Returns X of top left corner.
+ @return {number} X of top left corner.
+ */
+acgraph.vector.Stage.prototype.getX = function() {
+  return 0;
+};
+
+
+/**
+ Returns Y of top left corner.
+ @return {number} Y of top left corner.
+ */
+acgraph.vector.Stage.prototype.getY = function() {
+  return 0;
+};
+
+
+/**
+ Returns bounds.
+ @return {!goog.math.Rect} Bounds.
+ */
+acgraph.vector.Stage.prototype.getBounds = function() {
+  return new goog.math.Rect(0, 0, /** @type {number} */ (this.width()), /** @type {number} */ (this.height()));
+};
+
+
+/**
+ Clips a stage.
+ Works only after render() is invoked.<br/>
+ Read more at: {@link acgraph.vector.Element#clip}.
+ @param {(goog.math.Rect|acgraph.vector.Clip)=} opt_value Clipping rectangle.
+ @return {acgraph.vector.Element|goog.math.Rect|acgraph.vector.Clip} {@link acgraph.vector.Stage} for method chaining
+ or {@link goog.math.Rect} clipping rectangle.
+ */
+acgraph.vector.Stage.prototype.clip = function(opt_value) {
+  return this.rootLayer_.clip(opt_value);
+};
+
+
+//endregion
+//region --- Internal methods
+//------------------------------------------------------------------------------
+//
+//  Internal methods
+//
+//------------------------------------------------------------------------------
+/**
+ * Returns type prefix.
+ * @return {acgraph.utils.IdGenerator.ElementTypePrefix} Type prefix.
+ */
+acgraph.vector.Stage.prototype.getElementTypePrefix = function() {
+  return acgraph.utils.IdGenerator.ElementTypePrefix.STAGE;
+};
+
+
+/**
+ * Returns root layer element.
+ * @return {!acgraph.vector.Layer} Root layer element.
+ */
+acgraph.vector.Stage.prototype.getRootLayer = function() {
+  return this.rootLayer_;
+};
+
+
+/**
+ * Tell root layer that child was removed from DOM (moved to another layer).
+ * @param {acgraph.vector.Element} child Removed child.
+ */
+acgraph.vector.Stage.prototype.notifyRemoved = function(child) {
+  this.rootLayer_.notifyRemoved(child);
+};
+
+
+/**
+ * Tell layer that child clipping rectangle has changed.
+ */
+acgraph.vector.Stage.prototype.childClipChanged = goog.nullFunction;
 
 
 /**
  * Method that handles events cached by eventHandler_.
- * @protected
+ * @param {boolean=} opt_directCall
+ * @param {boolean=} opt_silent
+ * @private
  */
-acgraph.vector.Stage.prototype.handleResizeEvent = function() {
-  this.updateSizeFromContainer();
-};
-
-
-/**
- * Update stage size if it depends from container size.
- */
-acgraph.vector.Stage.prototype.updateSizeFromContainer = function() {
-  if (this.container_) {
-    var size = goog.style.getContentBoxSize(this.container_);
-    var containerHeight = size.height || 0;
-    var needsDispatch = false;
-    if (this.lastContainerHeight != containerHeight) {
-      if (this.isPercentHeight) {
-        this.setHeightInternal(containerHeight * parseFloat(this.originalHeight) / 100, containerHeight);
-        needsDispatch = true;
-      } else {
-        this.lastContainerHeight = containerHeight;
-      }
-    }
-    var containerWidth = size.width || 0;
-    if (this.lastContainerWidth != containerWidth) {
-      if (this.isPercentWidth) {
-        this.setWidthInternal(containerWidth * parseFloat(this.originalWidth) / 100, containerWidth);
-        needsDispatch = true;
-      } else {
-        this.lastContainerWidth = containerWidth;
-      }
-    }
-    if (needsDispatch)
+acgraph.vector.Stage.prototype.checkSize_ = function(opt_directCall, opt_silent) {
+  if (opt_directCall && !isNaN(this.checkSizeTimer_))
+    clearTimeout(this.checkSizeTimer_);
+  this.checkSizeTimer_ = NaN;
+  var width, height;
+  var isDynamicWidth = isNaN(this.fixedWidth_);
+  var isDynamicHeight = isNaN(this.fixedHeight_);
+  var isDynamicSize = isDynamicWidth || isDynamicHeight;
+  var detachedOrHidden;
+  if (isDynamicSize) {
+    var size = this.container_ ? goog.style.getContentBoxSize(this.container_) : new goog.math.Size(NaN, NaN);
+    size.width = Math.max(size.width || 0, 0);
+    size.height = Math.max(size.height || 0, 0);
+    detachedOrHidden = !size.width && !size.height;
+    width = isDynamicWidth ? size.width : this.fixedWidth_;
+    height = isDynamicHeight ? size.height : this.fixedHeight_;
+  } else {
+    width = this.fixedWidth_;
+    height = this.fixedHeight_;
+    detachedOrHidden = false;
+  }
+  if ((width != this.width_ || height != this.height_) && !detachedOrHidden) {
+    this.width_ = width;
+    this.height_ = height;
+    if (!opt_silent)
       this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RESIZE);
   }
-};
-
-
-//----------------------------------------------------------------------------------------------------------------------
-//
-//  Resize
-//
-//----------------------------------------------------------------------------------------------------------------------
-/**
- * Stage resize. Anything drawn on stage must fit in it
- * So any part that doesn't fit will be clipped.
- * @param {number|string} width Width.
- * @param {number|string} height Height.
- */
-acgraph.vector.Stage.prototype.resize = function(width, height) {
-  this.width(width);
-  this.height(height);
-};
-
-
-/**
- * Install resize monitor for stage
- * @protected
- */
-acgraph.vector.Stage.prototype.startResizeMonitor = function() {
-  // Creates monitor that looks after resize of the stage container
-  var helperElement = this.getHelperElement();
-
-  var domElement = helperElement.domElement();
-  if (this.originContainer_ != goog.dom.getParentElement(domElement)) {
-    helperElement.renderToContainer(/** @type {Element} */ (this.originContainer_));
+  if (this.container_ && isDynamicSize) {
+    this.checkSizeTimer_ = setTimeout(this.checkSize_, this.maxResizeDelay_);
   }
-
-  this.eventHandler_.listen(helperElement, acgraph.utils.HelperElement.EventType.SIZECHANGE, this.handleResizeEvent, false);
 };
 
 
-//----------------------------------------------------------------------------------------------------------------------
-//
-//  Defs
-//
-//----------------------------------------------------------------------------------------------------------------------
+/**
+ * @param {*} width
+ * @return {boolean}
+ * @private
+ */
+acgraph.vector.Stage.prototype.setWidth_ = function(width) {
+  if (this.currentWidth_ != width) {
+    var num = parseFloat(width);
+    if (!isNaN(num)) {
+      this.currentWidth_ = goog.isNumber(width) ? width : String(width);
+      this.fixedWidth_ = (goog.isString(width) && goog.string.endsWith(width, '%')) ? NaN : num;
+      goog.style.setWidth(this.internalContainer_, this.currentWidth_);
+      return true;
+    }
+  }
+  return false;
+};
+
+
+/**
+ * @param {*} height
+ * @return {boolean}
+ * @private
+ */
+acgraph.vector.Stage.prototype.setHeight_ = function(height) {
+  if (this.currentHeight_ != height) {
+    var num = parseFloat(height);
+    if (!isNaN(num)) {
+      this.currentHeight_ = goog.isNumber(height) ? height : String(height);
+      this.fixedHeight_ = (goog.isString(height) && goog.string.endsWith(height, '%')) ? NaN : num;
+      goog.style.setHeight(this.internalContainer_, this.currentHeight_);
+      return true;
+    }
+  }
+  return false;
+};
+
+
 /**
  * Create container for reusable elements.
  * @return {!acgraph.vector.Defs} Defs Element.
  * @protected
  */
 acgraph.vector.Stage.prototype.createDefs = goog.abstractMethod;
-
-
-/**
- Returns self. We need this method to sync layer and stage api.
- @return {!acgraph.vector.Stage} {@link acgraph.vector.Stage} for method chaining.
- */
-acgraph.vector.Stage.prototype.getStage = function() {
-  return this;
-};
-
-
-/**
- Returns self. We need this method to sync layer and stage api.
- @return {!acgraph.vector.Stage} {@link acgraph.vector.Stage} for method chaining.
- */
-acgraph.vector.Stage.prototype.parent = function() {
-  return this;
-};
 
 
 /**
@@ -874,56 +923,73 @@ acgraph.vector.Stage.prototype.clearDefs = function() {
 };
 
 
-//----------------------------------------------------------------------------------------------------------------------
-//
-//  DOM element creation
-//
-//----------------------------------------------------------------------------------------------------------------------
 /**
- * Creates and returns Stage root DOM element.
- * @return {Element} Stage root DOM element.
- * @protected
+ * Updates clip or add to array to update on render.
+ * @param {acgraph.vector.Clip} clip Clip to update or clip that should be updated on render.
  */
-acgraph.vector.Stage.prototype.createDomElement = function() {
-  return acgraph.getRenderer().createStageElement();
-};
-
-
-/**
- Gets stage identifier. If it was not set, than it will be generated.
- @param {string=} opt_value Custom id.
- @return {(!acgraph.vector.Stage|string)} Returns element identifier.
- */
-acgraph.vector.Stage.prototype.id = function(opt_value) {
-  if (goog.isDef(opt_value)) {
-    var id = opt_value || '';
-    if (this.id_ !== id) {
-      this.id_ = id;
-      acgraph.getRenderer().setId(this, this.id_);
-    }
-    return this;
+acgraph.vector.Stage.prototype.addClipForRender = function(clip) {
+  if (!this.isSuspended()) {
+    clip.render();
+  } else {
+    this.clipsToRender_.push(clip);
   }
-  if (!goog.isDef(this.id_))
-    this.id(acgraph.utils.IdGenerator.getInstance().generateId(this));
-  return /** @type {string} */(this.id_);
 };
 
 
 /**
- * This method must be overloaded in descendants to implement root DOM element creation logic,
- * such as assigning namespaces, sizes, clipping and so on.
- * @protected
+ * Updates clip.
+ * @param {acgraph.vector.Clip} clip Clip that should be updated on render.
  */
-acgraph.vector.Stage.prototype.createInternal = function() {
-  acgraph.getRenderer().setStageSize(this.domElement(), '100%', '100%');
+acgraph.vector.Stage.prototype.removeClipFromRender = function(clip) {
+  goog.array.remove(this.clipsToRender_, clip);
 };
 
 
-//----------------------------------------------------------------------------------------------------------------------
+/**
+ * Deserialize JSON data and apply it to Stage.
+ * @param {Object} data Data for deserialization.
+ */
+acgraph.vector.Stage.prototype.deserialize = function(data) {
+  this.width(data['width']);
+  this.height(data['height']);
+  data['type'] = 'layer';
+  this.getRootLayer().deserialize(data);
+  this.getRootLayer().id('');
+  if ('id' in data)
+    this.id(data['id']);
+};
+
+
+/**
+ * Serialize Stage to JSON data.
+ * @return {Object} Serialized stage. JSON data.
+ */
+acgraph.vector.Stage.prototype.serialize = function() {
+  var data = this.getRootLayer().serialize();
+  if (this.id_) data['id'] = this.id_;
+  data['width'] = this.currentWidth_;
+  data['height'] = this.currentHeight_;
+  delete data['type'];
+  return data;
+};
+
+
+/**
+ * Returns stage client position relative to the viewport. If the stage is not in DOM returns (0, 0).
+ * @return {!goog.math.Coordinate}
+ */
+acgraph.vector.Stage.prototype.getClientPosition = function() {
+  return this.internalContainer_ ? goog.style.getClientPosition(this.internalContainer_) : new goog.math.Coordinate(0, 0);
+};
+
+
+//endregion
+//region --- Rendering infrastructure
+//------------------------------------------------------------------------------
 //
-//  Rendering.
+//  Rendering infrastructure
 //
-//----------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 /**
  * Method used in sync rendering, it allows to do any number of changes in DOM.
  * @see acgraph.vector.Stage#acquireDomChanges
@@ -1009,60 +1075,56 @@ acgraph.vector.Stage.prototype.releaseDomChanges = function(allowed, made) {
 
 
 /**
- * Renders stage.
- * If container was not set in stage constructor it must be set using
- * <a href="acgraph.base.Stage#setContainer">setContainer</a>.
- * or error will be thrown.
- * If current container is different from the one where root DOM is,
- * it will be moved.
- * @return {acgraph.vector.Stage} Returns self for method chaining.
+ * Renders the stage with selected method if it is not suspended.
  */
 acgraph.vector.Stage.prototype.render = function() {
-  if (this.isRendering_) return this;
-  this.currentDomChangesCount = 0;
-  // Setting async algorithm.
-  this.acquireDomChanges = this.acquireDomChangesSync_;
-  // calling basic render().
-  this.dispatchRenderEvent(acgraph.vector.Stage.EventType.RENDER_START);
-
-  if (!this.container_) {
-    throw acgraph.error.getErrorMessage(acgraph.error.Code.CONTAINER_SHOULD_BE_DEFINED);
+  if (!this.suspended_) {
+    if (this.container_ && !this.isRendering_) {
+      this.isRendering_ = true;
+      this.dispatchEvent(acgraph.vector.Stage.EventType.RENDER_START);
+      this.currentDomChangesCount = 0;
+      if (this.asyncMode_) {
+        this.acquireDomChanges = this.acquireDomChangesAsync_;
+        setTimeout(this.renderAsync_, 0);
+      } else {
+        this.acquireDomChanges = this.acquireDomChangesSync_;
+        this.renderInternal();
+        if (this.isDirty()) {
+          throw acgraph.error.getErrorMessage(acgraph.error.Code.DIRTY_AFTER_SYNC_RENDER);
+        }
+        this.finishRendering_();
+      }
+    }
   }
+};
 
+
+/**
+ * Inserts stage internal container into proper container.
+ * @private
+ */
+acgraph.vector.Stage.prototype.updateContainer_ = function() {
+  if (this.container_) {
+    if (this.internalContainer_.parentNode != this.container_)
+      goog.dom.appendChild(this.container_, this.internalContainer_);
+  } else {
+    goog.dom.removeNode(this.internalContainer_);
+  }
+};
+
+
+/**
+ * Async rendering method.
+ * @private
+ */
+acgraph.vector.Stage.prototype.renderAsync_ = function() {
+  // Calling internal rendering.
   this.renderInternal();
-
-  if (!goog.dom.getParentElement(this.domElement_) || this.container_ != goog.dom.getParentElement(this.domElement_)) {
-    goog.dom.appendChild(this.container_, this.domElement_);
-    //We need set 'display: block' for <svg> element to prevent scrollbar on 100% height of parent container (see DVF-620)
-    goog.style.setStyle(this.domElement_, 'display', 'block');
-    // Add class for check anychart-ui.css attached. (DVF-1619)
-    goog.dom.classlist.add(this.domElement_, 'anychart-ui-support');
-  }
-
-  if (this.isDirty()) {
-    throw acgraph.error.getErrorMessage(acgraph.error.Code.DIRTY_AFTER_SYNC_RENDER);
-  }
-
-  if (!this.renderedResizeMonitor_ &&
-      (goog.events.hasListener(this, acgraph.vector.Stage.EventType.STAGE_RESIZE, false) ||
-      goog.events.hasListener(this, acgraph.vector.Stage.EventType.STAGE_RESIZE, true))) {
-    this.startResizeMonitor();
-    this.renderedResizeMonitor_ = true;
-  }
-
-  this.dispatchRenderEvent(acgraph.vector.Stage.EventType.RENDER_FINISH);
-
-  var imageLoader = acgraph.getRenderer().getImageLoader();
-  var isImageLoading = acgraph.getRenderer().isImageLoading();
-  if (imageLoader && isImageLoading) {
-    if (!this.imageLoadingListener_)
-      this.imageLoadingListener_ = goog.events.listenOnce(imageLoader, goog.net.EventType.COMPLETE, function(e) {
-        this.stageRenderedDispatcher_.call();
-        this.imageLoadingListener_ = null;
-      }, false, this);
-  } else
-    this.stageRenderedDispatcher_.call();
-  return this;
+  // If state is still dirty, make browser handle the sequence of events and call again.
+  if (this.isDirty())
+    setTimeout(this.renderAsync_, 0);
+  else
+    this.finishRendering_();
 };
 
 
@@ -1090,24 +1152,25 @@ acgraph.vector.Stage.prototype.renderInternal = function() {
 
 
 /**
- * Renders stage async. This method saves container, if passed
- * and removes it from old container, if it is different. Method instantly returns,
- * without instant rendering and withot adding Stage DOM element, this is done
- * in the next frame.
- * @return {acgraph.vector.Stage} Returns self for method chaining.
- *
+ * Executes code that should be executed on rendering finish.
+ * @private
  */
-acgraph.vector.Stage.prototype.renderAsync = function() {
-  if (!this.isRendering_) {
-    if (!this.container()) {
-      throw acgraph.error.getErrorMessage(acgraph.error.Code.CONTAINER_SHOULD_BE_DEFINED);
-    }
+acgraph.vector.Stage.prototype.finishRendering_ = function() {
+  this.isRendering_ = false;
+  this.dispatchEvent(acgraph.vector.Stage.EventType.RENDER_FINISH);
 
-    this.dispatchRenderEvent(acgraph.vector.Stage.EventType.RENDER_START);
-    setTimeout(this.renderAsync_, 0);
+  var imageLoader = acgraph.getRenderer().getImageLoader();
+  var isImageLoading = acgraph.getRenderer().isImageLoading();
+  if (imageLoader && isImageLoading) {
+    if (!this.imageLoadingListener_)
+      this.imageLoadingListener_ = goog.events.listenOnce(imageLoader, goog.net.EventType.COMPLETE, function(e) {
+        this.imageLoadingListener_ = null;
+        if (!this.isRendering_)
+          this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RENDERED);
+      }, false, this);
+  } else {
+    this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RENDERED);
   }
-
-  return this;
 };
 
 
@@ -1116,7 +1179,6 @@ acgraph.vector.Stage.prototype.renderAsync = function() {
  * @param {acgraph.vector.Element.DirtyState} state State.
  */
 acgraph.vector.Stage.prototype.setDirtyState = function(state) {
-  // We can't actually do it here to avoid endless cycle.
 };
 
 
@@ -1140,84 +1202,13 @@ acgraph.vector.Stage.prototype.hasDirtyState = function(state) {
 };
 
 
-/**
- Returns stage visibility.
- @param {boolean=} opt_isVisible Visibility.
- @return {!acgraph.vector.Stage|boolean} Returns self for method chaining, if
- opt_visible is set, current state otherwise.
- */
-acgraph.vector.Stage.prototype.visible = function(opt_isVisible) {
-  if (arguments.length == 0) return /** @type {boolean} */ (this.rootLayer_.visible());
-  this.rootLayer_.visible(opt_isVisible);
-  return this;
-};
-
-
-//----------------------------------------------------------------------------------------------------------------------
+//endregion
+//region --- Sharing and export
+//------------------------------------------------------------------------------
 //
-//  Export
+//  Sharing and export
 //
-//----------------------------------------------------------------------------------------------------------------------
-/**
- Returns Stage JSON. Serializes stage and all its object in JSON.
- @param {Object=} opt_value .
- @return {acgraph.vector.Stage|Object} JSON data of stage.
- */
-acgraph.vector.Stage.prototype.data = function(opt_value) {
-  if (arguments.length == 0) {
-    return this.serialize();
-  } else {
-    var primitive;
-    var type = opt_value['type'];
-    if (!type) this.deserialize(opt_value);
-    else {
-      switch (type) {
-        case 'rect':
-          primitive = this.rect();
-          break;
-        case 'circle':
-          primitive = this.circle();
-          break;
-        case 'ellipse':
-          primitive = this.ellipse();
-          break;
-        case 'image':
-          primitive = this.image();
-          break;
-        case 'text':
-          primitive = this.text();
-          break;
-        case 'path':
-          primitive = this.path();
-          break;
-        case 'layer':
-          primitive = this.layer();
-          break;
-        default:
-          primitive = null;
-          break;
-      }
-    }
-
-    if (primitive) primitive.deserialize(opt_value);
-    return this;
-  }
-};
-
-
-//region --- SHARING ---
-/**
- * Export types.
- * @enum {string}
- */
-acgraph.vector.Stage.ExportType = {
-  SVG: 'svg',
-  JPG: 'jpg',
-  PNG: 'png',
-  PDF: 'pdf'
-};
-
-
+//------------------------------------------------------------------------------
 /**
  * Shares url.
  * @param {acgraph.vector.Stage.ExportType} type Type.
@@ -1259,7 +1250,7 @@ acgraph.vector.Stage.prototype.shareUrl_ = function(type, data, asBase64, saveAn
  * @private
  */
 acgraph.vector.Stage.prototype.addPngData_ = function(data, opt_width, opt_height, opt_quality, opt_filename) {
-  data['data'] = this.toSvg();
+  data['data'] = this.toSvg(opt_width, opt_height);
   data['dataType'] = 'svg';
   data['responseType'] = 'file';
   if (goog.isDef(opt_width)) data['width'] = opt_width;
@@ -1301,7 +1292,7 @@ acgraph.vector.Stage.prototype.shareAsPng = function(onSuccess, opt_onError, opt
  * @private
  */
 acgraph.vector.Stage.prototype.addJpgData_ = function(data, opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename) {
-  data['data'] = this.toSvg();
+  data['data'] = this.toSvg(opt_width, opt_height);
   data['dataType'] = 'svg';
   data['responseType'] = 'file';
   if (goog.isDef(opt_width)) data['width'] = opt_width;
@@ -1374,23 +1365,23 @@ acgraph.vector.Stage.prototype.shareAsSvg = function(onSuccess, opt_onError, opt
 /**
  * @param {Object} data Object with data.
  * @param {(number|string)=} opt_paperSizeOrWidth Any paper format like 'a0', 'tabloid', 'b4', etc.
- * @param {(number|boolean)=} opt_landscapeOrWidth Define, is landscape.
+ * @param {(number|boolean)=} opt_landscapeOrHeight Landscape or height.
  * @param {number=} opt_x Offset X.
  * @param {number=} opt_y Offset Y.
  * @param {string=} opt_filename file name to save.
  * @private
  */
-acgraph.vector.Stage.prototype.addPdfData_ = function(data, opt_paperSizeOrWidth, opt_landscapeOrWidth, opt_x, opt_y, opt_filename) {
+acgraph.vector.Stage.prototype.addPdfData_ = function(data, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename) {
   var formatSize = null;
   var svgStr;
 
   if (goog.isDef(opt_paperSizeOrWidth)) {
     if (goog.isNumber(opt_paperSizeOrWidth)) {
       data['pdf-width'] = opt_paperSizeOrWidth;
-      data['pdf-height'] = goog.isNumber(opt_landscapeOrWidth) ? opt_landscapeOrWidth : this.height();
+      data['pdf-height'] = goog.isNumber(opt_landscapeOrHeight) ? opt_landscapeOrHeight : this.height();
     } else if (goog.isString(opt_paperSizeOrWidth)) {
       data['pdf-size'] = opt_paperSizeOrWidth || acgraph.vector.PaperSize.A4;
-      data['landscape'] = !!opt_landscapeOrWidth;
+      data['landscape'] = !!opt_landscapeOrHeight;
       formatSize = acgraph.utils.exporting.PdfPaperSize[data['pdf-size']];
       if (data['landscape'])
         formatSize = {
@@ -1416,8 +1407,9 @@ acgraph.vector.Stage.prototype.addPdfData_ = function(data, opt_paperSizeOrWidth
     proportionalSize[1] -= opt_y || 0;
     svgStr = this.toSvg(proportionalSize[0], proportionalSize[1]);
   } else {
-    svgStr = this.toSvg();
+    svgStr = this.toSvg(data['pdf-width'], data['pdf-height']);
   }
+
   data['data'] = svgStr;
   data['dataType'] = 'svg';
   data['responseType'] = 'file';
@@ -1430,16 +1422,16 @@ acgraph.vector.Stage.prototype.addPdfData_ = function(data, opt_paperSizeOrWidth
  * @param {function(string)=} opt_onError Function that will be called when sharing will complete.
  * @param {boolean=} opt_asBase64 Share as base64 file.
  * @param {(number|string)=} opt_paperSizeOrWidth Any paper format like 'a0', 'tabloid', 'b4', etc.
- * @param {(number|boolean)=} opt_landscapeOrWidth Define, is landscape.
+ * @param {(number|boolean)=} opt_landscapeOrHeight Landscape or height.
  * @param {number=} opt_x Offset X.
  * @param {number=} opt_y Offset Y.
  * @param {string=} opt_filename file name to save.
  */
-acgraph.vector.Stage.prototype.shareAsPdf = function(onSuccess, opt_onError, opt_asBase64, opt_paperSizeOrWidth, opt_landscapeOrWidth, opt_x, opt_y, opt_filename) {
+acgraph.vector.Stage.prototype.shareAsPdf = function(onSuccess, opt_onError, opt_asBase64, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename) {
   var type = acgraph.type();
   if (type == acgraph.StageType.SVG) {
     var data = {};
-    this.addPdfData_(data, opt_paperSizeOrWidth, opt_landscapeOrWidth, opt_x, opt_y, opt_filename);
+    this.addPdfData_(data, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename);
     this.shareUrl_(acgraph.vector.Stage.ExportType.PDF, data, !!opt_asBase64, true, onSuccess, opt_onError);
   } else {
     alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
@@ -1512,21 +1504,20 @@ acgraph.vector.Stage.prototype.getSvgBase64String = function(onSuccess, opt_onEr
  * @param {function(string)} onSuccess Function that will be called when sharing will complete.
  * @param {function(string)=} opt_onError Function that will be called when sharing will complete.
  * @param {(number|string)=} opt_paperSizeOrWidth Any paper format like 'a0', 'tabloid', 'b4', etc.
- * @param {(number|boolean)=} opt_landscapeOrWidth Define, is landscape.
+ * @param {(number|boolean)=} opt_landscapeOrHeight Landscape or height.
  * @param {number=} opt_x Offset X.
  * @param {number=} opt_y Offset Y.
  */
-acgraph.vector.Stage.prototype.getPdfBase64String = function(onSuccess, opt_onError, opt_paperSizeOrWidth, opt_landscapeOrWidth, opt_x, opt_y) {
+acgraph.vector.Stage.prototype.getPdfBase64String = function(onSuccess, opt_onError, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y) {
   var type = acgraph.type();
   if (type == acgraph.StageType.SVG) {
     var data = {};
-    this.addPdfData_(data, opt_paperSizeOrWidth, opt_landscapeOrWidth, opt_x, opt_y);
+    this.addPdfData_(data, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y);
     this.shareUrl_(acgraph.vector.Stage.ExportType.PDF, data, true, false, onSuccess, opt_onError);
   } else {
     alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
   }
 };
-//endregion
 
 
 /**
@@ -1541,7 +1532,7 @@ acgraph.vector.Stage.prototype.saveAsPng = function(opt_width, opt_height, opt_q
   if (type == acgraph.StageType.SVG) {
     var options = {};
     this.addPngData_(options, opt_width, opt_height, opt_quality, opt_filename);
-    this.getHelperElement().sendRequestToExportServer(acgraph.exportServer + '/png', options);
+    acgraph.sendRequestToExportServer(acgraph.exportServer + '/png', options);
   } else {
     alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
   }
@@ -1561,7 +1552,7 @@ acgraph.vector.Stage.prototype.saveAsJpg = function(opt_width, opt_height, opt_q
   if (type == acgraph.StageType.SVG) {
     var options = {};
     this.addJpgData_(options, opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename);
-    this.getHelperElement().sendRequestToExportServer(acgraph.exportServer + '/jpg', options);
+    acgraph.sendRequestToExportServer(acgraph.exportServer + '/jpg', options);
   } else {
     alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
   }
@@ -1571,17 +1562,17 @@ acgraph.vector.Stage.prototype.saveAsJpg = function(opt_width, opt_height, opt_q
 /**
  * Save current stage as PDF Document.
  * @param {(number|string)=} opt_paperSizeOrWidth Any paper format like 'a0', 'tabloid', 'b4', etc.
- * @param {(number|boolean)=} opt_landscapeOrWidth Define, is landscape.
+ * @param {(number|boolean)=} opt_landscapeOrHeight Landscape or height.
  * @param {number=} opt_x Offset X.
  * @param {number=} opt_y Offset Y.
  * @param {string=} opt_filename file name to save.
  */
-acgraph.vector.Stage.prototype.saveAsPdf = function(opt_paperSizeOrWidth, opt_landscapeOrWidth, opt_x, opt_y, opt_filename) {
+acgraph.vector.Stage.prototype.saveAsPdf = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename) {
   var type = acgraph.type();
   if (type == acgraph.StageType.SVG) {
     var options = {};
-    this.addPdfData_(options, opt_paperSizeOrWidth, opt_landscapeOrWidth, opt_x, opt_y, opt_filename);
-    this.getHelperElement().sendRequestToExportServer(acgraph.exportServer + '/pdf', options);
+    this.addPdfData_(options, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename);
+    acgraph.sendRequestToExportServer(acgraph.exportServer + '/pdf', options);
   } else {
     alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
   }
@@ -1599,7 +1590,7 @@ acgraph.vector.Stage.prototype.saveAsSvg = function(opt_paperSizeOrWidth, opt_la
   if (type == acgraph.StageType.SVG) {
     var options = {};
     this.addSvgData_(options, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename);
-    this.getHelperElement().sendRequestToExportServer(acgraph.exportServer + '/svg', options);
+    acgraph.sendRequestToExportServer(acgraph.exportServer + '/svg', options);
   } else {
     alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
   }
@@ -1634,31 +1625,20 @@ acgraph.vector.Stage.prototype.toSvg = function(opt_paperSizeOrWidth, opt_landsc
     var sourceWidth = goog.style.getStyle(sourceDiv, 'width');
     var sourceHeight = goog.style.getStyle(sourceDiv, 'height');
 
-    //resize source stage
-    goog.style.setSize(sourceDiv, size.width, size.height);
-    this.updateSizeFromContainer();
-    this.render();
+    this.resize(size.width, size.height);
 
-    //take svg with
-    acgraph.getRenderer().setStageSize(this.domElement(),
-        /** @type {number|string} */(this.width()),
-        /** @type {number|string} */(this.height()));
     result = this.serializeToString_(this.domElement());
 
-    //restore source size
-    goog.style.setStyle(sourceDiv, 'width', sourceWidth);
-    goog.style.setStyle(sourceDiv, 'height', sourceHeight);
-    this.updateSizeFromContainer();
-    this.render();
+    this.resize(sourceWidth, sourceHeight);
   } else {
     acgraph.getRenderer().setStageSize(this.domElement(),
         /** @type {number|string} */(this.width()),
         /** @type {number|string} */(this.height()));
     result = this.serializeToString_(this.domElement());
-    acgraph.getRenderer().setStageSize(this.domElement(), this.originalWidth, this.originalHeight);
+    acgraph.getRenderer().setStageSize(this.domElement(), '100%', '100%');
   }
 
-  return result;
+  return '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + result;
 };
 
 
@@ -1679,11 +1659,13 @@ acgraph.vector.Stage.prototype.serializeToString_ = function(node) {
 };
 
 
-//----------------------------------------------------------------------------------------------------------------------
+//endregion
+//region --- Elements constructors
+//------------------------------------------------------------------------------
 //
-//  Layering
+//  Elements constructors
 //
-//----------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 /**
  Invokes {@link acgraph.vector.Layer} constructor<br/>
  <strong>Note:</strong><br>acgraph.vector.Stage doesn't delete objects you create.
@@ -1704,11 +1686,6 @@ acgraph.vector.Stage.prototype.layer = acgraph.vector.Layer.prototype.layer;
 acgraph.vector.Stage.prototype.unmanagedLayer = acgraph.vector.Layer.prototype.unmanagedLayer;
 
 
-//----------------------------------------------------------------------------------------------------------------------
-//
-//  Text
-//
-//----------------------------------------------------------------------------------------------------------------------
 /**
  Invokes {@link acgraph.vector.Text} constructor.<br/>
  <strong>Note:</strong><br>acgraph.vector.Stage doesn't delete objects you create.
@@ -1738,11 +1715,6 @@ acgraph.vector.Stage.prototype.text = acgraph.vector.Layer.prototype.text;
 acgraph.vector.Stage.prototype.html = acgraph.vector.Layer.prototype.html;
 
 
-//----------------------------------------------------------------------------------------------------------------------
-//
-//  Primitives
-//
-//----------------------------------------------------------------------------------------------------------------------
 /**
  Invokes {@link acgraph.vector.Rect} constructor.<br/>
  <strong>Note:</strong><br>acgraph.vector.Stage doesn't delete objects you create.
@@ -1773,7 +1745,7 @@ acgraph.vector.Stage.prototype.image = acgraph.vector.Layer.prototype.image;
 /**
  Draws rectangle with rounded corners.<br/>
  Read more at {@link acgraph.vector.primitives.roundedRect}
- @param {!acgraph.math.Rect} rect Rect which corners will be truncated.
+ @param {!goog.math.Rect} rect Rect which corners will be truncated.
  @param {...number} var_args Set of param which define corners radius of rectangle.
  @return {!acgraph.vector.Path} {@link acgraph.vector.Path} for method chaining.
  */
@@ -1783,7 +1755,7 @@ acgraph.vector.Stage.prototype.roundedRect = acgraph.vector.Layer.prototype.roun
 /**
  Draws rectangle with inner rounded corners.<br/>
  Read more at {@link acgraph.vector.primitives.roundedInnerRect}
- @param {!acgraph.math.Rect} rect Rect which corners will be truncated.
+ @param {!goog.math.Rect} rect Rect which corners will be truncated.
  @param {...number} var_args Set of param which define corners radius of rectangle.
  @return {!acgraph.vector.Path} {@link acgraph.vector.Path} for method chaining.
  */
@@ -1793,7 +1765,7 @@ acgraph.vector.Stage.prototype.roundedInnerRect = acgraph.vector.Layer.prototype
 /**
  Draws rectangle with truncated corners.<br/>
  Read more at {@link acgraph.vector.primitives.truncatedRect}
- @param {!acgraph.math.Rect} rect Rect which corners will be truncated.
+ @param {!goog.math.Rect} rect Rect which corners will be truncated.
  @param {...number} var_args Set of param which define corners radius of rectangle.
  @return {!acgraph.vector.Path} {@link acgraph.vector.Path} for method chaining.
  */
@@ -2033,17 +2005,26 @@ acgraph.vector.Stage.prototype.pie = acgraph.vector.Layer.prototype.pie;
 acgraph.vector.Stage.prototype.donut = acgraph.vector.Layer.prototype.donut;
 
 
-//----------------------------------------------------------------------------------------------------------------------
-//
-//  Coloring
-//
-//----------------------------------------------------------------------------------------------------------------------
+/**
+ * Creates a clip element.
+ * @param {(number|Array.<number>|goog.math.Rect|Object|null)=} opt_leftOrRect Left coordinate of bounds
+ * or rect or array or object representing bounds.
+ * @param {number=} opt_top Top coordinate.
+ * @param {number=} opt_width Width of the rect.
+ * @param {number=} opt_height Height of the rect.
+ * @return {acgraph.vector.Clip} Clip element.
+ */
+acgraph.vector.Stage.prototype.createClip = function(opt_leftOrRect, opt_top, opt_width, opt_height) {
+  return new acgraph.vector.Clip(this, opt_leftOrRect, opt_top, opt_width, opt_height);
+};
+
+
 /**
  Invokes {@link acgraph.vector.PatternFill}.<br/>
  <strong>Note:</strong><br>acgraph.vector.Stage doesn't delete objects you create.
  You must delete them yourself after you finish using them.<br/>
  Read more at: {@link acgraph.vector.PatternFill}
- @param {!acgraph.math.Rect} bounds Bounds of pattern. Defines size and offset of pattern.
+ @param {!goog.math.Rect} bounds Bounds of pattern. Defines size and offset of pattern.
  @return {!acgraph.vector.PatternFill} {@link acgraph.vector.PatternFill} for method chaining.
  */
 acgraph.vector.Stage.prototype.pattern = function(bounds) {
@@ -2068,11 +2049,13 @@ acgraph.vector.Stage.prototype.hatchFill = function(opt_type, opt_color, opt_thi
 };
 
 
-//----------------------------------------------------------------------------------------------------------------------
+//endregion
+//region --- Children management
+//------------------------------------------------------------------------------
 //
-//  Layer members
+//  Children management
 //
-//----------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 /**
  Similar to {@link acgraph.vector.Layer#numChildren}
  @return {number} Number of stage children.
@@ -2219,105 +2202,13 @@ acgraph.vector.Stage.prototype.forEachChild = function(callback, opt_this) {
 };
 
 
-/**
- Removes everything.
- @return {!acgraph.vector.Stage} {@link acgraph.vector.Stage} for method chaining.
- */
-acgraph.vector.Stage.prototype.remove = function() {
-  acgraph.getRenderer().removeNode(this.domElement());
-  return this;
-};
-
-
-/**
- * Tell root layer that child was removed from DOM (moved to another layer).
- * @param {acgraph.vector.Element} child Removed child.
- */
-acgraph.vector.Stage.prototype.notifyRemoved = function(child) {
-  this.rootLayer_.notifyRemoved(child);
-};
-
-
-/**
- * Tell layer that child clipping rectangle has changed.
- */
-acgraph.vector.Stage.prototype.childClipChanged = goog.nullFunction;
-
-
-/**
- * Gets/sets element's title value.
- * @param {(string|null)=} opt_value - Value to be set.
- * @return {(string|null|!acgraph.vector.Stage|undefined)} - Current value or itself for method chaining.
- */
-acgraph.vector.Stage.prototype.title = function(opt_value) {
-  if (goog.isDef(opt_value)) {
-    if (this.titleVal_ != opt_value) {
-      this.titleVal_ = opt_value;
-      acgraph.getRenderer().setTitle(this, this.titleVal_);
-    }
-    return this;
-  } else {
-    return this.titleVal_;
-  }
-};
-
-
-/**
- * Gets/sets element's desc value.
- * @param {(string|null)=} opt_value - Value to be set.
- * @return {(string|null|!acgraph.vector.Stage|undefined)} - Current value or itself for method chaining.
- */
-acgraph.vector.Stage.prototype.desc = function(opt_value) {
-  if (goog.isDef(opt_value)) {
-    if (this.descVal_ != opt_value) {
-      this.descVal_ = opt_value;
-      acgraph.getRenderer().setDesc(this, this.descVal_);
-    }
-    return this;
-  } else {
-    return this.descVal_;
-  }
-};
-
-
-//region --- Section Bounds ---
-//----------------------------------------------------------------------------------------------------------------------
-//
-//  Bounds
-//
-//----------------------------------------------------------------------------------------------------------------------
-/**
- Returns X of top left corner.
- @return {number} X of top left corner.
- */
-acgraph.vector.Stage.prototype.getX = function() {
-  return 0;
-};
-
-
-/**
- Returns Y of top left corner.
- @return {number} Y of top left corner.
- */
-acgraph.vector.Stage.prototype.getY = function() {
-  return 0;
-};
-
-
-/**
- Returns bounds.
- @return {!acgraph.math.Rect} Bounds.
- */
-acgraph.vector.Stage.prototype.getBounds = function() {
-  return new acgraph.math.Rect(0, 0, /** @type {number} */ (this.width()), /** @type {number} */ (this.height()));
-};
-
-
-//----------------------------------------------------------------------------------------------------------------------
+//endregion
+//region --- Transformations
+//------------------------------------------------------------------------------
 //
 //  Transformations
 //
-//----------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 /**
  Rotates root layer.<br/>
  Read more at: {@link acgraph.vector.Element#rotate}.
@@ -2494,73 +2385,20 @@ acgraph.vector.Stage.prototype.getTransformationMatrix = function() {
 
 /**
  * Retirns full transformation (own and parent concatenated) which is always null.
- * @return {goog.graphics.AffineTransform} Full transformation.
+ * @return {goog.math.AffineTransform} Full transformation.
  */
 acgraph.vector.Stage.prototype.getFullTransformation = function() {
   return null;
 };
-//region --- Section Clip ---
 
 
-//----------------------------------------------------------------------------------------------------------------------
+//endregion
+//region --- Events management
+//------------------------------------------------------------------------------
 //
-//  Clip
+//  Events management
 //
-//----------------------------------------------------------------------------------------------------------------------
-/**
- Clips a stage.
- Works only after render() is invoked.<br/>
- Read more at: {@link acgraph.vector.Element#clip}.
- @param {(acgraph.math.Rect|acgraph.vector.Clip)=} opt_value Clipping rectangle.
- @return {acgraph.vector.Element|acgraph.math.Rect|acgraph.vector.Clip} {@link acgraph.vector.Stage} for method chaining
- or {@link acgraph.math.rect} clipping rectangle.
- */
-acgraph.vector.Stage.prototype.clip = function(opt_value) {
-  return this.rootLayer_.clip(opt_value);
-};
-
-
-/**
- * Creates a clip element.
- * @param {(number|Array.<number>|acgraph.math.Rect|Object|null)=} opt_leftOrRect Left coordinate of bounds
- * or rect or array or object representing bounds.
- * @param {number=} opt_top Top coordinate.
- * @param {number=} opt_width Width of the rect.
- * @param {number=} opt_height Height of the rect.
- * @return {acgraph.vector.Clip} Clip element.
- */
-acgraph.vector.Stage.prototype.createClip = function(opt_leftOrRect, opt_top, opt_width, opt_height) {
-  return new acgraph.vector.Clip(this, opt_leftOrRect, opt_top, opt_width, opt_height);
-};
-
-
-/**
- * Updates clip or add to array to update on render.
- * @param {acgraph.vector.Clip} clip Clip to update or clip that should be updated on render.
- */
-acgraph.vector.Stage.prototype.addClipForRender = function(clip) {
-  if (!this.isSuspended()) {
-    clip.render();
-  } else {
-    this.clipsToRender_.push(clip);
-  }
-};
-
-
-/**
- * Updates clip.
- * @param {acgraph.vector.Clip} clip Clip that should be updated on render.
- */
-acgraph.vector.Stage.prototype.removeClipFromRender = function(clip) {
-  goog.array.remove(this.clipsToRender_, clip);
-};
-
-
-//----------------------------------------------------------------------------------------------------------------------
-//
-//  Events
-//
-//----------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 /**
  * Dispatches an event (or event like object) and calls all listeners
  * listening for events of this type. The type of the event is decided by the
@@ -2678,50 +2516,63 @@ acgraph.vector.Stage.prototype.removeAllListeners = function(opt_type) {
 };
 
 
-//----------------------------------------------------------------------------------------------------------------------
-//
-//  Serialize
-//
-//----------------------------------------------------------------------------------------------------------------------
 /**
- * Deserialize JSON data and apply it to Stage.
- * @param {Object} data Data for deserialization.
+ * Events redispatcher.
+ * @param {goog.events.BrowserEvent} e
+ * @private
  */
-acgraph.vector.Stage.prototype.deserialize = function(data) {
-  this.width(data['width']).height(data['height']);
-  data['type'] = 'layer';
-  this.getRootLayer().deserialize(data);
-  this.getRootLayer().id('');
-  if ('id' in data)
-    this.id(data['id']);
-};
-
-
-/**
- * Serialize Stage to JSON data.
- * @return {Object} Serialized stage. JSON data.
- */
-acgraph.vector.Stage.prototype.serialize = function() {
-  var data = this.getRootLayer().serialize();
-  if (this.id_) data['id'] = this.id_;
-  data['width'] = this.width();
-  data['height'] = this.height();
-  delete data['type'];
-  return data;
+acgraph.vector.Stage.prototype.handleMouseEvent_ = function(e) {
+  var event = new acgraph.events.BrowserEvent(e, this);
+  if (event['target'] instanceof acgraph.vector.Element) {
+    var el = /** @type {acgraph.vector.Element} */(event['target']);
+    el.dispatchEvent(event);
+    var type = event['type'];
+    if (event.defaultPrevented) e.preventDefault();
+    // we do the binding and unbinding of event only if relatedTarget doesn't belong to the same stage
+    if (!(event['relatedTarget'] instanceof acgraph.vector.Element) ||
+        (/** @type {acgraph.vector.Element} */(event['relatedTarget'])).getStage() != this) {
+      if (type == acgraph.events.EventType.MOUSEOVER) {
+        this.eventHandler_.listen(goog.dom.getDocument(), acgraph.events.EventType.MOUSEMOVE, this.handleMouseEvent_, false);
+      } else if (type == acgraph.events.EventType.MOUSEOUT) {
+        this.eventHandler_.unlisten(goog.dom.getDocument(), acgraph.events.EventType.MOUSEMOVE, this.handleMouseEvent_, false);
+      }
+    }
+    switch (type) {
+      case acgraph.events.EventType.MOUSEDOWN:
+        this.eventHandler_.listen(goog.dom.getDocument(), acgraph.events.EventType.MOUSEUP, this.handleMouseEvent_, false);
+        break;
+      case acgraph.events.EventType.MOUSEUP:
+        this.eventHandler_.unlisten(goog.dom.getDocument(), acgraph.events.EventType.MOUSEUP, this.handleMouseEvent_, false);
+        break;
+      case acgraph.events.EventType.TOUCHSTART:
+        this.eventHandler_.listen(goog.dom.getDocument(), acgraph.events.EventType.TOUCHMOVE, this.handleMouseEvent_, false);
+        break;
+      case acgraph.events.EventType.TOUCHEND:
+        this.eventHandler_.unlisten(goog.dom.getDocument(), acgraph.events.EventType.TOUCHMOVE, this.handleMouseEvent_, false);
+        break;
+      case goog.events.EventType.POINTERDOWN:
+        this.eventHandler_.listen(goog.dom.getDocument(), goog.events.EventType.POINTERMOVE, this.handleMouseEvent_, false);
+        break;
+      case goog.events.EventType.POINTERUP:
+        this.eventHandler_.unlisten(goog.dom.getDocument(), goog.events.EventType.POINTERMOVE, this.handleMouseEvent_, false);
+        break;
+    }
+  }
 };
 
 
 //endregion
-//----------------------------------------------------------------------------------------------------------------------
+//region --- Disposing and export
+//------------------------------------------------------------------------------
 //
-//  Disposing
+//  Disposing and export
 //
-//----------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 /**
  Disposes Stage. Removes it from parent layer, nulls links, removes from DOM.
  */
 acgraph.vector.Stage.prototype.dispose = function() {
-  goog.base(this, 'dispose');
+  acgraph.vector.Stage.base(this, 'dispose');
 };
 
 
@@ -2729,10 +2580,6 @@ acgraph.vector.Stage.prototype.dispose = function() {
 acgraph.vector.Stage.prototype.disposeInternal = function() {
   acgraph.vector.Stage.base(this, 'disposeInternal');
 
-  goog.dispose(this.helperElement_);
-  this.helperElement_ = null;
-
-  this.eventHandler_.removeAll();
   goog.dispose(this.eventHandler_);
   this.eventHandler_ = null;
 
@@ -2745,120 +2592,133 @@ acgraph.vector.Stage.prototype.disposeInternal = function() {
 
   acgraph.unregister(this);
 
-  goog.dom.removeNode(this.container_);
-  this.domElement_ = null;
+  goog.dom.removeNode(this.internalContainer_);
   this.container_ = null;
-  this.originContainer_ = null;
+  delete this.internalContainer_;
+  this.domElement_ = null;
+
+  if (this.credits_) {
+    this.credits_.dispose();
+    this.credits_ = null;
+  }
 };
 
 
 //exports
-goog.exportSymbol('acgraph.vector.Stage', acgraph.vector.Stage);
-acgraph.vector.Stage.prototype['id'] = acgraph.vector.Stage.prototype.id;
-acgraph.vector.Stage.prototype['container'] = acgraph.vector.Stage.prototype.container;
-acgraph.vector.Stage.prototype['dispose'] = acgraph.vector.Stage.prototype.dispose;
-acgraph.vector.Stage.prototype['getBounds'] = acgraph.vector.Stage.prototype.getBounds;
-acgraph.vector.Stage.prototype['layer'] = acgraph.vector.Stage.prototype.layer;
-acgraph.vector.Stage.prototype['unmanagedLayer'] = acgraph.vector.Stage.prototype.unmanagedLayer;
-acgraph.vector.Stage.prototype['circle'] = acgraph.vector.Stage.prototype.circle;
-acgraph.vector.Stage.prototype['ellipse'] = acgraph.vector.Stage.prototype.ellipse;
-acgraph.vector.Stage.prototype['rect'] = acgraph.vector.Stage.prototype.rect;
-acgraph.vector.Stage.prototype['truncatedRect'] = acgraph.vector.Stage.prototype.truncatedRect;
-acgraph.vector.Stage.prototype['roundedRect'] = acgraph.vector.Stage.prototype.roundedRect;
-acgraph.vector.Stage.prototype['roundedInnerRect'] = acgraph.vector.Stage.prototype.roundedInnerRect;
-acgraph.vector.Stage.prototype['path'] = acgraph.vector.Stage.prototype.path;
-acgraph.vector.Stage.prototype['star'] = acgraph.vector.Stage.prototype.star;
-acgraph.vector.Stage.prototype['star4'] = acgraph.vector.Stage.prototype.star4;
-acgraph.vector.Stage.prototype['star5'] = acgraph.vector.Stage.prototype.star5;
-acgraph.vector.Stage.prototype['star6'] = acgraph.vector.Stage.prototype.star6;
-acgraph.vector.Stage.prototype['star7'] = acgraph.vector.Stage.prototype.star7;
-acgraph.vector.Stage.prototype['star10'] = acgraph.vector.Stage.prototype.star10;
-acgraph.vector.Stage.prototype['diamond'] = acgraph.vector.Stage.prototype.diamond;
-acgraph.vector.Stage.prototype['triangleUp'] = acgraph.vector.Stage.prototype.triangleUp;
-acgraph.vector.Stage.prototype['triangleDown'] = acgraph.vector.Stage.prototype.triangleDown;
-acgraph.vector.Stage.prototype['triangleRight'] = acgraph.vector.Stage.prototype.triangleRight;
-acgraph.vector.Stage.prototype['triangleLeft'] = acgraph.vector.Stage.prototype.triangleLeft;
-acgraph.vector.Stage.prototype['cross'] = acgraph.vector.Stage.prototype.cross;
-acgraph.vector.Stage.prototype['diagonalCross'] = acgraph.vector.Stage.prototype.diagonalCross;
-acgraph.vector.Stage.prototype['hLine'] = acgraph.vector.Stage.prototype.hLine;
-acgraph.vector.Stage.prototype['vLine'] = acgraph.vector.Stage.prototype.vLine;
-acgraph.vector.Stage.prototype['pie'] = acgraph.vector.Stage.prototype.pie;
-acgraph.vector.Stage.prototype['donut'] = acgraph.vector.Stage.prototype.donut;
-acgraph.vector.Stage.prototype['text'] = acgraph.vector.Stage.prototype.text;
-acgraph.vector.Stage.prototype['html'] = acgraph.vector.Stage.prototype.html;
-acgraph.vector.Stage.prototype['image'] = acgraph.vector.Stage.prototype.image;
-acgraph.vector.Stage.prototype['data'] = acgraph.vector.Stage.prototype.data;
-acgraph.vector.Stage.prototype['saveAsPNG'] = acgraph.vector.Stage.prototype.saveAsPng;
-acgraph.vector.Stage.prototype['saveAsJPG'] = acgraph.vector.Stage.prototype.saveAsJpg;
-acgraph.vector.Stage.prototype['saveAsPDF'] = acgraph.vector.Stage.prototype.saveAsPdf;
-acgraph.vector.Stage.prototype['saveAsSVG'] = acgraph.vector.Stage.prototype.saveAsSvg;
-acgraph.vector.Stage.prototype['saveAsPng'] = acgraph.vector.Stage.prototype.saveAsPng;
-acgraph.vector.Stage.prototype['saveAsJpg'] = acgraph.vector.Stage.prototype.saveAsJpg;
-acgraph.vector.Stage.prototype['saveAsPdf'] = acgraph.vector.Stage.prototype.saveAsPdf;
-acgraph.vector.Stage.prototype['saveAsSvg'] = acgraph.vector.Stage.prototype.saveAsSvg;
-acgraph.vector.Stage.prototype['shareAsPng'] = acgraph.vector.Stage.prototype.shareAsPng;
-acgraph.vector.Stage.prototype['shareAsJpg'] = acgraph.vector.Stage.prototype.shareAsJpg;
-acgraph.vector.Stage.prototype['shareAsPdf'] = acgraph.vector.Stage.prototype.shareAsPdf;
-acgraph.vector.Stage.prototype['shareAsSvg'] = acgraph.vector.Stage.prototype.shareAsSvg;
-acgraph.vector.Stage.prototype['getPngBase64String'] = acgraph.vector.Stage.prototype.getPngBase64String;
-acgraph.vector.Stage.prototype['getJpgBase64String'] = acgraph.vector.Stage.prototype.getJpgBase64String;
-acgraph.vector.Stage.prototype['getSvgBase64String'] = acgraph.vector.Stage.prototype.getSvgBase64String;
-acgraph.vector.Stage.prototype['getPdfBase64String'] = acgraph.vector.Stage.prototype.getPdfBase64String;
-acgraph.vector.Stage.prototype['print'] = acgraph.vector.Stage.prototype.print;
-acgraph.vector.Stage.prototype['toSvg'] = acgraph.vector.Stage.prototype.toSvg;
-acgraph.vector.Stage.prototype['pattern'] = acgraph.vector.Stage.prototype.pattern;
-acgraph.vector.Stage.prototype['hatchFill'] = acgraph.vector.Stage.prototype.hatchFill;
-acgraph.vector.Stage.prototype['clearDefs'] = acgraph.vector.Stage.prototype.clearDefs;
-acgraph.vector.Stage.prototype['numChildren'] = acgraph.vector.Stage.prototype.numChildren;
-acgraph.vector.Stage.prototype['addChild'] = acgraph.vector.Stage.prototype.addChild;
-acgraph.vector.Stage.prototype['addChildAt'] = acgraph.vector.Stage.prototype.addChildAt;
-acgraph.vector.Stage.prototype['removeChild'] = acgraph.vector.Stage.prototype.removeChild;
-acgraph.vector.Stage.prototype['removeChildAt'] = acgraph.vector.Stage.prototype.removeChildAt;
-acgraph.vector.Stage.prototype['removeChildren'] = acgraph.vector.Stage.prototype.removeChildren;
-acgraph.vector.Stage.prototype['swapChildren'] = acgraph.vector.Stage.prototype.swapChildren;
-acgraph.vector.Stage.prototype['swapChildrenAt'] = acgraph.vector.Stage.prototype.swapChildrenAt;
-acgraph.vector.Stage.prototype['getChildAt'] = acgraph.vector.Stage.prototype.getChildAt;
-acgraph.vector.Stage.prototype['hasChild'] = acgraph.vector.Stage.prototype.hasChild;
-acgraph.vector.Stage.prototype['forEachChild'] = acgraph.vector.Stage.prototype.forEachChild;
-acgraph.vector.Stage.prototype['indexOfChild'] = acgraph.vector.Stage.prototype.indexOfChild;
-acgraph.vector.Stage.prototype['getX'] = acgraph.vector.Stage.prototype.getX;
-acgraph.vector.Stage.prototype['getY'] = acgraph.vector.Stage.prototype.getY;
-acgraph.vector.Stage.prototype['width'] = acgraph.vector.Stage.prototype.width;
-acgraph.vector.Stage.prototype['height'] = acgraph.vector.Stage.prototype.height;
-acgraph.vector.Stage.prototype['getBounds'] = acgraph.vector.Stage.prototype.getBounds;
-acgraph.vector.Stage.prototype['resize'] = acgraph.vector.Stage.prototype.resize;
-acgraph.vector.Stage.prototype['asyncMode'] = acgraph.vector.Stage.prototype.asyncMode;
-acgraph.vector.Stage.prototype['resume'] = acgraph.vector.Stage.prototype.resume;
-acgraph.vector.Stage.prototype['suspend'] = acgraph.vector.Stage.prototype.suspend;
-acgraph.vector.Stage.prototype['isRendering'] = acgraph.vector.Stage.prototype.isRendering;
-acgraph.vector.Stage.prototype['isSuspended'] = acgraph.vector.Stage.prototype.isSuspended;
-acgraph.vector.Stage.prototype['remove'] = acgraph.vector.Stage.prototype.remove;
-acgraph.vector.Stage.prototype['domElement'] = acgraph.vector.Stage.prototype.domElement;
-acgraph.vector.Stage.prototype['visible'] = acgraph.vector.Stage.prototype.visible;
-acgraph.vector.Stage.prototype['rotate'] = acgraph.vector.Stage.prototype.rotate;
-acgraph.vector.Stage.prototype['rotateByAnchor'] = acgraph.vector.Stage.prototype.rotateByAnchor;
-acgraph.vector.Stage.prototype['setRotation'] = acgraph.vector.Stage.prototype.setRotation;
-acgraph.vector.Stage.prototype['setRotationByAnchor'] = acgraph.vector.Stage.prototype.setRotationByAnchor;
-acgraph.vector.Stage.prototype['translate'] = acgraph.vector.Stage.prototype.translate;
-acgraph.vector.Stage.prototype['setPosition'] = acgraph.vector.Stage.prototype.setPosition;
-acgraph.vector.Stage.prototype['scale'] = acgraph.vector.Stage.prototype.scale;
-acgraph.vector.Stage.prototype['scaleByAnchor'] = acgraph.vector.Stage.prototype.scaleByAnchor;
-acgraph.vector.Stage.prototype['appendTransformationMatrix'] = acgraph.vector.Stage.prototype.appendTransformationMatrix;
-acgraph.vector.Stage.prototype['setTransformationMatrix'] = acgraph.vector.Stage.prototype.setTransformationMatrix;
-acgraph.vector.Stage.prototype['getRotationAngle'] = acgraph.vector.Stage.prototype.getRotationAngle;
-acgraph.vector.Stage.prototype['getTransformationMatrix'] = acgraph.vector.Stage.prototype.getTransformationMatrix;
-acgraph.vector.Stage.prototype['clip'] = acgraph.vector.Stage.prototype.clip;
-acgraph.vector.Stage.prototype['createClip'] = acgraph.vector.Stage.prototype.createClip;
-acgraph.vector.Stage.prototype['parent'] = acgraph.vector.Stage.prototype.parent;
-acgraph.vector.Stage.prototype['getStage'] = acgraph.vector.Stage.prototype.getStage;
-acgraph.vector.Stage.prototype['listen'] = acgraph.vector.Stage.prototype.listen;
-acgraph.vector.Stage.prototype['listenOnce'] = acgraph.vector.Stage.prototype.listenOnce;
-acgraph.vector.Stage.prototype['unlisten'] = acgraph.vector.Stage.prototype.unlisten;
-acgraph.vector.Stage.prototype['unlistenByKey'] = acgraph.vector.Stage.prototype.unlistenByKey;
-acgraph.vector.Stage.prototype['removeAllListeners'] = acgraph.vector.Stage.prototype.removeAllListeners;
-acgraph.vector.Stage.prototype['title'] = acgraph.vector.Stage.prototype.title;
-acgraph.vector.Stage.prototype['desc'] = acgraph.vector.Stage.prototype.desc;
-goog.exportSymbol('acgraph.events.EventType.RENDER_START', acgraph.vector.Stage.EventType.RENDER_START);
-goog.exportSymbol('acgraph.events.EventType.RENDER_FINISH', acgraph.vector.Stage.EventType.RENDER_FINISH);
-goog.exportSymbol('acgraph.vector.Stage.EventType.STAGE_RESIZE', acgraph.vector.Stage.EventType.STAGE_RESIZE);
-goog.exportSymbol('acgraph.vector.Stage.EventType.STAGE_RENDERED', acgraph.vector.Stage.EventType.STAGE_RENDERED);
+/** @suppress {deprecated} */
+(function() {
+  var proto = acgraph.vector.Stage.prototype;
+  goog.exportSymbol('acgraph.vector.Stage', acgraph.vector.Stage);
+  proto['id'] = proto.id;
+  proto['container'] = proto.container;
+  proto['getContainerElement'] = proto.getContainerElement;
+  proto['getDomWrapper'] = proto.getDomWrapper;
+  proto['maxResizeDelay'] = proto.maxResizeDelay;
+  proto['dispose'] = proto.dispose;
+  proto['getBounds'] = proto.getBounds;
+  proto['layer'] = proto.layer;
+  proto['unmanagedLayer'] = proto.unmanagedLayer;
+  proto['circle'] = proto.circle;
+  proto['ellipse'] = proto.ellipse;
+  proto['rect'] = proto.rect;
+  proto['truncatedRect'] = proto.truncatedRect;
+  proto['roundedRect'] = proto.roundedRect;
+  proto['roundedInnerRect'] = proto.roundedInnerRect;
+  proto['path'] = proto.path;
+  proto['star'] = proto.star;
+  proto['star4'] = proto.star4;
+  proto['star5'] = proto.star5;
+  proto['star6'] = proto.star6;
+  proto['star7'] = proto.star7;
+  proto['star10'] = proto.star10;
+  proto['diamond'] = proto.diamond;
+  proto['triangleUp'] = proto.triangleUp;
+  proto['triangleDown'] = proto.triangleDown;
+  proto['triangleRight'] = proto.triangleRight;
+  proto['triangleLeft'] = proto.triangleLeft;
+  proto['cross'] = proto.cross;
+  proto['diagonalCross'] = proto.diagonalCross;
+  proto['hLine'] = proto.hLine;
+  proto['vLine'] = proto.vLine;
+  proto['pie'] = proto.pie;
+  proto['donut'] = proto.donut;
+  proto['text'] = proto.text;
+  proto['html'] = proto.html;
+  proto['image'] = proto.image;
+  proto['data'] = proto.data;
+  proto['saveAsPNG'] = proto.saveAsPng;
+  proto['saveAsJPG'] = proto.saveAsJpg;
+  proto['saveAsPDF'] = proto.saveAsPdf;
+  proto['saveAsSVG'] = proto.saveAsSvg;
+  proto['saveAsPng'] = proto.saveAsPng;
+  proto['saveAsJpg'] = proto.saveAsJpg;
+  proto['saveAsPdf'] = proto.saveAsPdf;
+  proto['saveAsSvg'] = proto.saveAsSvg;
+  proto['shareAsPng'] = proto.shareAsPng;
+  proto['shareAsJpg'] = proto.shareAsJpg;
+  proto['shareAsPdf'] = proto.shareAsPdf;
+  proto['shareAsSvg'] = proto.shareAsSvg;
+  proto['getPngBase64String'] = proto.getPngBase64String;
+  proto['getJpgBase64String'] = proto.getJpgBase64String;
+  proto['getSvgBase64String'] = proto.getSvgBase64String;
+  proto['getPdfBase64String'] = proto.getPdfBase64String;
+  proto['print'] = proto.print;
+  proto['toSvg'] = proto.toSvg;
+  proto['pattern'] = proto.pattern;
+  proto['hatchFill'] = proto.hatchFill;
+  proto['clearDefs'] = proto.clearDefs;
+  proto['numChildren'] = proto.numChildren;
+  proto['addChild'] = proto.addChild;
+  proto['addChildAt'] = proto.addChildAt;
+  proto['removeChild'] = proto.removeChild;
+  proto['removeChildAt'] = proto.removeChildAt;
+  proto['removeChildren'] = proto.removeChildren;
+  proto['swapChildren'] = proto.swapChildren;
+  proto['swapChildrenAt'] = proto.swapChildrenAt;
+  proto['getChildAt'] = proto.getChildAt;
+  proto['hasChild'] = proto.hasChild;
+  proto['forEachChild'] = proto.forEachChild;
+  proto['indexOfChild'] = proto.indexOfChild;
+  proto['getX'] = proto.getX;
+  proto['getY'] = proto.getY;
+  proto['width'] = proto.width;
+  proto['height'] = proto.height;
+  proto['getBounds'] = proto.getBounds;
+  proto['resize'] = proto.resize;
+  proto['asyncMode'] = proto.asyncMode;
+  proto['resume'] = proto.resume;
+  proto['suspend'] = proto.suspend;
+  proto['isRendering'] = proto.isRendering;
+  proto['isSuspended'] = proto.isSuspended;
+  proto['remove'] = proto.remove;
+  proto['domElement'] = proto.domElement;
+  proto['visible'] = proto.visible;
+  proto['rotate'] = proto.rotate;
+  proto['rotateByAnchor'] = proto.rotateByAnchor;
+  proto['setRotation'] = proto.setRotation;
+  proto['setRotationByAnchor'] = proto.setRotationByAnchor;
+  proto['translate'] = proto.translate;
+  proto['setPosition'] = proto.setPosition;
+  proto['scale'] = proto.scale;
+  proto['scaleByAnchor'] = proto.scaleByAnchor;
+  proto['appendTransformationMatrix'] = proto.appendTransformationMatrix;
+  proto['setTransformationMatrix'] = proto.setTransformationMatrix;
+  proto['getRotationAngle'] = proto.getRotationAngle;
+  proto['getTransformationMatrix'] = proto.getTransformationMatrix;
+  proto['clip'] = proto.clip;
+  proto['createClip'] = proto.createClip;
+  proto['parent'] = proto.parent;
+  proto['getStage'] = proto.getStage;
+  proto['listen'] = proto.listen;
+  proto['listenOnce'] = proto.listenOnce;
+  proto['unlisten'] = proto.unlisten;
+  proto['unlistenByKey'] = proto.unlistenByKey;
+  proto['removeAllListeners'] = proto.removeAllListeners;
+  proto['title'] = proto.title;
+  proto['desc'] = proto.desc;
+  goog.exportSymbol('acgraph.events.EventType.RENDER_START', acgraph.vector.Stage.EventType.RENDER_START);
+  goog.exportSymbol('acgraph.events.EventType.RENDER_FINISH', acgraph.vector.Stage.EventType.RENDER_FINISH);
+  goog.exportSymbol('acgraph.vector.Stage.EventType.STAGE_RESIZE', acgraph.vector.Stage.EventType.STAGE_RESIZE);
+  goog.exportSymbol('acgraph.vector.Stage.EventType.STAGE_RENDERED', acgraph.vector.Stage.EventType.STAGE_RENDERED);
+})();
+//endregion

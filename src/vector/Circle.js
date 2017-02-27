@@ -95,4 +95,7 @@ acgraph.vector.Circle.prototype.serialize = function() {
 
 //exports
 goog.exportSymbol('acgraph.vector.Circle', acgraph.vector.Circle);
-acgraph.vector.Circle.prototype['radius'] = acgraph.vector.Circle.prototype.radius;
+(function() {
+  var proto = acgraph.vector.Circle.prototype;
+  proto['radius'] = proto.radius;
+})();
