@@ -1045,6 +1045,23 @@ acgraph.vector.PathBase.boundsCalculationMap_ = (function() {
 //  Serialize
 //
 //----------------------------------------------------------------------------------------------------------------------
+/**
+ * Serialize only path arguments. For copy path data purposes.
+ * @param  {Object=} opt_data .
+ * @return {Object}
+ */
+acgraph.vector.PathBase.prototype.serializePathArgs = function(opt_data) {
+  var data = opt_data || {};
+  data['closePoint'] = this.closePoint_ ? this.closePoint_.slice() : [];
+  data['currentPoint'] = this.currentPoint_ ? this.currentPoint_.slice() : [];
+  data['segments'] = this.segments_.slice();
+  data['count'] = this.count_.slice();
+  data['arguments'] = this.arguments_.slice();
+
+  return data;
+};
+
+
 /** @inheritDoc */
 acgraph.vector.PathBase.prototype.deserialize = function(data) {
   this.closePoint_ = data['closePoint'];
@@ -1061,11 +1078,7 @@ acgraph.vector.PathBase.prototype.deserialize = function(data) {
 acgraph.vector.PathBase.prototype.serialize = function() {
   var data = goog.base(this, 'serialize');
   data['type'] = 'path';
-  data['closePoint'] = this.closePoint_ ? this.closePoint_.slice() : [];
-  data['currentPoint'] = this.currentPoint_ ? this.currentPoint_.slice() : [];
-  data['segments'] = this.segments_.slice();
-  data['count'] = this.count_.slice();
-  data['arguments'] = this.arguments_.slice();
+  data = this.serializePathArgs(data);
   return data;
 };
 
