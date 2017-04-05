@@ -1032,8 +1032,10 @@ acgraph.vector.parseKey = function(key) {
  * @return {number} Thickness of the stroke.
  */
 acgraph.vector.getThickness = function(stroke) {
-  var res = stroke['thickness'];
-  return stroke == 'none' ? 0 : (isNaN(res) || goog.isNull(res) ? 1 : res);
+  var res;
+  return (stroke && stroke != 'none') ?
+      (isNaN(res = stroke['thickness']) || goog.isNull(res) ? 1 : res) :
+      0;
 };
 
 
