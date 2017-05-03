@@ -240,7 +240,11 @@ acgraph.vector.Text.TextWrap = {
   /**
    Wrap by symbol.
    */
-  BY_LETTER: 'byLetter'
+  BY_LETTER: 'byLetter',
+  /**
+   Wrap by word.
+   */
+  BY_WORD: 'byWord'
 };
 
 
@@ -1078,6 +1082,24 @@ acgraph.vector.Text.prototype.cutTextSegment_ = function(text, style, a, b, segm
   bounds.width = cutTextWidth;
   acgraph.getRenderer().textBounds(cutText, resultStatus, bounds);
 
+  if (this.style_['textWrap'] == acgraph.vector.Text.TextWrap.BY_WORD) {
+    var anyWhiteSpace = /\s+/g;
+    var anyNonWhiteSpace = /\S+/g;
+
+    var left = subWrappedText[subWrappedText.length - 1];
+    var right = cutText[0];
+
+    if (!(anyWhiteSpace.test(left) || anyWhiteSpace.test(right))) {
+      if (anyWhiteSpace.test(subWrappedText)) {
+        var words = subWrappedText.match(anyNonWhiteSpace);
+        pos = subWrappedText.lastIndexOf(words[words.length - 1]);
+      } else {
+        var tt = anyNonWhiteSpace.exec(text)[0];
+        pos = tt.length;
+      }
+    }
+  }
+
   return pos;
 };
 
@@ -1281,13 +1303,12 @@ acgraph.vector.Text.prototype.addSegment = function(text, opt_style) {
     // cut characters.
 
     while ((this.currentLineWidth_ + segment_bounds.width + shift > this.width_) && !this.stopAddSegments_) {
-
       // calculate the position where to cut.
       var cutPos = this.cutTextSegment_(text, style, shift + this.currentLineWidth_, this.width_, segment_bounds);
 
       if (cutPos < 1 && (this.currentLine_.length == 0)) cutPos = 1;
       if (cutPos != 0) {
-        var cutText = goog.string.trimRight(text.substring(0, cutPos));
+        var cutText = text.substring(0, cutPos);
         segment_bounds = this.getTextBounds(cutText, style);
         this.createSegment_(cutText, style, segment_bounds);
       }
@@ -1299,7 +1320,8 @@ acgraph.vector.Text.prototype.addSegment = function(text, opt_style) {
 
       shift = 0;
 
-      if (this.style_['textWrap'] == acgraph.vector.Text.TextWrap.BY_LETTER) {
+      if (this.style_['textWrap'] == acgraph.vector.Text.TextWrap.BY_LETTER ||
+          this.style_['textWrap'] == acgraph.vector.Text.TextWrap.BY_WORD) {
         text = goog.string.trimLeft(text.substring(cutPos, text.length));
         segment_bounds = this.getTextBounds(text, style);
       } else {
@@ -1320,7 +1342,8 @@ acgraph.vector.Text.prototype.addSegment = function(text, opt_style) {
  * Finalizes text line.
  */
 acgraph.vector.Text.prototype.finalizeTextLine = function() {
-  if ((this.textWrap() == acgraph.vector.Text.TextWrap.NO_WRAP) &&
+  var textWrap = this.textWrap();
+  if ((textWrap == acgraph.vector.Text.TextWrap.NO_WRAP) &&
       (this.textLines_.length == 1) &&
       !this.htmlOn_) {
     this.applyTextOverflow_();
@@ -1687,6 +1710,7 @@ acgraph.vector.Text.prototype.disposeInternal = function() {
   proto['selectable'] = proto.selectable;
   goog.exportSymbol('acgraph.vector.Text.TextWrap.NO_WRAP', acgraph.vector.Text.TextWrap.NO_WRAP);
   goog.exportSymbol('acgraph.vector.Text.TextWrap.BY_LETTER', acgraph.vector.Text.TextWrap.BY_LETTER);
+  goog.exportSymbol('acgraph.vector.Text.TextWrap.BY_WORD', acgraph.vector.Text.TextWrap.BY_WORD);
   goog.exportSymbol('acgraph.vector.Text.TextOverflow.CLIP', acgraph.vector.Text.TextOverflow.CLIP);
   goog.exportSymbol('acgraph.vector.Text.TextOverflow.ELLIPSIS', acgraph.vector.Text.TextOverflow.ELLIPSIS);
   goog.exportSymbol('acgraph.vector.Text.FontStyle.ITALIC', acgraph.vector.Text.FontStyle.ITALIC);
