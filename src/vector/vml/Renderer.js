@@ -232,9 +232,8 @@ acgraph.vector.vml.Renderer.prototype.measurementImage_ = null;
 //----------------------------------------------------------------------------------------------------------------------
 /**
  * Desc.
- * @private
  */
-acgraph.vector.vml.Renderer.prototype.createMeasurement_ = function() {
+acgraph.vector.vml.Renderer.prototype.createMeasurement = function() {
 
   //Text bounds
 
@@ -293,7 +292,7 @@ acgraph.vector.vml.Renderer.prototype.createMeasurement_ = function() {
  * @return {goog.math.Rect} Image bounds.
  */
 acgraph.vector.vml.Renderer.prototype.measuringImage = function(src) {
-  if (!this.measurement_) this.createMeasurement_();
+  if (!this.measurement_) this.createMeasurement();
   this.setAttribute_(this.measurementImage_, 'src', src);
   return goog.style.getBounds(this.measurementImage_);
 };
@@ -307,7 +306,7 @@ acgraph.vector.vml.Renderer.prototype.measuringImage = function(src) {
  * @return {goog.math.Rect} Text bounds.
  */
 acgraph.vector.vml.Renderer.prototype.measuringSimpleText = function(text, segmentStyle, textStyle) {
-  if (!this.measurement_) this.createMeasurement_();
+  if (!this.measurement_) this.createMeasurement();
 
   this.measurementSimpleText_.style.cssText = '';
 
@@ -350,7 +349,7 @@ acgraph.vector.vml.Renderer.prototype.measuringSimpleText = function(text, segme
  */
 acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
   if (text == '') return new goog.math.Rect(0, 0, 0, 0);
-  if (!this.measurement_) this.createMeasurement_();
+  if (!this.measurement_) this.createMeasurement();
 
   goog.dom.removeNode(this.measurementVMLTextPath_);
   this.measurementVMLTextPath_ = /** @type {Element} */ (this.createTextNode(''));
@@ -437,7 +436,7 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
  * @return {goog.math.Rect} .
  */
 acgraph.vector.vml.Renderer.prototype.measureElement = function(element) {
-  if (!this.measurement_) this.createMeasurement_();
+  if (!this.measurement_) this.createMeasurement();
 
   if (goog.isString(element)) {
     this.measurementGroupNode_.innerHTML = element;

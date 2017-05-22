@@ -778,7 +778,23 @@ acgraph.vector.Text.prototype.selectable = function(opt_value) {
  */
 acgraph.vector.Text.prototype.style = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
-    if (opt_value) goog.object.extend(this.style_, opt_value);
+
+    goog.object.forEach(opt_value, function(value, key) {
+      var styleName = key;
+      switch (key) {
+        case 'fontDecoration':
+        case 'textDecoration':
+          styleName = 'decoration';
+          break;
+        case 'fontColor':
+          styleName = 'color';
+          break;
+        case 'fontOpacity':
+          styleName = 'opacity';
+          break;
+      }
+      this.style_[styleName] = value;
+    }, this);
 
     this.width_ = parseFloat(this.style_['width']) || 0;
     this.height_ = parseFloat(this.style_['height']) || 0;
@@ -1298,7 +1314,7 @@ acgraph.vector.Text.prototype.addSegment = function(text, opt_style) {
   var shift = this.segments_.length == 0 ? this.textIndent_ : 0;
 
   // If text width and textWrap are set - start putting a segement into the given bounds.
-  if (this.style_['width']) {
+  if (goog.isDefAndNotNull(this.style_['width'])) {
     // if a new segment, with all segment already in place and offsets, doesnt' fit:
     // cut characters.
 
@@ -1505,7 +1521,7 @@ acgraph.vector.Text.prototype.calculateY = function() {
 acgraph.vector.Text.prototype.textDefragmentation = function() {
   this.init_();
 
-  var text, i;
+  var text, i, segment;
   if (this.text_ == null) return;
 
   if (this.htmlOn_) {
@@ -1515,14 +1531,50 @@ acgraph.vector.Text.prototype.textDefragmentation = function() {
     this.text_ = goog.string.canonicalizeNewlines(goog.string.normalizeSpaces(this.text_));
     var textArr = this.text_.split(q);
 
-    for (i = 0; i < textArr.length; i++) {
-      text = textArr[i];
-      if (goog.isDefAndNotNull(text)) {
-        if (text == '') {
-          this.addBreak();
-        } else {
-          this.addSegment(text);
-          this.addBreak();
+    if (textArr.length == 1 && !goog.isDefAndNotNull(this.style_['width'])) {
+      if (!this.domElement()) {
+        this.createDom(true);
+      }
+      if (this.hasDirtyState(acgraph.vector.Element.DirtyState.STYLE))
+        this.renderStyle();
+
+      segment = new acgraph.vector.TextSegment(this.text_, {});
+      this.currentLine_.push(segment);
+      this.segments_.push(segment);
+      segment.parent(this);
+
+      if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA))
+        this.renderData();
+
+      var bounds = acgraph.getRenderer().getBBox(this.domElement(), this.text_, this.style_);
+
+      segment.baseLine = -bounds.top;
+      segment.height = bounds.height;
+      segment.width = bounds.width;
+
+      // calculate line params with newly added segment.
+      this.currentLineHeight_ = bounds.height;
+      this.currentLineWidth_ = bounds.width + this.textIndent_;
+      this.currentBaseLine_ = segment.baseLine;
+      this.currentLineEmpty_ = this.text_.length == 0;
+
+      this.finalizeTextLine();
+      this.currentNumberSeqBreaks_++;
+      var height = this.currentLine_[0] ? this.currentLine_[0].height : 0;
+      this.accumulatedHeight_ += goog.isString(this.lineHeight_) ?
+          parseInt(this.lineHeight_, 0) + height :
+          this.lineHeight_ * height;
+
+    } else {
+      for (i = 0; i < textArr.length; i++) {
+        text = textArr[i];
+        if (goog.isDefAndNotNull(text)) {
+          if (text == '') {
+            this.addBreak();
+          } else {
+            this.addSegment(text);
+            this.addBreak();
+          }
         }
       }
     }
@@ -1530,7 +1582,7 @@ acgraph.vector.Text.prototype.textDefragmentation = function() {
 
   if (this.textIndent_ && this.textLines_.length > 0) {
     var line = this.textLines_[0];
-    var segment = line[0];
+    segment = line[0];
     if (this.rtl) {
       if (!this.style_['hAlign'] ||
           this.style_['hAlign'] == acgraph.vector.Text.HAlign.START ||

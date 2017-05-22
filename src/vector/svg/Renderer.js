@@ -162,9 +162,8 @@ acgraph.vector.svg.Renderer.prototype.getAttribute_ = function(el, key) {
 //----------------------------------------------------------------------------------------------------------------------
 /**
  * Desc.
- * @private
  */
-acgraph.vector.svg.Renderer.prototype.createMeasurement_ = function() {
+acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
   this.measurement_ = this.createSVGElement_('svg');
   this.measurementText_ = this.createTextElement();
   this.measurementTextNode_ = this.createTextNode('');
@@ -172,6 +171,9 @@ acgraph.vector.svg.Renderer.prototype.createMeasurement_ = function() {
   goog.dom.appendChild(this.measurementText_, this.measurementTextNode_);
   goog.dom.appendChild(this.measurement_, this.measurementText_);
   goog.dom.appendChild(goog.dom.getDocument().body, this.measurement_);
+
+  this.measurementLayerForBBox_ = this.createLayerElement();
+  goog.dom.appendChild(this.measurement_, this.measurementLayerForBBox_);
 
   //We need set 'display: block' for <svg> element to prevent scrollbar on 100% height of parent container (see DVF-620)
   this.setAttributes_(this.measurement_, {'display': 'block', 'width': 0, 'height': 0});
@@ -189,7 +191,7 @@ acgraph.vector.svg.Renderer.prototype.createMeasurement_ = function() {
  */
 acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
   //if (text == '') return new goog.math.Rect(0, 0, 0, 0);
-  if (!this.measurement_) this.createMeasurement_();
+  if (!this.measurement_) this.createMeasurement();
 
   var spaceWidth = null;
   var additionWidth = 0;
@@ -248,13 +250,53 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
 };
 
 
+/** @inheritDoc */
+acgraph.vector.svg.Renderer.prototype.getBBox = function(element, text, style) {
+  var boundsCache = this.textBoundsCache;
+  var styleHash = this.getStyleHash(style);
+  var styleCache = boundsCache[styleHash];
+  if (!styleCache) styleCache = boundsCache[styleHash] = {};
+  var textBoundsCache = styleCache[text];
+
+  if (textBoundsCache) {
+    return textBoundsCache;
+  } else {
+    var spaceWidth = null;
+    var additionWidth = 0;
+
+    if (text.length == 0) {
+      return this.getEmptyStringBounds(style);
+    }
+
+    if (goog.string.isSpace(text)) {
+      return this.getSpaceBounds(style);
+    } else {
+      if (goog.string.startsWith(text, ' '))
+        additionWidth += spaceWidth = this.getSpaceBounds(style).width;
+      if (goog.string.endsWith(text, ' '))
+        additionWidth += spaceWidth || this.getSpaceBounds(style).width;
+    }
+
+    var parentNode = element.parentNode;
+
+    this.measurementLayerForBBox_.appendChild(element);
+    var bbox = element['getBBox']();
+    if (parentNode) parentNode.appendChild(element);
+
+    var x = element.getAttribute('x') || 0;
+    var y = element.getAttribute('y') || 0;
+    return styleCache[text] = new goog.math.Rect(bbox.x - x, bbox.y - y, bbox.width + additionWidth, bbox.height);
+  }
+};
+
+
 /**
  * Measure any svg nodes.
  * @param {string|Node} element .
  * @return {goog.math.Rect} .
  */
 acgraph.vector.svg.Renderer.prototype.measureElement = function(element) {
-  if (!this.measurement_) this.createMeasurement_();
+  if (!this.measurement_) this.createMeasurement();
 
   if (goog.isString(element)) {
     this.measurementGroupNode_.innerHTML = element;

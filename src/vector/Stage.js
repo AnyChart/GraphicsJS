@@ -121,6 +121,7 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
   this.rootLayer_ = new acgraph.vector.Layer();
   this.rootLayer_.setParent(this).render();
   acgraph.getRenderer().appendChild(this.domElement_, this.rootLayer_.domElement());
+  acgraph.getRenderer().createMeasurement();
 
   this.eventHandler_.listen(this.domElement(), [
     goog.events.EventType.MOUSEDOWN,

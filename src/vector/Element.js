@@ -1027,11 +1027,12 @@ acgraph.vector.Element.prototype.getTransformationMatrix = function() {
  * This method must be overloaded if you need more than one DOM operation to creat a DOM element.
  * Even if you only want to define which DOM must be used - you need to overload.
  * {@link acgraph.vector.Element#createDomInternal}.
+ * @param {boolean=} opt_force .
  * @protected
  */
-acgraph.vector.Element.prototype.createDom = function() {
+acgraph.vector.Element.prototype.createDom = function(opt_force) {
   var stage = this.getStage();
-  if (stage && stage.acquireDomChange(acgraph.vector.Stage.DomChangeType.ELEMENT_CREATE)) {
+  if (stage && stage.acquireDomChange(acgraph.vector.Stage.DomChangeType.ELEMENT_CREATE) || opt_force) {
     this.domElement_ = this.createDomInternal();
     acgraph.register(this);
     this.clearDirtyState(acgraph.vector.Element.DirtyState.DOM_MISSING);
