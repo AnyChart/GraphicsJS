@@ -402,7 +402,7 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
   }
   if (style.letterSpacing) {
     goog.style.setStyle(this.measurementText_, 'letter-spacing', style['letterSpacing']);
-    this.measurementVMLTextPath_.style['v-text-spacing'] = style['letterSpacing'];
+    this.measurementVMLTextPath_.style['v-text-spacing'] = style['letterSpacing'] == 'normal' ? '' : style['letterSpacing'];
   }
   if (style.decoration) {
     goog.style.setStyle(this.measurementText_, 'text-decoration', style['decoration']);
@@ -1457,7 +1457,7 @@ acgraph.vector.vml.Renderer.prototype.setTextSegmentProperties = function(elemen
   if (style['fontFamily']) goog.style.setStyle(textNode, 'font-family', style['fontFamily']);
   if (style['fontSize']) goog.style.setStyle(textNode, 'font-size', style['fontSize']);
   if (style['fontWeight']) goog.style.setStyle(textNode, 'font-weight', style['fontWeight']);
-  if (style['letterSpacing']) textNode.style['v-text-spacing'] = style['letterSpacing'];
+  if (style['letterSpacing']) textNode.style['v-text-spacing'] = style['letterSpacing'] == 'normal' ? '' : style['letterSpacing'];
   if (style['decoration']) goog.style.setStyle(textNode, 'text-decoration', style['decoration']);
   if (style['hAlign']) {
     if (textEntry.rtl)
@@ -2133,8 +2133,10 @@ acgraph.vector.vml.Renderer.prototype.addClip_ = function(element, clipRect, isL
     clipRect = acgraph.math.getBoundsOfRectWithTransform(clipRect, tx);
   } else {
     // element clip
-    clipRect.left -= element.getX();
-    clipRect.top -= element.getY();
+    if (!(element instanceof acgraph.vector.vml.Text && !element.isComplex())) {
+      clipRect.left -= element.getX() || 0;
+      clipRect.top -= element.getY() || 0;
+    }
   }
 
   var left = clipRect.left;
