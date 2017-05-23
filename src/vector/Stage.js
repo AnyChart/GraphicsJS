@@ -62,7 +62,7 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
   goog.base(this);
 
   this.renderAsync_ = goog.bind(this.renderAsync_, this);
-  this.checkSize_ = goog.bind(this.checkSize_, this);
+  this.checkSize = goog.bind(this.checkSize, this);
 
   /**
    * Event handler of the stage.
@@ -144,7 +144,7 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
   this.container_ = goog.dom.getElement(opt_container || null);
   if (this.container_)
     this.updateContainer_();
-  this.checkSize_(true, true);
+  this.checkSize(true, true);
 
   this.resume();
 };
@@ -470,7 +470,7 @@ acgraph.vector.Stage.prototype.domElement = function() {
 acgraph.vector.Stage.prototype.width = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (this.setWidth_(opt_value)) {
-      this.checkSize_(true);
+      this.checkSize(true);
       // it seems that we have no need to initialize rendering here
       // this.render();
     }
@@ -489,7 +489,7 @@ acgraph.vector.Stage.prototype.width = function(opt_value) {
 acgraph.vector.Stage.prototype.height = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (this.setHeight_(opt_value)) {
-      this.checkSize_(true);
+      this.checkSize(true);
       // it seems that we have no need to initialize rendering here
       // this.render();
     }
@@ -509,7 +509,7 @@ acgraph.vector.Stage.prototype.resize = function(width, height) {
   var widthChanged = this.setWidth_(width);
   var heightChanged = this.setHeight_(height);
   if (widthChanged || heightChanged) {
-    this.checkSize_(true);
+    this.checkSize(true);
     // it seems that we have no need to initialize rendering here
     // this.render();
   }
@@ -529,7 +529,7 @@ acgraph.vector.Stage.prototype.maxResizeDelay = function(opt_value) {
       if (this.maxResizeDelay_ > val && !isNaN(this.checkSizeTimer_))
         clearTimeout(this.checkSizeTimer_);
       this.maxResizeDelay_ = val;
-      this.checkSize_(true);
+      this.checkSize(true);
     }
     return this;
   }
@@ -548,7 +548,7 @@ acgraph.vector.Stage.prototype.container = function(opt_value) {
     if (this.container_ != container) {
       this.container_ = container;
       this.updateContainer_();
-      this.checkSize_(true);
+      this.checkSize(true);
       this.render();
     }
     return this;
@@ -824,9 +824,8 @@ acgraph.vector.Stage.prototype.childClipChanged = goog.nullFunction;
  * Method that handles events cached by eventHandler_.
  * @param {boolean=} opt_directCall
  * @param {boolean=} opt_silent
- * @private
  */
-acgraph.vector.Stage.prototype.checkSize_ = function(opt_directCall, opt_silent) {
+acgraph.vector.Stage.prototype.checkSize = function(opt_directCall, opt_silent) {
   if (opt_directCall && !isNaN(this.checkSizeTimer_))
     clearTimeout(this.checkSizeTimer_);
   this.checkSizeTimer_ = NaN;
@@ -854,7 +853,7 @@ acgraph.vector.Stage.prototype.checkSize_ = function(opt_directCall, opt_silent)
       this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RESIZE);
   }
   if (this.container_ && isDynamicSize) {
-    this.checkSizeTimer_ = setTimeout(this.checkSize_, this.maxResizeDelay_);
+    this.checkSizeTimer_ = setTimeout(this.checkSize, this.maxResizeDelay_);
   }
 };
 
