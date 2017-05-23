@@ -672,6 +672,20 @@ acgraph.vector.svg.Renderer.prototype.setTextPosition = function(element) {
 };
 
 
+/**
+ * Sets data for simple text.
+ * @param {acgraph.vector.SimpleText} element .
+ */
+acgraph.vector.svg.Renderer.prototype.setTextData = function(element) {
+  // var tspan = this.createTextSegmentElement();
+  // var textNode = this.createTextNode(element.text());
+  //
+  // tspan.appendChild(textNode);
+  // element.domElement().appendChild(tspan);
+  element.domElement().textContent = element.text();
+};
+
+
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setTextProperties = function(element) {
   var style = element.style();

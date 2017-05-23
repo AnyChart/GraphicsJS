@@ -16,6 +16,7 @@ goog.require('acgraph.vector.Path');
 goog.require('acgraph.vector.PatternFill');
 goog.require('acgraph.vector.Rect');
 goog.require('acgraph.vector.Renderer');
+goog.require('acgraph.vector.SimpleText');
 goog.require('acgraph.vector.Text');
 goog.require('acgraph.vector.UnmanagedLayer');
 goog.require('acgraph.vector.primitives');
@@ -396,6 +397,20 @@ acgraph.text = function(opt_x, opt_y, opt_text, opt_style) {
       new acgraph.vector.vml.Text(opt_x, opt_y) :
       new acgraph.vector.Text(opt_x, opt_y);
   if (opt_style) text.style(opt_style);
+  if (opt_text) text.text(opt_text);
+  return text;
+};
+
+
+/**
+ Creates, depending on the technology used, an instance of the {@link acgraph.vector.SimpleText} class.<br/>
+ <strong>Important:</strong> When an element is created this way, a parent element is not assigned to it automatically,
+ so it is necessary to set the parent element manually.
+ @param {string=} opt_text The text to display.
+ @return {!acgraph.vector.SimpleText} An instance of the {@link acgraph.vector.SimpleText} class.
+ */
+acgraph.simpleText = function(opt_text) {
+  var text = new acgraph.vector.SimpleText();
   if (opt_text) text.text(opt_text);
   return text;
 };
