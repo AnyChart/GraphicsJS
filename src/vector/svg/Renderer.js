@@ -1042,6 +1042,7 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
       imageFill.id(); // if the identifier of the fill is still empty, it will be generated
       imageFill.parent(element.getStage()).render();
       this.setAttribute_(element.domElement(), 'fill', pathPrefix + imageFill.id() + ')');
+      this.setAttribute_(element.domElement(), 'fill-opacity', goog.isDef(fill['opacity']) ? fill['opacity'] : 1);
     }
   } else if (fill instanceof acgraph.vector.HatchFill) {
     var hatch = /** @type {acgraph.vector.HatchFill} */(fill);
