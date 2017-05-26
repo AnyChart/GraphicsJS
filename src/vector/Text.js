@@ -1064,10 +1064,11 @@ acgraph.vector.Text.prototype.getTextBounds = function(text, segmentStyle) {
  * @param {number} a Value of low limit of range.
  * @param {number} b Value of high limit of range.
  * @param {goog.math.Rect} segmentBounds Segment bounds.
+ * @param {boolean=} opt_ignoreByWord Ignore by word mode.
  * @return {number} Position in inbound text where it has been cut.
  * @private
  */
-acgraph.vector.Text.prototype.cutTextSegment_ = function(text, style, a, b, segmentBounds) {
+acgraph.vector.Text.prototype.cutTextSegment_ = function(text, style, a, b, segmentBounds, opt_ignoreByWord) {
   var subWrappedText;
   var subSegmentBounds;
 
@@ -1098,7 +1099,7 @@ acgraph.vector.Text.prototype.cutTextSegment_ = function(text, style, a, b, segm
   bounds.width = cutTextWidth;
   acgraph.getRenderer().textBounds(cutText, resultStatus, bounds);
 
-  if (this.style_['textWrap'] == acgraph.vector.Text.TextWrap.BY_WORD) {
+  if (this.style_['textWrap'] == acgraph.vector.Text.TextWrap.BY_WORD && !opt_ignoreByWord) {
     var anyWhiteSpace = /\s+/g;
     var anyNonWhiteSpace = /\S+/g;
 
@@ -1165,19 +1166,20 @@ acgraph.vector.Text.prototype.createSegment_ = function(text, style, bounds, opt
  * Applying text overflow properties.
  * If set width, height and text Overflow properties of text, and text out of the height then it will
  * be cropped and joined ellipsis.
+ * @param {!Array.<acgraph.vector.TextSegment>=} opt_line .
  * @private
  */
-acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
+acgraph.vector.Text.prototype.applyTextOverflow_ = function(opt_line) {
   var segment, index, cutPos, textSegmentEllipsis;
 
-  var line = /** @type {!Array.<acgraph.vector.TextSegment>} */ (goog.array.peek(this.textLines_));
+  var line = /** @type {!Array.<acgraph.vector.TextSegment>} */ (opt_line || goog.array.peek(this.textLines_));
   var peekSegment = /** @type {!acgraph.vector.TextSegment} */ (goog.array.peek(line));
   var ellipsisBounds = this.getTextBounds(this.ellipsis_, peekSegment.getStyle());
   // Copy ellipsis to avoid overwriting this.ellipsis_ because "..." can be ".." (cut) when resize happened.
   var ellipsis = this.ellipsis_;
 
   if (ellipsisBounds.width > this.width_) {
-    cutPos = this.cutTextSegment_(this.ellipsis_, peekSegment.getStyle(), 0, this.width_, ellipsisBounds);
+    cutPos = this.cutTextSegment_(this.ellipsis_, peekSegment.getStyle(), 0, this.width_, ellipsisBounds, true);
     ellipsis = this.ellipsis_.substring(0, cutPos);
   }
 
@@ -1232,7 +1234,7 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
       this.currentBaseLine_ = 0;
 
       segmentBounds = this.getTextBounds(segment.text, segment.getStyle());
-      cutPos = this.cutTextSegment_(segment.text, segment.getStyle(), left, right, segmentBounds);
+      cutPos = this.cutTextSegment_(segment.text, segment.getStyle(), left, right, segmentBounds, true);
 
       if (cutPos < 1) cutPos = 1;
       var cutText = segment.text.substring(0, cutPos);
@@ -1243,7 +1245,7 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
       lastSegmentInline.y = segment.y;
 
       if (segment_bounds.width + ellipsisBounds.width > this.width_) {
-        cutPos = this.cutTextSegment_(this.ellipsis_, peekSegment.getStyle(), segment_bounds.width, this.width_, ellipsisBounds);
+        cutPos = this.cutTextSegment_(this.ellipsis_, peekSegment.getStyle(), segment_bounds.width, this.width_, ellipsisBounds, true);
         ellipsis = this.ellipsis_.substring(0, cutPos);
       }
       if (cutPos > 0) {
@@ -1271,7 +1273,6 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
     index = goog.array.indexOf(this.segments_, firstLineSegment);
     goog.array.insertAt(this.segments_, textSegmentEllipsis, index);
   }
-  this.stopAddSegments_ = true;
 };
 
 
@@ -1279,14 +1280,14 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
  * Added break line.
  */
 acgraph.vector.Text.prototype.addBreak = function() {
-  if (this.currentLineEmpty_) {
-    this.addSegment('');
-  }
+  // if (this.currentLineEmpty_) {
+  //   this.addSegment('', null, true);
+  // }
   this.finalizeTextLine();
 
   this.currentNumberSeqBreaks_++;
 
-  this.addSegment('');
+  this.addSegment('', null, true);
 
   var height = this.currentLine_[0] ? this.currentLine_[0].height : 0;
   this.accumulatedHeight_ += goog.isString(this.lineHeight_) ?
@@ -1299,8 +1300,9 @@ acgraph.vector.Text.prototype.addBreak = function() {
  * Adding text segment. Only here text wrapping is check.
  * @param {string} text Segment text without tags and EOLs.
  * @param {?acgraph.vector.TextSegmentStyle=} opt_style Segment style.
+ * @param {boolean=} opt_break Whether is break.
  */
-acgraph.vector.Text.prototype.addSegment = function(text, opt_style) {
+acgraph.vector.Text.prototype.addSegment = function(text, opt_style, opt_break) {
   // if "stop adding" segments flags is set - do nothing
   // this can happen if text has height, width and textOverflow set and and doesn't fit.
   if (this.stopAddSegments_) return;
@@ -1324,7 +1326,7 @@ acgraph.vector.Text.prototype.addSegment = function(text, opt_style) {
 
       if (cutPos < 1 && (this.currentLine_.length == 0)) cutPos = 1;
       if (cutPos != 0) {
-        var cutText = text.substring(0, cutPos);
+        var cutText = goog.string.trimLeft(text.substring(0, cutPos));
         segment_bounds = this.getTextBounds(cutText, style);
         this.createSegment_(cutText, style, segment_bounds);
       }
@@ -1344,13 +1346,16 @@ acgraph.vector.Text.prototype.addSegment = function(text, opt_style) {
         if (this.htmlOn_) {
           text = '';
           segment_bounds = this.getTextBounds(text, style);
-        } else
+        } else {
+          this.applyTextOverflow_();
           this.stopAddSegments_ = true;
+        }
       }
     }
   }
 
-  if (!this.stopAddSegments_) this.createSegment_(text, style, segment_bounds);
+  if (!this.stopAddSegments_ && (text.length || opt_break))
+    this.createSegment_(text, style, segment_bounds);
 };
 
 
@@ -1361,8 +1366,9 @@ acgraph.vector.Text.prototype.finalizeTextLine = function() {
   var textWrap = this.textWrap();
   if ((textWrap == acgraph.vector.Text.TextWrap.NO_WRAP) &&
       (this.textLines_.length == 1) &&
-      !this.htmlOn_) {
+      !this.htmlOn_ && !this.stopAddSegments_) {
     this.applyTextOverflow_();
+    this.stopAddSegments_ = true;
   }
   // if there is a flag to stop adding segements - stop it.
   // this can happen if width, heigth and textOverflow are set and text doesn't fit.
@@ -1376,9 +1382,9 @@ acgraph.vector.Text.prototype.finalizeTextLine = function() {
       (this.realHeigth + this.currentLineHeight_ > this.height_) &&
       this.textLines_.length != 0;
 
-
   if (endOfText) {
     this.applyTextOverflow_();
+    this.stopAddSegments_ = true;
   } else {
     // calculate line height.
     this.currentLineHeight_ = goog.isString(this.lineHeight_) ?
@@ -1457,6 +1463,34 @@ acgraph.vector.Text.prototype.finalizeTextLine = function() {
 
       if (this.textIndent_ && this.style_['hAlign'] == acgraph.vector.Text.HAlign.CENTER) {
         this.currentLine_[0].dx = this.rtl ? -this.textIndent_ / 2 : this.textIndent_ / 2;
+      }
+    }
+
+    if (goog.isDefAndNotNull(this.style_['width']) && this.style_['textWrap'] == acgraph.vector.Text.TextWrap.BY_WORD &&
+        this.currentLineWidth_ > this.width_) {
+      if (this.currentLine_.length > 1 && !this.currentLine_[0].text.length) {
+        goog.array.removeAt(this.currentLine_, 0);
+        var index = goog.array.indexOf(this.segments_, this.currentLine_[0]);
+        goog.array.removeAt(this.segments_, index);
+      }
+
+      segment = goog.array.peek(this.currentLine_);
+      var segment_bounds = this.getTextBounds(segment.text, segment.getStyle());
+
+      var cutPos = this.cutTextSegment_(segment.text, segment.getStyle(), 0, this.width_, segment_bounds, true);
+      var cutText = segment.text.substring(0, cutPos);
+      segment_bounds = this.getTextBounds(cutText, segment.getStyle());
+      segment.text = cutText;
+      segment.width = segment_bounds.width;
+
+      this.currentLineWidth_ = segment_bounds.width;
+      this.prevLineWidth_ = this.currentLineWidth_;
+
+      this.applyTextOverflow_(this.currentLine_);
+
+      if (this.style_['hAlign'] == acgraph.vector.Text.HAlign.CENTER) {
+        segment = this.currentLine_[0];
+        segment.dx = -this.width_ / 2 + this.currentLineWidth_ / 2;
       }
     }
 
@@ -1567,7 +1601,7 @@ acgraph.vector.Text.prototype.textDefragmentation = function() {
 
     } else {
       for (i = 0; i < textArr.length; i++) {
-        text = textArr[i];
+        text = goog.string.trimLeft(textArr[i]);
         if (goog.isDefAndNotNull(text)) {
           if (text == '') {
             this.addBreak();
