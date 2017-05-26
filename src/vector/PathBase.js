@@ -516,11 +516,11 @@ acgraph.vector.PathBase.prototype.moveToInternal = function(x, y) {
   this.arguments_.push(x, y);
   this.currentPoint_ = this.closePoint_ = [x, y];
 
-  // A flag is set, indicating that data is not synchronized
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
-
   // Borders cache is not reset as there is no extension for the time being and borders do not change
   this.transformedPathCache_ = null;
+
+  // A flag is set, indicating that data is not synchronized
+  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
 
   return this;
 };
@@ -550,12 +550,12 @@ acgraph.vector.PathBase.prototype.lineToInternal = function(x, y, var_args) {
   this.count_[this.count_.length - 1] += i / 2;
   this.currentPoint_ = [x, y];
 
-  // A flag is set, indicating that data is not synchronized
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
-
   // Caches are reset
   this.dropBoundsCache();
   this.transformedPathCache_ = null;
+
+  // A flag is set, indicating that data is not synchronized
+  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
 
   return this;
 };
@@ -591,12 +591,12 @@ acgraph.vector.PathBase.prototype.curveToInternal = function(control1X, control1
   this.count_[this.count_.length - 1] += i / 6;
   this.currentPoint_ = [x, y];
 
-  // A flag is set, indicating that data is not synchronized
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
-
   // Caches are reset
   this.dropBoundsCache();
   this.transformedPathCache_ = null;
+
+  // A flag is set, indicating that data is not synchronized
+  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
 
   return this;
 };
@@ -773,12 +773,12 @@ acgraph.vector.PathBase.prototype.arcToInternal = function(rx, ry, fromAngle, ex
   this.simple_ = false;
   this.currentPoint_ = [ex, ey];
 
-  // A flag is set, indicating that data is not synchronized
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
-
   // Caches are reset
   this.dropBoundsCache();
   this.transformedPathCache_ = null;
+
+  // A flag is set, indicating that data is not synchronized
+  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
 
   return this;
 };
@@ -803,12 +803,12 @@ acgraph.vector.PathBase.prototype.arcToAsCurvesInternal = function(rx, ry, fromA
 
   this.curveToInternal.apply(this, curveParams);
 
-  // A flag is set, indicating that data is not synchronized
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
-
   // Caches are reset
   this.dropBoundsCache();
   this.transformedPathCache_ = null;
+
+  // A flag is set, indicating that data is not synchronized
+  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
 
   return this;
 };

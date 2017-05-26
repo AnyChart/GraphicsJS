@@ -145,14 +145,18 @@ acgraph.vector.Shape.prototype.strokeThickness = function(opt_value) {
 //
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
-acgraph.vector.Shape.prototype.renderInternal = function() {
+acgraph.vector.Shape.prototype.beforeRenderInternal = function() {
   if (this.boundsAffectedColors_ && this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
     if (!!(this.boundsAffectedColors_ & 1))
       this.setDirtyState(acgraph.vector.Element.DirtyState.FILL);
     if (!!(this.boundsAffectedColors_ & 2))
       this.setDirtyState(acgraph.vector.Element.DirtyState.STROKE);
   }
+};
 
+
+/** @inheritDoc */
+acgraph.vector.Shape.prototype.renderInternal = function() {
   goog.base(this, 'renderInternal');
 
   // Apply stroke and fill settings if they were changed
