@@ -5,6 +5,7 @@ GraphicsJS is a lightweight JavaScript graphics library with the intuitive API, 
 * [Quick Start](#quick-start)
 * [Articles](#articles)
 * [Building](#building)
+* [Contributing](#contributing)
 * [Links](#articles)
 
 # Overview
@@ -72,12 +73,24 @@ To get started with GraphicsJS create simple HTML document and copy paste the fo
 Launch the page in your browser and here you are: you have created your first drawing with GraphicsJS. See [documentation](https://docs.anychart.com/Graphics/Basics) and [API](https://api.anychart.com/latest/anychart.graphics) to learn more.
 
 # Articles
-- [Introducing GraphicsJS, a Powerful Lightweight Graphics Library](https://www.sitepoint.com/introducing-graphicsjs-a-powerful-lightweight-graphics-library/) by @RomanLubushkin
+- [Introducing GraphicsJS, a Powerful Lightweight Graphics Library](https://www.sitepoint.com/introducing-graphicsjs-a-powerful-lightweight-graphics-library/) by [@RomanLubushkin](https://github.com/RomanLubushkin)
 - [GraphicsJS Overview](https://docs.anychart.com/Graphics/Overview) by [AnyChart](http://www.anychart.com/)
 
 # Building
 
 *Coming soon.*
+
+# Contributing
+
+To contribute to AnyChart project please:
+
+* Fork GraphicsJS repository.
+* Create a branch from the `develop` branch.
+* Make any changes you want to contribute.
+* Create a pull request against the `develop` branch.
+
+[GitHub documentation: Forking repositories](https://help.github.com/articles/fork-a-repo/).  
+[GitHub documentation: Collaborating using pull requests](https://help.github.com/categories/collaborating-with-issues-and-pull-requests/).
 
 # Links
 - [GraphicsJS  Website](http://www.graphicsjs.org/)
