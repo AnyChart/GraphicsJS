@@ -2,7 +2,7 @@
 GraphicsJS is a lightweight JavaScript graphics library with the intuitive API, based on SVG/VML technology.
 
 * [Overview](#overview)
-* [Quick Start](#quick_start)
+* [Quick Start](#quick-start)
 * [Articles](#articles)
 * [Building](#building)
 * [Links](#articles)
