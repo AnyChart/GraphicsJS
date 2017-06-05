@@ -373,6 +373,24 @@ acgraph.vector.Layer.prototype.text = function(opt_x, opt_y, opt_text, opt_style
 
 
 /**
+ Invokes {@link acgraph.vector.SimpleText} class constructor.<br/>
+ <strong>Note:</strong><br>acgraph.vector.Layer does nothing to delete an object after it is used.
+ You need to take care of used objects yourself.
+ @param {string=} opt_text Text to be displayed.
+ @return {!acgraph.vector.SimpleText} {@link acgraph.vector.SimpleText} instance for method chaining.
+ @this {acgraph.vector.ILayer}
+ */
+acgraph.vector.Layer.prototype.simpleText = function(opt_text) {
+  /** @type {!acgraph.vector.SimpleText} */
+  var text = acgraph.simpleText();
+  if (opt_text) text.text(opt_text);
+  text.parent(this);
+
+  return text;
+};
+
+
+/**
  Invokes {@link acgraph.vector.Text} class constructor and applies {@link acgraph.vector.Text#htmlText} method
  to handle HTML formatting.<br/>
  <strong>Note:</strong><br>acgraph.vector.Layer does nothing to delete an object after it is used.

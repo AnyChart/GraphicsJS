@@ -68,9 +68,8 @@ acgraph.vector.Renderer.prototype.getEmptyStringBounds = function(style) {
  * Returns simple hash of a passed style object.
  * @param {Object} value Style object.
  * @return {string} Hash of a style object.
- * @private
  */
-acgraph.vector.Renderer.prototype.getStyleHash_ = function(value) {
+acgraph.vector.Renderer.prototype.getStyleHash = function(value) {
   var hash = '';
   for (var j = 0, l = this.settingsAffectingSize.length; j < l; j++) {
     var prop = value[this.settingsAffectingSize[j]];
@@ -92,7 +91,7 @@ acgraph.vector.Renderer.prototype.getStyleHash_ = function(value) {
  */
 acgraph.vector.Renderer.prototype.textBounds = function(text, style, opt_bounds) {
   var boundsCache = this.textBoundsCache;
-  var styleHash = this.getStyleHash_(style);
+  var styleHash = this.getStyleHash(style);
   var styleCache = boundsCache[styleHash];
   if (!styleCache) styleCache = boundsCache[styleHash] = {};
   var textBoundsCache = styleCache[text];
@@ -104,6 +103,18 @@ acgraph.vector.Renderer.prototype.textBounds = function(text, style, opt_bounds)
 
 
 /**
+ * Measure DOM text element.
+ * @param {Element} element .
+ * @param {string} text .
+ * @param {Object} style .
+ * @return {goog.math.Rect} .
+ */
+acgraph.vector.Renderer.prototype.getBBox = function(element, text, style) {
+  return this.textBounds(text, style);
+};
+
+
+/**
  * Whether the cache contains bounds of passed text and style.
  * @param {string} text .
  * @param {Object} style .
@@ -111,7 +122,7 @@ acgraph.vector.Renderer.prototype.textBounds = function(text, style, opt_bounds)
  */
 acgraph.vector.Renderer.prototype.isInBoundsCache = function(text, style) {
   var boundsCache = this.textBoundsCache;
-  var styleHash = this.getStyleHash_(style);
+  var styleHash = this.getStyleHash(style);
   var styleCache = boundsCache[styleHash];
 
   return !!(styleCache && styleCache[text]);

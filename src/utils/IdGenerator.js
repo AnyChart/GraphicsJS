@@ -38,6 +38,7 @@ acgraph.utils.IdGenerator.ElementTypePrefix = {
   LINEAR_GRADIENT: 'linearGradient',
   RADIAL_GRADIENT: 'radialGradient',
   TEXT: 'text',
+  SIMPLE_TEXT: 'simpleText',
   TEXT_SEGMENT: 'tSegment',
   IMAGE: 'image',
   CLIP: 'clip',

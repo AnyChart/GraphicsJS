@@ -232,9 +232,8 @@ acgraph.vector.vml.Renderer.prototype.measurementImage_ = null;
 //----------------------------------------------------------------------------------------------------------------------
 /**
  * Desc.
- * @private
  */
-acgraph.vector.vml.Renderer.prototype.createMeasurement_ = function() {
+acgraph.vector.vml.Renderer.prototype.createMeasurement = function() {
 
   //Text bounds
 
@@ -293,7 +292,7 @@ acgraph.vector.vml.Renderer.prototype.createMeasurement_ = function() {
  * @return {goog.math.Rect} Image bounds.
  */
 acgraph.vector.vml.Renderer.prototype.measuringImage = function(src) {
-  if (!this.measurement_) this.createMeasurement_();
+  if (!this.measurement_) this.createMeasurement();
   this.setAttribute_(this.measurementImage_, 'src', src);
   return goog.style.getBounds(this.measurementImage_);
 };
@@ -307,7 +306,7 @@ acgraph.vector.vml.Renderer.prototype.measuringImage = function(src) {
  * @return {goog.math.Rect} Text bounds.
  */
 acgraph.vector.vml.Renderer.prototype.measuringSimpleText = function(text, segmentStyle, textStyle) {
-  if (!this.measurement_) this.createMeasurement_();
+  if (!this.measurement_) this.createMeasurement();
 
   this.measurementSimpleText_.style.cssText = '';
 
@@ -350,7 +349,7 @@ acgraph.vector.vml.Renderer.prototype.measuringSimpleText = function(text, segme
  */
 acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
   if (text == '') return new goog.math.Rect(0, 0, 0, 0);
-  if (!this.measurement_) this.createMeasurement_();
+  if (!this.measurement_) this.createMeasurement();
 
   goog.dom.removeNode(this.measurementVMLTextPath_);
   this.measurementVMLTextPath_ = /** @type {Element} */ (this.createTextNode(''));
@@ -403,7 +402,7 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
   }
   if (style.letterSpacing) {
     goog.style.setStyle(this.measurementText_, 'letter-spacing', style['letterSpacing']);
-    this.measurementVMLTextPath_.style['v-text-spacing'] = style['letterSpacing'];
+    this.measurementVMLTextPath_.style['v-text-spacing'] = style['letterSpacing'] == 'normal' ? '' : style['letterSpacing'];
   }
   if (style.decoration) {
     goog.style.setStyle(this.measurementText_, 'text-decoration', style['decoration']);
@@ -437,7 +436,7 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
  * @return {goog.math.Rect} .
  */
 acgraph.vector.vml.Renderer.prototype.measureElement = function(element) {
-  if (!this.measurement_) this.createMeasurement_();
+  if (!this.measurement_) this.createMeasurement();
 
   if (goog.isString(element)) {
     this.measurementGroupNode_.innerHTML = element;
@@ -1458,7 +1457,7 @@ acgraph.vector.vml.Renderer.prototype.setTextSegmentProperties = function(elemen
   if (style['fontFamily']) goog.style.setStyle(textNode, 'font-family', style['fontFamily']);
   if (style['fontSize']) goog.style.setStyle(textNode, 'font-size', style['fontSize']);
   if (style['fontWeight']) goog.style.setStyle(textNode, 'font-weight', style['fontWeight']);
-  if (style['letterSpacing']) textNode.style['v-text-spacing'] = style['letterSpacing'];
+  if (style['letterSpacing']) textNode.style['v-text-spacing'] = style['letterSpacing'] == 'normal' ? '' : style['letterSpacing'];
   if (style['decoration']) goog.style.setStyle(textNode, 'text-decoration', style['decoration']);
   if (style['hAlign']) {
     if (textEntry.rtl)
@@ -2134,8 +2133,10 @@ acgraph.vector.vml.Renderer.prototype.addClip_ = function(element, clipRect, isL
     clipRect = acgraph.math.getBoundsOfRectWithTransform(clipRect, tx);
   } else {
     // element clip
-    clipRect.left -= element.getX();
-    clipRect.top -= element.getY();
+    if (!(element instanceof acgraph.vector.vml.Text && !element.isComplex())) {
+      clipRect.left -= element.getX() || 0;
+      clipRect.top -= element.getY() || 0;
+    }
   }
 
   var left = clipRect.left;
