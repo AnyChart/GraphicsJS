@@ -399,7 +399,7 @@ acgraph.vector.AnyColor;
     hAlign: (acgraph.vector.Text.HAlign|string|undefined),
     width: (number|string|undefined),
     height: (number|string|undefined),
-    textWrap: (acgraph.vector.Text.TextWrap|undefined),
+    wordWrap: (string|undefined),
     textOverflow: (acgraph.vector.Text.TextOverflow|string|undefined),
     selectable: (boolean|undefined)
  }}
