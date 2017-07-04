@@ -400,6 +400,7 @@ acgraph.vector.AnyColor;
     width: (number|string|undefined),
     height: (number|string|undefined),
     wordWrap: (string|undefined),
+    wordBreak: (string|undefined),
     textOverflow: (acgraph.vector.Text.TextOverflow|string|undefined),
     selectable: (boolean|undefined)
  }}

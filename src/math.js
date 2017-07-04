@@ -214,6 +214,109 @@ acgraph.math.calcCurveBounds = function(var_args) {
 
 
 /**
+ * Returns approximate curve length.
+ * @param {Array.<number>} params .
+ * @param {number=} opt_approxSteps .
+ * @return {number}
+ */
+acgraph.math.bezierCurveLength = function(params, opt_approxSteps) {
+  var steps = opt_approxSteps || 100;
+  var len = params.length;
+  var order = len / 2 - 1;
+  var points = [], ret;
+
+  for (var idx = 0, step = 2; idx < len; idx += step) {
+    var point = {
+      x: params[idx],
+      y: params[idx + 1]
+    };
+    points.push(point);
+  }
+
+  var lut = [];
+  for (var t = 0; t <= steps; t++) {
+    var t_ = t / steps;
+    var ZERO = {x: 0, y: 0};
+
+    // shortcuts
+    if (t_ === 0) {
+      lut.push(points[0]);
+      continue;
+    }
+    if (t_ === 1) {
+      lut.push(points[order]);
+      continue;
+    }
+
+    var p = points;
+    var mt = 1 - t_;
+
+    // linear?
+    if (order === 1) {
+      ret = {
+        x: mt * p[0].x + t_ * p[1].x,
+        y: mt * p[0].y + t_ * p[1].y
+      };
+      lut.push(ret);
+      continue;
+    }
+
+    // quadratic/cubic curve?
+    if (order < 4) {
+      var mt2 = mt * mt,
+          t2 = t_ * t_,
+          a, b, c, d = 0;
+      if (order === 2) {
+        p = [p[0], p[1], p[2], ZERO];
+        a = mt2;
+        b = mt * t_ * 2;
+        c = t2;
+      }
+      else if (order === 3) {
+        a = mt2 * mt;
+        b = mt2 * t_ * 3;
+        c = mt * t2 * 3;
+        d = t_ * t2;
+      }
+      ret = {
+        x: a * p[0].x + b * p[1].x + c * p[2].x + d * p[3].x,
+        y: a * p[0].y + b * p[1].y + c * p[2].y + d * p[3].y
+      };
+      lut.push(ret);
+      continue;
+    }
+
+    // higher order curves: use de Casteljau's computation
+    var dCpts = JSON.parse(JSON.stringify(points));
+    while (dCpts.length > 1) {
+      for (var i = 0; i < dCpts.length - 1; i++) {
+        dCpts[i] = {
+          x: dCpts[i].x + (dCpts[i + 1].x - dCpts[i].x) * t_,
+          y: dCpts[i].y + (dCpts[i + 1].y - dCpts[i].y) * t_
+        };
+      }
+      dCpts.splice(dCpts.length - 1, 1);
+    }
+
+    lut.push(dCpts[0]);
+  }
+
+  var pts = lut;
+  var p0 = points[0];
+  var alen = 0;
+  for (var i = 0, p1, dx, dy; i < pts.length - 1; i++) {
+    p0 = pts[i];
+    p1 = pts[i + 1];
+    dx = p1.x - p0.x;
+    dy = p1.y - p0.y;
+    alen += Math.sqrt(dx * dx + dy * dy);
+  }
+  alen = ((100 * alen) | 0) / 100;
+  return alen;
+};
+
+
+/**
  * Multiplication of N matrices.
  * @param {...goog.math.AffineTransform} var_args The matrices to be multiplied.
  * @return {goog.math.AffineTransform} The resulting transformation matrix.

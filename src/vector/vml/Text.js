@@ -154,9 +154,13 @@ acgraph.vector.vml.Text.prototype.render = function() {
 };
 
 
-/**
- * Applies text properties to its DOM element
- */
+/** @inheritDoc */
+acgraph.vector.vml.Text.prototype.renderTextPath = function() {
+  this.clearDirtyState(acgraph.vector.Element.DirtyState.CHILDREN);
+};
+
+
+/** @inheritDoc */
 acgraph.vector.vml.Text.prototype.renderPosition = function() {
   if (this.isComplex_) {
     goog.base(this, 'renderPosition');
@@ -200,7 +204,7 @@ acgraph.vector.vml.Text.prototype.getTextBounds = function(text, segmentStyle) {
     var bounds = acgraph.getRenderer().measuringSimpleText(text, segmentStyle, this.style());
     bounds.left = this.x();
     bounds.top = this.y();
-    this.realHeigth = bounds.height;
+    this.realHeight = bounds.height;
     if (this.height()) bounds.height = this.height();
     return bounds;
   }

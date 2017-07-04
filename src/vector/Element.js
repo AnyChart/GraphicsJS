@@ -1028,7 +1028,6 @@ acgraph.vector.Element.prototype.getTransformationMatrix = function() {
  * Even if you only want to define which DOM must be used - you need to overload.
  * {@link acgraph.vector.Element#createDomInternal}.
  * @param {boolean=} opt_force .
- * @protected
  */
 acgraph.vector.Element.prototype.createDom = function(opt_force) {
   var stage = this.getStage();
@@ -1172,7 +1171,6 @@ acgraph.vector.Element.prototype.renderVisibility = function() {
 
 /**
  * Applies transformation to the DOM element.
- * @protected
  */
 acgraph.vector.Element.prototype.renderTransformation = function() {
   // Resolve transformation state

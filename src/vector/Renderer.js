@@ -446,6 +446,13 @@ acgraph.vector.Renderer.prototype.createTextSegmentElement = goog.abstractMethod
 
 
 /**
+ * Creates and returns DOM element for Text Path Element.
+ * @return {Element} .
+ */
+acgraph.vector.Renderer.prototype.createTextPathElement = function() {return null};
+
+
+/**
  * Creates and returns additional DOM element for the text segment. It contains the text directly.
  * @param {string} text Text.
  * @return {Element|Text} Text Node DOM Element.

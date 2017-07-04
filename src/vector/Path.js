@@ -190,4 +190,5 @@ acgraph.vector.Path.prototype.getCurrentPoint = function() {
   proto['close'] = proto.close;
   proto['clear'] = proto.clear;
   proto['getCurrentPoint'] = proto.getCurrentPoint;
+  proto['getLength'] = proto.getLength;
 })();

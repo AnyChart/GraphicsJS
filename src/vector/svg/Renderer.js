@@ -167,9 +167,11 @@ acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
   this.measurement_ = this.createSVGElement_('svg');
   this.measurementText_ = this.createTextElement();
   this.measurementTextNode_ = this.createTextNode('');
+  this.mesurmentDef_ = this.createDefsElement();
 
   goog.dom.appendChild(this.measurementText_, this.measurementTextNode_);
   goog.dom.appendChild(this.measurement_, this.measurementText_);
+  goog.dom.appendChild(this.measurement_, this.mesurmentDef_);
   goog.dom.appendChild(goog.dom.getDocument().body, this.measurement_);
 
   this.measurementLayerForBBox_ = this.createLayerElement();
@@ -247,6 +249,63 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
   }
 
   return new goog.math.Rect(bbox.x, bbox.y, bbox.width + additionWidth, bbox.height);
+};
+
+
+/**
+ * Measure text element in dom.
+ * @param {acgraph.vector.Text} element .
+ * @return {goog.math.Rect}
+ */
+acgraph.vector.svg.Renderer.prototype.measureTextDom = function(element) {
+  if (!this.measurement_)
+    this.createMeasurement();
+  if (!element.defragmented)
+    element.textDefragmentation();
+
+  var parent, id;
+  var path = /** @type {acgraph.vector.Path} */(element.path());
+
+  if (!path.domElement()) {
+    path.createDom(true);
+  }
+  this.setPathProperties(path);
+
+
+  parent = path.domElement().parentNode;
+  this.appendChild(this.mesurmentDef_, path.domElement());
+
+  if (!parent) {
+    id = acgraph.utils.IdGenerator.getInstance().identify(path.domElement(), acgraph.utils.IdGenerator.ElementTypePrefix.PATH);
+    this.setIdInternal(path.domElement(), id);
+  }
+
+  if (!element.domElement()) {
+    element.createDom(true);
+  }
+
+  element.renderTextPath();
+  element.renderData();
+  element.renderStyle();
+  element.renderPosition();
+  element.renderTransformation();
+
+  id = acgraph.utils.IdGenerator.getInstance().identify(path.domElement(), acgraph.utils.IdGenerator.ElementTypePrefix.PATH);
+  var pathPrefix = acgraph.getReference();
+  element.textPath.setAttributeNS(acgraph.vector.svg.Renderer.XLINK_NS_, 'href', pathPrefix + '#' + id);
+
+  var domElement = element.domElement();
+
+  parent = domElement.parentNode;
+  goog.dom.appendChild(this.measurement_, domElement);
+
+  var bbox = element.domElement()['getBBox']();
+
+  if (parent) {
+    goog.dom.appendChild(parent, domElement);
+  }
+
+  return new goog.math.Rect(bbox.x, bbox.y, bbox.width, bbox.height);
 };
 
 
@@ -607,6 +666,12 @@ acgraph.vector.svg.Renderer.prototype.createTextElement = function() {
 
 
 /** @inheritDoc */
+acgraph.vector.svg.Renderer.prototype.createTextPathElement = function() {
+  return this.createSVGElement_('textPath');
+};
+
+
+/** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.createTextSegmentElement = function() {
   return this.createSVGElement_('tspan');
 };
@@ -689,7 +754,25 @@ acgraph.vector.svg.Renderer.prototype.setTextData = function(element) {
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setTextProperties = function(element) {
   var style = element.style();
+  var path = /** @type {acgraph.vector.Path} */(element.path());
   var domElement = element.domElement();
+
+  if (path && element.getStage()) {
+    var defs = /** @type {!acgraph.vector.svg.Defs} */(element.getStage().getDefs());
+
+    path.parent(defs);
+    path.render();
+    path.clearDirtyState(acgraph.vector.Element.DirtyState.ALL);
+    var pathElement = path.domElement();
+    this.appendChild(defs.domElement(), pathElement);
+
+    var id = acgraph.utils.IdGenerator.getInstance().identify(pathElement, acgraph.utils.IdGenerator.ElementTypePrefix.PATH);
+    this.setIdInternal(pathElement, id);
+
+    var pathPrefix = acgraph.getReference();
+    element.textPath.setAttributeNS(acgraph.vector.svg.Renderer.XLINK_NS_, 'href', pathPrefix + '#' + id);
+  }
+
 
   if (!element.selectable()) {
     domElement.style['-webkit-touch-callout'] = 'none';
@@ -786,7 +869,7 @@ acgraph.vector.svg.Renderer.prototype.setTextProperties = function(element) {
   else
     this.removeAttribute_(domElement, 'direction');
 
-  if (style['hAlign']) {
+  if (style['hAlign'] && !path) {
     var align;
 
     if (style['direction'] == 'rtl') {
@@ -826,7 +909,9 @@ acgraph.vector.svg.Renderer.prototype.setTextSegmentPosition = function(element)
   var domElement = element.domElement();
   var text = element.parent();
 
-  if (element.firstInLine || element.dx) this.setAttribute_(domElement, 'x', text.calcX + element.dx);
+  if (element.firstInLine || element.dx)
+    this.setAttribute_(domElement, 'x', text.path() ? element.dx : text.calcX + element.dx);
+
   this.setAttribute_(domElement, 'dy', element.dy);
 };
 
@@ -874,6 +959,9 @@ acgraph.vector.svg.Renderer.prototype.setTextSegmentProperties = function(elemen
 
   if (style.decoration)
     this.setAttribute_(domElement, 'text-decoration', style.decoration);
+
+  var targetDomElement = element.parent().path() ? element.parent().textPath : element.parent().domElement();
+  goog.dom.appendChild(targetDomElement, domElement);
 };
 
 

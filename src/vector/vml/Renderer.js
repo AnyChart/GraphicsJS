@@ -1341,23 +1341,26 @@ acgraph.vector.vml.Renderer.prototype.setTextPosition = function(element) {
 
   var x, y;
   if (element.isComplex()) {
-    y = element.calcY;
-    if (element.getSegments().length)
-      y -= element.getSegments()[0].baseLine;
-    x = element.calcX;
-    this.setAttributes_(domElementStyle, {
-      'position': 'absolute',
-      'overflow': 'visible',
-      'left': this.toCssSize_(x),
-      'top': this.toCssSize_(y)
-    });
+    if (!element.path()) {
+      y = element.calcY;
+      if (element.getSegments().length)
+        y -= element.getSegments()[0].baseLine;
+      x = element.calcX;
+
+      this.setAttributes_(domElementStyle, {
+        'position': 'absolute',
+        'overflow': 'visible',
+        'left': this.toCssSize_(x),
+        'top': this.toCssSize_(y)
+      });
+    }
   } else {
     x = /** @type {number} */ (element.x());
     y = /** @type {number} */ (element.y());
 
-    if (element.vAlign() && element.height() && element.height() > element.realHeigth) {
-      if (element.vAlign() == acgraph.vector.Text.VAlign.MIDDLE) y += element.height() / 2 - element.realHeigth / 2;
-      if (element.vAlign() == acgraph.vector.Text.VAlign.BOTTOM) y += element.height() - element.realHeigth;
+    if (element.vAlign() && element.height() && element.height() > element.realHeight) {
+      if (element.vAlign() == acgraph.vector.Text.VAlign.MIDDLE) y += element.height() / 2 - element.realHeight / 2;
+      if (element.vAlign() == acgraph.vector.Text.VAlign.BOTTOM) y += element.height() - element.realHeight;
     }
 
     this.setAttributes_(domElementStyle, {
@@ -1376,10 +1379,12 @@ acgraph.vector.vml.Renderer.prototype.setTextProperties = function(element) {
   var domElementStyle = domElement['style'];
   domElement.style.cssText = '';
   if (element.isComplex()) {
-    this.setAttributes_(domElementStyle, {
-      'width': this.toCssSize_(1),
-      'height': this.toCssSize_(1)
-    });
+    if (!element.path()) {
+      this.setAttributes_(domElementStyle, {
+        'width': this.toCssSize_(1),
+        'height': this.toCssSize_(1)
+      });
+    }
     domElement.innerHTML = '';
   } else {
     var text = element.getSimpleText();
@@ -1446,14 +1451,22 @@ acgraph.vector.vml.Renderer.prototype.setTextProperties = function(element) {
 /** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.setTextSegmentPosition = function(element) {
   var domElement = element.domElement();
-  var path =
-      'm ' +
-          this.toSizeCoord_(element.x) + ',' +
-          this.toSizeCoord_(element.y) + ' l ' +
-          (this.toSizeCoord_(element.x) + 1) + ',' +
-          this.toSizeCoord_(element.y) + ' e';
+  var originalPath = element.parent().path();
+  if (originalPath) {
+    var textPath = /** @type {acgraph.vector.Path} */(acgraph.path());
+    textPath.deserialize(originalPath.serializePathArgs());
+    if (element.firstInLine)
+      textPath.translate(element.dx, element.dy);
 
-  domElement.setAttribute('path', path);
+    var path = originalPath ?
+        this.getVmlPath_(textPath, true) :
+        'm ' +
+        this.toSizeCoord_(element.x) + ',' +
+        this.toSizeCoord_(element.y) + ' l ' +
+        (this.toSizeCoord_(element.x) + 1) + ',' +
+        this.toSizeCoord_(element.y) + ' e';
+    domElement.setAttribute('path', /** @type {string} */(path));
+  }
 };
 
 
@@ -1508,6 +1521,8 @@ acgraph.vector.vml.Renderer.prototype.setTextSegmentProperties = function(elemen
   domElement.setAttribute('filled', 't');
   domElement.setAttribute('fillcolor', style['color']);
   domElement.setAttribute('stroked', 'f');
+
+  goog.dom.appendChild(textEntry.domElement(), domElement);
 };
 
 
@@ -1986,17 +2001,19 @@ acgraph.vector.vml.Renderer.prototype.setTextTransformation = function(element) 
 
   var x, y;
   if (element.isComplex()) {
-    y = element.calcY;
-    if (element.getSegments().length)
-      y -= element.getSegments()[0].baseLine;
-    x = element.calcX;
+    if (!element.path()) {
+      y = element.calcY;
+      if (element.getSegments().length)
+        y -= element.getSegments()[0].baseLine;
+      x = element.calcX;
 
-    this.setAttributes_(domElementStyle, {
-      'position': 'absolute',
-      'overflow': 'visible',
-      'left': this.toCssSize_(x + tx.getTranslateX()),
-      'top': this.toCssSize_(y + tx.getTranslateY())
-    });
+      this.setAttributes_(domElementStyle, {
+        'position': 'absolute',
+        'overflow': 'visible',
+        'left': this.toCssSize_(x + tx.getTranslateX()),
+        'top': this.toCssSize_(y + tx.getTranslateY())
+      });
+    }
 
     var changed = element.isScaleOrShearChanged();
     if (changed) {
@@ -2045,9 +2062,9 @@ acgraph.vector.vml.Renderer.prototype.setTextTransformation = function(element) 
     x = element.x();
     y = element.y();
 
-    if (element.vAlign() && element.height() && element.height() > element.realHeigth) {
-      if (element.vAlign() == 'middle') y += element.height() / 2 - element.realHeigth / 2;
-      if (element.vAlign() == 'bottom') y += element.height() - element.realHeigth;
+    if (element.vAlign() && element.height() && element.height() > element.realHeight) {
+      if (element.vAlign() == 'middle') y += element.height() / 2 - element.realHeight / 2;
+      if (element.vAlign() == 'bottom') y += element.height() - element.realHeight;
     }
 
     this.setAttributes_(domElementStyle, {

@@ -109,8 +109,7 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
    * @private
    */
   this.defs_ = this.createDefs();
-  this.defs_.createDom();
-  acgraph.getRenderer().appendChild(this.domElement_, this.defs_.domElement());
+  this.defs_.render();
 
   /**
    * Root layer for Stage. All layer and elements added to stage go in this layer.
