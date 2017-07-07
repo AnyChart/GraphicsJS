@@ -1947,6 +1947,7 @@ acgraph.vector.Text.prototype.disposeInternal = function() {
   proto['wordBreak'] = proto.wordBreak;
   proto['textOverflow'] = proto.textOverflow;
   proto['selectable'] = proto.selectable;
+  proto['path'] = proto.path;
   goog.exportSymbol('acgraph.vector.Text.WordBreak.NORMAL', acgraph.vector.Text.WordBreak.NORMAL);
   goog.exportSymbol('acgraph.vector.Text.WordBreak.BREAK_ALL', acgraph.vector.Text.WordBreak.BREAK_ALL);
   goog.exportSymbol('acgraph.vector.Text.WordBreak.KEEP_ALL', acgraph.vector.Text.WordBreak.KEEP_ALL);
