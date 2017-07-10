@@ -561,8 +561,6 @@ acgraph.updateReferences = function() {
   goog.exportSymbol('acgraph.create', acgraph.create);
   goog.exportSymbol('acgraph.type', acgraph.type);
   goog.exportSymbol('acgraph.server', acgraph.server);
-  goog.exportSymbol('acgraph.StageType.SVG', acgraph.StageType.SVG);
-  goog.exportSymbol('acgraph.StageType.VML', acgraph.StageType.VML);
   goog.exportSymbol('acgraph.rect', acgraph.rect);
   goog.exportSymbol('acgraph.circle', acgraph.circle);
   goog.exportSymbol('acgraph.ellipse', acgraph.ellipse);

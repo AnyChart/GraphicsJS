@@ -159,7 +159,7 @@ acgraph.vector.Rect.prototype.setBounds = function(value) {
 acgraph.vector.Rect.CornerType = {
   ROUND: 'round',
   CUT: 'cut',
-  ROUND_INNER: 'roundInner'
+  ROUND_INNER: 'round-inner'
 };
 
 

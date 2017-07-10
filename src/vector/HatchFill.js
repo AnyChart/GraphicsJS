@@ -70,38 +70,38 @@ acgraph.vector.HatchFill.serialize = function(type, color, thickness, size) {
  @enum {string}
  */
 acgraph.vector.HatchFill.HatchFillType = {
-  BACKWARD_DIAGONAL: 'backwardDiagonal',
-  FORWARD_DIAGONAL: 'forwardDiagonal',
+  BACKWARD_DIAGONAL: 'backward-diagonal',
+  FORWARD_DIAGONAL: 'forward-diagonal',
   HORIZONTAL: 'horizontal',
   VERTICAL: 'vertical',
-  DASHED_BACKWARD_DIAGONAL: 'dashedBackwardDiagonal',
+  DASHED_BACKWARD_DIAGONAL: 'dashed-backward-diagonal',
   GRID: 'grid',
-  DASHED_FORWARD_DIAGONAL: 'dashedForwardDiagonal',
-  DASHED_HORIZONTAL: 'dashedHorizontal',
-  DASHED_VERTICAL: 'dashedVertical',
-  DIAGONAL_CROSS: 'diagonalCross',
-  DIAGONAL_BRICK: 'diagonalBrick',
+  DASHED_FORWARD_DIAGONAL: 'dashed-forward-diagonal',
+  DASHED_HORIZONTAL: 'dashed-horizontal',
+  DASHED_VERTICAL: 'dashed-vertical',
+  DIAGONAL_CROSS: 'diagonal-cross',
+  DIAGONAL_BRICK: 'diagonal-brick',
   DIVOT: 'divot',
-  HORIZONTAL_BRICK: 'horizontalBrick',
-  VERTICAL_BRICK: 'verticalBrick',
-  CHECKER_BOARD: 'checkerBoard',
+  HORIZONTAL_BRICK: 'horizontal-brick',
+  VERTICAL_BRICK: 'vertical-brick',
+  CHECKER_BOARD: 'checker-board',
   CONFETTI: 'confetti',
   PLAID: 'plaid',
-  SOLID_DIAMOND: 'solidDiamond',
-  ZIG_ZAG: 'zigZag',
+  SOLID_DIAMOND: 'solid-diamond',
+  ZIG_ZAG: 'zig-zag',
   WEAVE: 'weave',
-  PERCENT_05: 'percent05',
-  PERCENT_10: 'percent10',
-  PERCENT_20: 'percent20',
-  PERCENT_25: 'percent25',
-  PERCENT_30: 'percent30',
-  PERCENT_40: 'percent40',
-  PERCENT_50: 'percent50',
-  PERCENT_60: 'percent60',
-  PERCENT_70: 'percent70',
-  PERCENT_75: 'percent75',
-  PERCENT_80: 'percent80',
-  PERCENT_90: 'percent90'
+  PERCENT_05: 'percent-05',
+  PERCENT_10: 'percent-10',
+  PERCENT_20: 'percent-20',
+  PERCENT_25: 'percent-25',
+  PERCENT_30: 'percent-30',
+  PERCENT_40: 'percent-40',
+  PERCENT_50: 'percent-50',
+  PERCENT_60: 'percent-60',
+  PERCENT_70: 'percent-70',
+  PERCENT_75: 'percent-75',
+  PERCENT_80: 'percent-80',
+  PERCENT_90: 'percent-90'
 };
 
 
@@ -115,7 +115,7 @@ acgraph.vector.HatchFill.normalizeHatchFillType = function(value, opt_default) {
   value = value.toLowerCase();
 
   for (var i in acgraph.vector.HatchFill.HatchFillType) {
-    if (acgraph.vector.HatchFill.HatchFillType[i].toLowerCase() == value)
+    if (acgraph.vector.HatchFill.HatchFillType[i].toLowerCase() == value || acgraph.vector.HatchFill.HatchFillType[i].toLowerCase().replace(/-/g, '') == value)
       return acgraph.vector.HatchFill.HatchFillType[i];
   }
   return opt_default || acgraph.vector.HatchFill.HatchFillType.BACKWARD_DIAGONAL;
@@ -617,35 +617,3 @@ acgraph.vector.HatchFill.prototype.disposeInternal = function() {
   var proto = acgraph.vector.HatchFill.prototype;
   proto['dispose'] = proto.dispose;
 })();
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.BACKWARD_DIAGONAL', acgraph.vector.HatchFill.HatchFillType.BACKWARD_DIAGONAL);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.FORWARD_DIAGONAL', acgraph.vector.HatchFill.HatchFillType.FORWARD_DIAGONAL);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.HORIZONTAL', acgraph.vector.HatchFill.HatchFillType.HORIZONTAL);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.VERTICAL', acgraph.vector.HatchFill.HatchFillType.VERTICAL);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.DASHED_BACKWARD_DIAGONAL', acgraph.vector.HatchFill.HatchFillType.DASHED_BACKWARD_DIAGONAL);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.GRID', acgraph.vector.HatchFill.HatchFillType.GRID);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.DASHED_FORWARD_DIAGONAL', acgraph.vector.HatchFill.HatchFillType.DASHED_FORWARD_DIAGONAL);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.DASHED_HORIZONTAL', acgraph.vector.HatchFill.HatchFillType.DASHED_HORIZONTAL);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.DASHED_VERTICAL', acgraph.vector.HatchFill.HatchFillType.DASHED_VERTICAL);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.DIAGONAL_CROSS', acgraph.vector.HatchFill.HatchFillType.DIAGONAL_CROSS);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.DIAGONAL_BRICK', acgraph.vector.HatchFill.HatchFillType.DIAGONAL_BRICK);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.DIVOT', acgraph.vector.HatchFill.HatchFillType.DIVOT);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.HORIZONTAL_BRICK', acgraph.vector.HatchFill.HatchFillType.HORIZONTAL_BRICK);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.VERTICAL_BRICK', acgraph.vector.HatchFill.HatchFillType.VERTICAL_BRICK);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.CHECKER_BOARD', acgraph.vector.HatchFill.HatchFillType.CHECKER_BOARD);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.CONFETTI', acgraph.vector.HatchFill.HatchFillType.CONFETTI);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.PLAID', acgraph.vector.HatchFill.HatchFillType.PLAID);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.SOLID_DIAMOND', acgraph.vector.HatchFill.HatchFillType.SOLID_DIAMOND);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.ZIG_ZAG', acgraph.vector.HatchFill.HatchFillType.ZIG_ZAG);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.WEAVE', acgraph.vector.HatchFill.HatchFillType.WEAVE);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.PERCENT_05', acgraph.vector.HatchFill.HatchFillType.PERCENT_05);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.PERCENT_10', acgraph.vector.HatchFill.HatchFillType.PERCENT_10);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.PERCENT_20', acgraph.vector.HatchFill.HatchFillType.PERCENT_20);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.PERCENT_25', acgraph.vector.HatchFill.HatchFillType.PERCENT_25);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.PERCENT_30', acgraph.vector.HatchFill.HatchFillType.PERCENT_30);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.PERCENT_40', acgraph.vector.HatchFill.HatchFillType.PERCENT_40);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.PERCENT_50', acgraph.vector.HatchFill.HatchFillType.PERCENT_50);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.PERCENT_60', acgraph.vector.HatchFill.HatchFillType.PERCENT_60);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.PERCENT_70', acgraph.vector.HatchFill.HatchFillType.PERCENT_70);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.PERCENT_75', acgraph.vector.HatchFill.HatchFillType.PERCENT_75);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.PERCENT_80', acgraph.vector.HatchFill.HatchFillType.PERCENT_80);
-goog.exportSymbol('acgraph.vector.HatchFill.HatchFillType.PERCENT_90', acgraph.vector.HatchFill.HatchFillType.PERCENT_90);

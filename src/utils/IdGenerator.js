@@ -24,25 +24,25 @@ goog.addSingletonGetter(acgraph.utils.IdGenerator);
 acgraph.utils.IdGenerator.ElementTypePrefix = {
   STAGE: 'stage',
   FILL: 'fill',
-  FILL_PATTERN: 'fillPattern',
-  HATCH_FILL: 'hatchFill',
-  IMAGE_FILL: 'imageFill',
+  FILL_PATTERN: 'fill-pattern',
+  HATCH_FILL: 'hatch-fill',
+  IMAGE_FILL: 'image-fill',
   STROKE: 'stroke',
   LAYER: 'layer',
-  UNMANAGEABLE_LAYER: 'unmanageablelayer',
+  UNMANAGEABLE_LAYER: 'unmanageable-layer',
   RECT: 'rect',
   CIRCLE: 'circle',
   ELLIPSE: 'ellipse',
   PATH: 'path',
-  GRADIENT_KEY: 'gKey',
-  LINEAR_GRADIENT: 'linearGradient',
-  RADIAL_GRADIENT: 'radialGradient',
+  GRADIENT_KEY: 'g-key',
+  LINEAR_GRADIENT: 'linear-gradient',
+  RADIAL_GRADIENT: 'radial-gradient',
   TEXT: 'text',
-  SIMPLE_TEXT: 'simpleText',
-  TEXT_SEGMENT: 'tSegment',
+  SIMPLE_TEXT: 'simple-text',
+  TEXT_SEGMENT: 't-segment',
   IMAGE: 'image',
   CLIP: 'clip',
-  SHAPE_TYPE: 'shapeType'
+  SHAPE_TYPE: 'shape-type'
 };
 
 

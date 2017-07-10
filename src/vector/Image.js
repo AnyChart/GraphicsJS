@@ -95,55 +95,55 @@ acgraph.vector.Image.Align = {
      Align the <min-x> of the element's ‘viewBox’ with the smallest X value of the viewport.
      Align the <min-y> of the element's ‘viewBox’ with the smallest Y value of the viewport.
    */
-  X_MIN_Y_MIN: 'xMinYMin',
+  X_MIN_Y_MIN: 'x-min-y-min',
   /**
    * Force uniform scaling.
      Align the midpoint X value of the element's ‘viewBox’ with the midpoint X value of the viewport.
      Align the <min-y> of the element's ‘viewBox’ with the smallest Y value of the viewport.
    */
-  X_MID_Y_MIN: 'xMidYMin',
+  X_MID_Y_MIN: 'x-mid-y-min',
   /**
    * Force uniform scaling.
      Align the <min-x>+<width> of the element's ‘viewBox’ with the maximum X value of the viewport.
      Align the <min-y> of the element's ‘viewBox’ with the smallest Y value of the viewport.
    */
-  X_MAX_Y_MIN: 'xMaxYMin',
+  X_MAX_Y_MIN: 'x-max-y-min',
   /**
    * Force uniform scaling.
      Align the <min-x> of the element's ‘viewBox’ with the smallest X value of the viewport.
      Align the midpoint Y value of the element's ‘viewBox’ with the midpoint Y value of the viewport.
    */
-  X_MIN_Y_MID: 'xMinYMid',
+  X_MIN_Y_MID: 'x-min-y-mid',
   /**
    * Force uniform scaling.
      Align the midpoint X value of the element's ‘viewBox’ with the midpoint X value of the viewport.
      Align the midpoint Y value of the element's ‘viewBox’ with the midpoint Y value of the viewport.
    */
-  X_MID_Y_MID: 'xMidYMid',
+  X_MID_Y_MID: 'x-mid-y-mid',
   /**
    * Force uniform scaling.
      Align the <min-x>+<width> of the element's ‘viewBox’ with the maximum X value of the viewport.
      Align the midpoint Y value of the element's ‘viewBox’ with the midpoint Y value of the viewport.
    */
-  X_MAX_Y_MID: 'xMaxYMid',
+  X_MAX_Y_MID: 'x-max-y-mid',
   /**
    * Force uniform scaling.
      Align the <min-x> of the element's ‘viewBox’ with the smallest X value of the viewport.
      Align the <min-y>+<height> of the element's ‘viewBox’ with the maximum Y value of the viewport.
    */
-  X_MIN_Y_MAX: 'xMinYMax',
+  X_MIN_Y_MAX: 'x-min-y-max',
   /**
    * Force uniform scaling.
      Align the midpoint X value of the element's ‘viewBox’ with the midpoint X value of the viewport.
      Align the <min-y>+<height> of the element's ‘viewBox’ with the maximum Y value of the viewport.
    */
-  X_MID_Y_MAX: 'xMidYMax',
+  X_MID_Y_MAX: 'x-mid-y-max',
   /**
    * Force uniform scaling.
      Align the <min-x>+<width> of the element's ‘viewBox’ with the maximum X value of the viewport.
      Align the <min-y>+<height> of the element's ‘viewBox’ with the maximum Y value of the viewport.
    */
-  X_MAX_Y_MAX: 'xMaxYMax'
+  X_MAX_Y_MAX: 'x-max-y-max'
 };
 
 
@@ -445,16 +445,4 @@ acgraph.vector.Image.prototype.disposeInternal = function() {
   proto['width'] = proto.width;
   proto['height'] = proto.height;
   proto['src'] = proto.src;
-  goog.exportSymbol('acgraph.vector.Image.Fitting.MEET', acgraph.vector.Image.Fitting.MEET);
-  goog.exportSymbol('acgraph.vector.Image.Fitting.SLICE', acgraph.vector.Image.Fitting.SLICE);
-  goog.exportSymbol('acgraph.vector.Image.Align.NONE', acgraph.vector.Image.Align.NONE);
-  goog.exportSymbol('acgraph.vector.Image.Align.X_MIN_Y_MIN', acgraph.vector.Image.Align.X_MIN_Y_MIN);
-  goog.exportSymbol('acgraph.vector.Image.Align.X_MID_Y_MIN', acgraph.vector.Image.Align.X_MID_Y_MIN);
-  goog.exportSymbol('acgraph.vector.Image.Align.X_MAX_Y_MIN', acgraph.vector.Image.Align.X_MAX_Y_MIN);
-  goog.exportSymbol('acgraph.vector.Image.Align.X_MIN_Y_MID', acgraph.vector.Image.Align.X_MIN_Y_MID);
-  goog.exportSymbol('acgraph.vector.Image.Align.X_MID_Y_MID', acgraph.vector.Image.Align.X_MID_Y_MID);
-  goog.exportSymbol('acgraph.vector.Image.Align.X_MAX_Y_MID', acgraph.vector.Image.Align.X_MAX_Y_MID);
-  goog.exportSymbol('acgraph.vector.Image.Align.X_MIN_Y_MAX', acgraph.vector.Image.Align.X_MIN_Y_MAX);
-  goog.exportSymbol('acgraph.vector.Image.Align.X_MID_Y_MAX', acgraph.vector.Image.Align.X_MID_Y_MAX);
-  goog.exportSymbol('acgraph.vector.Image.Align.X_MAX_Y_MAX', acgraph.vector.Image.Align.X_MAX_Y_MAX);
 })();
