@@ -40,3 +40,6 @@ acgraph.vector.vml.Stage.prototype.createClip = function(opt_leftOrRect, opt_top
 //  // In VML all changes will be considered as DOM changes because both a fill and a line are subnodes, not attributes.
 //  return this.acquireDomChanges(1) > 0;
 //};
+
+//exports
+goog.exportSymbol('acgraph.vml.Stage', acgraph.vector.vml.Stage);

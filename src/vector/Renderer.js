@@ -449,7 +449,7 @@ acgraph.vector.Renderer.prototype.createTextSegmentElement = goog.abstractMethod
  * Creates and returns DOM element for Text Path Element.
  * @return {Element} .
  */
-acgraph.vector.Renderer.prototype.createTextPathElement = function() {return null};
+acgraph.vector.Renderer.prototype.createTextPathElement = function() { return null; };
 
 
 /**

@@ -23,7 +23,7 @@ acgraph.events.MouseWheelHandler = function(element, opt_capture, opt_isPreventD
    * @type {Function}
    * @private
    */
-  this.isPreventDefault_ = opt_isPreventDefault || /** @return {boolean} */(function() {return true});
+  this.isPreventDefault_ = opt_isPreventDefault || /** @return {boolean} */(function() { return true; });
 };
 goog.inherits(acgraph.events.MouseWheelHandler, goog.events.MouseWheelHandler);
 

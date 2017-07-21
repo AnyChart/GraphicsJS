@@ -33,3 +33,6 @@ acgraph.vector.vml.Clip.prototype.render = function() {
 
   if (manualSuspend) stage.resume();
 };
+
+
+goog.exportSymbol('acgraph.vml.Clip', acgraph.vector.vml.Clip);

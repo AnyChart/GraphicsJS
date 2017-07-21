@@ -317,4 +317,5 @@ acgraph.vector.vml.Text.prototype.disposeInternal = function() {
   proto['color'] = proto.color;
   proto['opacity'] = proto.opacity;
   proto['textOverflow'] = proto.textOverflow;
+  goog.exportSymbol('acgraph.vml.Text', acgraph.vector.vml.Text);
 })();
