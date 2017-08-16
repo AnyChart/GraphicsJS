@@ -98,4 +98,5 @@ To contribute to AnyChart project please:
 - [GraphicsJS API](https://api.anychart.com/latest/anychart.graphics)
 - [GraphicsJS at GitHub](https://github.com/anychart/graphicsjs)
 - [Report a bug or an issue](https://github.com/anychart/graphicsjs/issues)
+[![Analytics](https://ga-beacon.appspot.com/UA-228820-4/GraphicsJS?pixel&useReferer)](https://github.com/igrigorik/ga-beacon)
 
