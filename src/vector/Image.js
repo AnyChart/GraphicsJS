@@ -318,26 +318,6 @@ acgraph.vector.Image.prototype.getBoundsWithoutTransform = function() {
 };
 
 
-/** @inheritDoc */
-acgraph.vector.Image.prototype.getBoundsWithTransform = function(transform) {
-  var isSelfTransform = transform == this.getSelfTransformation();
-  var isFullTransform = transform == this.getFullTransformation();
-  if (this.boundsCache && isSelfTransform)
-    return this.boundsCache.clone();
-  else if (this.absoluteBoundsCache && isFullTransform)
-    return this.absoluteBoundsCache.clone();
-  else {
-    /** @type {!goog.math.Rect} */
-    var rect = acgraph.math.getBoundsOfRectWithTransform(this.bounds_.clone(), transform);
-    if (isSelfTransform)
-      this.boundsCache = rect.clone();
-    if (isFullTransform)
-      this.absoluteBoundsCache = rect.clone();
-    return rect;
-  }
-};
-
-
 //----------------------------------------------------------------------------------------------------------------------
 //
 //  DOM element creation

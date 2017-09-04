@@ -143,7 +143,7 @@ acgraph.utils.exporting.fullPagePrint = function(stage, opt_paperSizeOrWidth, op
     'width': size.width,
     'height': size.height
   });
-  iFrameDocument.body.appendChild(div);
+  goog.dom.appendChild(iFrameDocument.body, div);
 
   var sourceStageWidth = stage.width();
   var sourceStageHeight = stage.height();

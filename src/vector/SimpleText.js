@@ -61,10 +61,6 @@ acgraph.vector.SimpleText.prototype.getBoundsWithoutTransform = function() {
 };
 
 
-/** @inheritDoc */
-acgraph.vector.SimpleText.prototype.getBoundsWithTransform = acgraph.vector.SimpleText.prototype.getBoundsWithoutTransform;
-
-
 /**
  Get current text.
  @param {string=} opt_value .

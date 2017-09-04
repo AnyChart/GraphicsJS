@@ -24,48 +24,7 @@ goog.require('goog.math.Rect');
  @implements {goog.events.Listenable}
  */
 acgraph.vector.Element = function() {
-  goog.base(this);
-
-  /**
-   * Defines whether element can be moved (drag) or not.
-   * If it is True or instance of goog.math.Rect - element can be moved (draggable), otherwise - not.
-   * @type {boolean|goog.math.Rect}
-   * @private
-   */
-  this.draggable_ = false;
-
-  /**
-   *
-   * @type {boolean}
-   * @private
-   */
-  this.disableStrokeScaling_ = false;
-
-  /**
-   * Title element. A subnode.
-   * @type {?Element}
-   */
-  this.titleElement = null;
-
-  /**
-   * Text of title.
-   * @type {?string}
-   * @private
-   */
-  this.titleVal_ = null;
-
-  /**
-   * Desc element. A subnode.
-   * @type {?Element}
-   */
-  this.descElement = null;
-
-  /**
-   * Text of desc.
-   * @type {?string}
-   * @private
-   */
-  this.descVal_ = null;
+  acgraph.vector.Element.base(this, 'constructor');
 
   /**
    * Attributes list to be set.
@@ -179,6 +138,51 @@ acgraph.vector.Element.DirtyState = {
 //  Properties
 //
 //----------------------------------------------------------------------------------------------------------------------
+/**
+ * Defines whether element can be moved (drag) or not.
+ * If it is True or instance of goog.math.Rect - element can be moved (draggable), otherwise - not.
+ * @type {boolean|goog.math.Rect}
+ * @private
+ */
+acgraph.vector.Element.prototype.draggable_ = false;
+
+
+/**
+ *
+ * @type {boolean}
+ * @private
+ */
+acgraph.vector.Element.prototype.disableStrokeScaling_ = false;
+
+
+/**
+ * Title element. A subnode.
+ * @type {?Element}
+ */
+acgraph.vector.Element.prototype.titleElement = null;
+
+
+/**
+ * Text of title.
+ * @type {?string}
+ * @private
+ */
+acgraph.vector.Element.prototype.titleVal_ = null;
+
+
+/**
+ * Desc element. A subnode.
+ * @type {?Element}
+ */
+acgraph.vector.Element.prototype.descElement = null;
+
+
+/**
+ * Text of desc.
+ * @type {?string}
+ * @private
+ */
+acgraph.vector.Element.prototype.descVal_ = null;
 
 
 /**
@@ -262,7 +266,7 @@ acgraph.vector.Element.prototype.clipElement_ = null;
  * @type {boolean}
  * @private
  */
-acgraph.vector.Element.prototype.diablePointerEvents_ = false;
+acgraph.vector.Element.prototype.disablePointerEvents_ = false;
 
 
 /**
@@ -274,14 +278,6 @@ acgraph.vector.Element.prototype.transformation = null;
 
 
 /**
- * Inverse transformation cache.
- * @type {goog.math.AffineTransform}
- * @private
- */
-acgraph.vector.Element.prototype.inverseTransform_ = null;
-
-
-/**
  * Full transformation cache.
  * @type {goog.math.AffineTransform}
  * @private
@@ -290,19 +286,11 @@ acgraph.vector.Element.prototype.fullTransform_ = null;
 
 
 /**
- * Full inverse transformation cache.
- * @type {goog.math.AffineTransform}
- * @private
- */
-acgraph.vector.Element.prototype.fullInverseTransform_ = null;
-
-
-/**
  * Element id (DOM element id attribute value).
- * @type {string|undefined}
+ * @type {string}
  * @private
  */
-acgraph.vector.Element.prototype.id_ = undefined;
+acgraph.vector.Element.prototype.id_;
 
 
 /**
@@ -314,7 +302,7 @@ acgraph.vector.Element.prototype.zIndex_ = 0;
 
 
 /**
- * An object, assosiated with this element.
+ * An object, associated with this element.
  * @type {*}
  */
 acgraph.vector.Element.prototype.tag;
@@ -367,15 +355,17 @@ acgraph.vector.Element.prototype.dirtyState_ = 0;
 acgraph.vector.Element.prototype.id = function(opt_value) {
   if (goog.isDef(opt_value)) {
     var id = opt_value || '';
-    if (this.id_ !== id) {
+    if (this.id_ != id) {
       this.id_ = id;
       this.setDirtyState(acgraph.vector.Element.DirtyState.ID);
     }
     return this;
   }
-  if (!goog.isDef(this.id_))
+  if (!goog.isDef(this.id_)) {
+    // bad bad recursion
     this.id(acgraph.utils.IdGenerator.getInstance().generateId(this));
-  return /** @type {string} */(this.id_);
+  }
+  return this.id_;
 };
 
 
@@ -394,7 +384,7 @@ acgraph.vector.Element.prototype.getElementTypePrefix = goog.abstractMethod;
  */
 acgraph.vector.Element.prototype.getStage = function() {
   var parent = this.parent();
-  return (!!parent) ? parent.getStage() : null;
+  return parent ? parent.getStage() : null;
 };
 
 
@@ -421,14 +411,16 @@ acgraph.vector.Element.prototype.domElement = function() {
 acgraph.vector.Element.prototype.parent = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (opt_value) {
-      var stage = this.getStage();
-      var stageChanged = (stage != null && stage != opt_value.getStage());
-      (/** @type {acgraph.vector.ILayer} */(opt_value)).addChild(this);
-      if (stageChanged)
-        this.propagateVisualStatesToChildren_();
-    }
-    else
+      if (opt_value != this.parent_) {
+        var stage = this.getStage();
+        var stageChanged = (stage && stage != opt_value.getStage());
+        (/** @type {acgraph.vector.ILayer} */(opt_value)).addChild(this);
+        if (stageChanged)
+          this.propagateVisualStatesToChildren();
+      }
+    } else {
       this.remove();
+    }
     return this;
   }
   return (/** @type {acgraph.vector.ILayer} */(this.parent_));
@@ -437,26 +429,16 @@ acgraph.vector.Element.prototype.parent = function(opt_value) {
 
 /**
  * Propagates dirty state recursively to children.
- * @private
+ * @protected
  */
-acgraph.vector.Element.prototype.propagateVisualStatesToChildren_ = function() {
-  var numChildren;
+acgraph.vector.Element.prototype.propagateVisualStatesToChildren = function() {
   var clip = this.clip();
   if (clip)
     clip.id(null);
 
-  if (this.numChildren && (numChildren = this.numChildren())) {
-    for (var i = 0; i < numChildren; i++) {
-      var child = this.getChildAt(i);
-      child.propagateVisualStatesToChildren_();
-    }
-    // in case of layer had clip in previous stage
-    this.setDirtyState(acgraph.vector.Element.DirtyState.CLIP);
-  } else {
-    this.setDirtyState(acgraph.vector.Element.DirtyState.FILL |
-        acgraph.vector.Element.DirtyState.STROKE |
-        acgraph.vector.Element.DirtyState.CLIP);
-  }
+  this.setDirtyState(acgraph.vector.Element.DirtyState.FILL |
+      acgraph.vector.Element.DirtyState.STROKE |
+      acgraph.vector.Element.DirtyState.CLIP);
 };
 
 
@@ -474,18 +456,9 @@ acgraph.vector.Element.prototype.hasParent = function() {
  @return {!acgraph.vector.Element} {@link acgraph.vector.Element} instance for method chaining.
  */
 acgraph.vector.Element.prototype.remove = function() {
-  if (this.hasParent())
+  if (this.parent_)
     this.parent_.removeChild(this);
   return this;
-};
-
-
-/**
- * Returns the number of children.
- * @return {number} The number of children.
- */
-acgraph.vector.Element.prototype.getFullChildrenCount = function() {
-  return 0;
 };
 
 
@@ -573,14 +546,6 @@ acgraph.vector.Element.prototype.cursorChanged = function() {
 };
 
 
-/**
- * Notifies itself that parent cursor has been changed.
- */
-acgraph.vector.Element.prototype.parentCursorChanged = function() {
-  this.setDirtyState(acgraph.vector.Element.DirtyState.CURSOR);
-};
-
-
 //----------------------------------------------------------------------------------------------------------------------
 //
 //  Dirty state.
@@ -645,10 +610,6 @@ acgraph.vector.Element.prototype.clearDirtyState = function(value) {
  */
 acgraph.vector.Element.prototype.setParent = function(value) {
   if (!this.parent_ || this.parent_ != value) {
-    if (this == value) {
-      throw acgraph.error.getErrorMessage(acgraph.error.Code.PARENT_UNABLE_TO_BE_SET);
-    }
-
     if (!this.prevParent_)
       this.prevParent_ = this.parent_;
     else if (this.prevParent_ == value)
@@ -695,17 +656,11 @@ acgraph.vector.Element.prototype.beforeTransformationChanged = goog.nullFunction
  * @protected
  */
 acgraph.vector.Element.prototype.transformationChanged = function() {
-  this.inverseTransform_ = null;
   this.fullTransform_ = null;
   this.inverseFullTransform_ = null;
   this.dropBoundsCache();
   this.setDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
-  if (acgraph.getRenderer().needsReClipOnBoundsChange()) {
-    if (this.clipElement_)
-      this.clipChanged();
-    else if (this.parent_)
-      this.parent_.childClipChanged();
-  }
+  this.reclip_();
 };
 
 
@@ -718,24 +673,20 @@ acgraph.vector.Element.prototype.parentTransformationChanged = function() {
   this.dropBoundsCache();
   if (acgraph.getRenderer().needsReRenderOnParentTransformationChange())
     this.setDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION);
+  this.reclip_();
+};
+
+
+/**
+ * @private
+ */
+acgraph.vector.Element.prototype.reclip_ = function() {
   if (acgraph.getRenderer().needsReClipOnBoundsChange()) {
     if (this.clipElement_)
       this.clipChanged();
     else if (this.parent_)
       this.parent_.childClipChanged();
   }
-};
-
-
-/**
- * Returns inverted transformation.
- * @return {goog.math.AffineTransform} Transformation inversion.
- * @protected
- */
-acgraph.vector.Element.prototype.getInverseTransform = function() {
-  if (!this.inverseTransform_)
-    this.inverseTransform_ = this.transformation ? this.transformation.createInverse() : null;
-  return this.inverseTransform_;
 };
 
 
@@ -871,7 +822,7 @@ acgraph.vector.Element.prototype.translate = function(tx, ty) {
 acgraph.vector.Element.prototype.setPosition = function(x, y) {
   var arr = [x, y, this.getX(), this.getY()];
   if (this.transformation)
-    this.getInverseTransform().transform(arr, 0, arr, 0, 2);
+    this.transformation.createInverse().transform(arr, 0, arr, 0, 2);
   return this.translate(arr[0] - arr[2], arr[1] - arr[3]);
 };
 
@@ -1152,7 +1103,7 @@ acgraph.vector.Element.prototype.renderInternal = function() {
  * @protected
  */
 acgraph.vector.Element.prototype.renderId = function() {
-  acgraph.getRenderer().setId(this, this.id_ || '');
+  acgraph.getRenderer().setId(this);
   this.clearDirtyState(acgraph.vector.Element.DirtyState.ID);
 };
 
@@ -1250,28 +1201,14 @@ acgraph.vector.Element.prototype.renderAttributes = function() {
 //
 //----------------------------------------------------------------------------------------------------------------------
 /**
- * Overloads {@link goog.events.EventTarget#setParentEventTarget} so it throw exception
- * if value is not a parent.
- * @param {goog.events.EventTarget} value Parent element.
- */
-acgraph.vector.Element.prototype.setParentEventTarget = function(value) {
-  if (this.parent_ && /** @type {Object} */(this.parent_) !== /** @type {Object} */(value)) {
-    throw acgraph.error.getErrorMessage(acgraph.error.Code.PARENT_UNABLE_TO_BE_SET);
-  }
-
-  goog.base(this, 'setParentEventTarget', value);
-};
-
-
-/**
  * Specifies under what circumstances a given graphics element can be a target element for a pointer event.
  * @param {boolean=} opt_value Pointer events property value.
  * @return {acgraph.vector.Element|boolean} If opt_value defined then returns Element object for chaining else
  * returns property value.
  */
 acgraph.vector.Element.prototype.disablePointerEvents = function(opt_value) {
-  if (!goog.isDef(opt_value)) return this.diablePointerEvents_;
-  this.diablePointerEvents_ = !!(opt_value);
+  if (!goog.isDef(opt_value)) return this.disablePointerEvents_;
+  this.disablePointerEvents_ = !!(opt_value);
   this.setDirtyState(acgraph.vector.Element.DirtyState.POINTER_EVENTS);
   return this;
 };
@@ -1425,17 +1362,19 @@ acgraph.vector.Element.prototype.zIndex = function(opt_value) {
 //----------------------------------------------------------------------------------------------------------------------
 /**
  Gets/sets the current visibility flag.
- @param {boolean=} opt_isVisible .
+ @param {boolean=} opt_value .
  @return {!acgraph.vector.Element|boolean} .
  */
-acgraph.vector.Element.prototype.visible = function(opt_isVisible) {
-  if (arguments.length == 0) return this.visible_;
-  if (this.visible_ != opt_isVisible) {
-    this.visible_ = goog.isDefAndNotNull(opt_isVisible) ? opt_isVisible : true;
-    // If visibility has changed - set sync flag
-    this.setDirtyState(acgraph.vector.Element.DirtyState.VISIBILITY);
+acgraph.vector.Element.prototype.visible = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    opt_value = !!opt_value;
+    if (this.visible_ != opt_value) {
+      this.visible_ = opt_value;
+      this.setDirtyState(acgraph.vector.Element.DirtyState.VISIBILITY);
+    }
+    return this;
   }
-  return this;
+  return this.visible_;
 };
 
 
@@ -1525,9 +1464,7 @@ acgraph.vector.Element.prototype.boundsCache = null;
  @return {number} X in the coordinate system of the parent.
  */
 acgraph.vector.Element.prototype.getX = function() {
-  /** @type {!goog.math.Rect} */
-  var bounds = this.boundsCache || this.getBounds();
-  return bounds.left;
+  return this.getBounds().left;
 };
 
 
@@ -1536,9 +1473,7 @@ acgraph.vector.Element.prototype.getX = function() {
  @return {number} Y in the coordinate system of the parent.
  */
 acgraph.vector.Element.prototype.getY = function() {
-  /** @type {!goog.math.Rect} */
-  var bounds = this.boundsCache || this.getBounds();
-  return bounds.top;
+  return this.getBounds().top;
 };
 
 
@@ -1547,9 +1482,7 @@ acgraph.vector.Element.prototype.getY = function() {
  @return {number} Width.
  */
 acgraph.vector.Element.prototype.getWidth = function() {
-  /** @type {!goog.math.Rect} */
-  var bounds = this.boundsCache || this.getBounds();
-  return bounds.width;
+  return this.getBounds().width;
 };
 
 
@@ -1558,9 +1491,7 @@ acgraph.vector.Element.prototype.getWidth = function() {
  @return {number} Height.
  */
 acgraph.vector.Element.prototype.getHeight = function() {
-  /** @type {!goog.math.Rect} */
-  var bounds = this.boundsCache || this.getBounds();
-  return bounds.height;
+  return this.getBounds().height;
 };
 
 
@@ -1569,7 +1500,7 @@ acgraph.vector.Element.prototype.getHeight = function() {
  @return {!goog.math.Rect} Bounds.
  */
 acgraph.vector.Element.prototype.getBounds = function() {
-  return this.getBoundsWithTransform(this.getSelfTransformation());
+  return this.boundsCache || this.getBoundsWithTransform(this.getSelfTransformation());
 };
 
 
@@ -1586,9 +1517,7 @@ acgraph.vector.Element.prototype.absoluteBoundsCache = null;
  @return {number} Absolute X.
  */
 acgraph.vector.Element.prototype.getAbsoluteX = function() {
-  /** @type {!goog.math.Rect} */
-  var bounds = this.absoluteBoundsCache || this.getAbsoluteBounds();
-  return bounds.left;
+  return this.getAbsoluteBounds().left;
 };
 
 
@@ -1597,9 +1526,7 @@ acgraph.vector.Element.prototype.getAbsoluteX = function() {
  @return {number} Absolute Y.
  */
 acgraph.vector.Element.prototype.getAbsoluteY = function() {
-  /** @type {!goog.math.Rect} */
-  var bounds = this.absoluteBoundsCache || this.getAbsoluteBounds();
-  return bounds.top;
+  return this.getAbsoluteBounds().top;
 };
 
 
@@ -1608,9 +1535,7 @@ acgraph.vector.Element.prototype.getAbsoluteY = function() {
  @return {number} Width.
  */
 acgraph.vector.Element.prototype.getAbsoluteWidth = function() {
-  /** @type {!goog.math.Rect} */
-  var bounds = this.absoluteBoundsCache || this.getAbsoluteBounds();
-  return bounds.width;
+  return this.getAbsoluteBounds().width;
 };
 
 
@@ -1619,9 +1544,7 @@ acgraph.vector.Element.prototype.getAbsoluteWidth = function() {
  @return {number} Height.
  */
 acgraph.vector.Element.prototype.getAbsoluteHeight = function() {
-  /** @type {!goog.math.Rect} */
-  var bounds = this.absoluteBoundsCache || this.getAbsoluteBounds();
-  return bounds.height;
+  return this.getAbsoluteBounds().height;
 };
 
 
@@ -1630,7 +1553,7 @@ acgraph.vector.Element.prototype.getAbsoluteHeight = function() {
  @return {!goog.math.Rect} Absolute element bounds.
  */
 acgraph.vector.Element.prototype.getAbsoluteBounds = function() {
-  return this.getBoundsWithTransform(this.getFullTransformation());
+  return this.absoluteBoundsCache || this.getBoundsWithTransform(this.getFullTransformation());
 };
 
 
@@ -1640,7 +1563,36 @@ acgraph.vector.Element.prototype.getAbsoluteBounds = function() {
  * @param {goog.math.AffineTransform} transform Transformation.
  * @return {!goog.math.Rect} Bounds.
  */
-acgraph.vector.Element.prototype.getBoundsWithTransform = goog.abstractMethod;
+acgraph.vector.Element.prototype.getBoundsWithTransform = function(transform) {
+  var isSelfTransform = transform == this.getSelfTransformation();
+  var result;
+  if (this.boundsCache && isSelfTransform) {
+    result = this.boundsCache.clone();
+  } else {
+    var isFullTransform = transform == this.getFullTransformation();
+    if (this.absoluteBoundsCache && isFullTransform) {
+      result = this.absoluteBoundsCache.clone();
+    } else {
+      result = this.calcBoundsWithTransform(transform);
+      if (isSelfTransform)
+        this.boundsCache = result.clone();
+      if (isFullTransform)
+        this.absoluteBoundsCache = result.clone();
+    }
+  }
+  return result;
+};
+
+
+/**
+ *
+ * @param {goog.math.AffineTransform} transform
+ * @return {!goog.math.Rect}
+ * @protected
+ */
+acgraph.vector.Element.prototype.calcBoundsWithTransform = function(transform) {
+  return acgraph.math.getBoundsOfRectWithTransform(this.getBoundsWithoutTransform(), transform);
+};
 
 
 /**
@@ -1754,7 +1706,7 @@ acgraph.vector.Element.prototype.serialize = function() {
  removes it from DOM.
  */
 acgraph.vector.Element.prototype.dispose = function() {
-  goog.base(this, 'dispose');
+  acgraph.vector.Element.base(this, 'dispose');
 };
 
 
@@ -1765,7 +1717,7 @@ acgraph.vector.Element.prototype.disposeInternal = function() {
   else
     this.finalizeDisposing();
 
-  goog.base(this, 'disposeInternal');
+  acgraph.vector.Element.base(this, 'disposeInternal');
 };
 
 
@@ -1786,8 +1738,6 @@ acgraph.vector.Element.prototype.finalizeDisposing = function() {
   this.clipElement_ = null;
 
   this.transformation = null;
-  this.logicalTransformation = null;
-  this.inverseTransform_ = null;
 };
 
 

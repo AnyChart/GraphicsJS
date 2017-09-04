@@ -844,53 +844,30 @@ acgraph.vector.PathBase.prototype.closeInternal = function() {
 //
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
-acgraph.vector.PathBase.prototype.getBoundsWithTransform = function(transform) {
-  return this.calcBounds_(transform, acgraph.vector.PathBase.boundsCalculationMap_, true);
-};
-
-
-/**
- * Calculates path bounds with transformation.
- * @param {goog.math.AffineTransform} transform Transformation.
- * @param {!Array.<Function>} calcMap Hash-map of functions to calculate bounds of segment.
- * @param {boolean} allowCache Allows to cache result if transformation coincide with own or absolute.
- * @return {!goog.math.Rect} Bounds.
- * @private
- */
-acgraph.vector.PathBase.prototype.calcBounds_ = function(transform, calcMap, allowCache) {
-  var isSelfTransform = transform == this.getSelfTransformation();
-  var isFullTransform = transform == this.getFullTransformation();
-  if (this.boundsCache && isSelfTransform)
-    return this.boundsCache.clone();
-  else if (this.absoluteBoundsCache && isFullTransform)
-    return this.absoluteBoundsCache.clone();
-  else {
-    /** @type {goog.math.Rect} */
-    var rect;
-
-    if (this.currentPoint_) {
-      if (transform && !transform.isIdentity()) {
-        var arr = [this.currentPoint_[0], this.currentPoint_[1]];
-        transform.transform(arr, 0, arr, 0, 1);
-        rect = new goog.math.Rect(arr[0], arr[1], 0, 0);
-        this.simplify();
-      } else
-        rect = new goog.math.Rect(this.currentPoint_[0], this.currentPoint_[1], 0, 0);
-      this.forEachSegment(
-          function(segment, args) {
-            acgraph.utils.partialApplyingArgsToFunction(calcMap[segment], args, this);
-          },
-          {rect: rect, transform: transform}, true
-      );
-    } else {
-      rect = new goog.math.Rect(NaN, NaN, NaN, NaN);
-    }
-    if (isSelfTransform && allowCache)
-      this.boundsCache = rect.clone();
-    if (isFullTransform && allowCache)
-      this.absoluteBoundsCache = rect.clone();
-    return rect;
+acgraph.vector.PathBase.prototype.calcBoundsWithTransform = function(transform) {
+  /** @type {goog.math.Rect} */
+  var rect;
+  if (this.currentPoint_) {
+    if (transform && !transform.isIdentity()) {
+      var arr = [this.currentPoint_[0], this.currentPoint_[1]];
+      transform.transform(arr, 0, arr, 0, 1);
+      rect = new goog.math.Rect(arr[0], arr[1], 0, 0);
+      this.simplify();
+    } else
+      rect = new goog.math.Rect(this.currentPoint_[0], this.currentPoint_[1], 0, 0);
+    this.forEachSegment(
+        function(segment, args) {
+          acgraph.utils.partialApplyingArgsToFunction(acgraph.vector.PathBase.boundsCalculationMap_[segment], args, this);
+        },
+        {
+          rect: rect,
+          transform: transform
+        }, true
+    );
+  } else {
+    rect = new goog.math.Rect(NaN, NaN, NaN, NaN);
   }
+  return rect;
 };
 //endregion
 

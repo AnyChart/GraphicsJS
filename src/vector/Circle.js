@@ -21,7 +21,7 @@ goog.require('acgraph.vector.Ellipse');
  @extends {acgraph.vector.Ellipse}
  */
 acgraph.vector.Circle = function(opt_centerX, opt_centerY, opt_radius) {
-  goog.base(this, opt_centerX, opt_centerY, opt_radius, opt_radius);
+  acgraph.vector.Circle.base(this, 'constructor', opt_centerX, opt_centerY, opt_radius, opt_radius);
 };
 goog.inherits(acgraph.vector.Circle, acgraph.vector.Ellipse);
 
@@ -78,13 +78,13 @@ acgraph.vector.Circle.prototype.renderData = function() {
 /** @inheritDoc */
 acgraph.vector.Circle.prototype.deserialize = function(data) {
   this.radiusX(data['radius']);
-  goog.base(this, 'deserialize', data);
+  acgraph.vector.Circle.base(this, 'deserialize', data);
 };
 
 
 /** @inheritDoc */
 acgraph.vector.Circle.prototype.serialize = function() {
-  var data = goog.base(this, 'serialize');
+  var data = acgraph.vector.Circle.base(this, 'serialize');
   data['type'] = 'circle';
   delete data['rx'];
   delete data['ry'];

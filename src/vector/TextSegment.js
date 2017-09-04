@@ -191,7 +191,7 @@ acgraph.vector.TextSegment.prototype.renderData = function() {
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.TextSegment.prototype.disposeInternal = function() {
-  acgraph.getRenderer().removeNode(this.domElement_);
+  goog.dom.removeNode(this.domElement_);
   this.domElement_ = null;
 
   goog.base(this, 'disposeInternal');

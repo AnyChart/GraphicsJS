@@ -191,30 +191,18 @@ acgraph.vector.Ellipse.prototype.getBoundsWithoutTransform = function() {
 
 
 /** @inheritDoc */
-acgraph.vector.Ellipse.prototype.getBoundsWithTransform = function(transform) {
-  var isSelfTransform = transform == this.getSelfTransformation();
-  var isFullTransform = transform == this.getFullTransformation();
-  if (this.boundsCache && isSelfTransform)
-    return this.boundsCache.clone();
-  else if (this.absoluteBoundsCache && isFullTransform)
-    return this.absoluteBoundsCache.clone();
-  else {
-    /** @type {goog.math.Rect} */
-    var rect;
+acgraph.vector.Ellipse.prototype.calcBoundsWithTransform = function(transform) {
+  /** @type {goog.math.Rect} */
+  var rect;
 
-    if (transform) {
-      var curves = acgraph.math.arcToBezier(this.center_.x, this.center_.y, this.radiusX_, this.radiusY_, 0, 360, true);
-      transform.transform(curves, 0, curves, 0, curves.length / 2);
-      rect = acgraph.math.calcCurveBounds.apply(null, curves);
-    } else {
-      rect = this.getBoundsWithoutTransform();
-    }
-    if (isSelfTransform)
-      this.boundsCache = rect.clone();
-    if (isFullTransform)
-      this.absoluteBoundsCache = rect.clone();
-    return rect;
+  if (transform) {
+    var curves = acgraph.math.arcToBezier(this.center_.x, this.center_.y, this.radiusX_, this.radiusY_, 0, 360, true);
+    transform.transform(curves, 0, curves, 0, curves.length / 2);
+    rect = acgraph.math.calcCurveBounds.apply(null, curves);
+  } else {
+    rect = this.getBoundsWithoutTransform();
   }
+  return rect;
 };
 
 

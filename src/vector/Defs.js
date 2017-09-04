@@ -300,7 +300,7 @@ acgraph.vector.Defs.prototype.removeRadialGradient = function(element) {
  */
 acgraph.vector.Defs.prototype.render = function() {
   this.createDom();
-  acgraph.getRenderer().appendChild(this.stage.domElement(), this.domElement());
+  goog.dom.appendChild(this.stage.domElement(), this.domElement());
 };
 
 
@@ -326,9 +326,7 @@ acgraph.vector.Defs.prototype.addChild = function(child) {
  */
 acgraph.vector.Defs.prototype.removeChild = function(element) {
   element.setParent(null);
-  var dom = element.domElement();
-  if (dom)
-    acgraph.getRenderer().removeNode(dom);
+  goog.dom.removeNode(element.domElement());
   return element;
 };
 
@@ -370,7 +368,7 @@ acgraph.vector.Defs.prototype.setDirtyState = goog.nullFunction;
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.Defs.prototype.disposeInternal = function() {
-  acgraph.getRenderer().removeNode(this.domElement_);
+  goog.dom.removeNode(this.domElement_);
   this.domElement_ = null;
 
   goog.disposeAll(this.linearGradients_);

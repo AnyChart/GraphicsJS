@@ -116,7 +116,7 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
    */
   this.rootLayer_ = new acgraph.vector.Layer();
   this.rootLayer_.setParent(this).render();
-  acgraph.getRenderer().appendChild(this.domElement_, this.rootLayer_.domElement());
+  goog.dom.appendChild(this.domElement_, this.rootLayer_.domElement());
   acgraph.getRenderer().createMeasurement();
 
   this.eventHandler_.listen(this.domElement(), [
@@ -406,9 +406,9 @@ acgraph.vector.Stage.prototype.isRendering_ = false;
 acgraph.vector.Stage.prototype.id = function(opt_value) {
   if (goog.isDef(opt_value)) {
     var id = opt_value || '';
-    if (this.id_ !== id) {
+    if (this.id_ != id) {
       this.id_ = id;
-      acgraph.getRenderer().setId(this, this.id_);
+      acgraph.getRenderer().setIdInternal(this.domElement_, this.id_);
     }
     return this;
   }

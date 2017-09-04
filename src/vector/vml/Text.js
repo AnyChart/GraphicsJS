@@ -142,7 +142,7 @@ acgraph.vector.vml.Text.prototype.isComplex = function() {
 /** @inheritDoc */
 acgraph.vector.vml.Text.prototype.getBoundsWithTransform = function(transform) {
   this.isComplex_ = this.isComplex();
-  return goog.base(this, 'getBoundsWithTransform', transform);
+  return acgraph.vector.vml.Text.base(this, 'getBoundsWithTransform', transform);
 };
 
 
