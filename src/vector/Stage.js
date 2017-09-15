@@ -60,6 +60,15 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
 
   this.renderAsync_ = goog.bind(this.renderAsync_, this);
   this.checkSize = goog.bind(this.checkSize, this);
+  var doc = goog.global['document'];
+
+  if (!goog.global['acgraph'].stages)
+    goog.global['acgraph'].stages = {};
+
+  var id = acgraph.utils.IdGenerator.getInstance().identify(this, acgraph.utils.IdGenerator.ElementTypePrefix.STAGE);
+  goog.global['acgraph'].stages[id] = this;
+
+  this.charts = {};
 
   /**
    * Event handler of the stage.
@@ -73,7 +82,9 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
    * @type {!Element}
    * @private
    */
-  this.internalContainer_ = goog.dom.createDom(goog.dom.TagName.DIV, {style: 'position:relative;left:0;top:0;overflow:hidden;'});
+  // this.internalContainer_ = goog.dom.createDom(goog.dom.TagName.DIV, {style: 'position:relative;left:0;top:0;overflow:hidden;'});
+  this.internalContainer_ = doc.createElement(goog.dom.TagName.DIV);
+  goog.style.setStyle(this.internalContainer_, {'position': 'relative', 'left': 0, 'top': 0, 'overflow': 'hidden'});
 
   /**
    * Root DOM element of stage object.
@@ -90,6 +101,8 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
   // Add class for check anychart-ui.css attached. (DVF-1619)
   goog.dom.classlist.add(this.domElement_, 'anychart-ui-support');
   goog.dom.appendChild(this.internalContainer_, this.domElement_);
+  this.domElement_.setAttribute('ac-id', id);
+
 
   /**
    * Array of clips that should be rendered when stage is rendering.
@@ -137,7 +150,8 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
 
   this.setWidth_(opt_width || '100%');
   this.setHeight_(opt_height || '100%');
-  this.container_ = goog.dom.getElement(opt_container || null);
+  this.container_ = goog.isString(opt_container) ?
+      doc.getElementById(opt_container) : opt_container;
   if (this.container_)
     this.updateContainer_();
   this.checkSize(true, true);
@@ -765,6 +779,15 @@ acgraph.vector.Stage.prototype.clip = function(opt_value) {
 };
 
 
+/**
+ * Returns anychart charts for this stage.
+ * @return {Object}
+ */
+acgraph.vector.Stage.prototype.getCharts = function() {
+  return this.charts;
+};
+
+
 //endregion
 //region --- Internal methods
 //------------------------------------------------------------------------------
@@ -837,7 +860,7 @@ acgraph.vector.Stage.prototype.checkSize = function(opt_directCall, opt_silent) 
     if (!opt_silent)
       this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RESIZE);
   }
-  if (this.container_ && isDynamicSize) {
+  if (this.container_ && isDynamicSize && !goog.global['isNodeJS']) {
     this.checkSizeTimer_ = setTimeout(this.checkSize, this.maxResizeDelay_);
   }
 };
@@ -2125,6 +2148,8 @@ acgraph.vector.Stage.prototype.disposeInternal = function() {
   delete this.internalContainer_;
   this.domElement_ = null;
 
+  acgraph.getRenderer().disposeMeasurement();
+
   if (this.credits_) {
     this.credits_.dispose();
     this.credits_ = null;
@@ -2226,5 +2251,6 @@ acgraph.vector.Stage.prototype.disposeInternal = function() {
   proto['removeAllListeners'] = proto.removeAllListeners;
   proto['title'] = proto.title;
   proto['desc'] = proto.desc;
+  proto['getCharts'] = proto.getCharts;
 })();
 //endregion

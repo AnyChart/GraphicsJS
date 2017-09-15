@@ -101,7 +101,7 @@ acgraph.vector.svg.Renderer.prototype.imageLoader_ = null;
  * @private
  */
 acgraph.vector.svg.Renderer.prototype.createSVGElement_ = function(tag) {
-  return goog.dom.getDocument().createElementNS(
+  return goog.global['document'].createElementNS(
       acgraph.vector.svg.Renderer.SVG_NS_,
       tag
   );
@@ -125,7 +125,7 @@ acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
   goog.dom.appendChild(this.measurementText_, this.measurementTextNode_);
   goog.dom.appendChild(this.measurement_, this.measurementText_);
   goog.dom.appendChild(this.measurement_, this.mesurmentDef_);
-  goog.dom.appendChild(goog.dom.getDocument().body, this.measurement_);
+  goog.dom.appendChild(goog.global['document'].body, this.measurement_);
 
   this.measurementLayerForBBox_ = this.createLayerElement();
   goog.dom.appendChild(this.measurement_, this.measurementLayerForBBox_);
@@ -135,6 +135,26 @@ acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
 
   this.measurementGroupNode_ = this.createLayerElement();
   goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
+};
+
+
+/**
+ * Measurements disposing.
+ */
+acgraph.vector.svg.Renderer.prototype.disposeMeasurement = function() {
+  goog.dom.removeNode(this.measurementText_);
+  goog.dom.removeNode(this.measurementTextNode_);
+  goog.dom.removeNode(this.mesurmentDef_);
+  goog.dom.removeNode(this.measurementLayerForBBox_);
+  goog.dom.removeNode(this.measurementGroupNode_);
+  goog.dom.removeNode(this.measurement_);
+
+  this.measurementText_ = null;
+  this.measurementTextNode_ = null;
+  this.mesurmentDef_ = null;
+  this.measurementLayerForBBox_ = null;
+  this.measurementGroupNode_ = null;
+  this.measurement_ = null;
 };
 
 

@@ -229,7 +229,7 @@ acgraph.utils.exporting.openPrint_ = function() {
     //end listening onBefore/onAfterPrint events
 
     if (goog.userAgent.EDGE) {
-      acgraph.utils.exporting.printWindow_ = window.open();
+      acgraph.utils.exporting.printWindow_ = goog.global.open();
       acgraph.utils.exporting.printWindow_.document.write(iFrameWindow.document.documentElement.innerHTML);
       acgraph.utils.exporting.disposePrint_();
       acgraph.utils.exporting.printWindow_['onafterprint'] = function() {
