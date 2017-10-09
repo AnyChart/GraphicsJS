@@ -639,6 +639,50 @@ acgraph.vector.svg.Renderer.prototype.setFillPatternProperties = function(elemen
 };
 
 
+/**
+ * Creates and returns normalized preserveAspectRatio.
+ * @param {!acgraph.vector.Image} element
+ * @return {string}
+ */
+acgraph.vector.svg.Renderer.prototype.getPreserveAspectRatio = function(element) {
+  var align;
+  switch (element.align()) {
+    case 'x-min-y-min':
+      align = 'xMinYMin';
+      break;
+    case 'x-mid-y-min':
+      align = 'xMidYMin';
+      break;
+    case 'x-max-y-min':
+      align = 'xMaxYMin';
+      break;
+    case 'x-min-y-mid':
+      align = 'xMinYMid';
+      break;
+    case 'x-mid-y-mid':
+      align = 'xMidYMid';
+      break;
+    case 'x-max-y-mid':
+      align = 'xMaxYMid';
+      break;
+    case 'x-min-y-max':
+      align = 'xMinYMax';
+      break;
+    case 'x-mid-y-max':
+      align = 'xMidYMax';
+      break;
+    case 'x-max-y-max':
+      align = 'xMaxYMax';
+      break;
+    case 'none':
+    default:
+      align = 'none';
+  }
+
+  return align + ' ' + element.fittingMode();
+};
+
+
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setImageProperties = function(element) {
   var bounds = element.getBoundsWithoutTransform();
@@ -656,7 +700,7 @@ acgraph.vector.svg.Renderer.prototype.setImageProperties = function(element) {
     'width': bounds.width,
     'height': bounds.height,
     'image-rendering': 'optimizeQuality',
-    'preserveAspectRatio': element.align() + ' ' + element.fittingMode(),
+    'preserveAspectRatio': this.getPreserveAspectRatio(element),
     'opacity': element.opacity()
   });
 
