@@ -218,7 +218,7 @@ acgraph.vector.Shape.prototype.serialize = function() {
 
   if (this.fill_) {
     var fillData, tmpFill, tmpStroke;
-    if (this.fill_ instanceof acgraph.vector.HatchFill) {
+    if (acgraph.utils.instanceOf(this.fill_, acgraph.vector.HatchFill)) {
       fillData = {
         'type': 'hatchFill',
         'hatchType': this.fill_.type,
@@ -226,7 +226,7 @@ acgraph.vector.Shape.prototype.serialize = function() {
         'thickness': this.fill_.thickness,
         'size': this.fill_.size
       };
-    } else if (this.fill_ instanceof acgraph.vector.PatternFill) {
+    } else if (acgraph.utils.instanceOf(this.fill_, acgraph.vector.PatternFill)) {
       fillData = this.fill_.serialize();
     } else if (goog.isObject(this.fill_) && ('keys' in this.fill_)) {
       if (('cx' in this.fill_) && ('cy' in this.fill_)) {

@@ -116,6 +116,32 @@ acgraph.vector.vml.Renderer.COORD_MULTIPLIER_ = 100;
  * @private
  */
 acgraph.vector.vml.Renderer.SHIFT_ = 0;
+
+
+/**
+ * Transform size to CSS size. If passed in percents - returned as is,
+ * and in pixels otherwise.
+ *
+ * @param {number|string} size Size.
+ * @return {string} Position with regard to <a href='#COORD_MULTIPLIER'>COORD_MULTIPLIER</a>.
+ * @private
+ */
+acgraph.vector.vml.Renderer.toCssSize_ = function(size) {
+  return goog.isString(size) && goog.string.endsWith(size, '%') ?
+      parseFloat(size) + '%' : parseFloat(String(size)) + 'px';
+};
+
+
+/**
+ * Transforming size with COORD_MULTIPLIER to support
+ * fractional values.
+ * @param {number} number Size.
+ * @return {number} Size transformed with COORD_MULTIPLIER.
+ * @private
+ */
+acgraph.vector.vml.Renderer.toSizeCoord_ = function(number) {
+  return Math.round(number) * acgraph.vector.vml.Renderer.COORD_MULTIPLIER_;
+};
 //endregion ---
 
 
@@ -198,7 +224,6 @@ acgraph.vector.vml.Renderer.prototype.setAttrIE8_ = function(el, key, value) {
 };
 
 
-
 /**
  * @return {Element}
  * @private
@@ -206,6 +231,8 @@ acgraph.vector.vml.Renderer.prototype.setAttrIE8_ = function(el, key, value) {
 acgraph.vector.vml.Renderer.prototype.createDiv_ = function() {
   return goog.dom.createElement('div');
 };
+
+
 //----------------------------------------------------------------------------------------------------------------------
 //
 //  Measurement
@@ -455,32 +482,6 @@ acgraph.vector.vml.Renderer.prototype.removeStyle_ = function(style, key) {
 
 
 /**
- * Transform size to CSS size. If passed in percents - returned as is,
- * and in pixels otherwise.
- *
- * @param {number|string} size Size.
- * @return {string} Position with regard to <a href='#COORD_MULTIPLIER'>COORD_MULTIPLIER</a>.
- * @private
- */
-acgraph.vector.vml.Renderer.prototype.toCssSize_ = function(size) {
-  return goog.isString(size) && goog.string.endsWith(size, '%') ?
-      parseFloat(size) + '%' : parseFloat(String(size)) + 'px';
-};
-
-
-/**
- * Transforming size with COORD_MULTIPLIER to support
- * fractional values.
- * @param {number} number Size.
- * @return {number} Size transformed with COORD_MULTIPLIER.
- * @private
- */
-acgraph.vector.vml.Renderer.prototype.toSizeCoord_ = function(number) {
-  return Math.round(number) * acgraph.vector.vml.Renderer.COORD_MULTIPLIER_;
-};
-
-
-/**
  * Applies size and position of VML elements in parent container VML.
  * @param {Element} element VML DOM element.
  * @param {number} x Top-left X.
@@ -493,10 +494,10 @@ acgraph.vector.vml.Renderer.prototype.setPositionAndSize_ = function(element, x,
   this.setCoordSize(element);
   this.setAttrs(element['style'], {
     'position': 'absolute',
-    'left': this.toCssSize_(x),
-    'top': this.toCssSize_(y),
-    'width': this.toCssSize_(width),
-    'height': this.toCssSize_(height)
+    'left': acgraph.vector.vml.Renderer.toCssSize_(x),
+    'top': acgraph.vector.vml.Renderer.toCssSize_(y),
+    'width': acgraph.vector.vml.Renderer.toCssSize_(width),
+    'height': acgraph.vector.vml.Renderer.toCssSize_(height)
   });
 };
 
@@ -515,21 +516,24 @@ acgraph.vector.vml.Renderer.prototype.pathSegmentNamesMap = (function() {
 })();
 
 
-/**
- * @param {Array.<string|number>} list
- * @param {Array.<number>} args
- */
+/** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.pushArcToPathString = function(list, args) {
   var toAngle = args[2] + args[3];
-  var cx = this.toSizeCoord_(args[4] - goog.math.angleDx(toAngle, args[0]));
-  var cy = this.toSizeCoord_(args[5] - goog.math.angleDy(toAngle, args[1]));
-  var rx = this.toSizeCoord_(args[0]);
-  var ry = this.toSizeCoord_(args[1]);
+  var cx = acgraph.vector.vml.Renderer.toSizeCoord_(args[4] - goog.math.angleDx(toAngle, args[0]));
+  var cy = acgraph.vector.vml.Renderer.toSizeCoord_(args[5] - goog.math.angleDy(toAngle, args[1]));
+  var rx = acgraph.vector.vml.Renderer.toSizeCoord_(args[0]);
+  var ry = acgraph.vector.vml.Renderer.toSizeCoord_(args[1]);
   // VML angle in fd (see http://www.w3.org/TR/NOTE-VML)
   // Positive angles go counterclockwise.
   var fromAngle = Math.round(args[2] * -65536);
   var extent = Math.round(args[3] * -65536);
   list.push(cx, cy, rx, ry, fromAngle, extent);
+};
+
+
+/** @inheritDoc */
+acgraph.vector.vml.Renderer.prototype.pushToArgs = function(list, args) {
+  acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(args, acgraph.vector.vml.Renderer.toSizeCoord_), list);
 };
 
 
@@ -891,8 +895,8 @@ acgraph.vector.vml.Renderer.prototype.createStageElement = function() {
 /** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.setStageSize = function(el, width, height) {
   this.setAttrs(el['style'], {
-    'width': this.toCssSize_(width),
-    'height': this.toCssSize_(height)
+    'width': acgraph.vector.vml.Renderer.toCssSize_(width),
+    'height': acgraph.vector.vml.Renderer.toCssSize_(height)
   });
 };
 
@@ -910,6 +914,7 @@ acgraph.vector.vml.Renderer.prototype.createDefsElement = acgraph.vector.vml.Ren
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.createLayerElement = acgraph.vector.vml.Renderer.prototype.createDiv_;
+
 
 /** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.createImageElement = function() {
@@ -984,10 +989,10 @@ acgraph.vector.vml.Renderer.prototype.setPatternTransformation = goog.nullFuncti
 acgraph.vector.vml.Renderer.prototype.setLayerSize = function(layer) {
   this.setAttrs(layer.domElement()['style'], {
     'position': 'absolute',
-    'left': this.toCssSize_(0),
-    'top': this.toCssSize_(0),
-    'width': this.toCssSize_(1),
-    'height': this.toCssSize_(1)
+    'left': acgraph.vector.vml.Renderer.toCssSize_(0),
+    'top': acgraph.vector.vml.Renderer.toCssSize_(0),
+    'width': acgraph.vector.vml.Renderer.toCssSize_(1),
+    'height': acgraph.vector.vml.Renderer.toCssSize_(1)
   });
 };
 
@@ -997,7 +1002,7 @@ acgraph.vector.vml.Renderer.prototype.setLayerSize = function(layer) {
  * @param {Element} element Element.
  */
 acgraph.vector.vml.Renderer.prototype.setCoordSize = function(element) {
-  this.setAttr(element, 'coordsize', this.toSizeCoord_(1) + ' ' + this.toSizeCoord_(1));
+  this.setAttr(element, 'coordsize', acgraph.vector.vml.Renderer.toSizeCoord_(1) + ' ' + acgraph.vector.vml.Renderer.toSizeCoord_(1));
 };
 
 
@@ -1089,10 +1094,10 @@ acgraph.vector.vml.Renderer.prototype.setImageProperties = function(element) {
 
   this.setAttrs(domElement['style'], {
     'position': 'absolute',
-    'left': this.toCssSize_(calcX),
-    'top': this.toCssSize_(calcY),
-    'width': this.toCssSize_(calcWidth),
-    'height': this.toCssSize_(calcHeight)
+    'left': acgraph.vector.vml.Renderer.toCssSize_(calcX),
+    'top': acgraph.vector.vml.Renderer.toCssSize_(calcY),
+    'width': acgraph.vector.vml.Renderer.toCssSize_(calcWidth),
+    'height': acgraph.vector.vml.Renderer.toCssSize_(calcHeight)
   });
 
   // set image src in DOM element.
@@ -1124,14 +1129,14 @@ acgraph.vector.vml.Renderer.prototype.setEllipseProperties = function(ellipse) {
     var curves = acgraph.math.arcToBezier(cx, cy, rx, ry, 0, 360, false);
     var len = curves.length;
     transform.transform(curves, 0, curves, 0, len / 2);
-    list = ['m', this.toSizeCoord_(curves[len - 2]), this.toSizeCoord_(curves[len - 1]), 'c'];
-    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(curves, this.toSizeCoord_), list);
+    list = ['m', acgraph.vector.vml.Renderer.toSizeCoord_(curves[len - 2]), acgraph.vector.vml.Renderer.toSizeCoord_(curves[len - 1]), 'c'];
+    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(curves, acgraph.vector.vml.Renderer.toSizeCoord_), list);
   } else {
     list = ['ae',
-      this.toSizeCoord_(cx),
-      this.toSizeCoord_(cy),
-      this.toSizeCoord_(rx),
-      this.toSizeCoord_(ry),
+      acgraph.vector.vml.Renderer.toSizeCoord_(cx),
+      acgraph.vector.vml.Renderer.toSizeCoord_(cy),
+      acgraph.vector.vml.Renderer.toSizeCoord_(rx),
+      acgraph.vector.vml.Renderer.toSizeCoord_(ry),
       0,
       Math.round(360 * -65536)];
   }
@@ -1213,8 +1218,8 @@ acgraph.vector.vml.Renderer.prototype.setTextPosition = function(element) {
       this.setAttrs(domElementStyle, {
         'position': 'absolute',
         'overflow': 'visible',
-        'left': this.toCssSize_(x),
-        'top': this.toCssSize_(y)
+        'left': acgraph.vector.vml.Renderer.toCssSize_(x),
+        'top': acgraph.vector.vml.Renderer.toCssSize_(y)
       });
     }
   } else {
@@ -1229,8 +1234,8 @@ acgraph.vector.vml.Renderer.prototype.setTextPosition = function(element) {
     this.setAttrs(domElementStyle, {
       'position': 'absolute',
       'overflow': 'hidden',
-      'left': this.toCssSize_(x),
-      'top': this.toCssSize_(y)
+      'left': acgraph.vector.vml.Renderer.toCssSize_(x),
+      'top': acgraph.vector.vml.Renderer.toCssSize_(y)
     });
   }
 };
@@ -1244,8 +1249,8 @@ acgraph.vector.vml.Renderer.prototype.setTextProperties = function(element) {
   if (element.isComplex()) {
     if (!element.path()) {
       this.setAttrs(domElementStyle, {
-        'width': this.toCssSize_(1),
-        'height': this.toCssSize_(1)
+        'width': acgraph.vector.vml.Renderer.toCssSize_(1),
+        'height': acgraph.vector.vml.Renderer.toCssSize_(1)
       });
     }
     domElement.innerHTML = '';
@@ -1305,8 +1310,8 @@ acgraph.vector.vml.Renderer.prototype.setTextProperties = function(element) {
 
     goog.style.setUnselectable(domElement, !element.selectable());
     domElement.innerHTML = element.getSimpleText();
-    this.setAttr(domElementStyle, 'width', String(element.width() ? this.toCssSize_(/** @type {string|number} */ (element.width())) : element.getBounds().width));
-    this.setAttr(domElementStyle, 'height', String(element.height() ? this.toCssSize_(/** @type {string|number} */ (element.height())) : element.getBounds().height));
+    this.setAttr(domElementStyle, 'width', String(element.width() ? acgraph.vector.vml.Renderer.toCssSize_(/** @type {string|number} */ (element.width())) : element.getBounds().width));
+    this.setAttr(domElementStyle, 'height', String(element.height() ? acgraph.vector.vml.Renderer.toCssSize_(/** @type {string|number} */ (element.height())) : element.getBounds().height));
   }
 };
 
@@ -1324,10 +1329,10 @@ acgraph.vector.vml.Renderer.prototype.setTextSegmentPosition = function(element)
     var path = originalPath ?
         this.getPathString(textPath, true) :
         'm ' +
-        this.toSizeCoord_(element.x) + ',' +
-        this.toSizeCoord_(element.y) + ' l ' +
-        (this.toSizeCoord_(element.x) + 1) + ',' +
-        this.toSizeCoord_(element.y) + ' e';
+        acgraph.vector.vml.Renderer.toSizeCoord_(element.x) + ',' +
+        acgraph.vector.vml.Renderer.toSizeCoord_(element.y) + ' l ' +
+        (acgraph.vector.vml.Renderer.toSizeCoord_(element.x) + 1) + ',' +
+        acgraph.vector.vml.Renderer.toSizeCoord_(element.y) + ' e';
     domElement.setAttribute('path', /** @type {string} */(path));
   }
 };
@@ -1419,7 +1424,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
    * so for now we just do not fill in VML,
    * probably we will add fully custom pattern fill later.
    */
-  if (fill instanceof acgraph.vector.PatternFill) {
+  if (acgraph.utils.instanceOf(fill, acgraph.vector.PatternFill)) {
     fill = 'black';
   }
   /**
@@ -1502,7 +1507,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
     var defs = stage.getDefs();
     /** @type {!goog.math.Rect} */
     var elBounds;
-    if (element instanceof acgraph.vector.Path && (/** @type {acgraph.vector.Path} */(element)).isEmpty())
+    if (acgraph.utils.instanceOf(element, acgraph.vector.Path) && (/** @type {acgraph.vector.Path} */(element)).isEmpty())
       elBounds = new goog.math.Rect(0, 0, 1, 1);
     else
       elBounds = element.getBounds();
@@ -1512,7 +1517,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
 
     // Transform gradient for userSpaceOnUse and saveAngle modes.
     if (isLinearGradient) {
-      userSpaceOnUse = fill['mode'] instanceof goog.math.Rect;
+      userSpaceOnUse = acgraph.utils.instanceOf(fill['mode'], goog.math.Rect);
       keys = goog.array.slice(fill['keys'], 0);
       // we need lasr and first key (with 0 and 1 offset);
       if (keys[0]['offset'] != 0)
@@ -1773,14 +1778,14 @@ acgraph.vector.vml.Renderer.prototype.setEllipseTransformation = function(elemen
     var curves = acgraph.math.arcToBezier(cx, cy, rx, ry, 0, 360, false);
     var len = curves.length;
     transform.transform(curves, 0, curves, 0, len / 2);
-    list = ['m', this.toSizeCoord_(curves[len - 2]), this.toSizeCoord_(curves[len - 1]), 'c'];
-    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(curves, this.toSizeCoord_), list);
+    list = ['m', acgraph.vector.vml.Renderer.toSizeCoord_(curves[len - 2]), acgraph.vector.vml.Renderer.toSizeCoord_(curves[len - 1]), 'c'];
+    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(curves, acgraph.vector.vml.Renderer.toSizeCoord_), list);
   } else {
     list = ['ae',
-      this.toSizeCoord_(cx),
-      this.toSizeCoord_(cy),
-      this.toSizeCoord_(rx),
-      this.toSizeCoord_(ry),
+      acgraph.vector.vml.Renderer.toSizeCoord_(cx),
+      acgraph.vector.vml.Renderer.toSizeCoord_(cy),
+      acgraph.vector.vml.Renderer.toSizeCoord_(rx),
+      acgraph.vector.vml.Renderer.toSizeCoord_(ry),
       0,
       Math.round(360 * -65536)];
   }
@@ -1843,8 +1848,8 @@ acgraph.vector.vml.Renderer.prototype.setTextTransformation = function(element) 
       this.setAttrs(domElementStyle, {
         'position': 'absolute',
         'overflow': 'visible',
-        'left': this.toCssSize_(x + tx.getTranslateX()),
-        'top': this.toCssSize_(y + tx.getTranslateY())
+        'left': acgraph.vector.vml.Renderer.toCssSize_(x + tx.getTranslateX()),
+        'top': acgraph.vector.vml.Renderer.toCssSize_(y + tx.getTranslateY())
       });
     }
 
@@ -1903,8 +1908,8 @@ acgraph.vector.vml.Renderer.prototype.setTextTransformation = function(element) 
     this.setAttrs(domElementStyle, {
       'position': 'absolute',
       'overflow': 'hidden',
-      'left': this.toCssSize_(x + tx.getTranslateX()),
-      'top': this.toCssSize_(y + tx.getTranslateY())
+      'left': acgraph.vector.vml.Renderer.toCssSize_(x + tx.getTranslateX()),
+      'top': acgraph.vector.vml.Renderer.toCssSize_(y + tx.getTranslateY())
     });
   }
 };
@@ -1963,8 +1968,8 @@ acgraph.vector.vml.Renderer.prototype.setTransform_ = function(element, bounds) 
   });
 
   this.setAttrs(element.domElement()['style'], {
-    'left': this.toCssSize_(bounds.left + tx.getTranslateX()),
-    'top': this.toCssSize_(bounds.top + tx.getTranslateY())
+    'left': acgraph.vector.vml.Renderer.toCssSize_(bounds.left + tx.getTranslateX()),
+    'top': acgraph.vector.vml.Renderer.toCssSize_(bounds.top + tx.getTranslateY())
   });
 };
 
@@ -1996,7 +2001,7 @@ acgraph.vector.vml.Renderer.prototype.addClip_ = function(element, clipRect, isL
     clipRect = acgraph.math.getBoundsOfRectWithTransform(clipRect, tx);
   } else {
     // element clip
-    if (!(element instanceof acgraph.vector.vml.Text && !element.isComplex())) {
+    if (!(acgraph.utils.instanceOf(element, acgraph.vector.vml.Text) && !element.isComplex())) {
       clipRect.left -= element.getX() || 0;
       clipRect.top -= element.getY() || 0;
     }
@@ -2032,7 +2037,7 @@ acgraph.vector.vml.Renderer.prototype.removeClip_ = function(element) {
 
 /** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.setClip = function(element) {
-  var isLayer = element instanceof acgraph.vector.Layer;
+  var isLayer = acgraph.utils.instanceOf(element, acgraph.vector.Layer);
   /** @type {acgraph.vector.vml.Clip} */
   var clipElement = /** @type {acgraph.vector.vml.Clip} */(element.clip());
   if (clipElement) {

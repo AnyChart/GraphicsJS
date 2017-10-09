@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 
 import os
 import sys
@@ -9,9 +9,10 @@ import zipfile
 import platform
 import shlex
 import time
-#=======================================================================================================================
+
+# =======================================================================================================================
 #           Project paths
-#=======================================================================================================================
+# =======================================================================================================================
 COMPILER_VERSION = '20161024'
 PROJECT_PATH = os.path.abspath(os.path.dirname(__file__))
 CONTRIB_PATH = os.path.join(PROJECT_PATH, 'contrib')
@@ -25,12 +26,11 @@ CLOSURE_BIN_PATH = os.path.join(CLOSURE_LIBRARY_PATH, 'closure', 'bin')
 DEPS_WRITER_PATH = os.path.join(CLOSURE_BIN_PATH, 'build', 'depswriter.py')
 
 PYTHON = 'python'
-if not (platform.system() == 'Windows'):
-    PYTHON = 'python2.7'
 
-#=======================================================================================================================
+
+# =======================================================================================================================
 #                            Synchronize contributions.
-#=======================================================================================================================
+# =======================================================================================================================
 def __has_closure_library():
     return os.path.exists(CLOSURE_LIBRARY_PATH)
 
@@ -59,9 +59,9 @@ def __ensure_dir_exists(path):
 
 
 def __need_sync_contrib():
-    return not __has_closure_library()\
-           or not __has_closure_compiler()\
-           or not __has_closure_linter_wrapper()\
+    return not __has_closure_library() \
+           or not __has_closure_compiler() \
+           or not __has_closure_linter_wrapper() \
            or not __has_closure_linter()
 
 
@@ -72,7 +72,7 @@ def __sync_contrib():
     subprocess.call(['git', 'submodule', 'init'])
     subprocess.call(['git', 'submodule', 'update'])
 
-    #Download closure compiler
+    # Download closure compiler
     if not os.path.exists(COMPILER_PATH):
         print 'Downloading Google Closure Compiler v.' + COMPILER_VERSION
         try:
@@ -85,7 +85,7 @@ def __sync_contrib():
             print 'Failed'
             return False
 
-    #Install closure linter
+    # Install closure linter
     if not __has_closure_linter():
         if not __install_closure_linter():
             return False
@@ -135,12 +135,13 @@ def sync_required(func):
         if __need_sync_contrib():
             __sync_contrib()
         return func()
+
     return wrapper
 
 
-#=======================================================================================================================
+# =======================================================================================================================
 #           Build project
-#=======================================================================================================================
+# =======================================================================================================================
 def __getNotOptimizedCompilerArgs():
     compilerArgs = [
         '--compilation_level WHITESPACE_ONLY',
@@ -151,60 +152,75 @@ def __getNotOptimizedCompilerArgs():
 
 def __getOptimizedCompilerArgs():
     compilerArgs = [
-        # '--variable_renaming_report out/vars.txt',
-        # '--property_renaming_report out/props.txt',
-        # '--output_manifest out/involved.txt',
+        '--charset UTF-8',
         '--compilation_level ADVANCED_OPTIMIZATIONS',
-        '--output_wrapper "(function(){%output%})();"',
+        '--process_closure_primitives',
+        '--language_in ECMASCRIPT3',
+        '--language_out ECMASCRIPT3',
         '--assume_function_wrapper',
-        # '--new_type_inf',
+        '--use_types_for_optimization true',
+        '--output_wrapper "(function(){%output%})();"',
         '--env BROWSER',
+        '--extra_annotation_name "includeDoc"',
+        '--extra_annotation_name "illustration"',
+        '--extra_annotation_name "illustrationDesc"',
+        '--extra_annotation_name "ignoreDoc"',
+        '--extra_annotation_name "propertyDoc"',
+        '--extra_annotation_name "shortDescription"',
         '--warning_level VERBOSE',
+        '--hide_warnings_for "libs/closure-library"',
         '--jscomp_warning accessControls',
         '--jscomp_warning ambiguousFunctionDecl',
+        '--jscomp_warning checkDebuggerStatement',
         '--jscomp_warning checkEventfulObjectDisposal',
         '--jscomp_warning checkRegExp',
         '--jscomp_warning checkTypes',
         '--jscomp_warning checkVars',
+        '--jscomp_warning closureDepMethodUsageChecks',
         '--jscomp_warning commonJsModuleLoad',
         '--jscomp_warning conformanceViolations',
         '--jscomp_warning const',
         '--jscomp_warning constantProperty',
         '--jscomp_warning deprecated',
         '--jscomp_warning deprecatedAnnotations',
+        '--jscomp_warning duplicate',
         '--jscomp_warning duplicateMessage',
         '--jscomp_warning es3',
         '--jscomp_warning es5Strict',
-        #'--jscomp_warning externsValidation',
+        '--jscomp_warning externsValidation',
+        '--jscomp_off extraRequire',
         '--jscomp_warning fileoverviewTags',
         '--jscomp_warning functionParams',
         '--jscomp_warning globalThis',
+        '--jscomp_warning inferredConstCheck',
         '--jscomp_warning internetExplorerChecks',
         '--jscomp_warning invalidCasts',
         '--jscomp_warning misplacedTypeAnnotation',
         '--jscomp_warning missingGetCssName',
-        # '--jscomp_warning missingOverride',
+        '--jscomp_off missingOverride',
         '--jscomp_warning missingPolyfill',
         '--jscomp_warning missingProperties',
         '--jscomp_warning missingProvide',
         '--jscomp_warning missingRequire',
         '--jscomp_warning missingReturn',
         '--jscomp_warning msgDescriptions',
-        '--jscomp_warning newCheckTypes',
-        '--jscomp_warning nonStandardJsDocs',
-        # '--jscomp_warning reportUnknownTypes',
+        '--jscomp_off newCheckTypes',
+        '--jscomp_off newCheckTypesExtraChecks',
+        '--jscomp_off nonStandardJsDocs',
+        '--jscomp_off reportUnknownTypes',
         '--jscomp_warning suspiciousCode',
         '--jscomp_warning strictModuleDepCheck',
         '--jscomp_warning typeInvalidation',
         '--jscomp_warning undefinedNames',
         '--jscomp_warning undefinedVars',
         '--jscomp_warning unknownDefines',
-        '--jscomp_warning unusedLocalVariables',
-        # '--jscomp_warning unusedPrivateMembers',
+        '--jscomp_off unusedLocalVariables',
+        '--jscomp_off unusedPrivateMembers',
         '--jscomp_warning uselessCode',
-        # '--jscomp_warning useOfGoogBase',
+        '--jscomp_off useOfGoogBase',
         '--jscomp_warning underscore',
         '--jscomp_warning visibility',
+        '--jscomp_warning lintChecks',
     ]
     return compilerArgs
 
@@ -217,10 +233,8 @@ def __getDefaultCompilerArgs(outputFile):
         '--js="%s"' % os.path.join(CLOSURE_LIBRARY_PATH, '**.js'),
         '--define "goog.DEBUG=false"',
         '--js_output_file ' + outputFile,
-        '--language_in ECMASCRIPT3',
-        '--charset UTF-8',
         '--dependency_mode=STRICT',
-        '--entry_point acgraph',
+        '--entry_point acgraphentry',
         '--hide_warnings_for="goog"'
     ]
     return result
@@ -233,7 +247,7 @@ def __compileBinary():
     t = time.time()
     outputFileName = os.path.join(OUT_PATH, 'graphics.min.js')
     print 'Building optimized Graphics library js to ' + outputFileName
-    commands = __getDefaultCompilerArgs(outputFileName) +\
+    commands = __getDefaultCompilerArgs(outputFileName) + \
                __getOptimizedCompilerArgs()
     success = (__call_compiler(commands) == 0)
     res = 'Success' if success else 'Failed'
@@ -249,7 +263,7 @@ def __compilePlain():
     t = time.time()
     outputFileName = os.path.join(OUT_PATH, 'graphics.js')
     print 'Building plain Graphics library js to ' + outputFileName
-    commands = __getDefaultCompilerArgs(outputFileName) +\
+    commands = __getDefaultCompilerArgs(outputFileName) + \
                __getNotOptimizedCompilerArgs()
     success = (__call_compiler(commands) == 0)
     res = 'Success' if success else 'Failed'
@@ -261,18 +275,18 @@ def __compilePlain():
 def __call_compiler(commands):
     commands = " ".join(commands).replace('\\', '\\\\')
     commands = shlex.split(commands)
-    #print commands
+    # print commands
     p = subprocess.Popen(commands, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     (output, err) = p.communicate()
     retcode = p.poll()
     if len(output) > 0:
-      print output
+        print output
     return retcode
 
 
-#=======================================================================================================================
+# =======================================================================================================================
 #           Build deps
-#=======================================================================================================================
+# =======================================================================================================================
 @sync_required
 def __buildDepsFromCommandLine():
     t = time.time()
@@ -281,6 +295,7 @@ def __buildDepsFromCommandLine():
     res = 'Success' if success else 'Failed'
     print res + ". Time spent: {:.3f}s\n".format(time.time() - t)
     return success
+
 
 def __callDepsWriter(root, output_file, bundle_name):
     print 'Writing deps file to ' + output_file
@@ -292,9 +307,9 @@ def __callDepsWriter(root, output_file, bundle_name):
     ])
 
 
-#=======================================================================================================================
+# =======================================================================================================================
 #                            Linter.
-#=======================================================================================================================
+# =======================================================================================================================
 @sync_required
 def __lintFromCommandLine():
     t = time.time()
@@ -302,6 +317,7 @@ def __lintFromCommandLine():
     res = 'Success' if success else 'Failed'
     print res + ". Time spent: {:.3f}s\n".format(time.time() - t)
     return success
+
 
 def __callLinter(root):
     print 'Linting ' + root + ' directory'
@@ -313,9 +329,11 @@ def __callLinter(root):
         '-r',
         root
     ])
-#=======================================================================================================================
+
+
+# =======================================================================================================================
 #                            JSDoc auto fix.
-#=======================================================================================================================
+# =======================================================================================================================
 @sync_required
 def __autofixFromCommandLine():
     t = time.time()
@@ -335,38 +353,41 @@ def __callAutoFix(root):
         '-r',
         root
     ])
-#=======================================================================================================================
-#                            Help
-#=======================================================================================================================
-def __printHelp():
-    print "Build script commands:\n"\
-          "\n"\
-          "without params   Prepares the environment, than lints and builds everything.\n"\
-          "\n"\
-          "contrib          Prepares buildin environment.\n"\
-          "\n"\
-          "deps             Build ./src/deps.js file, needed to run the library in uncompiled mode.\n"\
-          "\n"\
-          "compile          Builds the library minified js to ./out/ directory.\n"\
-          "\n"\
-          "plain            Builds the library as one file pretty-printed js to ./out/ directory.\n"\
-          "\n"\
-          "lint             Lints library sources.\n"\
-          "\n"\
-          "autofix          Tries to fix lint errors in library sources.\n"\
 
-#=======================================================================================================================
+
+# =======================================================================================================================
+#                            Help
+# =======================================================================================================================
+def __printHelp():
+    print "Build script commands:\n" \
+          "\n" \
+          "without params   Prepares the environment, than lints and builds everything.\n" \
+          "\n" \
+          "contrib          Prepares buildin environment.\n" \
+          "\n" \
+          "deps             Build ./src/deps.js file, needed to run the library in uncompiled mode.\n" \
+          "\n" \
+          "compile          Builds the library minified js to ./out/ directory.\n" \
+          "\n" \
+          "plain            Builds the library as one file pretty-printed js to ./out/ directory.\n" \
+          "\n" \
+          "lint             Lints library sources.\n" \
+          "\n" \
+          "autofix          Tries to fix lint errors in library sources.\n"
+
+
+# =======================================================================================================================
 #                            Main
-#=======================================================================================================================
+# =======================================================================================================================
 def __execMainScript():
     print ''
     args = sys.argv
     if len(args) == 1:
         success = __sync_contrib() and \
-            __lintFromCommandLine() and \
-            __buildDepsFromCommandLine() and \
-            __compilePlain() and \
-            __compileBinary()
+                  __lintFromCommandLine() and \
+                  __buildDepsFromCommandLine() and \
+                  __compilePlain() and \
+                  __compileBinary()
     elif args[1] == 'contrib':
         success = __sync_contrib()
     elif args[1] == 'compile':
@@ -383,6 +404,7 @@ def __execMainScript():
         __printHelp()
         success = True
     return success
+
 
 if __name__ == '__main__':
     try:

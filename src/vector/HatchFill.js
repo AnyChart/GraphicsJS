@@ -137,6 +137,7 @@ acgraph.vector.HatchFill.bigPercentHelper_ = function(w, h, pixelPositions) {
 
 /**
  * @const {Object<acgraph.vector.HatchFill.HatchFillType, function(this:acgraph.vector.HatchFill)>}
+ * @private
  */
 acgraph.vector.HatchFill.creationMap_ = (function() {
   var map = {};

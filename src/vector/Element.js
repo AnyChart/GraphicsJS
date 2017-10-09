@@ -1412,8 +1412,8 @@ acgraph.vector.Element.prototype.clip = function(opt_value) {
   if ((!this.clipElement_ && !clipShape) || (this.clipElement_ && this.clipElement_ === clipShape))
     return this;
 
-  if (clipShape && !(clipShape instanceof acgraph.vector.Clip)) {
-    if (clipShape instanceof acgraph.vector.Shape && clipShape.hasParent() && clipShape.parent() instanceof acgraph.vector.Clip) {
+  if (clipShape && !(acgraph.utils.instanceOf(clipShape, acgraph.vector.Clip))) {
+    if (acgraph.utils.instanceOf(clipShape, acgraph.vector.Shape) && clipShape.hasParent() && acgraph.utils.instanceOf(clipShape.parent(), acgraph.vector.Clip)) {
       if (this.clipElement_ && !this.clipElement_.isDisposed())
         this.clipElement_.removeElement(this);
 
@@ -1428,7 +1428,7 @@ acgraph.vector.Element.prototype.clip = function(opt_value) {
       }
     }
   } else {
-    this.clipElement_ = clipShape || null;
+    this.clipElement_ = (/** @type {acgraph.vector.Clip} */(clipShape)) || null;
   }
 
   this.clipChanged();
@@ -1628,7 +1628,7 @@ acgraph.vector.Element.prototype.drag = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
     this.draggable_ = opt_value;
     if (opt_value && !this.hasDirtyState(acgraph.vector.Element.DirtyState.DOM_MISSING)) {
-      var isLimited = opt_value instanceof goog.math.Rect;
+      var isLimited = acgraph.utils.instanceOf(opt_value, goog.math.Rect);
       var limit = isLimited ? this.draggable_ : null;
       if (!this.dragger_)
         this.dragger_ = new acgraph.events.Dragger(this);

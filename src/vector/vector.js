@@ -635,7 +635,7 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
       };
     }
   } else if (goog.isObject(opt_fillOrColorOrKeys)) { // fill as an object
-    if (opt_fillOrColorOrKeys instanceof acgraph.vector.PatternFill) {
+    if (acgraph.utils.instanceOf(opt_fillOrColorOrKeys, acgraph.vector.PatternFill)) {
       newFill = opt_fillOrColorOrKeys;
     } else if (opt_fillOrColorOrKeys['type'] == 'pattern') {
       delete opt_fillOrColorOrKeys['id'];
@@ -720,7 +720,7 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
       }
       var transform = opt_fillOrColorOrKeys['transform'];
       if (goog.isDefAndNotNull(transform)) {
-        if (transform instanceof goog.math.AffineTransform) {
+        if (acgraph.utils.instanceOf(transform, goog.math.AffineTransform)) {
           newFill['transform'] = transform;
         } else if (goog.isObject(transform)) {
           newFill['transform'] = new goog.math.AffineTransform();
@@ -806,7 +806,7 @@ acgraph.vector.normalizeStroke = function(opt_strokeOrFill, opt_thickness, opt_d
     // No pattern fill for stroke, unfortunately :D
     // Double typecast should be here, via ColoredFill,
     // but that's too much metadata, so let's go with this.
-    newStroke = (tmp instanceof acgraph.vector.PatternFill) ? 'black' : /** @type {acgraph.vector.Stroke} */(tmp);
+    newStroke = (acgraph.utils.instanceOf(tmp, acgraph.vector.PatternFill)) ? 'black' : /** @type {acgraph.vector.Stroke} */(tmp);
 
     // If nothing else we can use normalized fill as a stroke,
     // ot is compatible. Otherwise we need to add properties.
@@ -858,7 +858,7 @@ acgraph.vector.normalizeHatchFill = function(opt_patternFillOrType, opt_color, o
         opt_color,
         goog.isDef(opt_thickness) ? parseFloat(opt_thickness) : undefined,
         goog.isDef(opt_size) ? parseFloat(opt_size) : undefined);
-  } else if (opt_patternFillOrType instanceof acgraph.vector.PatternFill) {
+  } else if (acgraph.utils.instanceOf(opt_patternFillOrType, acgraph.vector.PatternFill)) {
     newFill = opt_patternFillOrType;
   } else if (goog.isObject(opt_patternFillOrType)) {
     if (opt_patternFillOrType['type'] == 'pattern') {
@@ -876,7 +876,7 @@ acgraph.vector.normalizeHatchFill = function(opt_patternFillOrType, opt_color, o
     }
   } else
     newFill = null;
-  return newFill;
+  return /** @type {acgraph.vector.PatternFill|acgraph.vector.HatchFill} */(newFill);
 };
 
 
@@ -934,8 +934,8 @@ acgraph.vector.normalizePageSize = function(opt_paperSizeOrWidth, opt_landscapeO
  */
 acgraph.vector.normalizeGradientMode = function(mode) {
   if (goog.isDefAndNotNull(mode)) { // mode is set
-    if (mode instanceof goog.math.Rect)
-      return mode;
+    if (acgraph.utils.instanceOf(mode, goog.math.Rect))
+      return /** @type {goog.math.Rect} */(mode);
     else if (goog.isObject(mode) && !isNaN(mode['left']) && !isNaN(mode['top']) && !isNaN(mode['width']) && !isNaN(mode['height']))
       return new goog.math.Rect(mode['left'], mode['top'], mode['width'], mode['height']);
   }

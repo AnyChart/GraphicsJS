@@ -102,12 +102,12 @@ acgraph.vector.Clip.shapesHelper_ = {
  */
 acgraph.vector.Clip.prototype.shape = function(opt_leftOrShape, opt_top, opt_width, opt_height) {
   if (arguments.length) {
-    if (opt_leftOrShape instanceof acgraph.vector.Shape) {
+    if (acgraph.utils.instanceOf(opt_leftOrShape, acgraph.vector.Shape)) {
       if (this.shape_) {
         var sameType = false;
         for (var i in acgraph.vector.Clip.shapesHelper_) {
           var t = acgraph.vector.Clip.shapesHelper_[i];
-          if (this.shape_ instanceof t && opt_leftOrShape instanceof t) {
+          if (acgraph.utils.instanceOf(this.shape_, t) && acgraph.utils.instanceOf(opt_leftOrShape, t)) {
             sameType = true;
             break;
           }
@@ -117,16 +117,16 @@ acgraph.vector.Clip.prototype.shape = function(opt_leftOrShape, opt_top, opt_wid
           this.shape_.deserialize(opt_leftOrShape.serialize());
         } else {
           this.shape_.parent(null);
-          this.shape_ = opt_leftOrShape;
+          this.shape_ = /** @type {acgraph.vector.Shape} */(opt_leftOrShape);
           this.shape_.parent(this);
         }
       } else {
-        this.shape_ = opt_leftOrShape;
+        this.shape_ = /** @type {acgraph.vector.Shape} */(opt_leftOrShape);
         this.shape_.parent(this);
       }
     } else {
       var left, top, width, height;
-      if (opt_leftOrShape instanceof goog.math.Rect) {
+      if (acgraph.utils.instanceOf(opt_leftOrShape, goog.math.Rect)) {
         left = opt_leftOrShape.left;
         top = opt_leftOrShape.top;
         width = opt_leftOrShape.width;
@@ -148,7 +148,7 @@ acgraph.vector.Clip.prototype.shape = function(opt_leftOrShape, opt_top, opt_wid
         height = goog.isDefAndNotNull(opt_height) ? opt_height : 0;
       }
       if (this.shape_) {
-        if (this.shape_ instanceof acgraph.vector.Rect) {
+        if (acgraph.utils.instanceOf(this.shape_, acgraph.vector.Rect)) {
           this.shape_.setX(left).setY(top).setWidth(width).setHeight(height);
         } else {
           this.shape_.parent(null);
