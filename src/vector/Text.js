@@ -1579,7 +1579,8 @@ acgraph.vector.Text.prototype.finalizeTextLine = function() {
       segment = goog.array.peek(this.currentLine_);
       var segment_bounds = this.getTextBounds(segment.text, segment.getStyle());
 
-      var cutPos = this.cutTextSegment_(segment.text, segment.getStyle(), 0, this.textWidthLimit, segment_bounds, true);
+      var cutLimit = this.textWidthLimit - (this.currentLineWidth_ - segment_bounds.width);
+      var cutPos = this.cutTextSegment_(segment.text, segment.getStyle(), 0, cutLimit, segment_bounds, true);
       var cutText = segment.text.substring(0, cutPos);
       segment_bounds = this.getTextBounds(cutText, segment.getStyle());
       segment.text = cutText;
