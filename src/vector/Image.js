@@ -95,55 +95,55 @@ acgraph.vector.Image.Align = {
      Align the <min-x> of the element's ‘viewBox’ with the smallest X value of the viewport.
      Align the <min-y> of the element's ‘viewBox’ with the smallest Y value of the viewport.
    */
-  X_MIN_Y_MIN: 'x-min-y-min',
+  X_MIN_Y_MIN: 'xMinYMin',
   /**
    * Force uniform scaling.
      Align the midpoint X value of the element's ‘viewBox’ with the midpoint X value of the viewport.
      Align the <min-y> of the element's ‘viewBox’ with the smallest Y value of the viewport.
    */
-  X_MID_Y_MIN: 'x-mid-y-min',
+  X_MID_Y_MIN: 'xMidYMin',
   /**
    * Force uniform scaling.
      Align the <min-x>+<width> of the element's ‘viewBox’ with the maximum X value of the viewport.
      Align the <min-y> of the element's ‘viewBox’ with the smallest Y value of the viewport.
    */
-  X_MAX_Y_MIN: 'x-max-y-min',
+  X_MAX_Y_MIN: 'xMaxYMin',
   /**
    * Force uniform scaling.
      Align the <min-x> of the element's ‘viewBox’ with the smallest X value of the viewport.
      Align the midpoint Y value of the element's ‘viewBox’ with the midpoint Y value of the viewport.
    */
-  X_MIN_Y_MID: 'x-min-y-mid',
+  X_MIN_Y_MID: 'xMinYMid',
   /**
    * Force uniform scaling.
      Align the midpoint X value of the element's ‘viewBox’ with the midpoint X value of the viewport.
      Align the midpoint Y value of the element's ‘viewBox’ with the midpoint Y value of the viewport.
    */
-  X_MID_Y_MID: 'x-mid-y-mid',
+  X_MID_Y_MID: 'xMidYMid',
   /**
    * Force uniform scaling.
      Align the <min-x>+<width> of the element's ‘viewBox’ with the maximum X value of the viewport.
      Align the midpoint Y value of the element's ‘viewBox’ with the midpoint Y value of the viewport.
    */
-  X_MAX_Y_MID: 'x-max-y-mid',
+  X_MAX_Y_MID: 'xMaxYMid',
   /**
    * Force uniform scaling.
      Align the <min-x> of the element's ‘viewBox’ with the smallest X value of the viewport.
      Align the <min-y>+<height> of the element's ‘viewBox’ with the maximum Y value of the viewport.
    */
-  X_MIN_Y_MAX: 'x-min-y-max',
+  X_MIN_Y_MAX: 'xMinYMax',
   /**
    * Force uniform scaling.
      Align the midpoint X value of the element's ‘viewBox’ with the midpoint X value of the viewport.
      Align the <min-y>+<height> of the element's ‘viewBox’ with the maximum Y value of the viewport.
    */
-  X_MID_Y_MAX: 'x-mid-y-max',
+  X_MID_Y_MAX: 'xMidYMax',
   /**
    * Force uniform scaling.
      Align the <min-x>+<width> of the element's ‘viewBox’ with the maximum X value of the viewport.
      Align the <min-y>+<height> of the element's ‘viewBox’ with the maximum Y value of the viewport.
    */
-  X_MAX_Y_MAX: 'x-max-y-max'
+  X_MAX_Y_MAX: 'xMaxYMax'
 };
 
 
