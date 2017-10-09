@@ -225,7 +225,7 @@ acgraph.vector.HatchFill.creationMap_ = (function() {
     }
   };
   map[acgraph.vector.HatchFill.HatchFillType.SOLID_DIAMOND] = function() {
-    this.segmentedDrawHelper_([[this.size / 2, 0, 0, this.size / 2, this.size / 2, this.size, this.size, this.size / 2, this.size / 2, 0]], true);
+    this.segmentedDrawHelper_([[this.size / 2, 0, 0, this.size / 2, this.size / 2, this.size, this.size, this.size / 2, this.size / 2, 0]], true, true);
   };
   map[acgraph.vector.HatchFill.HatchFillType.DASHED_FORWARD_DIAGONAL] = function() {
     this.rLinesHelper_([0, 0, this.size / 2, this.size / 2, this.thickness]);
@@ -305,11 +305,12 @@ acgraph.vector.HatchFill.normalizeHatchFillType = function(value, opt_default) {
 /**
  * @param {Array.<Array.<number>>} segments
  * @param {boolean=} opt_close
+ * @param {boolean=} opt_filled
  * @this {acgraph.vector.HatchFill}
  * @private
  */
-acgraph.vector.HatchFill.prototype.segmentedDrawHelper_ = function(segments, opt_close) {
-  var path = this.strokePathHelper_();
+acgraph.vector.HatchFill.prototype.segmentedDrawHelper_ = function(segments, opt_close, opt_filled) {
+  var path = this.pathHelper_(opt_filled);
   for (var i = 0; i < segments.length; i++) {
     var segment = segments[i];
     path.moveTo(segment[0], segment[1]);
@@ -328,7 +329,7 @@ acgraph.vector.HatchFill.prototype.segmentedDrawHelper_ = function(segments, opt
  * @private
  */
 acgraph.vector.HatchFill.prototype.rLinesHelper_ = function(args, opt_rotation) {
-  var path = this.strokePathHelper_();
+  var path = this.pathHelper_();
   for (var i = 0; i < args.length; i += 5) {
     this.rLine_(path, args[i], args[i + 1], args[i + 2], args[i + 3], args[i + 4]);
   }
@@ -363,11 +364,14 @@ acgraph.vector.HatchFill.prototype.rectHelper_ = function(w, h, opt_l, opt_t) {
 
 
 /**
+ * @param {boolean=} opt_filled .
  * @return {acgraph.vector.Path}
  * @private
  */
-acgraph.vector.HatchFill.prototype.strokePathHelper_ = function() {
-  return /** @type {acgraph.vector.Path} */(this.path().fill('none').stroke(this.color, this.thickness));
+acgraph.vector.HatchFill.prototype.pathHelper_ = function(opt_filled) {
+  return /** @type {acgraph.vector.Path} */(opt_filled ?
+      this.path().fill(this.color).stroke('none') :
+      this.path().fill('none').stroke(this.color, this.thickness));
 };
 
 
