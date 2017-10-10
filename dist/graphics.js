@@ -3462,7 +3462,7 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
       }
     } else {
       if (goog.isObject(opt_fillOrColorOrKeys)) {
-        if (opt_fillOrColorOrKeys instanceof acgraph.vector.PatternFill) {
+        if (acgraph.utils.instanceOf(opt_fillOrColorOrKeys, acgraph.vector.PatternFill)) {
           newFill = opt_fillOrColorOrKeys;
         } else {
           if (opt_fillOrColorOrKeys["type"] == "pattern") {
@@ -3527,7 +3527,7 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
               }
               var transform = opt_fillOrColorOrKeys["transform"];
               if (goog.isDefAndNotNull(transform)) {
-                if (transform instanceof goog.math.AffineTransform) {
+                if (acgraph.utils.instanceOf(transform, goog.math.AffineTransform)) {
                   newFill["transform"] = transform;
                 } else {
                   if (goog.isObject(transform)) {
@@ -3587,7 +3587,7 @@ acgraph.vector.normalizeStroke = function(opt_strokeOrFill, opt_thickness, opt_d
     if (tmp == "none") {
       return (tmp);
     }
-    newStroke = tmp instanceof acgraph.vector.PatternFill ? "black" : (tmp);
+    newStroke = acgraph.utils.instanceOf(tmp, acgraph.vector.PatternFill) ? "black" : (tmp);
     if (!isNaN(thickness) || hasDash || hasJoin || hasCap || goog.isDef(opt_dashpattern) || goog.isDef(opt_lineJoin) || goog.isDef(opt_lineCap)) {
       if (goog.isString(newStroke)) {
         newStroke = ({"color":newStroke});
@@ -3628,7 +3628,7 @@ acgraph.vector.normalizeHatchFill = function(opt_patternFillOrType, opt_color, o
   if (goog.isString(opt_patternFillOrType) || goog.isNumber(opt_patternFillOrType)) {
     newFill = acgraph.hatchFill((opt_patternFillOrType), opt_color, goog.isDef(opt_thickness) ? parseFloat(opt_thickness) : undefined, goog.isDef(opt_size) ? parseFloat(opt_size) : undefined);
   } else {
-    if (opt_patternFillOrType instanceof acgraph.vector.PatternFill) {
+    if (acgraph.utils.instanceOf(opt_patternFillOrType, acgraph.vector.PatternFill)) {
       newFill = opt_patternFillOrType;
     } else {
       if (goog.isObject(opt_patternFillOrType)) {
@@ -3646,7 +3646,7 @@ acgraph.vector.normalizeHatchFill = function(opt_patternFillOrType, opt_color, o
       }
     }
   }
-  return newFill;
+  return (newFill);
 };
 acgraph.vector.normalizePageSize = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_default) {
   if (!goog.isDef(opt_default)) {
@@ -3687,8 +3687,8 @@ acgraph.vector.normalizePageSize = function(opt_paperSizeOrWidth, opt_landscapeO
 };
 acgraph.vector.normalizeGradientMode = function(mode) {
   if (goog.isDefAndNotNull(mode)) {
-    if (mode instanceof goog.math.Rect) {
-      return mode;
+    if (acgraph.utils.instanceOf(mode, goog.math.Rect)) {
+      return (mode);
     } else {
       if (goog.isObject(mode) && !isNaN(mode["left"]) && !isNaN(mode["top"]) && !isNaN(mode["width"]) && !isNaN(mode["height"])) {
         return new goog.math.Rect(mode["left"], mode["top"], mode["width"], mode["height"]);
@@ -3729,8 +3729,8 @@ acgraph.vector.parseKey = function(key) {
   return (result);
 };
 acgraph.vector.getThickness = function(stroke) {
-  var res = stroke["thickness"];
-  return stroke == "none" ? 0 : isNaN(res) || goog.isNull(res) ? 1 : res;
+  var res;
+  return stroke && stroke != "none" ? isNaN(res = stroke["thickness"]) || goog.isNull(res) ? 1 : res : 0;
 };
 (function() {
   goog.exportSymbol("acgraph.vector.Anchor.CENTER", acgraph.vector.Anchor.CENTER);
@@ -3783,7 +3783,7 @@ goog.provide("acgraph.utils.IdGenerator");
 acgraph.utils.IdGenerator = function() {
 };
 goog.addSingletonGetter(acgraph.utils.IdGenerator);
-acgraph.utils.IdGenerator.ElementTypePrefix = {STAGE:"stage", FILL:"fill", FILL_PATTERN:"fillPattern", HATCH_FILL:"hatchFill", IMAGE_FILL:"imageFill", STROKE:"stroke", LAYER:"layer", UNMANAGEABLE_LAYER:"unmanageablelayer", RECT:"rect", CIRCLE:"circle", ELLIPSE:"ellipse", PATH:"path", GRADIENT_KEY:"gKey", LINEAR_GRADIENT:"linearGradient", RADIAL_GRADIENT:"radialGradient", TEXT:"text", TEXT_SEGMENT:"tSegment", IMAGE:"image", CLIP:"clip", SHAPE_TYPE:"shapeType"};
+acgraph.utils.IdGenerator.ElementTypePrefix = {STAGE:"stage", FILL:"fill", FILL_PATTERN:"fillPattern", HATCH_FILL:"hatchFill", IMAGE_FILL:"imageFill", STROKE:"stroke", LAYER:"layer", UNMANAGEABLE_LAYER:"unmanageablelayer", RECT:"rect", CIRCLE:"circle", ELLIPSE:"ellipse", PATH:"path", GRADIENT_KEY:"gKey", LINEAR_GRADIENT:"linearGradient", RADIAL_GRADIENT:"radialGradient", TEXT:"text", SIMPLE_TEXT:"simpleText", TEXT_SEGMENT:"tSegment", IMAGE:"image", CLIP:"clip", SHAPE_TYPE:"shapeType"};
 acgraph.utils.IdGenerator.prototype.nextId_ = 0;
 acgraph.utils.IdGenerator.prototype.prefix_ = "ac";
 acgraph.utils.IdGenerator.prototype.uid_property_ = "ac_uid_" + (Math.random() * 1E9 >>> 0);
@@ -4515,6 +4515,9 @@ acgraph.utils.partialApplyingArgsToFunction = function(func, args, opt_obj) {
       end += count;
     }
   }
+};
+acgraph.utils.instanceOf = function(object, constructor) {
+  return !!object && object instanceof (constructor);
 };
 goog.provide("acgraph.error");
 acgraph.error.Code = {ERROR_IS_NOT_FOUND:0, STAGE_TYPE_NOT_SUPPORTED:1, CONTAINER_SHOULD_BE_DEFINED:2, STAGE_SHOULD_HAVE_DOM_ELEMENT:3, PARENT_UNABLE_TO_BE_SET:4, OPERATION_ON_DISPOSED:5, DIRTY_AFTER_SYNC_RENDER:6, STAGE_MISMATCH:7, WRONG_SWAPPING:8, EMPTY_PATH:9, UNIMPLEMENTED_METHOD:10, REQUIRED_PARAMETER_MISSING:11, PARAMETER_TYPE_MISMATCH:12, PARAMETER_IS_NULL_OR_UNDEFINED:13, INVALID_NUMBER_OF_PARAMETERS:14, FEATURE_NOT_SUPPORTED_IN_VML:15};
@@ -9593,9 +9596,9 @@ acgraph.vector.Element.prototype.getTransformationMatrix = function() {
     return [1, 0, 0, 1, 0, 0];
   }
 };
-acgraph.vector.Element.prototype.createDom = function() {
+acgraph.vector.Element.prototype.createDom = function(opt_force) {
   var stage = this.getStage();
-  if (stage && stage.acquireDomChange(acgraph.vector.Stage.DomChangeType.ELEMENT_CREATE)) {
+  if (stage && stage.acquireDomChange(acgraph.vector.Stage.DomChangeType.ELEMENT_CREATE) || opt_force) {
     this.domElement_ = this.createDomInternal();
     acgraph.register(this);
     this.clearDirtyState(acgraph.vector.Element.DirtyState.DOM_MISSING);
@@ -9625,9 +9628,12 @@ acgraph.vector.Element.prototype.render = function() {
       this.drag(this.draggable_);
     }
   }
+  this.beforeRenderInternal();
   this.renderInternal();
   this.isRendering_ = false;
   return this;
+};
+acgraph.vector.Element.prototype.beforeRenderInternal = function() {
 };
 acgraph.vector.Element.prototype.renderInternal = function() {
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.ATTRIBUTE)) {
@@ -9782,8 +9788,8 @@ acgraph.vector.Element.prototype.clip = function(opt_value) {
   if (!this.clipElement_ && !clipShape || this.clipElement_ && this.clipElement_ === clipShape) {
     return this;
   }
-  if (clipShape && !(clipShape instanceof acgraph.vector.Clip)) {
-    if (clipShape instanceof acgraph.vector.Shape && clipShape.hasParent() && clipShape.parent() instanceof acgraph.vector.Clip) {
+  if (clipShape && !acgraph.utils.instanceOf(clipShape, acgraph.vector.Clip)) {
+    if (acgraph.utils.instanceOf(clipShape, acgraph.vector.Shape) && clipShape.hasParent() && acgraph.utils.instanceOf(clipShape.parent(), acgraph.vector.Clip)) {
       if (this.clipElement_ && !this.clipElement_.isDisposed()) {
         this.clipElement_.removeElement(this);
       }
@@ -9798,7 +9804,7 @@ acgraph.vector.Element.prototype.clip = function(opt_value) {
       }
     }
   } else {
-    this.clipElement_ = clipShape || null;
+    this.clipElement_ = (clipShape) || null;
   }
   this.clipChanged();
   return this;
@@ -9861,7 +9867,7 @@ acgraph.vector.Element.prototype.drag = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
     this.draggable_ = opt_value;
     if (opt_value && !this.hasDirtyState(acgraph.vector.Element.DirtyState.DOM_MISSING)) {
-      var isLimited = opt_value instanceof goog.math.Rect;
+      var isLimited = acgraph.utils.instanceOf(opt_value, goog.math.Rect);
       var limit = isLimited ? this.draggable_ : null;
       if (!this.dragger_) {
         this.dragger_ = new acgraph.events.Dragger(this);
@@ -10046,7 +10052,7 @@ acgraph.vector.Shape.prototype.strokeThickness = function(opt_value) {
     }
   }
 };
-acgraph.vector.Shape.prototype.renderInternal = function() {
+acgraph.vector.Shape.prototype.beforeRenderInternal = function() {
   if (this.boundsAffectedColors_ && this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
     if (!!(this.boundsAffectedColors_ & 1)) {
       this.setDirtyState(acgraph.vector.Element.DirtyState.FILL);
@@ -10055,6 +10061,8 @@ acgraph.vector.Shape.prototype.renderInternal = function() {
       this.setDirtyState(acgraph.vector.Element.DirtyState.STROKE);
     }
   }
+};
+acgraph.vector.Shape.prototype.renderInternal = function() {
   goog.base(this, "renderInternal");
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.FILL) || this.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE)) {
     this.renderFillAndStroke();
@@ -10096,10 +10104,10 @@ acgraph.vector.Shape.prototype.serialize = function() {
   var data = goog.base(this, "serialize");
   if (this.fill_) {
     var fillData, tmpFill, tmpStroke;
-    if (this.fill_ instanceof acgraph.vector.HatchFill) {
+    if (acgraph.utils.instanceOf(this.fill_, acgraph.vector.HatchFill)) {
       fillData = {"type":"hatchFill", "hatchType":this.fill_.type, "color":this.fill_.color, "thickness":this.fill_.thickness, "size":this.fill_.size};
     } else {
-      if (this.fill_ instanceof acgraph.vector.PatternFill) {
+      if (acgraph.utils.instanceOf(this.fill_, acgraph.vector.PatternFill)) {
         fillData = this.fill_.serialize();
       } else {
         if (goog.isObject(this.fill_) && "keys" in this.fill_) {
@@ -10381,23 +10389,24 @@ acgraph.vector.Clip.prototype.stage = function(opt_value) {
 };
 acgraph.vector.Clip.prototype.shape = function(opt_leftOrShape, opt_top, opt_width, opt_height) {
   if (arguments.length) {
-    if (opt_leftOrShape instanceof acgraph.vector.Shape) {
+    if (acgraph.utils.instanceOf(opt_leftOrShape, acgraph.vector.Shape)) {
       if (this.shape_) {
-        var sameType = this.shape_ instanceof acgraph.vector.Rect && opt_leftOrShape instanceof acgraph.vector.Rect || this.shape_ instanceof acgraph.vector.Circle && opt_leftOrShape instanceof acgraph.vector.Circle || this.shape_ instanceof acgraph.vector.Ellipse && opt_leftOrShape instanceof acgraph.vector.Ellipse || this.shape_ instanceof acgraph.vector.Path && opt_leftOrShape instanceof acgraph.vector.Path;
+        var sameType = acgraph.utils.instanceOf(this.shape_, acgraph.vector.Rect) && acgraph.utils.instanceOf(opt_leftOrShape, acgraph.vector.Rect) || acgraph.utils.instanceOf(this.shape_, acgraph.vector.Circle) && acgraph.utils.instanceOf(opt_leftOrShape, acgraph.vector.Circle) || acgraph.utils.instanceOf(this.shape_, acgraph.vector.Ellipse) && acgraph.utils.instanceOf(opt_leftOrShape, acgraph.vector.Ellipse) || acgraph.utils.instanceOf(this.shape_, acgraph.vector.Path) && acgraph.utils.instanceOf(opt_leftOrShape, 
+        acgraph.vector.Path);
         if (sameType) {
           this.shape_.deserialize(opt_leftOrShape.serialize());
         } else {
           this.shape_.parent(null);
-          this.shape_ = opt_leftOrShape;
+          this.shape_ = (opt_leftOrShape);
           this.shape_.parent(this);
         }
       } else {
-        this.shape_ = opt_leftOrShape;
+        this.shape_ = (opt_leftOrShape);
         this.shape_.parent(this);
       }
     } else {
       var left, top, width, height;
-      if (opt_leftOrShape instanceof goog.math.Rect) {
+      if (acgraph.utils.instanceOf(opt_leftOrShape, goog.math.Rect)) {
         left = opt_leftOrShape.left;
         top = opt_leftOrShape.top;
         width = opt_leftOrShape.width;
@@ -10423,7 +10432,7 @@ acgraph.vector.Clip.prototype.shape = function(opt_leftOrShape, opt_top, opt_wid
         }
       }
       if (this.shape_) {
-        if (this.shape_ instanceof acgraph.vector.Rect) {
+        if (acgraph.utils.instanceOf(this.shape_, acgraph.vector.Rect)) {
           this.shape_.setX(left).setY(top).setWidth(width).setHeight(height);
         } else {
           this.shape_.parent(null);
@@ -10719,8 +10728,8 @@ acgraph.vector.PathBase.prototype.moveToInternal = function(x, y) {
   }
   this.arguments_.push(x, y);
   this.currentPoint_ = this.closePoint_ = [x, y];
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   this.transformedPathCache_ = null;
+  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   return this;
 };
 acgraph.vector.PathBase.prototype.lineToInternal = function(x, y, var_args) {
@@ -10739,9 +10748,9 @@ acgraph.vector.PathBase.prototype.lineToInternal = function(x, y, var_args) {
   }
   this.count_[this.count_.length - 1] += i / 2;
   this.currentPoint_ = [x, y];
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   this.dropBoundsCache();
   this.transformedPathCache_ = null;
+  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   return this;
 };
 acgraph.vector.PathBase.prototype.curveToInternal = function(control1X, control1Y, control2X, control2Y, endX, endY, var_args) {
@@ -10760,9 +10769,9 @@ acgraph.vector.PathBase.prototype.curveToInternal = function(control1X, control1
   }
   this.count_[this.count_.length - 1] += i / 6;
   this.currentPoint_ = [x, y];
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   this.dropBoundsCache();
   this.transformedPathCache_ = null;
+  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   return this;
 };
 acgraph.vector.PathBase.prototype.quadraticCurveToInternal = function(controlX, controlY, endX, endY, var_args) {
@@ -10866,9 +10875,9 @@ acgraph.vector.PathBase.prototype.arcToInternal = function(rx, ry, fromAngle, ex
   }
   this.simple_ = false;
   this.currentPoint_ = [ex, ey];
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   this.dropBoundsCache();
   this.transformedPathCache_ = null;
+  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   return this;
 };
 acgraph.vector.PathBase.prototype.arcToAsCurvesInternal = function(rx, ry, fromAngle, extent) {
@@ -10876,9 +10885,9 @@ acgraph.vector.PathBase.prototype.arcToAsCurvesInternal = function(rx, ry, fromA
   var cy = this.currentPoint_[1] - goog.math.angleDy(fromAngle, ry);
   var curveParams = acgraph.math.arcToBezier(cx, cy, rx, ry, fromAngle, extent);
   this.curveToInternal.apply(this, curveParams);
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   this.dropBoundsCache();
   this.transformedPathCache_ = null;
+  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   return this;
 };
 acgraph.vector.PathBase.prototype.closeInternal = function() {
@@ -10989,6 +10998,15 @@ acgraph.vector.PathBase.boundsCalculationMap_ = function() {
   map[acgraph.vector.PathBase.Segment.ARCTO] = acgraph.vector.PathBase.calcArcBounds_;
   return map;
 }();
+acgraph.vector.PathBase.prototype.serializePathArgs = function(opt_data) {
+  var data = opt_data || {};
+  data["closePoint"] = this.closePoint_ ? this.closePoint_.slice() : [];
+  data["currentPoint"] = this.currentPoint_ ? this.currentPoint_.slice() : [];
+  data["segments"] = this.segments_.slice();
+  data["count"] = this.count_.slice();
+  data["arguments"] = this.arguments_.slice();
+  return data;
+};
 acgraph.vector.PathBase.prototype.deserialize = function(data) {
   this.closePoint_ = data["closePoint"];
   this.currentPoint_ = data["currentPoint"];
@@ -11001,11 +11019,7 @@ acgraph.vector.PathBase.prototype.deserialize = function(data) {
 acgraph.vector.PathBase.prototype.serialize = function() {
   var data = goog.base(this, "serialize");
   data["type"] = "path";
-  data["closePoint"] = this.closePoint_ ? this.closePoint_.slice() : [];
-  data["currentPoint"] = this.currentPoint_ ? this.currentPoint_.slice() : [];
-  data["segments"] = this.segments_.slice();
-  data["count"] = this.count_.slice();
-  data["arguments"] = this.arguments_.slice();
+  data = this.serializePathArgs(data);
   return data;
 };
 acgraph.vector.PathBase.prototype.disposeInternal = function() {
@@ -11201,6 +11215,14 @@ acgraph.vector.Layer.prototype.text = function(opt_x, opt_y, opt_text, opt_style
   if (opt_style) {
     text.style(opt_style);
   }
+  if (opt_text) {
+    text.text(opt_text);
+  }
+  text.parent(this);
+  return text;
+};
+acgraph.vector.Layer.prototype.simpleText = function(opt_text) {
+  var text = acgraph.simpleText();
   if (opt_text) {
     text.text(opt_text);
   }
@@ -12690,7 +12712,7 @@ acgraph.vector.Renderer.prototype.getEmptyStringBounds = function(style) {
   }
   return bounds;
 };
-acgraph.vector.Renderer.prototype.getStyleHash_ = function(value) {
+acgraph.vector.Renderer.prototype.getStyleHash = function(value) {
   var hash = "";
   for (var j = 0, l = this.settingsAffectingSize.length;j < l;j++) {
     var prop = value[this.settingsAffectingSize[j]];
@@ -12702,7 +12724,7 @@ acgraph.vector.Renderer.prototype.getStyleHash_ = function(value) {
 };
 acgraph.vector.Renderer.prototype.textBounds = function(text, style, opt_bounds) {
   var boundsCache = this.textBoundsCache;
-  var styleHash = this.getStyleHash_(style);
+  var styleHash = this.getStyleHash(style);
   var styleCache = boundsCache[styleHash];
   if (!styleCache) {
     styleCache = boundsCache[styleHash] = {};
@@ -12710,9 +12732,12 @@ acgraph.vector.Renderer.prototype.textBounds = function(text, style, opt_bounds)
   var textBoundsCache = styleCache[text];
   return textBoundsCache ? textBoundsCache : styleCache[text] = opt_bounds ? opt_bounds : this.measure(text, style);
 };
+acgraph.vector.Renderer.prototype.getBBox = function(element, text, style) {
+  return this.textBounds(text, style);
+};
 acgraph.vector.Renderer.prototype.isInBoundsCache = function(text, style) {
   var boundsCache = this.textBoundsCache;
-  var styleHash = this.getStyleHash_(style);
+  var styleHash = this.getStyleHash(style);
   var styleCache = boundsCache[styleHash];
   return !!(styleCache && styleCache[text]);
 };
@@ -12825,6 +12850,60 @@ acgraph.vector.Renderer.prototype.setLayerClip = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.needsReClipOnBoundsChange = function() {
   return false;
 };
+goog.provide("acgraph.vector.SimpleText");
+goog.require("acgraph.utils.IdGenerator");
+goog.require("acgraph.vector.Element");
+goog.require("goog.math.Rect");
+acgraph.vector.SimpleText = function() {
+  this.bounds = new goog.math.Rect(0, 0, 0, 0);
+  goog.base(this);
+};
+goog.inherits(acgraph.vector.SimpleText, acgraph.vector.Element);
+acgraph.vector.SimpleText.prototype.text_ = null;
+acgraph.vector.SimpleText.prototype.SUPPORTED_DIRTY_STATES = acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES | acgraph.vector.Element.DirtyState.DATA;
+acgraph.vector.SimpleText.prototype.getElementTypePrefix = function() {
+  return acgraph.utils.IdGenerator.ElementTypePrefix.SIMPLE_TEXT;
+};
+acgraph.vector.SimpleText.prototype.getBoundsWithoutTransform = function() {
+  return this.bounds.clone();
+};
+acgraph.vector.SimpleText.prototype.getBoundsWithTransform = acgraph.vector.SimpleText.prototype.getBoundsWithoutTransform;
+acgraph.vector.SimpleText.prototype.text = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (opt_value != this.text_) {
+      this.text_ = String(opt_value);
+      var stageSuspended = !this.getStage() || this.getStage().isSuspended();
+      if (!stageSuspended) {
+        this.getStage().suspend();
+      }
+      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      if (!stageSuspended) {
+        this.getStage().resume();
+      }
+    }
+    return this;
+  }
+  return this.text_;
+};
+acgraph.vector.SimpleText.prototype.createDomInternal = function() {
+  return acgraph.getRenderer().createTextElement();
+};
+acgraph.vector.SimpleText.prototype.renderInternal = function() {
+  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
+    acgraph.getRenderer().setTextData(this);
+    this.clearDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  }
+  goog.base(this, "renderInternal");
+};
+acgraph.vector.SimpleText.prototype.renderTransformation = function() {
+  this.clearDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
+  this.clearDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION);
+};
+(function() {
+  var proto = acgraph.vector.SimpleText.prototype;
+  proto["text"] = proto.text;
+  goog.exportSymbol("acgraph.vector.SimpleText", acgraph.vector.SimpleText);
+})();
 goog.provide("acgraph.utils.HTMLParser");
 goog.require("goog.object");
 acgraph.utils.HTMLParser = function() {
@@ -13394,7 +13473,7 @@ acgraph.vector.Text = function(opt_x, opt_y) {
   goog.base(this);
 };
 goog.inherits(acgraph.vector.Text, acgraph.vector.Element);
-acgraph.vector.Text.TextWrap = {NO_WRAP:"noWrap", BY_LETTER:"byLetter"};
+acgraph.vector.Text.TextWrap = {NO_WRAP:"noWrap", BY_LETTER:"byLetter", BY_WORD:"byWord"};
 acgraph.vector.Text.TextOverflow = {CLIP:"", ELLIPSIS:"..."};
 acgraph.vector.Text.HAlign = {LEFT:"left", START:"start", CENTER:"center", END:"end", RIGHT:"right"};
 acgraph.vector.Text.VAlign = {TOP:"top", MIDDLE:"middle", BOTTOM:"bottom"};
@@ -13599,9 +13678,22 @@ acgraph.vector.Text.prototype.selectable = function(opt_value) {
 };
 acgraph.vector.Text.prototype.style = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
-    if (opt_value) {
-      goog.object.extend(this.style_, opt_value);
-    }
+    goog.object.forEach(opt_value, function(value, key) {
+      var styleName = key;
+      switch(key) {
+        case "fontDecoration":
+        case "textDecoration":
+          styleName = "decoration";
+          break;
+        case "fontColor":
+          styleName = "color";
+          break;
+        case "fontOpacity":
+          styleName = "opacity";
+          break;
+      }
+      this.style_[styleName] = value;
+    }, this);
     this.width_ = parseFloat(this.style_["width"]) || 0;
     this.height_ = parseFloat(this.style_["height"]) || 0;
     if (this.style_["lineHeight"]) {
@@ -13815,7 +13907,7 @@ acgraph.vector.Text.prototype.getTextBounds = function(text, segmentStyle) {
   var style = this.mergeStyles_(this.style_, segmentStyle);
   return acgraph.getRenderer().textBounds(text, style);
 };
-acgraph.vector.Text.prototype.cutTextSegment_ = function(text, style, a, b, segmentBounds) {
+acgraph.vector.Text.prototype.cutTextSegment_ = function(text, style, a, b, segmentBounds, opt_ignoreByWord) {
   var subWrappedText;
   var subSegmentBounds;
   var width = b - a;
@@ -13839,6 +13931,21 @@ acgraph.vector.Text.prototype.cutTextSegment_ = function(text, style, a, b, segm
   var bounds = segmentBounds.clone();
   bounds.width = cutTextWidth;
   acgraph.getRenderer().textBounds(cutText, resultStatus, bounds);
+  if (this.style_["textWrap"] == acgraph.vector.Text.TextWrap.BY_WORD && !opt_ignoreByWord) {
+    var anyWhiteSpace = /\s+/g;
+    var anyNonWhiteSpace = /\S+/g;
+    var left = subWrappedText[subWrappedText.length - 1];
+    var right = cutText[0];
+    if (!(anyWhiteSpace.test(left) || anyWhiteSpace.test(right))) {
+      if (anyWhiteSpace.test(subWrappedText)) {
+        var words = subWrappedText.match(anyNonWhiteSpace);
+        pos = subWrappedText.lastIndexOf(words[words.length - 1]);
+      } else {
+        var tt = anyNonWhiteSpace.exec(text)[0];
+        pos = tt.length;
+      }
+    }
+  }
   return pos;
 };
 acgraph.vector.Text.prototype.createSegment_ = function(text, style, bounds, opt_shift) {
@@ -13865,14 +13972,14 @@ acgraph.vector.Text.prototype.createSegment_ = function(text, style, bounds, opt
   segment.parent(this);
   return segment;
 };
-acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
+acgraph.vector.Text.prototype.applyTextOverflow_ = function(opt_line) {
   var segment, index, cutPos, textSegmentEllipsis;
-  var line = (goog.array.peek(this.textLines_));
+  var line = (opt_line || goog.array.peek(this.textLines_));
   var peekSegment = (goog.array.peek(line));
   var ellipsisBounds = this.getTextBounds(this.ellipsis_, peekSegment.getStyle());
   var ellipsis = this.ellipsis_;
   if (ellipsisBounds.width > this.width_) {
-    cutPos = this.cutTextSegment_(this.ellipsis_, peekSegment.getStyle(), 0, this.width_, ellipsisBounds);
+    cutPos = this.cutTextSegment_(this.ellipsis_, peekSegment.getStyle(), 0, this.width_, ellipsisBounds, true);
     ellipsis = this.ellipsis_.substring(0, cutPos);
   }
   var left = this.prevLineWidth_;
@@ -13919,7 +14026,7 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
         this.currentLineWidth_ = 0;
         this.currentBaseLine_ = 0;
         segmentBounds = this.getTextBounds(segment.text, segment.getStyle());
-        cutPos = this.cutTextSegment_(segment.text, segment.getStyle(), left, right, segmentBounds);
+        cutPos = this.cutTextSegment_(segment.text, segment.getStyle(), left, right, segmentBounds, true);
         if (cutPos < 1) {
           cutPos = 1;
         }
@@ -13929,7 +14036,7 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
         lastSegmentInline.x = segment.x;
         lastSegmentInline.y = segment.y;
         if (segment_bounds.width + ellipsisBounds.width > this.width_) {
-          cutPos = this.cutTextSegment_(this.ellipsis_, peekSegment.getStyle(), segment_bounds.width, this.width_, ellipsisBounds);
+          cutPos = this.cutTextSegment_(this.ellipsis_, peekSegment.getStyle(), segment_bounds.width, this.width_, ellipsisBounds, true);
           ellipsis = this.ellipsis_.substring(0, cutPos);
         }
         if (cutPos > 0) {
@@ -13954,33 +14061,29 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
     index = goog.array.indexOf(this.segments_, firstLineSegment);
     goog.array.insertAt(this.segments_, textSegmentEllipsis, index);
   }
-  this.stopAddSegments_ = true;
 };
 acgraph.vector.Text.prototype.addBreak = function() {
-  if (this.currentLineEmpty_) {
-    this.addSegment("");
-  }
   this.finalizeTextLine();
   this.currentNumberSeqBreaks_++;
-  this.addSegment("");
+  this.addSegment("", null, true);
   var height = this.currentLine_[0] ? this.currentLine_[0].height : 0;
   this.accumulatedHeight_ += goog.isString(this.lineHeight_) ? parseInt(this.lineHeight_, 0) + height : this.lineHeight_ * height;
 };
-acgraph.vector.Text.prototype.addSegment = function(text, opt_style) {
+acgraph.vector.Text.prototype.addSegment = function(text, opt_style, opt_break) {
   if (this.stopAddSegments_) {
     return;
   }
   var style = opt_style || {};
   var segment_bounds = this.getTextBounds(text, style);
   var shift = this.segments_.length == 0 ? this.textIndent_ : 0;
-  if (this.style_["width"]) {
+  if (goog.isDefAndNotNull(this.style_["width"])) {
     while (this.currentLineWidth_ + segment_bounds.width + shift > this.width_ && !this.stopAddSegments_) {
       var cutPos = this.cutTextSegment_(text, style, shift + this.currentLineWidth_, this.width_, segment_bounds);
       if (cutPos < 1 && this.currentLine_.length == 0) {
         cutPos = 1;
       }
       if (cutPos != 0) {
-        var cutText = goog.string.trimRight(text.substring(0, cutPos));
+        var cutText = goog.string.trimLeft(text.substring(0, cutPos));
         segment_bounds = this.getTextBounds(cutText, style);
         this.createSegment_(cutText, style, segment_bounds);
       }
@@ -13989,7 +14092,7 @@ acgraph.vector.Text.prototype.addSegment = function(text, opt_style) {
         this.stopAddSegments_ = true;
       }
       shift = 0;
-      if (this.style_["textWrap"] == acgraph.vector.Text.TextWrap.BY_LETTER) {
+      if (this.style_["textWrap"] == acgraph.vector.Text.TextWrap.BY_LETTER || this.style_["textWrap"] == acgraph.vector.Text.TextWrap.BY_WORD) {
         text = goog.string.trimLeft(text.substring(cutPos, text.length));
         segment_bounds = this.getTextBounds(text, style);
       } else {
@@ -13997,18 +14100,21 @@ acgraph.vector.Text.prototype.addSegment = function(text, opt_style) {
           text = "";
           segment_bounds = this.getTextBounds(text, style);
         } else {
+          this.applyTextOverflow_();
           this.stopAddSegments_ = true;
         }
       }
     }
   }
-  if (!this.stopAddSegments_) {
+  if (!this.stopAddSegments_ && (text.length || opt_break)) {
     this.createSegment_(text, style, segment_bounds);
   }
 };
 acgraph.vector.Text.prototype.finalizeTextLine = function() {
-  if (this.textWrap() == acgraph.vector.Text.TextWrap.NO_WRAP && this.textLines_.length == 1 && !this.htmlOn_) {
+  var textWrap = this.textWrap();
+  if (textWrap == acgraph.vector.Text.TextWrap.NO_WRAP && this.textLines_.length == 1 && !this.htmlOn_ && !this.stopAddSegments_) {
     this.applyTextOverflow_();
+    this.stopAddSegments_ = true;
   }
   if (this.stopAddSegments_ || this.currentLine_.length == 0) {
     return;
@@ -14017,6 +14123,7 @@ acgraph.vector.Text.prototype.finalizeTextLine = function() {
   var endOfText = this.height_ && this.realHeigth + this.currentLineHeight_ > this.height_ && this.textLines_.length != 0;
   if (endOfText) {
     this.applyTextOverflow_();
+    this.stopAddSegments_ = true;
   } else {
     this.currentLineHeight_ = goog.isString(this.lineHeight_) ? parseInt(this.lineHeight_, 0) + this.currentLineHeight_ : this.lineHeight_ * this.currentLineHeight_;
     if (acgraph.getRenderer().needsAnotherBehaviourForCalcText()) {
@@ -14093,6 +14200,27 @@ acgraph.vector.Text.prototype.finalizeTextLine = function() {
         this.currentLine_[0].dx = this.rtl ? -this.textIndent_ / 2 : this.textIndent_ / 2;
       }
     }
+    if (goog.isDefAndNotNull(this.style_["width"]) && this.style_["textWrap"] == acgraph.vector.Text.TextWrap.BY_WORD && this.currentLineWidth_ > this.width_) {
+      if (this.currentLine_.length > 1 && !this.currentLine_[0].text.length) {
+        goog.array.removeAt(this.currentLine_, 0);
+        var index = goog.array.indexOf(this.segments_, this.currentLine_[0]);
+        goog.array.removeAt(this.segments_, index);
+      }
+      segment = goog.array.peek(this.currentLine_);
+      var segment_bounds = this.getTextBounds(segment.text, segment.getStyle());
+      var cutPos = this.cutTextSegment_(segment.text, segment.getStyle(), 0, this.width_, segment_bounds, true);
+      var cutText = segment.text.substring(0, cutPos);
+      segment_bounds = this.getTextBounds(cutText, segment.getStyle());
+      segment.text = cutText;
+      segment.width = segment_bounds.width;
+      this.currentLineWidth_ = segment_bounds.width;
+      this.prevLineWidth_ = this.currentLineWidth_;
+      this.applyTextOverflow_(this.currentLine_);
+      if (this.style_["hAlign"] == acgraph.vector.Text.HAlign.CENTER) {
+        segment = this.currentLine_[0];
+        segment.dx = -this.width_ / 2 + this.currentLineWidth_ / 2;
+      }
+    }
     this.realHeigth += this.currentLineHeight_;
     this.realWidth = Math.max(this.realWidth, this.currentLineWidth_);
     this.currentDy_ = this.currentLineHeight_ - this.currentBaseLine_;
@@ -14141,7 +14269,7 @@ acgraph.vector.Text.prototype.calculateY = function() {
 };
 acgraph.vector.Text.prototype.textDefragmentation = function() {
   this.init_();
-  var text, i;
+  var text, i, segment;
   if (this.text_ == null) {
     return;
   }
@@ -14151,21 +14279,49 @@ acgraph.vector.Text.prototype.textDefragmentation = function() {
     var q = /\n/g;
     this.text_ = goog.string.canonicalizeNewlines(goog.string.normalizeSpaces(this.text_));
     var textArr = this.text_.split(q);
-    for (i = 0;i < textArr.length;i++) {
-      text = textArr[i];
-      if (goog.isDefAndNotNull(text)) {
-        if (text == "") {
-          this.addBreak();
-        } else {
-          this.addSegment(text);
-          this.addBreak();
+    if (textArr.length == 1 && !goog.isDefAndNotNull(this.style_["width"])) {
+      if (!this.domElement()) {
+        this.createDom(true);
+      }
+      if (this.hasDirtyState(acgraph.vector.Element.DirtyState.STYLE)) {
+        this.renderStyle();
+      }
+      segment = new acgraph.vector.TextSegment(this.text_, {});
+      this.currentLine_.push(segment);
+      this.segments_.push(segment);
+      segment.parent(this);
+      if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
+        this.renderData();
+      }
+      var bounds = acgraph.getRenderer().getBBox(this.domElement(), this.text_, this.style_);
+      segment.baseLine = -bounds.top;
+      segment.height = bounds.height;
+      segment.width = bounds.width;
+      this.currentLineHeight_ = bounds.height;
+      this.currentLineWidth_ = bounds.width + this.textIndent_;
+      this.currentBaseLine_ = segment.baseLine;
+      this.currentLineEmpty_ = this.text_.length == 0;
+      this.finalizeTextLine();
+      this.currentNumberSeqBreaks_++;
+      var height = this.currentLine_[0] ? this.currentLine_[0].height : 0;
+      this.accumulatedHeight_ += goog.isString(this.lineHeight_) ? parseInt(this.lineHeight_, 0) + height : this.lineHeight_ * height;
+    } else {
+      for (i = 0;i < textArr.length;i++) {
+        text = goog.string.trimLeft(textArr[i]);
+        if (goog.isDefAndNotNull(text)) {
+          if (text == "") {
+            this.addBreak();
+          } else {
+            this.addSegment(text);
+            this.addBreak();
+          }
         }
       }
     }
   }
   if (this.textIndent_ && this.textLines_.length > 0) {
     var line = this.textLines_[0];
-    var segment = line[0];
+    segment = line[0];
     if (this.rtl) {
       if (!this.style_["hAlign"] || this.style_["hAlign"] == acgraph.vector.Text.HAlign.START || this.style_["hAlign"] == acgraph.vector.Text.HAlign.RIGHT) {
         segment.dx -= this.textIndent_;
@@ -14282,6 +14438,7 @@ acgraph.vector.Text.prototype.disposeInternal = function() {
   proto["selectable"] = proto.selectable;
   goog.exportSymbol("acgraph.vector.Text.TextWrap.NO_WRAP", acgraph.vector.Text.TextWrap.NO_WRAP);
   goog.exportSymbol("acgraph.vector.Text.TextWrap.BY_LETTER", acgraph.vector.Text.TextWrap.BY_LETTER);
+  goog.exportSymbol("acgraph.vector.Text.TextWrap.BY_WORD", acgraph.vector.Text.TextWrap.BY_WORD);
   goog.exportSymbol("acgraph.vector.Text.TextOverflow.CLIP", acgraph.vector.Text.TextOverflow.CLIP);
   goog.exportSymbol("acgraph.vector.Text.TextOverflow.ELLIPSIS", acgraph.vector.Text.TextOverflow.ELLIPSIS);
   goog.exportSymbol("acgraph.vector.Text.FontStyle.ITALIC", acgraph.vector.Text.FontStyle.ITALIC);
@@ -14760,20 +14917,22 @@ acgraph.vector.svg.Renderer.prototype.setAttributes_ = function(el, attrs) {
 acgraph.vector.svg.Renderer.prototype.getAttribute_ = function(el, key) {
   return el.getAttribute(key);
 };
-acgraph.vector.svg.Renderer.prototype.createMeasurement_ = function() {
+acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
   this.measurement_ = this.createSVGElement_("svg");
   this.measurementText_ = this.createTextElement();
   this.measurementTextNode_ = this.createTextNode("");
   goog.dom.appendChild(this.measurementText_, this.measurementTextNode_);
   goog.dom.appendChild(this.measurement_, this.measurementText_);
   goog.dom.appendChild(goog.dom.getDocument().body, this.measurement_);
+  this.measurementLayerForBBox_ = this.createLayerElement();
+  goog.dom.appendChild(this.measurement_, this.measurementLayerForBBox_);
   this.setAttributes_(this.measurement_, {"display":"block", "width":0, "height":0});
   this.measurementGroupNode_ = this.createLayerElement();
   goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
 };
 acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
   if (!this.measurement_) {
-    this.createMeasurement_();
+    this.createMeasurement();
   }
   var spaceWidth = null;
   var additionWidth = 0;
@@ -14806,9 +14965,46 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
   }
   return new goog.math.Rect(bbox.x, bbox.y, bbox.width + additionWidth, bbox.height);
 };
+acgraph.vector.svg.Renderer.prototype.getBBox = function(element, text, style) {
+  var boundsCache = this.textBoundsCache;
+  var styleHash = this.getStyleHash(style);
+  var styleCache = boundsCache[styleHash];
+  if (!styleCache) {
+    styleCache = boundsCache[styleHash] = {};
+  }
+  var textBoundsCache = styleCache[text];
+  if (textBoundsCache) {
+    return textBoundsCache;
+  } else {
+    var spaceWidth = null;
+    var additionWidth = 0;
+    if (text.length == 0) {
+      return this.getEmptyStringBounds(style);
+    }
+    if (goog.string.isSpace(text)) {
+      return this.getSpaceBounds(style);
+    } else {
+      if (goog.string.startsWith(text, " ")) {
+        additionWidth += spaceWidth = this.getSpaceBounds(style).width;
+      }
+      if (goog.string.endsWith(text, " ")) {
+        additionWidth += spaceWidth || this.getSpaceBounds(style).width;
+      }
+    }
+    var parentNode = element.parentNode;
+    this.measurementLayerForBBox_.appendChild(element);
+    var bbox = element["getBBox"]();
+    if (parentNode) {
+      parentNode.appendChild(element);
+    }
+    var x = element.getAttribute("x") || 0;
+    var y = element.getAttribute("y") || 0;
+    return styleCache[text] = new goog.math.Rect(bbox.x - x, bbox.y - y, bbox.width + additionWidth, bbox.height);
+  }
+};
 acgraph.vector.svg.Renderer.prototype.measureElement = function(element) {
   if (!this.measurement_) {
-    this.createMeasurement_();
+    this.createMeasurement();
   }
   if (goog.isString(element)) {
     this.measurementGroupNode_.innerHTML = element;
@@ -14992,6 +15188,9 @@ acgraph.vector.svg.Renderer.prototype.setTextPosition = function(element) {
   var domElement = element.domElement();
   this.setAttribute_(domElement, "x", element.calcX);
   this.setAttribute_(domElement, "y", element.calcY);
+};
+acgraph.vector.svg.Renderer.prototype.setTextData = function(element) {
+  element.domElement().textContent = element.text();
 };
 acgraph.vector.svg.Renderer.prototype.setTextProperties = function(element) {
   var style = element.style();
@@ -15243,16 +15442,17 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
             imageFill.id();
             imageFill.parent(element.getStage()).render();
             this.setAttribute_(element.domElement(), "fill", pathPrefix + imageFill.id() + ")");
+            this.setAttribute_(element.domElement(), "fill-opacity", goog.isDef(fill["opacity"]) ? fill["opacity"] : 1);
           }
         } else {
-          if (fill instanceof acgraph.vector.HatchFill) {
+          if (acgraph.utils.instanceOf(fill, acgraph.vector.HatchFill)) {
             var hatch = (fill);
             hatch = defs.getHatchFill(hatch.type, hatch.color, hatch.thickness, hatch.size);
             hatch.id();
             hatch.parent(element.getStage()).render();
             this.setAttribute_(element.domElement(), "fill", pathPrefix + hatch.id() + ")");
           } else {
-            if (fill instanceof acgraph.vector.PatternFill) {
+            if (acgraph.utils.instanceOf(fill, acgraph.vector.PatternFill)) {
               var pattern = (fill);
               pattern.id();
               pattern.parent(element.getStage()).render();
@@ -15508,7 +15708,7 @@ acgraph.vector.svg.Renderer.prototype.setClip = function(element) {
   var clipelement = (element.clip());
   if (clipelement) {
     var clipId;
-    if (clipelement instanceof acgraph.vector.Clip) {
+    if (acgraph.utils.instanceOf(clipelement, acgraph.vector.Clip)) {
       clipId = (clipelement.id());
     }
     if (!clipId) {
@@ -16820,7 +17020,7 @@ acgraph.vector.LinearGradient = function(keys, opt_opacity, opt_angle, opt_mode,
   this.angle = goog.isDefAndNotNull(opt_angle) ? goog.math.standardAngle(opt_angle) : 0;
   this.mode = goog.isDefAndNotNull(opt_mode) ? opt_mode : false;
   this.saveAngle = !!opt_mode;
-  this.bounds = opt_mode && opt_mode instanceof goog.math.Rect ? (opt_mode) : null;
+  this.bounds = opt_mode && acgraph.utils.instanceOf(opt_mode, goog.math.Rect) ? (opt_mode) : null;
   this.transform = goog.isDefAndNotNull(opt_transform) ? opt_transform : null;
 };
 goog.inherits(acgraph.vector.LinearGradient, goog.Disposable);
@@ -16828,7 +17028,7 @@ acgraph.vector.LinearGradient.serialize = function(keys, opt_opacity, opt_angle,
   var angle = goog.isDefAndNotNull(opt_angle) ? goog.math.standardAngle(opt_angle) : 0;
   var opacity = goog.isDefAndNotNull(opt_opacity) ? goog.math.clamp(opt_opacity, 0, 1) : 1;
   var saveAngle = !!opt_mode;
-  var bounds = goog.isDefAndNotNull(opt_mode) ? opt_mode instanceof goog.math.Rect ? opt_mode : null : null;
+  var bounds = goog.isDefAndNotNull(opt_mode) ? acgraph.utils.instanceOf(opt_mode, goog.math.Rect) ? (opt_mode) : null : null;
   var gradientKeys = [];
   goog.array.forEach(keys, function(el) {
     gradientKeys.push("" + el["offset"] + el["color"] + (el["opacity"] ? el["opacity"] : null));
@@ -20612,7 +20812,7 @@ goog.require("goog.style");
 acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
   goog.base(this);
   this.renderAsync_ = goog.bind(this.renderAsync_, this);
-  this.checkSize_ = goog.bind(this.checkSize_, this);
+  this.checkSize = goog.bind(this.checkSize, this);
   this.eventHandler_ = new goog.events.EventHandler(this);
   this.internalContainer_ = goog.dom.createDom(goog.dom.TagName.DIV, {style:"position:relative;left:0;top:0;overflow:hidden;"});
   this.domElement_ = acgraph.getRenderer().createStageElement();
@@ -20628,6 +20828,7 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
   this.rootLayer_ = new acgraph.vector.Layer;
   this.rootLayer_.setParent(this).render();
   acgraph.getRenderer().appendChild(this.domElement_, this.rootLayer_.domElement());
+  acgraph.getRenderer().createMeasurement();
   this.eventHandler_.listen(this.domElement(), [goog.events.EventType.MOUSEDOWN, goog.events.EventType.MOUSEOVER, goog.events.EventType.MOUSEOUT, goog.events.EventType.CLICK, goog.events.EventType.DBLCLICK, goog.events.EventType.TOUCHSTART, goog.events.EventType.TOUCHEND, goog.events.EventType.TOUCHCANCEL, goog.events.EventType.MSPOINTERDOWN, goog.events.EventType.MSPOINTERUP, goog.events.EventType.POINTERDOWN, goog.events.EventType.POINTERUP, goog.events.EventType.CONTEXTMENU], this.handleMouseEvent_, 
   false);
   this.setWidth_(opt_width || "100%");
@@ -20636,7 +20837,7 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
   if (this.container_) {
     this.updateContainer_();
   }
-  this.checkSize_(true, true);
+  this.checkSize(true, true);
   this.resume();
 };
 goog.inherits(acgraph.vector.Stage, goog.events.EventTarget);
@@ -20691,7 +20892,7 @@ acgraph.vector.Stage.prototype.domElement = function() {
 acgraph.vector.Stage.prototype.width = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (this.setWidth_(opt_value)) {
-      this.checkSize_(true);
+      this.checkSize(true);
     }
     return this;
   }
@@ -20700,7 +20901,7 @@ acgraph.vector.Stage.prototype.width = function(opt_value) {
 acgraph.vector.Stage.prototype.height = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (this.setHeight_(opt_value)) {
-      this.checkSize_(true);
+      this.checkSize(true);
     }
     return this;
   }
@@ -20710,7 +20911,7 @@ acgraph.vector.Stage.prototype.resize = function(width, height) {
   var widthChanged = this.setWidth_(width);
   var heightChanged = this.setHeight_(height);
   if (widthChanged || heightChanged) {
-    this.checkSize_(true);
+    this.checkSize(true);
   }
 };
 acgraph.vector.Stage.prototype.maxResizeDelay = function(opt_value) {
@@ -20721,7 +20922,7 @@ acgraph.vector.Stage.prototype.maxResizeDelay = function(opt_value) {
         clearTimeout(this.checkSizeTimer_);
       }
       this.maxResizeDelay_ = val;
-      this.checkSize_(true);
+      this.checkSize(true);
     }
     return this;
   }
@@ -20733,7 +20934,7 @@ acgraph.vector.Stage.prototype.container = function(opt_value) {
     if (this.container_ != container) {
       this.container_ = container;
       this.updateContainer_();
-      this.checkSize_(true);
+      this.checkSize(true);
       this.render();
     }
     return this;
@@ -20864,7 +21065,7 @@ acgraph.vector.Stage.prototype.notifyRemoved = function(child) {
   this.rootLayer_.notifyRemoved(child);
 };
 acgraph.vector.Stage.prototype.childClipChanged = goog.nullFunction;
-acgraph.vector.Stage.prototype.checkSize_ = function(opt_directCall, opt_silent) {
+acgraph.vector.Stage.prototype.checkSize = function(opt_directCall, opt_silent) {
   if (opt_directCall && !isNaN(this.checkSizeTimer_)) {
     clearTimeout(this.checkSizeTimer_);
   }
@@ -20894,7 +21095,7 @@ acgraph.vector.Stage.prototype.checkSize_ = function(opt_directCall, opt_silent)
     }
   }
   if (this.container_ && isDynamicSize) {
-    this.checkSizeTimer_ = setTimeout(this.checkSize_, this.maxResizeDelay_);
+    this.checkSizeTimer_ = setTimeout(this.checkSize, this.maxResizeDelay_);
   }
 };
 acgraph.vector.Stage.prototype.setWidth_ = function(width) {
@@ -21482,14 +21683,14 @@ acgraph.vector.Stage.prototype.removeAllListeners = function(opt_type) {
 };
 acgraph.vector.Stage.prototype.handleMouseEvent_ = function(e) {
   var event = new acgraph.events.BrowserEvent(e, this);
-  if (event["target"] instanceof acgraph.vector.Element) {
+  if (acgraph.utils.instanceOf(event["target"], acgraph.vector.Element)) {
     var el = (event["target"]);
     el.dispatchEvent(event);
     var type = event["type"];
     if (event.defaultPrevented) {
       e.preventDefault();
     }
-    if (!(event["relatedTarget"] instanceof acgraph.vector.Element) || (event["relatedTarget"]).getStage() != this) {
+    if (!acgraph.utils.instanceOf(event["relatedTarget"], acgraph.vector.Element) || (event["relatedTarget"]).getStage() != this) {
       if (type == acgraph.events.EventType.MOUSEOVER) {
         this.eventHandler_.listen(goog.dom.getDocument(), acgraph.events.EventType.MOUSEMOVE, this.handleMouseEvent_, false);
       } else {
@@ -22318,7 +22519,7 @@ acgraph.vector.vml.Renderer.prototype.virtualBaseLine_ = null;
 acgraph.vector.vml.Renderer.prototype.measurementVMLShape_ = null;
 acgraph.vector.vml.Renderer.prototype.measurementVMLTextPath_ = null;
 acgraph.vector.vml.Renderer.prototype.measurementImage_ = null;
-acgraph.vector.vml.Renderer.prototype.createMeasurement_ = function() {
+acgraph.vector.vml.Renderer.prototype.createMeasurement = function() {
   this.measurementVMLShape_ = this.createTextSegmentElement();
   this.setPositionAndSize_(this.measurementVMLShape_, 0, 0, 1, 1);
   this.measurementVMLShape_.style["display"] = "none";
@@ -22345,14 +22546,14 @@ acgraph.vector.vml.Renderer.prototype.createMeasurement_ = function() {
 };
 acgraph.vector.vml.Renderer.prototype.measuringImage = function(src) {
   if (!this.measurement_) {
-    this.createMeasurement_();
+    this.createMeasurement();
   }
   this.setAttribute_(this.measurementImage_, "src", src);
   return goog.style.getBounds(this.measurementImage_);
 };
 acgraph.vector.vml.Renderer.prototype.measuringSimpleText = function(text, segmentStyle, textStyle) {
   if (!this.measurement_) {
-    this.createMeasurement_();
+    this.createMeasurement();
   }
   this.measurementSimpleText_.style.cssText = "";
   if (textStyle["fontStyle"]) {
@@ -22399,7 +22600,7 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
     return new goog.math.Rect(0, 0, 0, 0);
   }
   if (!this.measurement_) {
-    this.createMeasurement_();
+    this.createMeasurement();
   }
   goog.dom.removeNode(this.measurementVMLTextPath_);
   this.measurementVMLTextPath_ = (this.createTextNode(""));
@@ -22449,7 +22650,7 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
   }
   if (style.letterSpacing) {
     goog.style.setStyle(this.measurementText_, "letter-spacing", style["letterSpacing"]);
-    this.measurementVMLTextPath_.style["v-text-spacing"] = style["letterSpacing"];
+    this.measurementVMLTextPath_.style["v-text-spacing"] = style["letterSpacing"] == "normal" ? "" : style["letterSpacing"];
   }
   if (style.decoration) {
     goog.style.setStyle(this.measurementText_, "text-decoration", style["decoration"]);
@@ -22470,7 +22671,7 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
 };
 acgraph.vector.vml.Renderer.prototype.measureElement = function(element) {
   if (!this.measurement_) {
-    this.createMeasurement_();
+    this.createMeasurement();
   }
   if (goog.isString(element)) {
     this.measurementGroupNode_.innerHTML = element;
@@ -23041,7 +23242,7 @@ acgraph.vector.vml.Renderer.prototype.setTextSegmentProperties = function(elemen
     goog.style.setStyle(textNode, "font-weight", style["fontWeight"]);
   }
   if (style["letterSpacing"]) {
-    textNode.style["v-text-spacing"] = style["letterSpacing"];
+    textNode.style["v-text-spacing"] = style["letterSpacing"] == "normal" ? "" : style["letterSpacing"];
   }
   if (style["decoration"]) {
     goog.style.setStyle(textNode, "text-decoration", style["decoration"]);
@@ -23080,7 +23281,7 @@ acgraph.vector.vml.Renderer.prototype.needsAnotherBehaviourForCalcText = functio
 };
 acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
   var fill = (element.fill());
-  if (fill instanceof acgraph.vector.PatternFill) {
+  if (acgraph.utils.instanceOf(fill, acgraph.vector.PatternFill)) {
     fill = "black";
   }
   var stroke = (element.stroke());
@@ -23109,14 +23310,14 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
     var stage = element.getStage();
     var defs = stage.getDefs();
     var elBounds;
-    if (element instanceof acgraph.vector.Path && (element).isEmpty()) {
+    if (acgraph.utils.instanceOf(element, acgraph.vector.Path) && (element).isEmpty()) {
       elBounds = new goog.math.Rect(0, 0, 1, 1);
     } else {
       elBounds = element.getBounds();
     }
     var normalizedFill;
     if (isLinearGradient) {
-      userSpaceOnUse = fill["mode"] instanceof goog.math.Rect;
+      userSpaceOnUse = acgraph.utils.instanceOf(fill["mode"], goog.math.Rect);
       keys = goog.array.slice(fill["keys"], 0);
       if (keys[0]["offset"] != 0) {
         keys.unshift({"offset":0, "color":keys[0]["color"], "opacity":keys[0]["opacity"]});
@@ -23389,8 +23590,10 @@ acgraph.vector.vml.Renderer.prototype.addClip_ = function(element, clipRect, isL
     var tx = element.getFullTransformation();
     clipRect = acgraph.math.getBoundsOfRectWithTransform(clipRect, tx);
   } else {
-    clipRect.left -= element.getX();
-    clipRect.top -= element.getY();
+    if (!(acgraph.utils.instanceOf(element, acgraph.vector.vml.Text) && !element.isComplex())) {
+      clipRect.left -= element.getX() || 0;
+      clipRect.top -= element.getY() || 0;
+    }
   }
   var left = clipRect.left;
   var top = clipRect.top;
@@ -23404,7 +23607,7 @@ acgraph.vector.vml.Renderer.prototype.removeClip_ = function(element) {
   this.removeStyle_(style, "clip");
 };
 acgraph.vector.vml.Renderer.prototype.setClip = function(element) {
-  var isLayer = element instanceof acgraph.vector.Layer;
+  var isLayer = acgraph.utils.instanceOf(element, acgraph.vector.Layer);
   var clipElement = (element.clip());
   if (clipElement) {
     var shape = (clipElement.shape());
@@ -23480,11 +23683,11 @@ acgraph.vector.vml.Defs.prototype.serializeFill = function(fill) {
   if (goog.isString(fill)) {
     stringParam += fill + "1";
   } else {
-    if (fill instanceof acgraph.vector.RadialGradient) {
+    if (acgraph.utils.instanceOf(fill, acgraph.vector.RadialGradient)) {
       var rg = (fill);
       stringParam = acgraph.vector.vml.RadialGradient.serialize(rg.keys, rg.cx, rg.cy, rg.size_x, rg.size_y, rg.opacity, rg.bounds);
     } else {
-      if (fill instanceof acgraph.vector.LinearGradient) {
+      if (acgraph.utils.instanceOf(fill, acgraph.vector.LinearGradient)) {
         var lg = (fill);
         stringParam = acgraph.vector.LinearGradient.serialize(lg.keys, lg.opacity, lg.angle, lg.mode);
       } else {
@@ -24315,6 +24518,7 @@ goog.require("acgraph.vector.Path");
 goog.require("acgraph.vector.PatternFill");
 goog.require("acgraph.vector.Rect");
 goog.require("acgraph.vector.Renderer");
+goog.require("acgraph.vector.SimpleText");
 goog.require("acgraph.vector.Text");
 goog.require("acgraph.vector.UnmanagedLayer");
 goog.require("acgraph.vector.primitives");
@@ -24427,6 +24631,13 @@ acgraph.text = function(opt_x, opt_y, opt_text, opt_style) {
   }
   return text;
 };
+acgraph.simpleText = function(opt_text) {
+  var text = new acgraph.vector.SimpleText;
+  if (opt_text) {
+    text.text(opt_text);
+  }
+  return text;
+};
 acgraph.hatchFill = function(opt_type, opt_color, opt_thickness, opt_size) {
   return new acgraph.vector.HatchFill(opt_type, opt_color, opt_thickness, opt_size);
 };
@@ -24473,24 +24684,24 @@ acgraph.updateReferences = function() {
     if (!wrapperStage) {
       continue;
     }
-    if (wrapper instanceof acgraph.vector.Element) {
+    if (acgraph.utils.instanceOf(wrapper, acgraph.vector.Element)) {
       if (wrapperStage.isSuspended()) {
         wrapper.setDirtyState(acgraph.vector.Element.DirtyState.CLIP);
       } else {
         if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.CLIP)) {
-          renderer.setClip(wrapper);
+          renderer.setClip((wrapper));
         }
       }
     }
-    if (wrapper instanceof acgraph.vector.Shape) {
+    if (acgraph.utils.instanceOf(wrapper, acgraph.vector.Shape)) {
       if (wrapperStage.isSuspended()) {
         wrapper.setDirtyState(acgraph.vector.Element.DirtyState.FILL | acgraph.vector.Element.DirtyState.STROKE);
       } else {
         if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.FILL)) {
-          renderer.applyFill(wrapper);
+          renderer.applyFill((wrapper));
         }
         if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE)) {
-          renderer.applyStroke(wrapper);
+          renderer.applyStroke((wrapper));
         }
       }
     }
