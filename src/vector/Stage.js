@@ -2523,13 +2523,13 @@ acgraph.vector.Stage.prototype.removeAllListeners = function(opt_type) {
  */
 acgraph.vector.Stage.prototype.handleMouseEvent_ = function(e) {
   var event = new acgraph.events.BrowserEvent(e, this);
-  if (event['target'] instanceof acgraph.vector.Element) {
+  if (acgraph.utils.instanceOf(event['target'], acgraph.vector.Element)) {
     var el = /** @type {acgraph.vector.Element} */(event['target']);
     el.dispatchEvent(event);
     var type = event['type'];
     if (event.defaultPrevented) e.preventDefault();
     // we do the binding and unbinding of event only if relatedTarget doesn't belong to the same stage
-    if (!(event['relatedTarget'] instanceof acgraph.vector.Element) ||
+    if (!(acgraph.utils.instanceOf(event['relatedTarget'], acgraph.vector.Element)) ||
         (/** @type {acgraph.vector.Element} */(event['relatedTarget'])).getStage() != this) {
       if (type == acgraph.events.EventType.MOUSEOVER) {
         this.eventHandler_.listen(goog.dom.getDocument(), acgraph.events.EventType.MOUSEMOVE, this.handleMouseEvent_, false);

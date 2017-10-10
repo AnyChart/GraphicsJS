@@ -67,3 +67,13 @@ acgraph.utils.partialApplyingArgsToFunction = function(func, args, opt_obj) {
 };
 
 
+/**
+ * Safe instanceof.
+ * @param {*} object
+ * @param {*} constructor
+ * @return {boolean}
+ */
+acgraph.utils.instanceOf = function(object, constructor) {
+  //Needs check object is defined for old IE lower 8.
+  return !!object && object instanceof /** @type {Object} */(constructor);
+};

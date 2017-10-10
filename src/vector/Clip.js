@@ -89,27 +89,27 @@ acgraph.vector.Clip.prototype.stage = function(opt_value) {
  */
 acgraph.vector.Clip.prototype.shape = function(opt_leftOrShape, opt_top, opt_width, opt_height) {
   if (arguments.length) {
-    if (opt_leftOrShape instanceof acgraph.vector.Shape) {
+    if (acgraph.utils.instanceOf(opt_leftOrShape, acgraph.vector.Shape)) {
       if (this.shape_) {
-        var sameType = this.shape_ instanceof acgraph.vector.Rect && opt_leftOrShape instanceof acgraph.vector.Rect ||
-            this.shape_ instanceof acgraph.vector.Circle && opt_leftOrShape instanceof acgraph.vector.Circle ||
-            this.shape_ instanceof acgraph.vector.Ellipse && opt_leftOrShape instanceof acgraph.vector.Ellipse ||
-            this.shape_ instanceof acgraph.vector.Path && opt_leftOrShape instanceof acgraph.vector.Path;
+        var sameType = acgraph.utils.instanceOf(this.shape_, acgraph.vector.Rect) && acgraph.utils.instanceOf(opt_leftOrShape, acgraph.vector.Rect) ||
+            acgraph.utils.instanceOf(this.shape_, acgraph.vector.Circle) && acgraph.utils.instanceOf(opt_leftOrShape, acgraph.vector.Circle) ||
+            acgraph.utils.instanceOf(this.shape_, acgraph.vector.Ellipse) && acgraph.utils.instanceOf(opt_leftOrShape, acgraph.vector.Ellipse) ||
+            acgraph.utils.instanceOf(this.shape_, acgraph.vector.Path) && acgraph.utils.instanceOf(opt_leftOrShape, acgraph.vector.Path);
 
         if (sameType) {
           this.shape_.deserialize(opt_leftOrShape.serialize());
         } else {
           this.shape_.parent(null);
-          this.shape_ = opt_leftOrShape;
+          this.shape_ = /** @type {acgraph.vector.Shape} */(opt_leftOrShape);
           this.shape_.parent(this);
         }
       } else {
-        this.shape_ = opt_leftOrShape;
+        this.shape_ = /** @type {acgraph.vector.Shape} */(opt_leftOrShape);
         this.shape_.parent(this);
       }
     } else {
       var left, top, width, height;
-      if (opt_leftOrShape instanceof goog.math.Rect) {
+      if (acgraph.utils.instanceOf(opt_leftOrShape, goog.math.Rect)) {
         left = opt_leftOrShape.left;
         top = opt_leftOrShape.top;
         width = opt_leftOrShape.width;
@@ -131,7 +131,7 @@ acgraph.vector.Clip.prototype.shape = function(opt_leftOrShape, opt_top, opt_wid
         height = goog.isDefAndNotNull(opt_height) ? opt_height : 0;
       }
       if (this.shape_) {
-        if (this.shape_ instanceof acgraph.vector.Rect) {
+        if (acgraph.utils.instanceOf(this.shape_, acgraph.vector.Rect)) {
           this.shape_.setX(left).setY(top).setWidth(width).setHeight(height);
         } else {
           this.shape_.parent(null);

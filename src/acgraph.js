@@ -536,21 +536,21 @@ acgraph.updateReferences = function() {
     if (!wrapperStage) continue;
 
     // clip-path
-    if (wrapper instanceof acgraph.vector.Element) {
+    if (acgraph.utils.instanceOf(wrapper, acgraph.vector.Element)) {
       if (wrapperStage.isSuspended()) {
         wrapper.setDirtyState(acgraph.vector.Element.DirtyState.CLIP);
       } else if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.CLIP)) {
-        renderer.setClip(wrapper);
+        renderer.setClip(/** @type {!acgraph.vector.Element} */(wrapper));
       }
     }
 
     // fill, stroke
-    if (wrapper instanceof acgraph.vector.Shape) {
+    if (acgraph.utils.instanceOf(wrapper, acgraph.vector.Shape)) {
       if (wrapperStage.isSuspended()) {
         wrapper.setDirtyState(acgraph.vector.Element.DirtyState.FILL | acgraph.vector.Element.DirtyState.STROKE);
       } else {
-        if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.FILL)) renderer.applyFill(wrapper);
-        if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE)) renderer.applyStroke(wrapper);
+        if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.FILL)) renderer.applyFill(/** @type {!acgraph.vector.Shape} */(wrapper));
+        if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE)) renderer.applyStroke(/** @type {!acgraph.vector.Shape} */(wrapper));
       }
     }
   }

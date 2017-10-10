@@ -1524,7 +1524,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
    * so for now we just do not fill in VML,
    * probably we will add fully custom pattern fill later.
    */
-  if (fill instanceof acgraph.vector.PatternFill) {
+  if (acgraph.utils.instanceOf(fill, acgraph.vector.PatternFill)) {
     fill = 'black';
   }
   /**
@@ -1607,7 +1607,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
     var defs = stage.getDefs();
     /** @type {!goog.math.Rect} */
     var elBounds;
-    if (element instanceof acgraph.vector.Path && (/** @type {acgraph.vector.Path} */(element)).isEmpty())
+    if (acgraph.utils.instanceOf(element, acgraph.vector.Path) && (/** @type {acgraph.vector.Path} */(element)).isEmpty())
       elBounds = new goog.math.Rect(0, 0, 1, 1);
     else
       elBounds = element.getBounds();
@@ -1617,7 +1617,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
 
     // Transform gradient for userSpaceOnUse and saveAngle modes.
     if (isLinearGradient) {
-      userSpaceOnUse = fill['mode'] instanceof goog.math.Rect;
+      userSpaceOnUse = acgraph.utils.instanceOf(fill['mode'], goog.math.Rect);
       keys = goog.array.slice(fill['keys'], 0);
       // we need lasr and first key (with 0 and 1 offset);
       if (keys[0]['offset'] != 0)
@@ -2133,7 +2133,7 @@ acgraph.vector.vml.Renderer.prototype.addClip_ = function(element, clipRect, isL
     clipRect = acgraph.math.getBoundsOfRectWithTransform(clipRect, tx);
   } else {
     // element clip
-    if (!(element instanceof acgraph.vector.vml.Text && !element.isComplex())) {
+    if (!(acgraph.utils.instanceOf(element, acgraph.vector.vml.Text) && !element.isComplex())) {
       clipRect.left -= element.getX() || 0;
       clipRect.top -= element.getY() || 0;
     }
@@ -2169,7 +2169,7 @@ acgraph.vector.vml.Renderer.prototype.removeClip_ = function(element) {
 
 /** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.setClip = function(element) {
-  var isLayer = element instanceof acgraph.vector.Layer;
+  var isLayer = acgraph.utils.instanceOf(element, acgraph.vector.Layer);
   /** @type {acgraph.vector.vml.Clip} */
   var clipElement = /** @type {acgraph.vector.vml.Clip} */(element.clip());
   if (clipElement) {

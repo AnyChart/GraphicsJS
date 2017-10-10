@@ -70,7 +70,7 @@ acgraph.vector.LinearGradient = function(keys, opt_opacity, opt_angle, opt_mode,
    * Gradient bounds. If set - gradient is in userSpaceOnUse mode (see opt_bounds description).
    * @type {goog.math.Rect}
    */
-  this.bounds = (opt_mode && (opt_mode instanceof goog.math.Rect)) ?
+  this.bounds = (opt_mode && (acgraph.utils.instanceOf(opt_mode, goog.math.Rect))) ?
       /** @type {goog.math.Rect} */(opt_mode) : null;
   /**
    * Gradient transform.
@@ -109,8 +109,8 @@ acgraph.vector.LinearGradient.serialize = function(keys, opt_opacity, opt_angle,
   var saveAngle = !!opt_mode;
   /** @type {goog.math.Rect}*/
   var bounds = goog.isDefAndNotNull(opt_mode) ?
-      opt_mode instanceof goog.math.Rect ?
-          opt_mode :
+      acgraph.utils.instanceOf(opt_mode, goog.math.Rect) ?
+          /** @type {goog.math.Rect} */(opt_mode) :
           null :
       null;
 
