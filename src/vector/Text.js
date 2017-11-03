@@ -965,6 +965,7 @@ acgraph.vector.Text.prototype.htmlText = function(opt_value) {
  */
 acgraph.vector.Text.prototype.init_ = function() {
   if (this.segments_.length != 0) {
+    goog.disposeAll(this.segments_, this.textLines_);
     this.textLines_ = [];
     this.segments_ = [];
   }
@@ -1906,7 +1907,6 @@ acgraph.vector.Text.prototype.disposeInternal = function() {
   goog.disposeAll(this.segments_);
   delete this.segments_;
   delete this.textLines_;
-  delete this.bounds;
   delete this.bounds;
   goog.base(this, 'disposeInternal');
 };

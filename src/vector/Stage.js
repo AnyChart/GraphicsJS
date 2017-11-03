@@ -897,7 +897,7 @@ acgraph.vector.Stage.prototype.checkSize = function(opt_directCall, opt_silent) 
     if (!opt_silent)
       this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RESIZE);
   }
-  if (this.container_ && isDynamicSize && !goog.global['isNodeJS']) {
+  if (this.container_ && isDynamicSize && !goog.global['acgraph']['isNodeJS']) {
     this.checkSizeTimer_ = setTimeout(this.checkSize, this.maxResizeDelay_);
   }
 };
@@ -1207,12 +1207,14 @@ acgraph.vector.Stage.prototype.finishRendering_ = function() {
   var imageLoader = acgraph.getRenderer().getImageLoader();
   var isImageLoading = acgraph.getRenderer().isImageLoading();
   if (imageLoader && isImageLoading) {
-    if (!this.imageLoadingListener_)
-      this.imageLoadingListener_ = goog.events.listenOnce(imageLoader, goog.net.EventType.COMPLETE, function(e) {
-        this.imageLoadingListener_ = null;
+    if (!this.imageLoadingListener_) {
+      this.imageLoadingListener_ = true;
+      goog.events.listenOnce(imageLoader, goog.net.EventType.COMPLETE, function(e) {
+        this.imageLoadingListener_ = false;
         if (!this.isRendering_)
           this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RENDERED);
       }, false, this);
+    }
   } else {
     this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RENDERED);
   }
@@ -2168,15 +2170,25 @@ acgraph.vector.Stage.prototype.dispose = function() {
 acgraph.vector.Stage.prototype.disposeInternal = function() {
   acgraph.vector.Stage.base(this, 'disposeInternal');
 
+  goog.object.forEach(this.charts, function(value, key, arr) {
+    value.remove();
+    delete arr[value];
+  });
+
   goog.dispose(this.eventHandler_);
   this.eventHandler_ = null;
 
-  goog.dispose(this.rootLayer_);
-  this.renderInternal();
-  delete this.rootLayer_;
-
   goog.dispose(this.defs_);
   delete this.defs_;
+
+  goog.dispose(this.rootLayer_);
+  this.renderInternal();
+
+  this.rootLayer_.finalizeDisposing();
+  delete this.rootLayer_;
+
+  var id = acgraph.utils.IdGenerator.getInstance().identify(this, acgraph.utils.IdGenerator.ElementTypePrefix.STAGE);
+  delete goog.global['acgraph'].stages[id];
 
   acgraph.unregister(this);
 

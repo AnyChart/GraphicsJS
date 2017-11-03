@@ -278,6 +278,7 @@ acgraph.vector.Clip.prototype.addChild = function(child) {
   child.remove();
   child.setParent(this);
   this.needUpdateClip_();
+  child.notifyPrevParent(true);
   return this;
 };
 
@@ -292,6 +293,7 @@ acgraph.vector.Clip.prototype.removeChild = function(element) {
   if (dom)
     goog.dom.removeNode(dom);
   this.needUpdateClip_();
+  element.notifyPrevParent(false);
   return element;
 };
 

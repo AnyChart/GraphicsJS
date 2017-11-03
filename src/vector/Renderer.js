@@ -628,9 +628,18 @@ acgraph.vector.Renderer.prototype.isImageLoading = function() {
  * @return {goog.net.ImageLoader} .
  */
 acgraph.vector.Renderer.prototype.getImageLoader = function() {
-  if (!this.imageLoader_)
+  if (!this.imageLoader_ || this.imageLoader_.isDisposed())
     this.imageLoader_ = new goog.net.ImageLoader(/** @type {Element} */(goog.global['document']['body']));
   return this.imageLoader_;
+};
+
+
+/**
+ * Whether is image loader.
+ * @return {boolean}
+ */
+acgraph.vector.Renderer.prototype.isImageLoader = function() {
+  return !!(this.imageLoader_ && !this.imageLoader_.isDisposed());
 };
 
 

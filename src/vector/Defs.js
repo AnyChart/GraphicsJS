@@ -371,10 +371,23 @@ acgraph.vector.Defs.prototype.disposeInternal = function() {
   goog.dom.removeNode(this.domElement_);
   this.domElement_ = null;
 
-  goog.disposeAll(this.linearGradients_);
-  goog.disposeAll(this.radialGradients_);
-  goog.disposeAll(this.imageFills_);
-  // goog.disposeAll(this.hatchFills_);
+  goog.object.forEach(this.linearGradients_, function(v) {
+    goog.dispose(v);
+  });
+  goog.object.forEach(this.radialGradients_, function(v) {
+    goog.dispose(v);
+  });
+  goog.object.forEach(this.imageFills_, function(v) {
+    goog.dispose(v);
+  });
+  goog.object.forEach(this.hatchFills_, function(v) {
+    goog.dispose(v);
+  });
+
+  this.linearGradients_ = null;
+  this.radialGradients_ = null;
+  this.imageFills_ = null;
+  this.hatchFills_ = null;
 
   delete this.stage;
 };

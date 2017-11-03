@@ -1357,8 +1357,10 @@ acgraph.vector.svg.Renderer.prototype.setPathProperties = function(path) {
  * @private
  */
 acgraph.vector.svg.Renderer.prototype.createClip_ = function(element, clipElement) {
+  var stage = element.getStage();
+  // stage.registerDisposable(clipElement);
   /** @type {!acgraph.vector.svg.Defs} */
-  var defs = /** @type {!acgraph.vector.svg.Defs} */ (element.getStage().getDefs());
+  var defs = /** @type {!acgraph.vector.svg.Defs} */ (stage.getDefs());
   /** @type {Element} */
   var clipDomElement = defs.getClipPathElement(clipElement);
   var id = acgraph.utils.IdGenerator.getInstance().identify(clipDomElement, acgraph.utils.IdGenerator.ElementTypePrefix.CLIP);
