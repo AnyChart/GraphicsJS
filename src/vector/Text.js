@@ -1919,6 +1919,7 @@ acgraph.vector.Text.prototype.disposeInternal = function() {
   proto['text'] = proto.text;
   proto['style'] = proto.style;
   proto['htmlText'] = proto.htmlText;
+  proto['path'] = proto.path;
   proto['x'] = proto.x;
   proto['y'] = proto.y;
   proto['fontSize'] = proto.fontSize;

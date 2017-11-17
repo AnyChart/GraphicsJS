@@ -9,6 +9,8 @@ import zipfile
 import platform
 import shlex
 import time
+import json
+import datetime
 
 # =======================================================================================================================
 #           Project paths
@@ -142,6 +144,17 @@ def sync_required(func):
 # =======================================================================================================================
 #           Build project
 # =======================================================================================================================
+def __get_version():
+    f = open(os.path.join(PROJECT_PATH, 'package.json'));
+    package_json = json.loads(f.read());
+    f.close()
+    return package_json['version']
+
+
+def __get_file_overview():
+    return "/**\n * GraphicsJS is a lightweight JavaScript graphics library with an intuitive API, based on SVG/VML technology.\n * Version: %s (%s)\n * License: BSD 3-clause\n * Copyright: AnyChart.com %s. All rights reserved.\n */\n" % (__get_version(), datetime.datetime.now().strftime("%Y-%m-%d"), str(datetime.datetime.now().year))
+
+
 def __getNotOptimizedCompilerArgs():
     compilerArgs = [
         '--compilation_level WHITESPACE_ONLY',
@@ -159,7 +172,7 @@ def __getOptimizedCompilerArgs():
         '--language_out ECMASCRIPT3',
         '--assume_function_wrapper',
         '--use_types_for_optimization true',
-        '--output_wrapper "(function(){%output%})();"',
+        '--output_wrapper "' + __get_file_overview() + '(function(){%output%})();"',
         '--env BROWSER',
         '--extra_annotation_name "includeDoc"',
         '--extra_annotation_name "illustration"',
