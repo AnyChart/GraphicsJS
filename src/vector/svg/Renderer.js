@@ -1082,18 +1082,24 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
   var defs = element.getStage().getDefs();
   var pathPrefix = 'url(' + acgraph.getReference() + '#';
 
+  // DVF-1729 fix
+  // because internet explorer converts fill-opacity "0.00001" to "1e-5" that is not css-compatible
+  // and export server can't generate proper image.
+  if (fill && fill['opacity'] && fill['opacity'] <= 0.0001 && goog.userAgent.IE && goog.userAgent.isVersionOrHigher('9'))
+    fill['opacity'] = 0.0001;
+
   if (goog.isString(fill)) {
     this.setAttr(element.domElement(), 'fill', /** @type {string} */(fill));
     this.removeAttr(element.domElement(), 'fill-opacity');
   } else if (goog.isArray(fill['keys']) && fill['cx'] && fill['cy']) {
     this.setAttr(element.domElement(), 'fill', pathPrefix +
         this.renderRadialGradient(/** @type {acgraph.vector.RadialGradientFill} */(fill), defs) + ')');
-    this.removeAttr(element.domElement(), 'fill-opacity');
+    this.setAttr(element.domElement(), 'fill-opacity', goog.isDef(fill['opacity']) ? fill['opacity'] : 1);
   } else if (goog.isArray(fill['keys'])) {
     if (!element.getBounds()) return;
     this.setAttr(element.domElement(), 'fill',
         pathPrefix + this.renderLinearGradient(/** @type {acgraph.vector.LinearGradientFill} */(fill), defs, element.getBounds()) + ')');
-    this.removeAttr(element.domElement(), 'fill-opacity');
+    this.setAttr(element.domElement(), 'fill-opacity', goog.isDef(fill['opacity']) ? fill['opacity'] : 1);
   } else if (fill['src']) {
     var b = element.getBoundsWithoutTransform();
     if (b) {
@@ -1132,11 +1138,6 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
     pattern.parent(element.getStage()).render();
     this.setAttr(element.domElement(), 'fill', pathPrefix + pattern.id() + ')');
   } else {
-    // DVF-1729 fix
-    // because internet explorer converts fill-opacity "0.00001" to "1e-5" that is not css-compatible
-    // and export server can't generate proper image.
-    if (fill['opacity'] <= 0.0001 && goog.userAgent.IE && goog.userAgent.isVersionOrHigher('9'))
-      fill['opacity'] = 0.0001;
     this.setAttrs(element.domElement(), {
       'fill': (/** @type {acgraph.vector.SolidFill} */(fill))['color'],
       'fill-opacity': (/** @type {acgraph.vector.SolidFill} */(fill))['opacity']

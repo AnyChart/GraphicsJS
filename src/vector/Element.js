@@ -1046,6 +1046,7 @@ acgraph.vector.Element.prototype.render = function() {
   this.renderInternal();
 
   this.isRendering_ = false;
+
   return this;
 };
 
