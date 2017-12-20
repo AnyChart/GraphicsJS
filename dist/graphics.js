@@ -986,7 +986,7 @@ goog.provide("goog.string");
 goog.provide("goog.string.Unicode");
 goog.define("goog.string.DETECT_DOUBLE_ESCAPING", false);
 goog.define("goog.string.FORCE_NON_DOM_HTML_UNESCAPING", false);
-goog.string.Unicode = {NBSP:" "};
+goog.string.Unicode = {NBSP:"\u00a0"};
 goog.string.startsWith = function(str, prefix) {
   return str.lastIndexOf(prefix, 0) == 0;
 };
@@ -1042,7 +1042,7 @@ goog.string.isSpace = function(ch) {
   return ch == " ";
 };
 goog.string.isUnicodeChar = function(ch) {
-  return ch.length == 1 && ch >= " " && ch <= "~" || ch >= "" && ch <= "�";
+  return ch.length == 1 && ch >= " " && ch <= "~" || ch >= "\u0080" && ch <= "\ufffd";
 };
 goog.string.stripNewlines = function(str) {
   return str.replace(/(\r\n|\r|\n)+/g, " ");
@@ -2953,6 +2953,75 @@ acgraph.math.calcCurveBounds = function(var_args) {
   rect.height = Math.max.apply(null, bounds[1]) - rect.top;
   return rect;
 };
+acgraph.math.bezierCurveLength = function(params, opt_approxSteps) {
+  var steps = opt_approxSteps || 100;
+  var len = params.length;
+  var order = len / 2 - 1;
+  var points = [], ret;
+  for (var idx = 0, step = 2;idx < len;idx += step) {
+    var point = {x:params[idx], y:params[idx + 1]};
+    points.push(point);
+  }
+  var lut = [];
+  for (var t = 0;t <= steps;t++) {
+    var t_ = t / steps;
+    var ZERO = {x:0, y:0};
+    if (t_ === 0) {
+      lut.push(points[0]);
+      continue;
+    }
+    if (t_ === 1) {
+      lut.push(points[order]);
+      continue;
+    }
+    var p = points;
+    var mt = 1 - t_;
+    if (order === 1) {
+      ret = {x:mt * p[0].x + t_ * p[1].x, y:mt * p[0].y + t_ * p[1].y};
+      lut.push(ret);
+      continue;
+    }
+    if (order < 4) {
+      var mt2 = mt * mt, t2 = t_ * t_, a, b, c, d = 0;
+      if (order === 2) {
+        p = [p[0], p[1], p[2], ZERO];
+        a = mt2;
+        b = mt * t_ * 2;
+        c = t2;
+      } else {
+        if (order === 3) {
+          a = mt2 * mt;
+          b = mt2 * t_ * 3;
+          c = mt * t2 * 3;
+          d = t_ * t2;
+        }
+      }
+      ret = {x:a * p[0].x + b * p[1].x + c * p[2].x + d * p[3].x, y:a * p[0].y + b * p[1].y + c * p[2].y + d * p[3].y};
+      lut.push(ret);
+      continue;
+    }
+    var dCpts = JSON.parse(JSON.stringify(points));
+    while (dCpts.length > 1) {
+      for (var i = 0;i < dCpts.length - 1;i++) {
+        dCpts[i] = {x:dCpts[i].x + (dCpts[i + 1].x - dCpts[i].x) * t_, y:dCpts[i].y + (dCpts[i + 1].y - dCpts[i].y) * t_};
+      }
+      dCpts.splice(dCpts.length - 1, 1);
+    }
+    lut.push(dCpts[0]);
+  }
+  var pts = lut;
+  var p0 = points[0];
+  var alen = 0;
+  for (var i = 0, p1, dx, dy;i < pts.length - 1;i++) {
+    p0 = pts[i];
+    p1 = pts[i + 1];
+    dx = p1.x - p0.x;
+    dy = p1.y - p0.y;
+    alen += Math.sqrt(dx * dx + dy * dy);
+  }
+  alen = (100 * alen | 0) / 100;
+  return alen;
+};
 acgraph.math.concatMatrixes = function(var_args) {
   if (arguments.length == 0) {
     return null;
@@ -3272,74 +3341,40 @@ goog.provide("acgraph.vector.ILayer");
 goog.require("acgraph.math");
 goog.require("goog.math.AffineTransform");
 goog.require("goog.math.Rect");
-acgraph.vector.Anchor = {LEFT_TOP:"leftTop", LEFT_CENTER:"leftCenter", LEFT_BOTTOM:"leftBottom", CENTER_TOP:"centerTop", CENTER:"center", CENTER_BOTTOM:"centerBottom", RIGHT_TOP:"rightTop", RIGHT_CENTER:"rightCenter", RIGHT_BOTTOM:"rightBottom"};
+acgraph.vector.Anchor = {LEFT_TOP:"left-top", LEFT_CENTER:"left-center", LEFT_BOTTOM:"left-bottom", CENTER_TOP:"center-top", CENTER:"center", CENTER_BOTTOM:"center-bottom", RIGHT_TOP:"right-top", RIGHT_CENTER:"right-center", RIGHT_BOTTOM:"right-bottom"};
 acgraph.vector.Cursor = {DEFAULT:"default", CROSSHAIR:"crosshair", POINTER:"pointer", MOVE:"move", TEXT:"text", WAIT:"wait", HELP:"help", N_RESIZE:"n-resize", NE_RESIZE:"ne-resize", E_RESIZE:"e-resize", SE_RESIZE:"se-resize", S_RESIZE:"s-resize", SW_RESIZE:"sw-resize", W_RESIZE:"w-resize", NW_RESIZE:"nw-resize", NS_RESIZE:"ns-resize", EW_RESIZE:"ew-resize", NWSE_RESIZE:"nwse-resize", NESW_RESIZE:"nesw-resize"};
 acgraph.vector.getCoordinateByAnchor = function(bounds, anchor) {
   var x = bounds.left;
   var y = bounds.top;
   anchor = anchor.toLowerCase();
   switch(anchor) {
-    case "lefttop":
-    case "topleft":
-    case "lt":
-    case "tl":
+    case acgraph.vector.Anchor.LEFT_TOP:
       break;
-    case "leftcenter":
-    case "centerleft":
-    case "left":
-    case "lc":
-    case "cl":
-    case "l":
+    case acgraph.vector.Anchor.LEFT_CENTER:
       y += bounds.height / 2;
       break;
-    case "leftbottom":
-    case "bottomleft":
-    case "lb":
-    case "bl":
+    case acgraph.vector.Anchor.LEFT_BOTTOM:
       y += bounds.height;
       break;
-    case "centertop":
-    case "topcenter":
-    case "top":
-    case "ct":
-    case "tc":
-    case "t":
+    case acgraph.vector.Anchor.CENTER_TOP:
       x += bounds.width / 2;
       break;
-    case "centercenter":
-    case "center":
-    case "c":
+    case acgraph.vector.Anchor.CENTER:
       x += bounds.width / 2;
       y += bounds.height / 2;
       break;
-    case "centerbottom":
-    case "bottomcenter":
-    case "bottom":
-    case "cb":
-    case "bc":
-    case "b":
+    case acgraph.vector.Anchor.CENTER_BOTTOM:
       x += bounds.width / 2;
       y += bounds.height;
       break;
-    case "righttop":
-    case "topright":
-    case "tr":
-    case "rt":
+    case acgraph.vector.Anchor.RIGHT_TOP:
       x += bounds.width;
       break;
-    case "rightcenter":
-    case "centerright":
-    case "right":
-    case "rc":
-    case "cr":
-    case "r":
+    case acgraph.vector.Anchor.RIGHT_CENTER:
       x += bounds.width;
       y += bounds.height / 2;
       break;
-    case "rightbottom":
-    case "bottomright":
-    case "rb":
-    case "br":
+    case acgraph.vector.Anchor.RIGHT_BOTTOM:
       x += bounds.width;
       y += bounds.height;
       break;
@@ -3368,8 +3403,8 @@ acgraph.vector.TextStyle;
 acgraph.vector.TextSegmentStyle;
 acgraph.vector.StrokeLineJoin = {MITER:"miter", ROUND:"round", BEVEL:"bevel"};
 acgraph.vector.StrokeLineCap = {BUTT:"butt", ROUND:"round", SQUARE:"square"};
-acgraph.vector.ImageFillMode = {STRETCH:"stretch", FIT_MAX:"fitMax", FIT:"fit", TILE:"tile"};
-acgraph.vector.PaperSize = {US_LETTER:"usletter", A0:"a0", A1:"a1", A2:"a2", A3:"a3", A4:"a4", A5:"a5", A6:"a6"};
+acgraph.vector.ImageFillMode = {STRETCH:"stretch", FIT_MAX:"fit-max", FIT:"fit", TILE:"tile"};
+acgraph.vector.PaperSize = {US_LETTER:"us-letter", A0:"a0", A1:"a1", A2:"a2", A3:"a3", A4:"a4", A5:"a5", A6:"a6"};
 acgraph.vector.parseTransformationString = function(value) {
   var i, j, len, len_;
   var transforms = value.trim().replace(/\(\s+/gi, "(").replace(/\s+\)/gi, ")").replace(/(\s+,\s+)|(\s+)/gi, ",").replace(/(\)),*(\w)/gi, "$1 $2").split(" ");
@@ -3462,7 +3497,7 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
       }
     } else {
       if (goog.isObject(opt_fillOrColorOrKeys)) {
-        if (opt_fillOrColorOrKeys instanceof acgraph.vector.PatternFill) {
+        if (acgraph.utils.instanceOf(opt_fillOrColorOrKeys, acgraph.vector.PatternFill)) {
           newFill = opt_fillOrColorOrKeys;
         } else {
           if (opt_fillOrColorOrKeys["type"] == "pattern") {
@@ -3527,7 +3562,7 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
               }
               var transform = opt_fillOrColorOrKeys["transform"];
               if (goog.isDefAndNotNull(transform)) {
-                if (transform instanceof goog.math.AffineTransform) {
+                if (acgraph.utils.instanceOf(transform, goog.math.AffineTransform)) {
                   newFill["transform"] = transform;
                 } else {
                   if (goog.isObject(transform)) {
@@ -3587,7 +3622,7 @@ acgraph.vector.normalizeStroke = function(opt_strokeOrFill, opt_thickness, opt_d
     if (tmp == "none") {
       return (tmp);
     }
-    newStroke = tmp instanceof acgraph.vector.PatternFill ? "black" : (tmp);
+    newStroke = acgraph.utils.instanceOf(tmp, acgraph.vector.PatternFill) ? "black" : (tmp);
     if (!isNaN(thickness) || hasDash || hasJoin || hasCap || goog.isDef(opt_dashpattern) || goog.isDef(opt_lineJoin) || goog.isDef(opt_lineCap)) {
       if (goog.isString(newStroke)) {
         newStroke = ({"color":newStroke});
@@ -3628,7 +3663,7 @@ acgraph.vector.normalizeHatchFill = function(opt_patternFillOrType, opt_color, o
   if (goog.isString(opt_patternFillOrType) || goog.isNumber(opt_patternFillOrType)) {
     newFill = acgraph.hatchFill((opt_patternFillOrType), opt_color, goog.isDef(opt_thickness) ? parseFloat(opt_thickness) : undefined, goog.isDef(opt_size) ? parseFloat(opt_size) : undefined);
   } else {
-    if (opt_patternFillOrType instanceof acgraph.vector.PatternFill) {
+    if (acgraph.utils.instanceOf(opt_patternFillOrType, acgraph.vector.PatternFill)) {
       newFill = opt_patternFillOrType;
     } else {
       if (goog.isObject(opt_patternFillOrType)) {
@@ -3646,7 +3681,7 @@ acgraph.vector.normalizeHatchFill = function(opt_patternFillOrType, opt_color, o
       }
     }
   }
-  return newFill;
+  return (newFill);
 };
 acgraph.vector.normalizePageSize = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_default) {
   if (!goog.isDef(opt_default)) {
@@ -3687,8 +3722,8 @@ acgraph.vector.normalizePageSize = function(opt_paperSizeOrWidth, opt_landscapeO
 };
 acgraph.vector.normalizeGradientMode = function(mode) {
   if (goog.isDefAndNotNull(mode)) {
-    if (mode instanceof goog.math.Rect) {
-      return mode;
+    if (acgraph.utils.instanceOf(mode, goog.math.Rect)) {
+      return (mode);
     } else {
       if (goog.isObject(mode) && !isNaN(mode["left"]) && !isNaN(mode["top"]) && !isNaN(mode["width"]) && !isNaN(mode["height"])) {
         return new goog.math.Rect(mode["left"], mode["top"], mode["width"], mode["height"]);
@@ -3729,52 +3764,10 @@ acgraph.vector.parseKey = function(key) {
   return (result);
 };
 acgraph.vector.getThickness = function(stroke) {
-  var res = stroke["thickness"];
-  return stroke == "none" ? 0 : isNaN(res) || goog.isNull(res) ? 1 : res;
+  var res;
+  return stroke && stroke != "none" ? isNaN(res = stroke["thickness"]) || goog.isNull(res) ? 1 : res : 0;
 };
 (function() {
-  goog.exportSymbol("acgraph.vector.Anchor.CENTER", acgraph.vector.Anchor.CENTER);
-  goog.exportSymbol("acgraph.vector.Anchor.CENTER_BOTTOM", acgraph.vector.Anchor.CENTER_BOTTOM);
-  goog.exportSymbol("acgraph.vector.Anchor.CENTER_TOP", acgraph.vector.Anchor.CENTER_TOP);
-  goog.exportSymbol("acgraph.vector.Anchor.LEFT_BOTTOM", acgraph.vector.Anchor.LEFT_BOTTOM);
-  goog.exportSymbol("acgraph.vector.Anchor.LEFT_CENTER", acgraph.vector.Anchor.LEFT_CENTER);
-  goog.exportSymbol("acgraph.vector.Anchor.LEFT_TOP", acgraph.vector.Anchor.LEFT_TOP);
-  goog.exportSymbol("acgraph.vector.Anchor.RIGHT_BOTTOM", acgraph.vector.Anchor.RIGHT_BOTTOM);
-  goog.exportSymbol("acgraph.vector.Anchor.RIGHT_CENTER", acgraph.vector.Anchor.RIGHT_CENTER);
-  goog.exportSymbol("acgraph.vector.Anchor.RIGHT_TOP", acgraph.vector.Anchor.RIGHT_TOP);
-  goog.exportSymbol("acgraph.vector.Cursor.DEFAULT", acgraph.vector.Cursor.DEFAULT);
-  goog.exportSymbol("acgraph.vector.Cursor.CROSSHAIR", acgraph.vector.Cursor.CROSSHAIR);
-  goog.exportSymbol("acgraph.vector.Cursor.POINTER", acgraph.vector.Cursor.POINTER);
-  goog.exportSymbol("acgraph.vector.Cursor.MOVE", acgraph.vector.Cursor.MOVE);
-  goog.exportSymbol("acgraph.vector.Cursor.TEXT", acgraph.vector.Cursor.TEXT);
-  goog.exportSymbol("acgraph.vector.Cursor.WAIT", acgraph.vector.Cursor.WAIT);
-  goog.exportSymbol("acgraph.vector.Cursor.HELP", acgraph.vector.Cursor.HELP);
-  goog.exportSymbol("acgraph.vector.Cursor.N_RESIZE", acgraph.vector.Cursor.N_RESIZE);
-  goog.exportSymbol("acgraph.vector.Cursor.NE_RESIZE", acgraph.vector.Cursor.NE_RESIZE);
-  goog.exportSymbol("acgraph.vector.Cursor.E_RESIZE", acgraph.vector.Cursor.E_RESIZE);
-  goog.exportSymbol("acgraph.vector.Cursor.SE_RESIZE", acgraph.vector.Cursor.SE_RESIZE);
-  goog.exportSymbol("acgraph.vector.Cursor.S_RESIZE", acgraph.vector.Cursor.S_RESIZE);
-  goog.exportSymbol("acgraph.vector.Cursor.SW_RESIZE", acgraph.vector.Cursor.SW_RESIZE);
-  goog.exportSymbol("acgraph.vector.Cursor.W_RESIZE", acgraph.vector.Cursor.W_RESIZE);
-  goog.exportSymbol("acgraph.vector.Cursor.NW_RESIZE", acgraph.vector.Cursor.NW_RESIZE);
-  goog.exportSymbol("acgraph.vector.ImageFillMode.FIT", acgraph.vector.ImageFillMode.FIT);
-  goog.exportSymbol("acgraph.vector.ImageFillMode.FIT_MAX", acgraph.vector.ImageFillMode.FIT_MAX);
-  goog.exportSymbol("acgraph.vector.ImageFillMode.STRETCH", acgraph.vector.ImageFillMode.STRETCH);
-  goog.exportSymbol("acgraph.vector.ImageFillMode.TILE", acgraph.vector.ImageFillMode.TILE);
-  goog.exportSymbol("acgraph.vector.PaperSize.US_LETTER", acgraph.vector.PaperSize.US_LETTER);
-  goog.exportSymbol("acgraph.vector.PaperSize.A0", acgraph.vector.PaperSize.A0);
-  goog.exportSymbol("acgraph.vector.PaperSize.A1", acgraph.vector.PaperSize.A1);
-  goog.exportSymbol("acgraph.vector.PaperSize.A2", acgraph.vector.PaperSize.A2);
-  goog.exportSymbol("acgraph.vector.PaperSize.A3", acgraph.vector.PaperSize.A3);
-  goog.exportSymbol("acgraph.vector.PaperSize.A4", acgraph.vector.PaperSize.A4);
-  goog.exportSymbol("acgraph.vector.PaperSize.A5", acgraph.vector.PaperSize.A5);
-  goog.exportSymbol("acgraph.vector.PaperSize.A6", acgraph.vector.PaperSize.A6);
-  goog.exportSymbol("acgraph.vector.StrokeLineJoin.MITER", acgraph.vector.StrokeLineJoin.MITER);
-  goog.exportSymbol("acgraph.vector.StrokeLineJoin.ROUND", acgraph.vector.StrokeLineJoin.ROUND);
-  goog.exportSymbol("acgraph.vector.StrokeLineJoin.BEVEL", acgraph.vector.StrokeLineJoin.BEVEL);
-  goog.exportSymbol("acgraph.vector.StrokeLineCap.BUTT", acgraph.vector.StrokeLineCap.BUTT);
-  goog.exportSymbol("acgraph.vector.StrokeLineCap.ROUND", acgraph.vector.StrokeLineCap.ROUND);
-  goog.exportSymbol("acgraph.vector.StrokeLineCap.SQUARE", acgraph.vector.StrokeLineCap.SQUARE);
   goog.exportSymbol("acgraph.vector.normalizeFill", acgraph.vector.normalizeFill);
   goog.exportSymbol("acgraph.vector.normalizeStroke", acgraph.vector.normalizeStroke);
   goog.exportSymbol("acgraph.vector.normalizeHatchFill", acgraph.vector.normalizeHatchFill);
@@ -3783,7 +3776,7 @@ goog.provide("acgraph.utils.IdGenerator");
 acgraph.utils.IdGenerator = function() {
 };
 goog.addSingletonGetter(acgraph.utils.IdGenerator);
-acgraph.utils.IdGenerator.ElementTypePrefix = {STAGE:"stage", FILL:"fill", FILL_PATTERN:"fillPattern", HATCH_FILL:"hatchFill", IMAGE_FILL:"imageFill", STROKE:"stroke", LAYER:"layer", UNMANAGEABLE_LAYER:"unmanageablelayer", RECT:"rect", CIRCLE:"circle", ELLIPSE:"ellipse", PATH:"path", GRADIENT_KEY:"gKey", LINEAR_GRADIENT:"linearGradient", RADIAL_GRADIENT:"radialGradient", TEXT:"text", TEXT_SEGMENT:"tSegment", IMAGE:"image", CLIP:"clip", SHAPE_TYPE:"shapeType"};
+acgraph.utils.IdGenerator.ElementTypePrefix = {STAGE:"stage", FILL:"fill", FILL_PATTERN:"fill-pattern", HATCH_FILL:"hatch-fill", IMAGE_FILL:"image-fill", STROKE:"stroke", LAYER:"layer", UNMANAGEABLE_LAYER:"unmanageable-layer", RECT:"rect", CIRCLE:"circle", ELLIPSE:"ellipse", PATH:"path", GRADIENT_KEY:"g-key", LINEAR_GRADIENT:"linear-gradient", RADIAL_GRADIENT:"radial-gradient", TEXT:"text", SIMPLE_TEXT:"simple-text", TEXT_SEGMENT:"t-segment", IMAGE:"image", CLIP:"clip", SHAPE_TYPE:"shape-type"};
 acgraph.utils.IdGenerator.prototype.nextId_ = 0;
 acgraph.utils.IdGenerator.prototype.prefix_ = "ac";
 acgraph.utils.IdGenerator.prototype.uid_property_ = "ac_uid_" + (Math.random() * 1E9 >>> 0);
@@ -4515,6 +4508,12 @@ acgraph.utils.partialApplyingArgsToFunction = function(func, args, opt_obj) {
       end += count;
     }
   }
+};
+acgraph.utils.isPercent = function(value) {
+  return goog.isString(value) && goog.string.endsWith(value, "%") && !isNaN(parseFloat(value));
+};
+acgraph.utils.instanceOf = function(object, constructor) {
+  return !!object && object instanceof (constructor);
 };
 goog.provide("acgraph.error");
 acgraph.error.Code = {ERROR_IS_NOT_FOUND:0, STAGE_TYPE_NOT_SUPPORTED:1, CONTAINER_SHOULD_BE_DEFINED:2, STAGE_SHOULD_HAVE_DOM_ELEMENT:3, PARENT_UNABLE_TO_BE_SET:4, OPERATION_ON_DISPOSED:5, DIRTY_AFTER_SYNC_RENDER:6, STAGE_MISMATCH:7, WRONG_SWAPPING:8, EMPTY_PATH:9, UNIMPLEMENTED_METHOD:10, REQUIRED_PARAMETER_MISSING:11, PARAMETER_TYPE_MISMATCH:12, PARAMETER_IS_NULL_OR_UNDEFINED:13, INVALID_NUMBER_OF_PARAMETERS:14, FEATURE_NOT_SUPPORTED_IN_VML:15};
@@ -5400,23 +5399,6 @@ goog.exportSymbol("acgraph.events.listenOnce", acgraph.events.listenOnce);
 goog.exportSymbol("acgraph.events.unlisten", acgraph.events.unlisten);
 goog.exportSymbol("acgraph.events.unlistenByKey", acgraph.events.unlistenByKey);
 goog.exportSymbol("acgraph.events.removeAll", acgraph.events.removeAll);
-goog.exportSymbol("acgraph.events.EventType.CLICK", acgraph.events.EventType.CLICK);
-goog.exportSymbol("acgraph.events.EventType.DBLCLICK", acgraph.events.EventType.DBLCLICK);
-goog.exportSymbol("acgraph.events.EventType.MOUSEUP", acgraph.events.EventType.MOUSEUP);
-goog.exportSymbol("acgraph.events.EventType.MOUSEDOWN", acgraph.events.EventType.MOUSEDOWN);
-goog.exportSymbol("acgraph.events.EventType.MOUSEOVER", acgraph.events.EventType.MOUSEOVER);
-goog.exportSymbol("acgraph.events.EventType.MOUSEOUT", acgraph.events.EventType.MOUSEOUT);
-goog.exportSymbol("acgraph.events.EventType.MOUSEMOVE", acgraph.events.EventType.MOUSEMOVE);
-goog.exportSymbol("acgraph.events.EventType.TOUCHSTART", acgraph.events.EventType.TOUCHSTART);
-goog.exportSymbol("acgraph.events.EventType.TOUCHEND", acgraph.events.EventType.TOUCHEND);
-goog.exportSymbol("acgraph.events.EventType.TOUCHCANCEL", acgraph.events.EventType.TOUCHCANCEL);
-goog.exportSymbol("acgraph.events.EventType.TOUCHMOVE", acgraph.events.EventType.TOUCHMOVE);
-goog.exportSymbol("acgraph.events.EventType.TAP", acgraph.events.EventType.TAP);
-goog.exportSymbol("acgraph.events.EventType.DRAG", acgraph.events.EventType.DRAG);
-goog.exportSymbol("acgraph.events.EventType.DRAG_START", acgraph.events.EventType.DRAG_START);
-goog.exportSymbol("acgraph.events.EventType.DRAG_END", acgraph.events.EventType.DRAG_END);
-goog.exportSymbol("acgraph.events.EventType.DRAG_EARLY_CANCEL", acgraph.events.EventType.DRAG_EARLY_CANCEL);
-goog.exportSymbol("acgraph.events.EventType.DRAG_BEFORE", acgraph.events.EventType.DRAG_BEFORE);
 goog.provide("goog.dom.BrowserFeature");
 goog.require("goog.userAgent");
 goog.dom.BrowserFeature = {CAN_ADD_NAME_OR_TYPE_ATTRIBUTES:!goog.userAgent.IE || goog.userAgent.isDocumentModeOrHigher(9), CAN_USE_CHILDREN_ATTRIBUTE:!goog.userAgent.GECKO && !goog.userAgent.IE || goog.userAgent.IE && goog.userAgent.isDocumentModeOrHigher(9) || goog.userAgent.GECKO && goog.userAgent.isVersionOrHigher("1.9.1"), CAN_USE_INNER_TEXT:goog.userAgent.IE && !goog.userAgent.isVersionOrHigher("9"), CAN_USE_PARENT_ELEMENT_PROPERTY:goog.userAgent.IE || goog.userAgent.OPERA || goog.userAgent.WEBKIT, 
@@ -5808,7 +5790,7 @@ goog.provide("goog.i18n.bidi.Format");
 goog.define("goog.i18n.bidi.FORCE_RTL", false);
 goog.i18n.bidi.IS_RTL = goog.i18n.bidi.FORCE_RTL || (goog.LOCALE.substring(0, 2).toLowerCase() == "ar" || goog.LOCALE.substring(0, 2).toLowerCase() == "fa" || goog.LOCALE.substring(0, 2).toLowerCase() == "he" || goog.LOCALE.substring(0, 2).toLowerCase() == "iw" || goog.LOCALE.substring(0, 2).toLowerCase() == "ps" || goog.LOCALE.substring(0, 2).toLowerCase() == "sd" || goog.LOCALE.substring(0, 2).toLowerCase() == "ug" || goog.LOCALE.substring(0, 2).toLowerCase() == "ur" || goog.LOCALE.substring(0, 
 2).toLowerCase() == "yi") && (goog.LOCALE.length == 2 || goog.LOCALE.substring(2, 3) == "-" || goog.LOCALE.substring(2, 3) == "_") || goog.LOCALE.length >= 3 && goog.LOCALE.substring(0, 3).toLowerCase() == "ckb" && (goog.LOCALE.length == 3 || goog.LOCALE.substring(3, 4) == "-" || goog.LOCALE.substring(3, 4) == "_");
-goog.i18n.bidi.Format = {LRE:"‪", RLE:"‫", PDF:"‬", LRM:"‎", RLM:"‏"};
+goog.i18n.bidi.Format = {LRE:"\u202a", RLE:"\u202b", PDF:"\u202c", LRM:"\u200e", RLM:"\u200f"};
 goog.i18n.bidi.Dir = {LTR:1, RTL:-1, NEUTRAL:0};
 goog.i18n.bidi.RIGHT = "right";
 goog.i18n.bidi.LEFT = "left";
@@ -5825,8 +5807,8 @@ goog.i18n.bidi.toDir = function(givenDir, opt_noNeutral) {
     }
   }
 };
-goog.i18n.bidi.ltrChars_ = "A-Za-zÀ-ÖØ-öø-ʸ̀-֐ࠀ-῿" + "‎Ⰰ-﬜︀-﹯﻽-￿";
-goog.i18n.bidi.rtlChars_ = "֑-ۯۺ-߿‏יִ-﷿ﹰ-ﻼ";
+goog.i18n.bidi.ltrChars_ = "A-Za-z\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u02b8\u0300-\u0590\u0800-\u1fff" + "\u200e\u2c00-\ufb1c\ufe00-\ufe6f\ufefd-\uffff";
+goog.i18n.bidi.rtlChars_ = "\u0591-\u06ef\u06fa-\u07ff\u200f\ufb1d-\ufdff\ufe70-\ufefc";
 goog.i18n.bidi.htmlSkipReg_ = /<[^>]*>|&[^;]+;/g;
 goog.i18n.bidi.stripHtmlIfNeeded_ = function(str, opt_isStripNeeded) {
   return opt_isStripNeeded ? str.replace(goog.i18n.bidi.htmlSkipReg_, "") : str;
@@ -5914,7 +5896,7 @@ goog.i18n.bidi.mirrorCSS = function(cssStr) {
 goog.i18n.bidi.doubleQuoteSubstituteRe_ = /([\u0591-\u05f2])"/g;
 goog.i18n.bidi.singleQuoteSubstituteRe_ = /([\u0591-\u05f2])'/g;
 goog.i18n.bidi.normalizeHebrewQuote = function(str) {
-  return str.replace(goog.i18n.bidi.doubleQuoteSubstituteRe_, "$1״").replace(goog.i18n.bidi.singleQuoteSubstituteRe_, "$1׳");
+  return str.replace(goog.i18n.bidi.doubleQuoteSubstituteRe_, "$1\u05f4").replace(goog.i18n.bidi.singleQuoteSubstituteRe_, "$1\u05f3");
 };
 goog.i18n.bidi.wordSeparatorRe_ = /\s+/;
 goog.i18n.bidi.hasNumeralsRe_ = /[\d\u06f0-\u06f9]/;
@@ -9243,18 +9225,18 @@ goog.require("goog.events.Listenable");
 goog.require("goog.math.AffineTransform");
 goog.require("goog.math.Rect");
 acgraph.vector.Element = function() {
-  goog.base(this);
-  this.draggable_ = false;
-  this.disableStrokeScaling_ = false;
-  this.titleElement = null;
-  this.titleVal_ = null;
-  this.descElement = null;
-  this.descVal_ = null;
+  acgraph.vector.Element.base(this, "constructor");
   this.attributes_ = {};
   this.setDirtyState(acgraph.vector.Element.DirtyState.ALL);
 };
 goog.inherits(acgraph.vector.Element, goog.events.EventTarget);
 acgraph.vector.Element.DirtyState = {DOM_MISSING:1 << 0, VISIBILITY:1 << 1, TRANSFORMATION:1 << 2, FILL:1 << 3, STROKE:1 << 4, DATA:1 << 5, CHILDREN:1 << 6, CHILDREN_SET:1 << 7, PARENT_TRANSFORMATION:1 << 8, CLIP:1 << 9, STYLE:1 << 10, ID:1 << 11, CURSOR:1 << 12, POINTER_EVENTS:1 << 13, POSITION:1 << 14, STROKE_SCALING:1 << 15, TITLE:1 << 16, DESC:1 << 17, ATTRIBUTE:1 << 18, ALL:4294967295};
+acgraph.vector.Element.prototype.draggable_ = false;
+acgraph.vector.Element.prototype.disableStrokeScaling_ = false;
+acgraph.vector.Element.prototype.titleElement = null;
+acgraph.vector.Element.prototype.titleVal_ = null;
+acgraph.vector.Element.prototype.descElement = null;
+acgraph.vector.Element.prototype.descVal_ = null;
 acgraph.vector.Element.prototype.isRendering_ = false;
 acgraph.vector.Element.prototype.cursor_ = null;
 acgraph.vector.Element.prototype.parentCursor = null;
@@ -9264,12 +9246,10 @@ acgraph.vector.Element.prototype.prevParent_ = null;
 acgraph.vector.Element.prototype.visible_ = true;
 acgraph.vector.Element.prototype.handler_;
 acgraph.vector.Element.prototype.clipElement_ = null;
-acgraph.vector.Element.prototype.diablePointerEvents_ = false;
+acgraph.vector.Element.prototype.disablePointerEvents_ = false;
 acgraph.vector.Element.prototype.transformation = null;
-acgraph.vector.Element.prototype.inverseTransform_ = null;
 acgraph.vector.Element.prototype.fullTransform_ = null;
-acgraph.vector.Element.prototype.fullInverseTransform_ = null;
-acgraph.vector.Element.prototype.id_ = undefined;
+acgraph.vector.Element.prototype.id_;
 acgraph.vector.Element.prototype.zIndex_ = 0;
 acgraph.vector.Element.prototype.tag;
 acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES = acgraph.vector.Element.DirtyState.DOM_MISSING | acgraph.vector.Element.DirtyState.VISIBILITY | acgraph.vector.Element.DirtyState.CURSOR | acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION | acgraph.vector.Element.DirtyState.TRANSFORMATION | acgraph.vector.Element.DirtyState.CLIP | acgraph.vector.Element.DirtyState.ID | acgraph.vector.Element.DirtyState.POINTER_EVENTS | acgraph.vector.Element.DirtyState.STROKE_SCALING | acgraph.vector.Element.DirtyState.TITLE | 
@@ -9278,7 +9258,7 @@ acgraph.vector.Element.prototype.dirtyState_ = 0;
 acgraph.vector.Element.prototype.id = function(opt_value) {
   if (goog.isDef(opt_value)) {
     var id = opt_value || "";
-    if (this.id_ !== id) {
+    if (this.id_ != id) {
       this.id_ = id;
       this.setDirtyState(acgraph.vector.Element.DirtyState.ID);
     }
@@ -9287,12 +9267,12 @@ acgraph.vector.Element.prototype.id = function(opt_value) {
   if (!goog.isDef(this.id_)) {
     this.id(acgraph.utils.IdGenerator.getInstance().generateId(this));
   }
-  return (this.id_);
+  return this.id_;
 };
 acgraph.vector.Element.prototype.getElementTypePrefix = goog.abstractMethod;
 acgraph.vector.Element.prototype.getStage = function() {
   var parent = this.parent();
-  return !!parent ? parent.getStage() : null;
+  return parent ? parent.getStage() : null;
 };
 acgraph.vector.Element.prototype.domElement = function() {
   return this.domElement_;
@@ -9300,11 +9280,13 @@ acgraph.vector.Element.prototype.domElement = function() {
 acgraph.vector.Element.prototype.parent = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (opt_value) {
-      var stage = this.getStage();
-      var stageChanged = stage != null && stage != opt_value.getStage();
-      (opt_value).addChild(this);
-      if (stageChanged) {
-        this.propagateVisualStatesToChildren_();
+      if (opt_value != this.parent_) {
+        var stage = this.getStage();
+        var stageChanged = stage && stage != opt_value.getStage();
+        (opt_value).addChild(this);
+        if (stageChanged) {
+          this.propagateVisualStatesToChildren();
+        }
       }
     } else {
       this.remove();
@@ -9313,33 +9295,21 @@ acgraph.vector.Element.prototype.parent = function(opt_value) {
   }
   return (this.parent_);
 };
-acgraph.vector.Element.prototype.propagateVisualStatesToChildren_ = function() {
-  var numChildren;
+acgraph.vector.Element.prototype.propagateVisualStatesToChildren = function() {
   var clip = this.clip();
   if (clip) {
     clip.id(null);
   }
-  if (this.numChildren && (numChildren = this.numChildren())) {
-    for (var i = 0;i < numChildren;i++) {
-      var child = this.getChildAt(i);
-      child.propagateVisualStatesToChildren_();
-    }
-    this.setDirtyState(acgraph.vector.Element.DirtyState.CLIP);
-  } else {
-    this.setDirtyState(acgraph.vector.Element.DirtyState.FILL | acgraph.vector.Element.DirtyState.STROKE | acgraph.vector.Element.DirtyState.CLIP);
-  }
+  this.setDirtyState(acgraph.vector.Element.DirtyState.FILL | acgraph.vector.Element.DirtyState.STROKE | acgraph.vector.Element.DirtyState.CLIP);
 };
 acgraph.vector.Element.prototype.hasParent = function() {
   return !!this.parent_;
 };
 acgraph.vector.Element.prototype.remove = function() {
-  if (this.hasParent()) {
+  if (this.parent_) {
     this.parent_.removeChild(this);
   }
   return this;
-};
-acgraph.vector.Element.prototype.getFullChildrenCount = function() {
-  return 0;
 };
 acgraph.vector.Element.prototype.title = function(opt_value) {
   if (goog.isDef(opt_value)) {
@@ -9386,9 +9356,6 @@ acgraph.vector.Element.prototype.cursor = function(opt_value) {
 acgraph.vector.Element.prototype.cursorChanged = function() {
   this.setDirtyState(acgraph.vector.Element.DirtyState.CURSOR);
 };
-acgraph.vector.Element.prototype.parentCursorChanged = function() {
-  this.setDirtyState(acgraph.vector.Element.DirtyState.CURSOR);
-};
 acgraph.vector.Element.prototype.isDirty = function() {
   return !!this.dirtyState_;
 };
@@ -9413,9 +9380,6 @@ acgraph.vector.Element.prototype.clearDirtyState = function(value) {
 };
 acgraph.vector.Element.prototype.setParent = function(value) {
   if (!this.parent_ || this.parent_ != value) {
-    if (this == value) {
-      throw acgraph.error.getErrorMessage(acgraph.error.Code.PARENT_UNABLE_TO_BE_SET);
-    }
     if (!this.prevParent_) {
       this.prevParent_ = this.parent_;
     } else {
@@ -9442,20 +9406,11 @@ acgraph.vector.Element.prototype.notifyPrevParent = function(doCry) {
 };
 acgraph.vector.Element.prototype.beforeTransformationChanged = goog.nullFunction;
 acgraph.vector.Element.prototype.transformationChanged = function() {
-  this.inverseTransform_ = null;
   this.fullTransform_ = null;
   this.inverseFullTransform_ = null;
   this.dropBoundsCache();
   this.setDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
-  if (acgraph.getRenderer().needsReClipOnBoundsChange()) {
-    if (this.clipElement_) {
-      this.clipChanged();
-    } else {
-      if (this.parent_) {
-        this.parent_.childClipChanged();
-      }
-    }
-  }
+  this.reclip_();
 };
 acgraph.vector.Element.prototype.parentTransformationChanged = function() {
   this.fullTransform_ = null;
@@ -9463,6 +9418,9 @@ acgraph.vector.Element.prototype.parentTransformationChanged = function() {
   if (acgraph.getRenderer().needsReRenderOnParentTransformationChange()) {
     this.setDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION);
   }
+  this.reclip_();
+};
+acgraph.vector.Element.prototype.reclip_ = function() {
   if (acgraph.getRenderer().needsReClipOnBoundsChange()) {
     if (this.clipElement_) {
       this.clipChanged();
@@ -9472,12 +9430,6 @@ acgraph.vector.Element.prototype.parentTransformationChanged = function() {
       }
     }
   }
-};
-acgraph.vector.Element.prototype.getInverseTransform = function() {
-  if (!this.inverseTransform_) {
-    this.inverseTransform_ = this.transformation ? this.transformation.createInverse() : null;
-  }
-  return this.inverseTransform_;
 };
 acgraph.vector.Element.prototype.getSelfTransformation = function() {
   return this.transformation;
@@ -9530,7 +9482,7 @@ acgraph.vector.Element.prototype.translate = function(tx, ty) {
 acgraph.vector.Element.prototype.setPosition = function(x, y) {
   var arr = [x, y, this.getX(), this.getY()];
   if (this.transformation) {
-    this.getInverseTransform().transform(arr, 0, arr, 0, 2);
+    this.transformation.createInverse().transform(arr, 0, arr, 0, 2);
   }
   return this.translate(arr[0] - arr[2], arr[1] - arr[3]);
 };
@@ -9593,9 +9545,9 @@ acgraph.vector.Element.prototype.getTransformationMatrix = function() {
     return [1, 0, 0, 1, 0, 0];
   }
 };
-acgraph.vector.Element.prototype.createDom = function() {
+acgraph.vector.Element.prototype.createDom = function(opt_force) {
   var stage = this.getStage();
-  if (stage && stage.acquireDomChange(acgraph.vector.Stage.DomChangeType.ELEMENT_CREATE)) {
+  if (stage && stage.acquireDomChange(acgraph.vector.Stage.DomChangeType.ELEMENT_CREATE) || opt_force) {
     this.domElement_ = this.createDomInternal();
     acgraph.register(this);
     this.clearDirtyState(acgraph.vector.Element.DirtyState.DOM_MISSING);
@@ -9625,9 +9577,12 @@ acgraph.vector.Element.prototype.render = function() {
       this.drag(this.draggable_);
     }
   }
+  this.beforeRenderInternal();
   this.renderInternal();
   this.isRendering_ = false;
   return this;
+};
+acgraph.vector.Element.prototype.beforeRenderInternal = function() {
 };
 acgraph.vector.Element.prototype.renderInternal = function() {
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.ATTRIBUTE)) {
@@ -9663,7 +9618,7 @@ acgraph.vector.Element.prototype.renderInternal = function() {
   }
 };
 acgraph.vector.Element.prototype.renderId = function() {
-  acgraph.getRenderer().setId(this, this.id_ || "");
+  acgraph.getRenderer().setId(this);
   this.clearDirtyState(acgraph.vector.Element.DirtyState.ID);
 };
 acgraph.vector.Element.prototype.renderVisibility = function() {
@@ -9700,17 +9655,11 @@ acgraph.vector.Element.prototype.renderAttributes = function() {
   this.attributes_ = {};
   this.clearDirtyState(acgraph.vector.Element.DirtyState.ATTRIBUTE);
 };
-acgraph.vector.Element.prototype.setParentEventTarget = function(value) {
-  if (this.parent_ && (this.parent_) !== (value)) {
-    throw acgraph.error.getErrorMessage(acgraph.error.Code.PARENT_UNABLE_TO_BE_SET);
-  }
-  goog.base(this, "setParentEventTarget", value);
-};
 acgraph.vector.Element.prototype.disablePointerEvents = function(opt_value) {
   if (!goog.isDef(opt_value)) {
-    return this.diablePointerEvents_;
+    return this.disablePointerEvents_;
   }
-  this.diablePointerEvents_ = !!opt_value;
+  this.disablePointerEvents_ = !!opt_value;
   this.setDirtyState(acgraph.vector.Element.DirtyState.POINTER_EVENTS);
   return this;
 };
@@ -9753,15 +9702,16 @@ acgraph.vector.Element.prototype.zIndex = function(opt_value) {
   }
   return this.zIndex_ || 0;
 };
-acgraph.vector.Element.prototype.visible = function(opt_isVisible) {
-  if (arguments.length == 0) {
-    return this.visible_;
+acgraph.vector.Element.prototype.visible = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    opt_value = !!opt_value;
+    if (this.visible_ != opt_value) {
+      this.visible_ = opt_value;
+      this.setDirtyState(acgraph.vector.Element.DirtyState.VISIBILITY);
+    }
+    return this;
   }
-  if (this.visible_ != opt_isVisible) {
-    this.visible_ = goog.isDefAndNotNull(opt_isVisible) ? opt_isVisible : true;
-    this.setDirtyState(acgraph.vector.Element.DirtyState.VISIBILITY);
-  }
-  return this;
+  return this.visible_;
 };
 acgraph.vector.Element.prototype.disableStrokeScaling = function(opt_value) {
   if (goog.isDef(opt_value)) {
@@ -9782,8 +9732,8 @@ acgraph.vector.Element.prototype.clip = function(opt_value) {
   if (!this.clipElement_ && !clipShape || this.clipElement_ && this.clipElement_ === clipShape) {
     return this;
   }
-  if (clipShape && !(clipShape instanceof acgraph.vector.Clip)) {
-    if (clipShape instanceof acgraph.vector.Shape && clipShape.hasParent() && clipShape.parent() instanceof acgraph.vector.Clip) {
+  if (clipShape && !acgraph.utils.instanceOf(clipShape, acgraph.vector.Clip)) {
+    if (acgraph.utils.instanceOf(clipShape, acgraph.vector.Shape) && clipShape.hasParent() && acgraph.utils.instanceOf(clipShape.parent(), acgraph.vector.Clip)) {
       if (this.clipElement_ && !this.clipElement_.isDisposed()) {
         this.clipElement_.removeElement(this);
       }
@@ -9798,7 +9748,7 @@ acgraph.vector.Element.prototype.clip = function(opt_value) {
       }
     }
   } else {
-    this.clipElement_ = clipShape || null;
+    this.clipElement_ = (clipShape) || null;
   }
   this.clipChanged();
   return this;
@@ -9811,45 +9761,60 @@ acgraph.vector.Element.prototype.clipChanged = function() {
 };
 acgraph.vector.Element.prototype.boundsCache = null;
 acgraph.vector.Element.prototype.getX = function() {
-  var bounds = this.boundsCache || this.getBounds();
-  return bounds.left;
+  return this.getBounds().left;
 };
 acgraph.vector.Element.prototype.getY = function() {
-  var bounds = this.boundsCache || this.getBounds();
-  return bounds.top;
+  return this.getBounds().top;
 };
 acgraph.vector.Element.prototype.getWidth = function() {
-  var bounds = this.boundsCache || this.getBounds();
-  return bounds.width;
+  return this.getBounds().width;
 };
 acgraph.vector.Element.prototype.getHeight = function() {
-  var bounds = this.boundsCache || this.getBounds();
-  return bounds.height;
+  return this.getBounds().height;
 };
 acgraph.vector.Element.prototype.getBounds = function() {
-  return this.getBoundsWithTransform(this.getSelfTransformation());
+  return this.boundsCache || this.getBoundsWithTransform(this.getSelfTransformation());
 };
 acgraph.vector.Element.prototype.absoluteBoundsCache = null;
 acgraph.vector.Element.prototype.getAbsoluteX = function() {
-  var bounds = this.absoluteBoundsCache || this.getAbsoluteBounds();
-  return bounds.left;
+  return this.getAbsoluteBounds().left;
 };
 acgraph.vector.Element.prototype.getAbsoluteY = function() {
-  var bounds = this.absoluteBoundsCache || this.getAbsoluteBounds();
-  return bounds.top;
+  return this.getAbsoluteBounds().top;
 };
 acgraph.vector.Element.prototype.getAbsoluteWidth = function() {
-  var bounds = this.absoluteBoundsCache || this.getAbsoluteBounds();
-  return bounds.width;
+  return this.getAbsoluteBounds().width;
 };
 acgraph.vector.Element.prototype.getAbsoluteHeight = function() {
-  var bounds = this.absoluteBoundsCache || this.getAbsoluteBounds();
-  return bounds.height;
+  return this.getAbsoluteBounds().height;
 };
 acgraph.vector.Element.prototype.getAbsoluteBounds = function() {
-  return this.getBoundsWithTransform(this.getFullTransformation());
+  return this.absoluteBoundsCache || this.getBoundsWithTransform(this.getFullTransformation());
 };
-acgraph.vector.Element.prototype.getBoundsWithTransform = goog.abstractMethod;
+acgraph.vector.Element.prototype.getBoundsWithTransform = function(transform) {
+  var isSelfTransform = transform == this.getSelfTransformation();
+  var result;
+  if (this.boundsCache && isSelfTransform) {
+    result = this.boundsCache.clone();
+  } else {
+    var isFullTransform = transform == this.getFullTransformation();
+    if (this.absoluteBoundsCache && isFullTransform) {
+      result = this.absoluteBoundsCache.clone();
+    } else {
+      result = this.calcBoundsWithTransform(transform);
+      if (isSelfTransform) {
+        this.boundsCache = result.clone();
+      }
+      if (isFullTransform) {
+        this.absoluteBoundsCache = result.clone();
+      }
+    }
+  }
+  return result;
+};
+acgraph.vector.Element.prototype.calcBoundsWithTransform = function(transform) {
+  return acgraph.math.getBoundsOfRectWithTransform(this.getBoundsWithoutTransform(), transform);
+};
 acgraph.vector.Element.prototype.getBoundsWithoutTransform = function() {
   return this.getBoundsWithTransform(null);
 };
@@ -9861,7 +9826,7 @@ acgraph.vector.Element.prototype.drag = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
     this.draggable_ = opt_value;
     if (opt_value && !this.hasDirtyState(acgraph.vector.Element.DirtyState.DOM_MISSING)) {
-      var isLimited = opt_value instanceof goog.math.Rect;
+      var isLimited = acgraph.utils.instanceOf(opt_value, goog.math.Rect);
       var limit = isLimited ? this.draggable_ : null;
       if (!this.dragger_) {
         this.dragger_ = new acgraph.events.Dragger(this);
@@ -9922,7 +9887,7 @@ acgraph.vector.Element.prototype.serialize = function() {
   return data;
 };
 acgraph.vector.Element.prototype.dispose = function() {
-  goog.base(this, "dispose");
+  acgraph.vector.Element.base(this, "dispose");
 };
 acgraph.vector.Element.prototype.disposeInternal = function() {
   if (this.hasParent()) {
@@ -9930,7 +9895,7 @@ acgraph.vector.Element.prototype.disposeInternal = function() {
   } else {
     this.finalizeDisposing();
   }
-  goog.base(this, "disposeInternal");
+  acgraph.vector.Element.base(this, "disposeInternal");
 };
 acgraph.vector.Element.prototype.finalizeDisposing = function() {
   goog.dispose(this.handler_);
@@ -9941,8 +9906,6 @@ acgraph.vector.Element.prototype.finalizeDisposing = function() {
   this.skew = null;
   this.clipElement_ = null;
   this.transformation = null;
-  this.logicalTransformation = null;
-  this.inverseTransform_ = null;
 };
 (function() {
   var proto = acgraph.vector.Element.prototype;
@@ -10046,7 +10009,7 @@ acgraph.vector.Shape.prototype.strokeThickness = function(opt_value) {
     }
   }
 };
-acgraph.vector.Shape.prototype.renderInternal = function() {
+acgraph.vector.Shape.prototype.beforeRenderInternal = function() {
   if (this.boundsAffectedColors_ && this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
     if (!!(this.boundsAffectedColors_ & 1)) {
       this.setDirtyState(acgraph.vector.Element.DirtyState.FILL);
@@ -10055,6 +10018,8 @@ acgraph.vector.Shape.prototype.renderInternal = function() {
       this.setDirtyState(acgraph.vector.Element.DirtyState.STROKE);
     }
   }
+};
+acgraph.vector.Shape.prototype.renderInternal = function() {
   goog.base(this, "renderInternal");
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.FILL) || this.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE)) {
     this.renderFillAndStroke();
@@ -10096,10 +10061,10 @@ acgraph.vector.Shape.prototype.serialize = function() {
   var data = goog.base(this, "serialize");
   if (this.fill_) {
     var fillData, tmpFill, tmpStroke;
-    if (this.fill_ instanceof acgraph.vector.HatchFill) {
+    if (acgraph.utils.instanceOf(this.fill_, acgraph.vector.HatchFill)) {
       fillData = {"type":"hatchFill", "hatchType":this.fill_.type, "color":this.fill_.color, "thickness":this.fill_.thickness, "size":this.fill_.size};
     } else {
-      if (this.fill_ instanceof acgraph.vector.PatternFill) {
+      if (acgraph.utils.instanceOf(this.fill_, acgraph.vector.PatternFill)) {
         fillData = this.fill_.serialize();
       } else {
         if (goog.isObject(this.fill_) && "keys" in this.fill_) {
@@ -10230,32 +10195,16 @@ acgraph.vector.Ellipse.prototype.setRadius = function(rx, ry) {
 acgraph.vector.Ellipse.prototype.getBoundsWithoutTransform = function() {
   return new goog.math.Rect(this.center_.x - this.radiusX_, this.center_.y - this.radiusY_, this.radiusX_ + this.radiusX_, this.radiusY_ + this.radiusY_);
 };
-acgraph.vector.Ellipse.prototype.getBoundsWithTransform = function(transform) {
-  var isSelfTransform = transform == this.getSelfTransformation();
-  var isFullTransform = transform == this.getFullTransformation();
-  if (this.boundsCache && isSelfTransform) {
-    return this.boundsCache.clone();
+acgraph.vector.Ellipse.prototype.calcBoundsWithTransform = function(transform) {
+  var rect;
+  if (transform) {
+    var curves = acgraph.math.arcToBezier(this.center_.x, this.center_.y, this.radiusX_, this.radiusY_, 0, 360, true);
+    transform.transform(curves, 0, curves, 0, curves.length / 2);
+    rect = acgraph.math.calcCurveBounds.apply(null, curves);
   } else {
-    if (this.absoluteBoundsCache && isFullTransform) {
-      return this.absoluteBoundsCache.clone();
-    } else {
-      var rect;
-      if (transform) {
-        var curves = acgraph.math.arcToBezier(this.center_.x, this.center_.y, this.radiusX_, this.radiusY_, 0, 360, true);
-        transform.transform(curves, 0, curves, 0, curves.length / 2);
-        rect = acgraph.math.calcCurveBounds.apply(null, curves);
-      } else {
-        rect = this.getBoundsWithoutTransform();
-      }
-      if (isSelfTransform) {
-        this.boundsCache = rect.clone();
-      }
-      if (isFullTransform) {
-        this.absoluteBoundsCache = rect.clone();
-      }
-      return rect;
-    }
+    rect = this.getBoundsWithoutTransform();
   }
+  return rect;
 };
 acgraph.vector.Ellipse.prototype.createDomInternal = function() {
   return acgraph.getRenderer().createEllipseElement();
@@ -10316,7 +10265,7 @@ goog.provide("acgraph.vector.Circle");
 goog.require("acgraph.utils.IdGenerator");
 goog.require("acgraph.vector.Ellipse");
 acgraph.vector.Circle = function(opt_centerX, opt_centerY, opt_radius) {
-  goog.base(this, opt_centerX, opt_centerY, opt_radius, opt_radius);
+  acgraph.vector.Circle.base(this, "constructor", opt_centerX, opt_centerY, opt_radius, opt_radius);
 };
 goog.inherits(acgraph.vector.Circle, acgraph.vector.Ellipse);
 acgraph.vector.Circle.prototype.getElementTypePrefix = function() {
@@ -10339,10 +10288,10 @@ acgraph.vector.Circle.prototype.renderData = function() {
 };
 acgraph.vector.Circle.prototype.deserialize = function(data) {
   this.radiusX(data["radius"]);
-  goog.base(this, "deserialize", data);
+  acgraph.vector.Circle.base(this, "deserialize", data);
 };
 acgraph.vector.Circle.prototype.serialize = function() {
-  var data = goog.base(this, "serialize");
+  var data = acgraph.vector.Circle.base(this, "serialize");
   data["type"] = "circle";
   delete data["rx"];
   delete data["ry"];
@@ -10360,7 +10309,7 @@ goog.require("goog.Disposable");
 goog.require("goog.array");
 goog.require("goog.math.Rect");
 acgraph.vector.Clip = function(stage, opt_leftOrShape, opt_top, opt_width, opt_height) {
-  goog.base(this);
+  acgraph.vector.Clip.base(this, "constructor");
   this.stage_ = stage;
   this.dirty_ = false;
   this.elements = [];
@@ -10379,25 +10328,33 @@ acgraph.vector.Clip.prototype.stage = function(opt_value) {
   }
   return this.stage_;
 };
+acgraph.vector.Clip.shapesHelper_ = {"rect":acgraph.vector.Rect, "circle":acgraph.vector.Circle, "ellipse":acgraph.vector.Ellipse, "path":acgraph.vector.Path};
 acgraph.vector.Clip.prototype.shape = function(opt_leftOrShape, opt_top, opt_width, opt_height) {
   if (arguments.length) {
-    if (opt_leftOrShape instanceof acgraph.vector.Shape) {
+    if (acgraph.utils.instanceOf(opt_leftOrShape, acgraph.vector.Shape)) {
       if (this.shape_) {
-        var sameType = this.shape_ instanceof acgraph.vector.Rect && opt_leftOrShape instanceof acgraph.vector.Rect || this.shape_ instanceof acgraph.vector.Circle && opt_leftOrShape instanceof acgraph.vector.Circle || this.shape_ instanceof acgraph.vector.Ellipse && opt_leftOrShape instanceof acgraph.vector.Ellipse || this.shape_ instanceof acgraph.vector.Path && opt_leftOrShape instanceof acgraph.vector.Path;
+        var sameType = false;
+        for (var i in acgraph.vector.Clip.shapesHelper_) {
+          var t = acgraph.vector.Clip.shapesHelper_[i];
+          if (acgraph.utils.instanceOf(this.shape_, t) && acgraph.utils.instanceOf(opt_leftOrShape, t)) {
+            sameType = true;
+            break;
+          }
+        }
         if (sameType) {
           this.shape_.deserialize(opt_leftOrShape.serialize());
         } else {
           this.shape_.parent(null);
-          this.shape_ = opt_leftOrShape;
+          this.shape_ = (opt_leftOrShape);
           this.shape_.parent(this);
         }
       } else {
-        this.shape_ = opt_leftOrShape;
+        this.shape_ = (opt_leftOrShape);
         this.shape_.parent(this);
       }
     } else {
       var left, top, width, height;
-      if (opt_leftOrShape instanceof goog.math.Rect) {
+      if (acgraph.utils.instanceOf(opt_leftOrShape, goog.math.Rect)) {
         left = opt_leftOrShape.left;
         top = opt_leftOrShape.top;
         width = opt_leftOrShape.width;
@@ -10423,7 +10380,7 @@ acgraph.vector.Clip.prototype.shape = function(opt_leftOrShape, opt_top, opt_wid
         }
       }
       if (this.shape_) {
-        if (this.shape_ instanceof acgraph.vector.Rect) {
+        if (acgraph.utils.instanceOf(this.shape_, acgraph.vector.Rect)) {
           this.shape_.setX(left).setY(top).setWidth(width).setHeight(height);
         } else {
           this.shape_.parent(null);
@@ -10477,26 +10434,9 @@ acgraph.vector.Clip.prototype.serialize = function() {
   return this.shape_.serialize();
 };
 acgraph.vector.Clip.prototype.deserialize = function(data) {
-  var type = data["type"];
-  var primitive;
-  switch(type) {
-    case "rect":
-      primitive = acgraph.rect();
-      break;
-    case "circle":
-      primitive = acgraph.circle();
-      break;
-    case "ellipse":
-      primitive = acgraph.ellipse();
-      break;
-    case "path":
-      primitive = acgraph.path();
-      break;
-    default:
-      primitive = null;
-      break;
-  }
-  if (primitive) {
+  var type = acgraph.vector.Clip.shapesHelper_[data["type"]];
+  if (type) {
+    var primitive = new type;
     primitive.deserialize(data);
     this.shape(primitive);
   }
@@ -10505,15 +10445,17 @@ acgraph.vector.Clip.prototype.addChild = function(child) {
   child.remove();
   child.setParent(this);
   this.needUpdateClip_();
+  child.notifyPrevParent(true);
   return this;
 };
 acgraph.vector.Clip.prototype.removeChild = function(element) {
   element.setParent(null);
   var dom = element.domElement();
   if (dom) {
-    acgraph.getRenderer().removeNode(dom);
+    goog.dom.removeNode(dom);
   }
   this.needUpdateClip_();
+  element.notifyPrevParent(false);
   return element;
 };
 acgraph.vector.Clip.prototype.getFullTransformation = function() {
@@ -10528,7 +10470,7 @@ acgraph.vector.Clip.prototype.setDirtyState = function(value) {
   this.needUpdateClip_();
 };
 acgraph.vector.Clip.prototype.dispose = function() {
-  goog.base(this, "dispose");
+  acgraph.vector.Clip.base(this, "dispose");
 };
 acgraph.vector.Clip.prototype.disposeInternal = function() {
   if (this.stage_) {
@@ -10541,7 +10483,7 @@ acgraph.vector.Clip.prototype.disposeInternal = function() {
   delete this.elements;
   delete this.dirty_;
   delete this.shape_;
-  goog.base(this, "disposeInternal");
+  acgraph.vector.Clip.base(this, "disposeInternal");
 };
 (function() {
   var proto = acgraph.vector.Clip.prototype;
@@ -10719,8 +10661,8 @@ acgraph.vector.PathBase.prototype.moveToInternal = function(x, y) {
   }
   this.arguments_.push(x, y);
   this.currentPoint_ = this.closePoint_ = [x, y];
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   this.transformedPathCache_ = null;
+  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   return this;
 };
 acgraph.vector.PathBase.prototype.lineToInternal = function(x, y, var_args) {
@@ -10739,9 +10681,9 @@ acgraph.vector.PathBase.prototype.lineToInternal = function(x, y, var_args) {
   }
   this.count_[this.count_.length - 1] += i / 2;
   this.currentPoint_ = [x, y];
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   this.dropBoundsCache();
   this.transformedPathCache_ = null;
+  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   return this;
 };
 acgraph.vector.PathBase.prototype.curveToInternal = function(control1X, control1Y, control2X, control2Y, endX, endY, var_args) {
@@ -10760,9 +10702,9 @@ acgraph.vector.PathBase.prototype.curveToInternal = function(control1X, control1
   }
   this.count_[this.count_.length - 1] += i / 6;
   this.currentPoint_ = [x, y];
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   this.dropBoundsCache();
   this.transformedPathCache_ = null;
+  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   return this;
 };
 acgraph.vector.PathBase.prototype.quadraticCurveToInternal = function(controlX, controlY, endX, endY, var_args) {
@@ -10866,9 +10808,9 @@ acgraph.vector.PathBase.prototype.arcToInternal = function(rx, ry, fromAngle, ex
   }
   this.simple_ = false;
   this.currentPoint_ = [ex, ey];
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   this.dropBoundsCache();
   this.transformedPathCache_ = null;
+  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   return this;
 };
 acgraph.vector.PathBase.prototype.arcToAsCurvesInternal = function(rx, ry, fromAngle, extent) {
@@ -10876,9 +10818,9 @@ acgraph.vector.PathBase.prototype.arcToAsCurvesInternal = function(rx, ry, fromA
   var cy = this.currentPoint_[1] - goog.math.angleDy(fromAngle, ry);
   var curveParams = acgraph.math.arcToBezier(cx, cy, rx, ry, fromAngle, extent);
   this.curveToInternal.apply(this, curveParams);
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   this.dropBoundsCache();
   this.transformedPathCache_ = null;
+  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   return this;
 };
 acgraph.vector.PathBase.prototype.closeInternal = function() {
@@ -10895,43 +10837,24 @@ acgraph.vector.PathBase.prototype.closeInternal = function() {
   }
   return this;
 };
-acgraph.vector.PathBase.prototype.getBoundsWithTransform = function(transform) {
-  return this.calcBounds_(transform, acgraph.vector.PathBase.boundsCalculationMap_, true);
-};
-acgraph.vector.PathBase.prototype.calcBounds_ = function(transform, calcMap, allowCache) {
-  var isSelfTransform = transform == this.getSelfTransformation();
-  var isFullTransform = transform == this.getFullTransformation();
-  if (this.boundsCache && isSelfTransform) {
-    return this.boundsCache.clone();
-  } else {
-    if (this.absoluteBoundsCache && isFullTransform) {
-      return this.absoluteBoundsCache.clone();
+acgraph.vector.PathBase.prototype.calcBoundsWithTransform = function(transform) {
+  var rect;
+  if (this.currentPoint_) {
+    if (transform && !transform.isIdentity()) {
+      var arr = [this.currentPoint_[0], this.currentPoint_[1]];
+      transform.transform(arr, 0, arr, 0, 1);
+      rect = new goog.math.Rect(arr[0], arr[1], 0, 0);
+      this.simplify();
     } else {
-      var rect;
-      if (this.currentPoint_) {
-        if (transform && !transform.isIdentity()) {
-          var arr = [this.currentPoint_[0], this.currentPoint_[1]];
-          transform.transform(arr, 0, arr, 0, 1);
-          rect = new goog.math.Rect(arr[0], arr[1], 0, 0);
-          this.simplify();
-        } else {
-          rect = new goog.math.Rect(this.currentPoint_[0], this.currentPoint_[1], 0, 0);
-        }
-        this.forEachSegment(function(segment, args) {
-          acgraph.utils.partialApplyingArgsToFunction(calcMap[segment], args, this);
-        }, {rect:rect, transform:transform}, true);
-      } else {
-        rect = new goog.math.Rect(NaN, NaN, NaN, NaN);
-      }
-      if (isSelfTransform && allowCache) {
-        this.boundsCache = rect.clone();
-      }
-      if (isFullTransform && allowCache) {
-        this.absoluteBoundsCache = rect.clone();
-      }
-      return rect;
+      rect = new goog.math.Rect(this.currentPoint_[0], this.currentPoint_[1], 0, 0);
     }
+    this.forEachSegment(function(segment, args) {
+      acgraph.utils.partialApplyingArgsToFunction(acgraph.vector.PathBase.boundsCalculationMap_[segment], args, this);
+    }, {rect:rect, transform:transform}, true);
+  } else {
+    rect = new goog.math.Rect(NaN, NaN, NaN, NaN);
   }
+  return rect;
 };
 acgraph.vector.PathBase.prototype.getCurrentPointInternal = function() {
   if (this.currentPoint_) {
@@ -10989,6 +10912,49 @@ acgraph.vector.PathBase.boundsCalculationMap_ = function() {
   map[acgraph.vector.PathBase.Segment.ARCTO] = acgraph.vector.PathBase.calcArcBounds_;
   return map;
 }();
+acgraph.vector.PathBase.prototype.getLength = function() {
+  var length = 0;
+  if (this.isEmpty()) {
+    return length;
+  }
+  var list = [];
+  this.forEachSegment(function(segment, args) {
+    if (segment != acgraph.vector.PathBase.Segment.MOVETO) {
+      var step;
+      var params = goog.array.slice(list, list.length - 2);
+      if (segment == acgraph.vector.PathBase.Segment.ARCTO) {
+        step = 6;
+        var cx = params[0] - goog.math.angleDx(args[2], args[0]);
+        var cy = params[1] - goog.math.angleDy(args[2], args[1]);
+        args = acgraph.math.arcToBezier(cx, cy, args[0], args[1], args[2], args[3]);
+      } else {
+        if (segment == acgraph.vector.PathBase.Segment.LINETO) {
+          step = 2;
+        } else {
+          if (segment == acgraph.vector.PathBase.Segment.CURVETO) {
+            step = 6;
+          }
+        }
+      }
+      for (var i = 0, len = args.length - (step - 1);i < len;i += step) {
+        Array.prototype.push.apply(params, goog.array.slice(args, i, i + step));
+        length += acgraph.math.bezierCurveLength(params);
+        params = goog.array.slice(params, params.length - 2);
+      }
+    }
+    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, args, list);
+  });
+  return length;
+};
+acgraph.vector.PathBase.prototype.serializePathArgs = function(opt_data) {
+  var data = opt_data || {};
+  data["closePoint"] = this.closePoint_ ? this.closePoint_.slice() : [];
+  data["currentPoint"] = this.currentPoint_ ? this.currentPoint_.slice() : [];
+  data["segments"] = this.segments_.slice();
+  data["count"] = this.count_.slice();
+  data["arguments"] = this.arguments_.slice();
+  return data;
+};
 acgraph.vector.PathBase.prototype.deserialize = function(data) {
   this.closePoint_ = data["closePoint"];
   this.currentPoint_ = data["currentPoint"];
@@ -11001,11 +10967,7 @@ acgraph.vector.PathBase.prototype.deserialize = function(data) {
 acgraph.vector.PathBase.prototype.serialize = function() {
   var data = goog.base(this, "serialize");
   data["type"] = "path";
-  data["closePoint"] = this.closePoint_ ? this.closePoint_.slice() : [];
-  data["currentPoint"] = this.currentPoint_ ? this.currentPoint_.slice() : [];
-  data["segments"] = this.segments_.slice();
-  data["count"] = this.count_.slice();
-  data["arguments"] = this.arguments_.slice();
+  data = this.serializePathArgs(data);
   return data;
 };
 acgraph.vector.PathBase.prototype.disposeInternal = function() {
@@ -11082,12 +11044,14 @@ acgraph.vector.Path.prototype.getCurrentPoint = function() {
   proto["close"] = proto.close;
   proto["clear"] = proto.clear;
   proto["getCurrentPoint"] = proto.getCurrentPoint;
+  proto["getLength"] = proto.getLength;
 })();
 goog.provide("acgraph.vector.Layer");
 goog.require("acgraph.error");
 goog.require("acgraph.utils.IdGenerator");
 goog.require("acgraph.vector.Element");
 goog.require("acgraph.vector.ILayer");
+goog.require("goog.dom");
 goog.require("goog.math.Rect");
 acgraph.vector.Layer = function() {
   this.children = [];
@@ -11099,8 +11063,14 @@ acgraph.vector.Layer.prototype.getElementTypePrefix = function() {
   return acgraph.utils.IdGenerator.ElementTypePrefix.LAYER;
 };
 acgraph.vector.Layer.prototype.SUPPORTED_DIRTY_STATES = acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES | acgraph.vector.Element.DirtyState.CHILDREN | acgraph.vector.Element.DirtyState.CHILDREN_SET | acgraph.vector.Element.DirtyState.DATA;
+acgraph.vector.Layer.prototype.propagateVisualStatesToChildren = function() {
+  for (var i = 0;i < this.children.length;i++) {
+    this.children[i].propagateVisualStatesToChildren();
+  }
+  acgraph.vector.Layer.base(this, "propagateVisualStatesToChildren");
+};
 acgraph.vector.Layer.prototype.setDirtyState = function(value) {
-  goog.base(this, "setDirtyState", value);
+  acgraph.vector.Layer.base(this, "setDirtyState", value);
   if (!!(value & (acgraph.vector.Element.DirtyState.CHILDREN | acgraph.vector.Element.DirtyState.CHILDREN_SET))) {
     this.dropBoundsCache();
   }
@@ -11118,9 +11088,10 @@ acgraph.vector.Layer.prototype.addChildAt = function(element, index) {
   }
   this.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET);
   element.parentTransformationChanged();
-  if (this.cursor() || this.parentCursor) {
-    element.parentCursorChanged();
-    element.parentCursor = (this.cursor() || this.parentCursor);
+  var cursor = (this.cursor() || this.parentCursor);
+  if (element.parentCursor != cursor) {
+    element.parentCursor = cursor;
+    element.cursorChanged();
   }
   return this;
 };
@@ -11201,6 +11172,14 @@ acgraph.vector.Layer.prototype.text = function(opt_x, opt_y, opt_text, opt_style
   if (opt_style) {
     text.style(opt_style);
   }
+  if (opt_text) {
+    text.text(opt_text);
+  }
+  text.parent(this);
+  return text;
+};
+acgraph.vector.Layer.prototype.simpleText = function(opt_text) {
+  var text = acgraph.simpleText();
   if (opt_text) {
     text.text(opt_text);
   }
@@ -11329,17 +11308,13 @@ acgraph.vector.Layer.prototype.renderInternal = function() {
   goog.base(this, "renderInternal");
 };
 acgraph.vector.Layer.prototype.cursorChanged = function() {
-  goog.base(this, "cursorChanged");
-  this.propagateCursor();
+  acgraph.vector.Layer.base(this, "cursorChanged");
+  this.propagateCursor_();
 };
-acgraph.vector.Layer.prototype.parentCursorChanged = function() {
-  goog.base(this, "parentCursorChanged");
-  this.propagateCursor();
-};
-acgraph.vector.Layer.prototype.propagateCursor = function() {
+acgraph.vector.Layer.prototype.propagateCursor_ = function() {
   for (var i = this.children.length;i--;) {
-    this.children[i].parentCursorChanged();
     this.children[i].parentCursor = (this.cursor() || this.parentCursor);
+    this.children[i].cursorChanged();
   }
 };
 acgraph.vector.Layer.prototype.renderCursor = function() {
@@ -11369,11 +11344,10 @@ acgraph.vector.Layer.prototype.renderChildrenDom = function(maxChanges) {
   var flagSuccess = true;
   var addings = [];
   var removings = [];
-  var renderer = acgraph.getRenderer();
   var add = function(child) {
     var childDom = child.domElement();
     if (childDom) {
-      renderer.appendChild(domElement, childDom);
+      goog.dom.appendChild(domElement, childDom);
       changesMade++;
       addings.push(i);
       child.notifyPrevParent(true);
@@ -11385,7 +11359,7 @@ acgraph.vector.Layer.prototype.renderChildrenDom = function(maxChanges) {
   var remove = function(child) {
     var childDom = child.domElement();
     if (childDom) {
-      renderer.removeNode(childDom);
+      goog.dom.removeNode(childDom);
       changesMade++;
     }
     child.notifyPrevParent(false);
@@ -11472,39 +11446,23 @@ acgraph.vector.Layer.prototype.renderTransformation = function() {
   this.clearDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
   this.clearDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION);
 };
-acgraph.vector.Layer.prototype.getBoundsWithTransform = function(transform) {
-  var isSelfTransform = transform == this.getSelfTransformation();
-  var isFullTransform = transform == this.getFullTransformation();
-  if (this.boundsCache && isSelfTransform) {
-    return this.boundsCache.clone();
-  } else {
-    if (this.absoluteBoundsCache && isFullTransform) {
-      return this.absoluteBoundsCache.clone();
-    } else {
-      var bounds = null;
-      for (var i = 0, len = this.children.length;i < len;i++) {
-        var child = this.children[i];
-        var childBounds = child.getBoundsWithTransform(acgraph.math.concatMatrixes(transform, child.getSelfTransformation()));
-        if (!isNaN(childBounds.left) && !isNaN(childBounds.top) && !isNaN(childBounds.width) && !isNaN(childBounds.height)) {
-          if (bounds) {
-            bounds.boundingRect(childBounds);
-          } else {
-            bounds = childBounds;
-          }
-        }
+acgraph.vector.Layer.prototype.calcBoundsWithTransform = function(transform) {
+  var bounds = null;
+  for (var i = 0, len = this.children.length;i < len;i++) {
+    var child = this.children[i];
+    var childBounds = child.getBoundsWithTransform(acgraph.math.concatMatrixes(transform, child.getSelfTransformation()));
+    if (!isNaN(childBounds.left) && !isNaN(childBounds.top) && !isNaN(childBounds.width) && !isNaN(childBounds.height)) {
+      if (bounds) {
+        bounds.boundingRect(childBounds);
+      } else {
+        bounds = childBounds;
       }
-      if (!bounds) {
-        bounds = acgraph.math.getBoundsOfRectWithTransform(new goog.math.Rect(0, 0, 0, 0), transform);
-      }
-      if (isSelfTransform) {
-        this.boundsCache = bounds.clone();
-      }
-      if (isFullTransform) {
-        this.absoluteBoundsCache = bounds.clone();
-      }
-      return bounds;
     }
   }
+  if (!bounds) {
+    bounds = acgraph.math.getBoundsOfRectWithTransform(new goog.math.Rect(0, 0, 0, 0), transform);
+  }
+  return bounds;
 };
 acgraph.vector.Layer.prototype.beforeTransformationChanged = function() {
   for (var i = this.children.length;i--;) {
@@ -11671,26 +11629,6 @@ acgraph.vector.PatternFill.prototype.parent = function(opt_value) {
 acgraph.vector.PatternFill.prototype.getBoundsWithoutTransform = function() {
   return this.bounds.clone();
 };
-acgraph.vector.PatternFill.prototype.getBoundsWithTransform = function(transform) {
-  var isSelfTransform = transform == this.getSelfTransformation();
-  var isFullTransform = transform == this.getFullTransformation();
-  if (this.boundsCache && isSelfTransform) {
-    return this.boundsCache.clone();
-  } else {
-    if (this.absoluteBoundsCache && isFullTransform) {
-      return this.absoluteBoundsCache.clone();
-    } else {
-      var bounds = acgraph.math.getBoundsOfRectWithTransform(this.bounds.clone(), transform);
-      if (isSelfTransform) {
-        this.boundsCache = bounds.clone();
-      }
-      if (isFullTransform) {
-        this.absoluteBoundsCache = bounds.clone();
-      }
-      return bounds;
-    }
-  }
-};
 acgraph.vector.PatternFill.prototype.createDomInternal = function() {
   return acgraph.getRenderer().createFillPatternElement();
 };
@@ -11722,7 +11660,7 @@ acgraph.vector.PatternFill.prototype.serialize = function() {
   return data;
 };
 acgraph.vector.PatternFill.prototype.disposeInternal = function() {
-  acgraph.getRenderer().removeNode(this.domElement());
+  goog.dom.removeNode(this.domElement());
   this.bounds_ = null;
   goog.base(this, "disposeInternal");
 };
@@ -11742,361 +11680,173 @@ acgraph.vector.HatchFill = function(opt_type, opt_color, opt_thickness, opt_size
   this.color = "" + (goog.isDefAndNotNull(opt_color) ? opt_color : "black 0.5");
   this.thickness = goog.isDefAndNotNull(opt_thickness) ? opt_thickness : 1;
   this.size = goog.isDefAndNotNull(opt_size) ? opt_size : 10;
-  goog.base(this, new goog.math.Rect(0, 0, this.size, this.size));
-  this.create_();
+  acgraph.vector.HatchFill.base(this, "constructor", new goog.math.Rect(0, 0, this.size, this.size));
+  var initializer = acgraph.vector.HatchFill.creationMap_[this.type];
+  if (initializer) {
+    initializer.call(this);
+  }
 };
 goog.inherits(acgraph.vector.HatchFill, acgraph.vector.PatternFill);
 acgraph.vector.HatchFill.serialize = function(type, color, thickness, size) {
   return [type, color, thickness, size].join(",");
 };
-acgraph.vector.HatchFill.HatchFillType = {BACKWARD_DIAGONAL:"backwardDiagonal", FORWARD_DIAGONAL:"forwardDiagonal", HORIZONTAL:"horizontal", VERTICAL:"vertical", DASHED_BACKWARD_DIAGONAL:"dashedBackwardDiagonal", GRID:"grid", DASHED_FORWARD_DIAGONAL:"dashedForwardDiagonal", DASHED_HORIZONTAL:"dashedHorizontal", DASHED_VERTICAL:"dashedVertical", DIAGONAL_CROSS:"diagonalCross", DIAGONAL_BRICK:"diagonalBrick", DIVOT:"divot", HORIZONTAL_BRICK:"horizontalBrick", VERTICAL_BRICK:"verticalBrick", CHECKER_BOARD:"checkerBoard", 
-CONFETTI:"confetti", PLAID:"plaid", SOLID_DIAMOND:"solidDiamond", ZIG_ZAG:"zigZag", WEAVE:"weave", PERCENT_05:"percent05", PERCENT_10:"percent10", PERCENT_20:"percent20", PERCENT_25:"percent25", PERCENT_30:"percent30", PERCENT_40:"percent40", PERCENT_50:"percent50", PERCENT_60:"percent60", PERCENT_70:"percent70", PERCENT_75:"percent75", PERCENT_80:"percent80", PERCENT_90:"percent90"};
+acgraph.vector.HatchFill.HatchFillType = {BACKWARD_DIAGONAL:"backward-diagonal", FORWARD_DIAGONAL:"forward-diagonal", HORIZONTAL:"horizontal", VERTICAL:"vertical", DASHED_BACKWARD_DIAGONAL:"dashed-backward-diagonal", GRID:"grid", DASHED_FORWARD_DIAGONAL:"dashed-forward-diagonal", DASHED_HORIZONTAL:"dashed-horizontal", DASHED_VERTICAL:"dashed-vertical", DIAGONAL_CROSS:"diagonal-cross", DIAGONAL_BRICK:"diagonal-brick", DIVOT:"divot", HORIZONTAL_BRICK:"horizontal-brick", VERTICAL_BRICK:"vertical-brick", 
+CHECKER_BOARD:"checker-board", CONFETTI:"confetti", PLAID:"plaid", SOLID_DIAMOND:"solid-diamond", ZIG_ZAG:"zig-zag", WEAVE:"weave", PERCENT_05:"percent-05", PERCENT_10:"percent-10", PERCENT_20:"percent-20", PERCENT_25:"percent-25", PERCENT_30:"percent-30", PERCENT_40:"percent-40", PERCENT_50:"percent-50", PERCENT_60:"percent-60", PERCENT_70:"percent-70", PERCENT_75:"percent-75", PERCENT_80:"percent-80", PERCENT_90:"percent-90"};
+acgraph.vector.HatchFill.percentHelper_ = function(w, h, pixelPositions) {
+  this.bounds = new goog.math.Rect(0, 0, w, h);
+  this.onePixelRects_(pixelPositions);
+};
+acgraph.vector.HatchFill.bigPercentHelper_ = function(w, h, pixelPositions) {
+  this.bounds = new goog.math.Rect(0, 0, w, h);
+  this.rectHelper_(w, h);
+  this.onePixelRects_(pixelPositions, "white");
+};
+acgraph.vector.HatchFill.creationMap_ = function() {
+  var map = {};
+  map[acgraph.vector.HatchFill.HatchFillType.BACKWARD_DIAGONAL] = function() {
+    this.rLinesHelper_([-1, 0, this.size + 1, 0, this.thickness], -45);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.FORWARD_DIAGONAL] = function() {
+    this.rLinesHelper_([-1, 0, this.size + 1, 0, this.thickness], 45);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.HORIZONTAL] = function() {
+    this.rLinesHelper_([-1, this.size / 2, this.size + 1, this.size / 2, this.thickness]);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.VERTICAL] = function() {
+    this.rLinesHelper_([this.size / 2, -1, this.size / 2, this.size + 1, this.thickness]);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.DIAGONAL_CROSS] = function() {
+    this.rLinesHelper_([0, this.size / 2, this.size, this.size / 2, this.thickness, this.size / 2, 0, this.size / 2, this.size, this.thickness], 45);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.GRID] = function() {
+    this.rLinesHelper_([-1, this.size / 2, this.size + 1, this.size / 2, this.thickness, this.size / 2, -1, this.size / 2, this.size + 1, this.thickness]);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.HORIZONTAL_BRICK] = function() {
+    this.rLinesHelper_([0, 0, 0, this.size / 2 - 1, this.thickness, 0, this.size / 2 - 1, this.size, this.size / 2 - 1, this.thickness, this.size / 2, this.size / 2 - 1, this.size / 2, this.size - 1, this.thickness, 0, this.size - 1, this.size, this.size - 1, this.thickness]);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.VERTICAL_BRICK] = function() {
+    this.rLinesHelper_([0, 0, 0, this.size / 2 - 1, this.thickness, 0, this.size / 2 - 1, this.size, this.size / 2 - 1, this.thickness, this.size / 2, this.size / 2 - 1, this.size / 2, this.size - 1, this.thickness, 0, this.size - 1, this.size, this.size - 1, this.thickness], 90);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.DIAGONAL_BRICK] = function() {
+    this.rLinesHelper_([0, 0, 0, this.size / 2 - 1, this.thickness, 0, this.size / 2 - 1, this.size, this.size / 2 - 1, this.thickness, this.size / 2, this.size / 2 - 1, this.size / 2, this.size - 1, this.thickness, 0, this.size - 1, this.size, this.size - 1, this.thickness], 45);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.CHECKER_BOARD] = function() {
+    this.multiSquareHelper_([0, 0, this.size / 2, this.size / 2, this.size / 2, this.size]);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.CONFETTI] = function() {
+    var s = this.size / 8;
+    var confettiSize = this.size / 4;
+    this.multiSquareHelper_([0, s * 2, confettiSize, s, s * 5, confettiSize, s * 2, 0, confettiSize, s * 4, s * 4, confettiSize, s * 5, s, confettiSize, s * 6, s * 6, confettiSize]);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.PLAID] = function() {
+    this.rectHelper_(this.size / 2, this.size / 2);
+    var s = this.size / 8;
+    var isSelected = false;
+    for (var dx = 0;dx < 2;dx++) {
+      isSelected = false;
+      for (var xPos = 0;xPos < 4;xPos++) {
+        isSelected = !isSelected;
+        for (var yPos = 0;yPos < 4;yPos++) {
+          if (isSelected) {
+            this.rectHelper_(s, s, xPos * s + dx * this.size / 2, yPos * s + this.size / 2);
+          }
+          isSelected = !isSelected;
+        }
+      }
+    }
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.SOLID_DIAMOND] = function() {
+    this.segmentedDrawHelper_([[this.size / 2, 0, 0, this.size / 2, this.size / 2, this.size, this.size, this.size / 2, this.size / 2, 0]], true, true);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.DASHED_FORWARD_DIAGONAL] = function() {
+    this.rLinesHelper_([0, 0, this.size / 2, this.size / 2, this.thickness]);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.DASHED_BACKWARD_DIAGONAL] = function() {
+    this.rLinesHelper_([this.size / 2, 0, 0, this.size / 2, this.thickness]);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.DASHED_HORIZONTAL] = function() {
+    this.rLinesHelper_([0, 0, this.size / 2, 0, this.thickness, this.size / 2, this.size / 2, this.size, this.size / 2, this.thickness]);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.DASHED_VERTICAL] = function() {
+    this.rLinesHelper_([0, 0, 0, this.size / 2, this.thickness, this.size / 2, this.size / 2, this.size / 2, this.size, this.thickness]);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.DIVOT] = function() {
+    var percent = .1;
+    var innerPercent = .2;
+    var padding = this.size * percent;
+    var ds = this.size * (1 - percent * 2 - innerPercent) / 2;
+    this.segmentedDrawHelper_([[padding + ds, padding, padding, padding + ds / 2, padding + ds, padding + ds], [this.size - padding - ds, this.size - padding - ds, this.size - padding, this.size - padding - ds / 2, this.size - padding - ds, this.size - padding]]);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.ZIG_ZAG] = function() {
+    this.segmentedDrawHelper_([[0, 0, this.size / 2, this.size / 2, this.size, 0], [0, this.size / 2, this.size / 2, this.size, this.size, this.size / 2]]);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.WEAVE] = function() {
+    this.segmentedDrawHelper_([[0, 0, this.size / 2, this.size / 2, this.size, 0], [0, this.size / 2, this.size / 2, this.size, this.size, this.size / 2], [this.size / 2, this.size / 2, this.size * 3 / 4, this.size * 3 / 4], [this.size, this.size / 2, this.size * 3 / 4, this.size / 4]]);
+  };
+  map[acgraph.vector.HatchFill.HatchFillType.PERCENT_05] = goog.partial(acgraph.vector.HatchFill.percentHelper_, 8, 8, [0, 0, 4, 4]);
+  map[acgraph.vector.HatchFill.HatchFillType.PERCENT_10] = goog.partial(acgraph.vector.HatchFill.percentHelper_, 8, 4, [0, 0, 4, 2]);
+  map[acgraph.vector.HatchFill.HatchFillType.PERCENT_20] = goog.partial(acgraph.vector.HatchFill.percentHelper_, 4, 4, [0, 0, 2, 2]);
+  map[acgraph.vector.HatchFill.HatchFillType.PERCENT_25] = goog.partial(acgraph.vector.HatchFill.percentHelper_, 4, 2, [0, 0, 2, 1]);
+  map[acgraph.vector.HatchFill.HatchFillType.PERCENT_30] = goog.partial(acgraph.vector.HatchFill.percentHelper_, 4, 4, [0, 0, 2, 0, 3, 1, 0, 2, 2, 2, 1, 3]);
+  map[acgraph.vector.HatchFill.HatchFillType.PERCENT_40] = goog.partial(acgraph.vector.HatchFill.percentHelper_, 4, 8, [0, 0, 2, 0, 3, 1, 0, 2, 2, 2, 1, 3, 3, 3, 0, 4, 2, 4, 1, 5, 3, 5, 0, 6, 2, 6, 1, 7, 3, 7]);
+  map[acgraph.vector.HatchFill.HatchFillType.PERCENT_50] = goog.partial(acgraph.vector.HatchFill.percentHelper_, 2, 2, [0, 0, 1, 1]);
+  map[acgraph.vector.HatchFill.HatchFillType.PERCENT_60] = goog.partial(acgraph.vector.HatchFill.percentHelper_, 4, 4, [0, 0, 2, 0, 0, 1, 1, 1, 3, 1, 0, 2, 2, 2, 1, 3, 2, 3, 3, 3]);
+  map[acgraph.vector.HatchFill.HatchFillType.PERCENT_70] = goog.partial(acgraph.vector.HatchFill.percentHelper_, 4, 4, [0, 0, 2, 0, 3, 0, 0, 1, 1, 1, 2, 1, 0, 2, 2, 2, 3, 2, 0, 3, 1, 3, 2, 3]);
+  map[acgraph.vector.HatchFill.HatchFillType.PERCENT_75] = goog.partial(acgraph.vector.HatchFill.bigPercentHelper_, 4, 4, [0, 0, 2, 2]);
+  map[acgraph.vector.HatchFill.HatchFillType.PERCENT_80] = goog.partial(acgraph.vector.HatchFill.bigPercentHelper_, 8, 4, [0, 0, 4, 2]);
+  map[acgraph.vector.HatchFill.HatchFillType.PERCENT_90] = goog.partial(acgraph.vector.HatchFill.bigPercentHelper_, 8, 8, [7, 7, 4, 3]);
+  return map;
+}();
 acgraph.vector.HatchFill.normalizeHatchFillType = function(value, opt_default) {
   value = value.toLowerCase();
   for (var i in acgraph.vector.HatchFill.HatchFillType) {
-    if (acgraph.vector.HatchFill.HatchFillType[i].toLowerCase() == value) {
+    if (acgraph.vector.HatchFill.HatchFillType[i].toLowerCase() == value || acgraph.vector.HatchFill.HatchFillType[i].toLowerCase().replace(/-/g, "") == value) {
       return acgraph.vector.HatchFill.HatchFillType[i];
     }
   }
   return opt_default || acgraph.vector.HatchFill.HatchFillType.BACKWARD_DIAGONAL;
 };
-acgraph.vector.HatchFill.prototype.create_ = function() {
-  var path;
-  var rect;
-  var s;
-  switch(this.type) {
-    case acgraph.vector.HatchFill.HatchFillType.BACKWARD_DIAGONAL:
-      path = this.path();
-      this.rLine_(path, -1, 0, this.size + 1, 0, this.thickness);
-      this.rotate(-45);
-      path.fill("none");
-      path.stroke(this.color, this.thickness);
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.FORWARD_DIAGONAL:
-      path = this.path();
-      this.rLine_(path, -1, 0, this.size + 1, 0, this.thickness);
-      this.rotate(45);
-      path.fill("none");
-      path.stroke(this.color, this.thickness);
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.HORIZONTAL:
-      path = this.path();
-      this.rLine_(path, -1, this.size / 2, this.size + 1, this.size / 2, this.thickness);
-      path.fill("none");
-      path.stroke(this.color, this.thickness);
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.VERTICAL:
-      path = this.path();
-      this.rLine_(path, this.size / 2, -1, this.size / 2, this.size + 1, this.thickness);
-      path.fill("none");
-      path.stroke(this.color, this.thickness);
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.DIAGONAL_CROSS:
-      path = this.path();
-      this.rLine_(path, 0, this.size / 2, this.size, this.size / 2, this.thickness);
-      this.rLine_(path, this.size / 2, 0, this.size / 2, this.size, this.thickness);
-      this.rotate(45);
-      path.fill("none");
-      path.stroke(this.color, this.thickness);
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.GRID:
-      path = this.path();
-      this.rLine_(path, -1, this.size / 2, this.size + 1, this.size / 2, this.thickness);
-      this.rLine_(path, this.size / 2, -1, this.size / 2, this.size + 1, this.thickness);
-      path.fill("none");
-      path.stroke(this.color, this.thickness);
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.HORIZONTAL_BRICK:
-      path = this.path();
-      this.rLine_(path, 0, 0, 0, this.size / 2 - 1, this.thickness);
-      this.rLine_(path, 0, this.size / 2 - 1, this.size, this.size / 2 - 1, this.thickness);
-      this.rLine_(path, this.size / 2, this.size / 2 - 1, this.size / 2, this.size - 1, this.thickness);
-      this.rLine_(path, 0, this.size - 1, this.size, this.size - 1, this.thickness);
-      path.fill("none");
-      path.stroke(this.color, this.thickness);
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.VERTICAL_BRICK:
-      path = this.path();
-      this.rLine_(path, 0, 0, 0, this.size / 2 - 1, this.thickness);
-      this.rLine_(path, 0, this.size / 2 - 1, this.size, this.size / 2 - 1, this.thickness);
-      this.rLine_(path, this.size / 2, this.size / 2 - 1, this.size / 2, this.size - 1, this.thickness);
-      this.rLine_(path, 0, this.size - 1, this.size, this.size - 1, this.thickness);
-      this.rotate(90);
-      path.fill("none");
-      path.stroke(this.color, this.thickness);
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.DIAGONAL_BRICK:
-      path = this.path();
-      this.rLine_(path, 0, 0, 0, this.size / 2 - 1, this.thickness);
-      this.rLine_(path, 0, this.size / 2 - 1, this.size, this.size / 2 - 1, this.thickness);
-      this.rLine_(path, this.size / 2, this.size / 2 - 1, this.size / 2, this.size - 1, this.thickness);
-      this.rLine_(path, 0, this.size - 1, this.size, this.size - 1, this.thickness);
-      this.rotate(45);
-      path.fill("none");
-      path.stroke(this.color, this.thickness);
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.CHECKER_BOARD:
-      this.rect(0, 0, this.size / 2, this.size / 2).fill(this.color).stroke("none");
-      this.rect(this.size / 2, this.size / 2, this.size, this.size).fill(this.color).stroke("none");
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.CONFETTI:
-      s = this.size / 8;
-      var confettiSize = this.size / 4;
-      this.rect(0, s * 2, confettiSize, confettiSize).fill(this.color).stroke("none");
-      this.rect(s, s * 5, confettiSize, confettiSize).fill(this.color).stroke("none");
-      this.rect(s * 2, 0, confettiSize, confettiSize).fill(this.color).stroke("none");
-      this.rect(s * 4, s * 4, confettiSize, confettiSize).fill(this.color).stroke("none");
-      this.rect(s * 5, s, confettiSize, confettiSize).fill(this.color).stroke("none");
-      this.rect(s * 6, s * 6, confettiSize, confettiSize).fill(this.color).stroke("none");
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.PLAID:
-      rect = this.rect(0, 0, this.size / 2, this.size / 2);
-      rect.fill(this.color);
-      rect.stroke("none");
-      s = this.size / 8;
-      var isSelected = false;
-      for (var dx = 0;dx < 2;dx++) {
-        isSelected = false;
-        for (var xPos = 0;xPos < 4;xPos++) {
-          isSelected = !isSelected;
-          for (var yPos = 0;yPos < 4;yPos++) {
-            if (isSelected) {
-              rect = this.rect(xPos * s + dx * this.size / 2, yPos * s + this.size / 2, s, s);
-            }
-            rect.fill(this.color);
-            rect.stroke("none");
-            isSelected = !isSelected;
-          }
-        }
-      }
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.SOLID_DIAMOND:
-      this.path().moveTo(this.size / 2, 0).lineTo(0, this.size / 2).lineTo(this.size / 2, this.size).lineTo(this.size, this.size / 2).lineTo(this.size / 2, 0).close().fill(this.color).stroke("none");
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.DASHED_FORWARD_DIAGONAL:
-      path = this.path();
-      this.rLine_(path, 0, 0, this.size / 2, this.size / 2, this.thickness);
-      path.fill("none");
-      path.stroke(this.color, this.thickness);
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.DASHED_BACKWARD_DIAGONAL:
-      path = this.path();
-      this.rLine_(path, this.size / 2, 0, 0, this.size / 2, this.thickness);
-      path.fill("none");
-      path.stroke(this.color, this.thickness);
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.DASHED_HORIZONTAL:
-      path = this.path();
-      this.rLine_(path, 0, 0, this.size / 2, 0, this.thickness);
-      this.rLine_(path, this.size / 2, this.size / 2, this.size, this.size / 2, this.thickness);
-      path.fill("none");
-      path.stroke(this.color, this.thickness);
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.DASHED_VERTICAL:
-      path = this.path();
-      this.rLine_(path, 0, 0, 0, this.size / 2, this.thickness);
-      this.rLine_(path, this.size / 2, this.size / 2, this.size / 2, this.size, this.thickness);
-      path.fill("none");
-      path.stroke(this.color, this.thickness);
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.DIVOT:
-      var percent = .1;
-      var innerPercent = .2;
-      var padding = this.size * percent;
-      var ds = this.size * (1 - percent * 2 - innerPercent) / 2;
-      this.path().moveTo(padding + ds, padding).lineTo(padding, padding + ds / 2).lineTo(padding + ds, padding + ds).moveTo(this.size - padding - ds, this.size - padding - ds).lineTo(this.size - padding, this.size - padding - ds / 2).lineTo(this.size - padding - ds, this.size - padding).fill("none").stroke(this.color, this.thickness);
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.ZIG_ZAG:
-      path = this.path();
-      path.moveTo(0, 0).lineTo(this.size / 2, this.size / 2).lineTo(this.size, 0).moveTo(0, this.size / 2).lineTo(this.size / 2, this.size).lineTo(this.size, this.size / 2).fill("none").stroke(this.color, this.thickness);
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.WEAVE:
-      this.path().moveTo(0, 0).lineTo(this.size / 2, this.size / 2).lineTo(this.size, 0).moveTo(0, this.size / 2).lineTo(this.size / 2, this.size).lineTo(this.size, this.size / 2).moveTo(this.size / 2, this.size / 2).lineTo(this.size * 3 / 4, this.size * 3 / 4).moveTo(this.size, this.size / 2).lineTo(this.size * 3 / 4, this.size / 4).fill("none").stroke(this.color, this.thickness);
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.PERCENT_05:
-      this.bounds = new goog.math.Rect(0, 0, 8, 8);
-      this.rect(0, 0, 1, 1).fill(this.color).stroke("none");
-      this.rect(4, 4, 1, 1).fill(this.color).stroke("none");
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.PERCENT_10:
-      this.bounds = new goog.math.Rect(0, 0, 8, 4);
-      rect = this.rect(0, 0, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(4, 2, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.PERCENT_20:
-      this.bounds = new goog.math.Rect(0, 0, 4, 4);
-      rect = this.rect(0, 0, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(2, 2, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.PERCENT_25:
-      this.bounds = new goog.math.Rect(0, 0, 4, 2);
-      rect = this.rect(0, 0, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(2, 1, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.PERCENT_30:
-      this.bounds = new goog.math.Rect(0, 0, 4, 4);
-      rect = this.rect(0, 0, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(2, 0, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(3, 1, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(0, 2, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(2, 2, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(1, 3, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.PERCENT_40:
-      this.bounds = new goog.math.Rect(0, 0, 4, 8);
-      rect = this.rect(0, 0, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(2, 0, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(3, 1, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(0, 2, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(2, 2, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(1, 3, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(3, 3, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(0, 4, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(2, 4, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(1, 5, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(3, 5, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(0, 6, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(2, 6, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(1, 7, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(3, 7, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.PERCENT_50:
-      this.bounds = new goog.math.Rect(0, 0, 2, 2);
-      rect = this.rect(0, 0, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(1, 1, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.PERCENT_60:
-      this.bounds = new goog.math.Rect(0, 0, 4, 4);
-      rect = this.rect(0, 0, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(2, 0, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(0, 1, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(1, 1, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(3, 1, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(0, 2, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(2, 2, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(1, 3, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(2, 3, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(3, 3, 1, 1);
-      rect.fill(this.color);
-      rect.stroke("none");
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.PERCENT_70:
-      this.bounds = new goog.math.Rect(0, 0, 4, 4);
-      this.path().moveTo(0, 0).lineTo(0, 1).lineTo(1, 1).lineTo(1, 0).close().moveTo(2, 0).lineTo(2, 1).lineTo(3, 1).lineTo(3, 0).close().moveTo(3, 0).lineTo(3, 1).lineTo(4, 1).lineTo(4, 0).close().moveTo(0, 1).lineTo(0, 2).lineTo(1, 2).lineTo(1, 1).close().moveTo(1, 1).lineTo(1, 2).lineTo(2, 2).lineTo(2, 1).close().moveTo(2, 1).lineTo(2, 2).lineTo(3, 2).lineTo(3, 1).close().moveTo(0, 2).lineTo(0, 3).lineTo(1, 3).lineTo(1, 2).close().moveTo(2, 2).lineTo(2, 3).lineTo(3, 3).lineTo(3, 2).close().moveTo(3, 
-      2).lineTo(3, 3).lineTo(4, 3).lineTo(4, 2).close().moveTo(0, 3).lineTo(0, 4).lineTo(1, 4).lineTo(1, 3).close().moveTo(1, 3).lineTo(1, 4).lineTo(2, 4).lineTo(2, 3).close().moveTo(2, 3).lineTo(2, 4).lineTo(3, 4).lineTo(3, 3).close().fill(this.color).stroke("none");
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.PERCENT_75:
-      this.bounds = new goog.math.Rect(0, 0, 4, 4);
-      rect = this.rect(0, 0, 4, 4);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(0, 0, 1, 1);
-      rect.fill("white");
-      rect.stroke("none");
-      rect = this.rect(2, 2, 1, 1);
-      rect.fill("white");
-      rect.stroke("none");
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.PERCENT_80:
-      this.bounds = new goog.math.Rect(0, 0, 8, 4);
-      rect = this.rect(0, 0, 8, 4);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(0, 0, 1, 1);
-      rect.fill("white");
-      rect.stroke("none");
-      rect = this.rect(4, 2, 1, 1);
-      rect.fill("white");
-      rect.stroke("none");
-      break;
-    case acgraph.vector.HatchFill.HatchFillType.PERCENT_90:
-      this.bounds = new goog.math.Rect(0, 0, 8, 8);
-      rect = this.rect(0, 0, 8, 8);
-      rect.fill(this.color);
-      rect.stroke("none");
-      rect = this.rect(7, 7, 1, 1);
-      rect.fill("white");
-      rect.stroke("none");
-      rect = this.rect(4, 3, 1, 1);
-      rect.fill("white");
-      rect.stroke("none");
-      break;
+acgraph.vector.HatchFill.prototype.segmentedDrawHelper_ = function(segments, opt_close, opt_filled) {
+  var path = this.pathHelper_(opt_filled);
+  for (var i = 0;i < segments.length;i++) {
+    var segment = segments[i];
+    path.moveTo(segment[0], segment[1]);
+    for (var j = 2;j < segment.length;j += 2) {
+      path.lineTo(segment[j], segment[j + 1]);
+    }
+  }
+  if (opt_close) {
+    path.close();
+  }
+};
+acgraph.vector.HatchFill.prototype.rLinesHelper_ = function(args, opt_rotation) {
+  var path = this.pathHelper_();
+  for (var i = 0;i < args.length;i += 5) {
+    this.rLine_(path, args[i], args[i + 1], args[i + 2], args[i + 3], args[i + 4]);
+  }
+  if (opt_rotation) {
+    this.rotate(opt_rotation);
+  }
+};
+acgraph.vector.HatchFill.prototype.multiSquareHelper_ = function(params) {
+  for (var i = 0;i < params.length;i += 3) {
+    var size = params[i + 2];
+    this.rectHelper_(size, size, params[i], params[i + 1]);
+  }
+};
+acgraph.vector.HatchFill.prototype.rectHelper_ = function(w, h, opt_l, opt_t) {
+  this.rect(opt_l || 0, opt_t || 0, w, h).fill(this.color).stroke("none");
+};
+acgraph.vector.HatchFill.prototype.pathHelper_ = function(opt_filled) {
+  var path = (opt_filled ? this.path().fill(this.color).stroke("none") : this.path().fill("none").stroke(this.color, this.thickness));
+  return (path);
+};
+acgraph.vector.HatchFill.prototype.onePixelRects_ = function(positions, opt_color) {
+  var path = this.path().fill(opt_color || this.color).stroke("none");
+  for (var i = 0;i < positions.length;i += 2) {
+    var x = positions[i];
+    var y = positions[i + 1];
+    path.moveTo(x, y).lineTo(x, y + 1, x + 1, y + 1, x + 1, y).close();
   }
 };
 acgraph.vector.HatchFill.prototype.rLine_ = function(path, startX, startY, endX, endY, width) {
@@ -12113,47 +11863,15 @@ acgraph.vector.HatchFill.prototype.getElementTypePrefix = function() {
   return acgraph.utils.IdGenerator.ElementTypePrefix.HATCH_FILL;
 };
 acgraph.vector.HatchFill.prototype.disposeInternal = function() {
-  goog.base(this, "disposeInternal");
   if (this.getStage()) {
     this.getStage().getDefs().removeHatchFill(this);
   }
+  goog.base(this, "disposeInternal");
 };
 (function() {
   var proto = acgraph.vector.HatchFill.prototype;
   proto["dispose"] = proto.dispose;
 })();
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.BACKWARD_DIAGONAL", acgraph.vector.HatchFill.HatchFillType.BACKWARD_DIAGONAL);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.FORWARD_DIAGONAL", acgraph.vector.HatchFill.HatchFillType.FORWARD_DIAGONAL);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.HORIZONTAL", acgraph.vector.HatchFill.HatchFillType.HORIZONTAL);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.VERTICAL", acgraph.vector.HatchFill.HatchFillType.VERTICAL);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.DASHED_BACKWARD_DIAGONAL", acgraph.vector.HatchFill.HatchFillType.DASHED_BACKWARD_DIAGONAL);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.GRID", acgraph.vector.HatchFill.HatchFillType.GRID);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.DASHED_FORWARD_DIAGONAL", acgraph.vector.HatchFill.HatchFillType.DASHED_FORWARD_DIAGONAL);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.DASHED_HORIZONTAL", acgraph.vector.HatchFill.HatchFillType.DASHED_HORIZONTAL);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.DASHED_VERTICAL", acgraph.vector.HatchFill.HatchFillType.DASHED_VERTICAL);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.DIAGONAL_CROSS", acgraph.vector.HatchFill.HatchFillType.DIAGONAL_CROSS);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.DIAGONAL_BRICK", acgraph.vector.HatchFill.HatchFillType.DIAGONAL_BRICK);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.DIVOT", acgraph.vector.HatchFill.HatchFillType.DIVOT);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.HORIZONTAL_BRICK", acgraph.vector.HatchFill.HatchFillType.HORIZONTAL_BRICK);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.VERTICAL_BRICK", acgraph.vector.HatchFill.HatchFillType.VERTICAL_BRICK);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.CHECKER_BOARD", acgraph.vector.HatchFill.HatchFillType.CHECKER_BOARD);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.CONFETTI", acgraph.vector.HatchFill.HatchFillType.CONFETTI);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.PLAID", acgraph.vector.HatchFill.HatchFillType.PLAID);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.SOLID_DIAMOND", acgraph.vector.HatchFill.HatchFillType.SOLID_DIAMOND);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.ZIG_ZAG", acgraph.vector.HatchFill.HatchFillType.ZIG_ZAG);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.WEAVE", acgraph.vector.HatchFill.HatchFillType.WEAVE);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.PERCENT_05", acgraph.vector.HatchFill.HatchFillType.PERCENT_05);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.PERCENT_10", acgraph.vector.HatchFill.HatchFillType.PERCENT_10);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.PERCENT_20", acgraph.vector.HatchFill.HatchFillType.PERCENT_20);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.PERCENT_25", acgraph.vector.HatchFill.HatchFillType.PERCENT_25);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.PERCENT_30", acgraph.vector.HatchFill.HatchFillType.PERCENT_30);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.PERCENT_40", acgraph.vector.HatchFill.HatchFillType.PERCENT_40);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.PERCENT_50", acgraph.vector.HatchFill.HatchFillType.PERCENT_50);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.PERCENT_60", acgraph.vector.HatchFill.HatchFillType.PERCENT_60);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.PERCENT_70", acgraph.vector.HatchFill.HatchFillType.PERCENT_70);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.PERCENT_75", acgraph.vector.HatchFill.HatchFillType.PERCENT_75);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.PERCENT_80", acgraph.vector.HatchFill.HatchFillType.PERCENT_80);
-goog.exportSymbol("acgraph.vector.HatchFill.HatchFillType.PERCENT_90", acgraph.vector.HatchFill.HatchFillType.PERCENT_90);
 goog.provide("acgraph.vector.Image");
 goog.require("acgraph.utils.IdGenerator");
 goog.require("acgraph.vector.Element");
@@ -12168,7 +11886,7 @@ acgraph.vector.Image = function(opt_src, opt_x, opt_y, opt_width, opt_height, op
 };
 goog.inherits(acgraph.vector.Image, acgraph.vector.Element);
 acgraph.vector.Image.Fitting = {MEET:"meet", SLICE:"slice"};
-acgraph.vector.Image.Align = {NONE:"none", X_MIN_Y_MIN:"xMinYMin", X_MID_Y_MIN:"xMidYMin", X_MAX_Y_MIN:"xMaxYMin", X_MIN_Y_MID:"xMinYMid", X_MID_Y_MID:"xMidYMid", X_MAX_Y_MID:"xMaxYMid", X_MIN_Y_MAX:"xMinYMax", X_MID_Y_MAX:"xMidYMax", X_MAX_Y_MAX:"xMaxYMax"};
+acgraph.vector.Image.Align = {NONE:"none", X_MIN_Y_MIN:"x-min-y-min", X_MID_Y_MIN:"x-mid-y-min", X_MAX_Y_MIN:"x-max-y-min", X_MIN_Y_MID:"x-min-y-mid", X_MID_Y_MID:"x-mid-y-mid", X_MAX_Y_MID:"x-max-y-mid", X_MIN_Y_MAX:"x-min-y-max", X_MID_Y_MAX:"x-mid-y-max", X_MAX_Y_MAX:"x-max-y-max"};
 acgraph.vector.Image.prototype.SUPPORTED_DIRTY_STATES = acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES | acgraph.vector.Element.DirtyState.DATA;
 acgraph.vector.Image.prototype.getElementTypePrefix = function() {
   return acgraph.utils.IdGenerator.ElementTypePrefix.IMAGE;
@@ -12260,26 +11978,6 @@ acgraph.vector.Image.prototype.opacity = function(opt_value) {
 acgraph.vector.Image.prototype.getBoundsWithoutTransform = function() {
   return this.bounds_.clone();
 };
-acgraph.vector.Image.prototype.getBoundsWithTransform = function(transform) {
-  var isSelfTransform = transform == this.getSelfTransformation();
-  var isFullTransform = transform == this.getFullTransformation();
-  if (this.boundsCache && isSelfTransform) {
-    return this.boundsCache.clone();
-  } else {
-    if (this.absoluteBoundsCache && isFullTransform) {
-      return this.absoluteBoundsCache.clone();
-    } else {
-      var rect = acgraph.math.getBoundsOfRectWithTransform(this.bounds_.clone(), transform);
-      if (isSelfTransform) {
-        this.boundsCache = rect.clone();
-      }
-      if (isFullTransform) {
-        this.absoluteBoundsCache = rect.clone();
-      }
-      return rect;
-    }
-  }
-};
 acgraph.vector.Image.prototype.createDomInternal = function() {
   return acgraph.getRenderer().createImageElement();
 };
@@ -12330,18 +12028,6 @@ acgraph.vector.Image.prototype.disposeInternal = function() {
   proto["width"] = proto.width;
   proto["height"] = proto.height;
   proto["src"] = proto.src;
-  goog.exportSymbol("acgraph.vector.Image.Fitting.MEET", acgraph.vector.Image.Fitting.MEET);
-  goog.exportSymbol("acgraph.vector.Image.Fitting.SLICE", acgraph.vector.Image.Fitting.SLICE);
-  goog.exportSymbol("acgraph.vector.Image.Align.NONE", acgraph.vector.Image.Align.NONE);
-  goog.exportSymbol("acgraph.vector.Image.Align.X_MIN_Y_MIN", acgraph.vector.Image.Align.X_MIN_Y_MIN);
-  goog.exportSymbol("acgraph.vector.Image.Align.X_MID_Y_MIN", acgraph.vector.Image.Align.X_MID_Y_MIN);
-  goog.exportSymbol("acgraph.vector.Image.Align.X_MAX_Y_MIN", acgraph.vector.Image.Align.X_MAX_Y_MIN);
-  goog.exportSymbol("acgraph.vector.Image.Align.X_MIN_Y_MID", acgraph.vector.Image.Align.X_MIN_Y_MID);
-  goog.exportSymbol("acgraph.vector.Image.Align.X_MID_Y_MID", acgraph.vector.Image.Align.X_MID_Y_MID);
-  goog.exportSymbol("acgraph.vector.Image.Align.X_MAX_Y_MID", acgraph.vector.Image.Align.X_MAX_Y_MID);
-  goog.exportSymbol("acgraph.vector.Image.Align.X_MIN_Y_MAX", acgraph.vector.Image.Align.X_MIN_Y_MAX);
-  goog.exportSymbol("acgraph.vector.Image.Align.X_MID_Y_MAX", acgraph.vector.Image.Align.X_MID_Y_MAX);
-  goog.exportSymbol("acgraph.vector.Image.Align.X_MAX_Y_MAX", acgraph.vector.Image.Align.X_MAX_Y_MAX);
 })();
 goog.provide("acgraph.vector.Rect");
 goog.require("acgraph.utils.IdGenerator");
@@ -12397,7 +12083,7 @@ acgraph.vector.Rect.prototype.setBounds = function(value) {
   }
   return this;
 };
-acgraph.vector.Rect.CornerType = {ROUND:"round", CUT:"cut", ROUND_INNER:"roundInner"};
+acgraph.vector.Rect.CornerType = {ROUND:"round", CUT:"cut", ROUND_INNER:"round-inner"};
 acgraph.vector.Rect.prototype.setCornerSettings_ = function(type, var_args) {
   var topLeft, topRight, bottomRight, bottomLeft, radiusArr;
   var args = goog.array.slice(arguments, 1);
@@ -12690,7 +12376,7 @@ acgraph.vector.Renderer.prototype.getEmptyStringBounds = function(style) {
   }
   return bounds;
 };
-acgraph.vector.Renderer.prototype.getStyleHash_ = function(value) {
+acgraph.vector.Renderer.prototype.getStyleHash = function(value) {
   var hash = "";
   for (var j = 0, l = this.settingsAffectingSize.length;j < l;j++) {
     var prop = value[this.settingsAffectingSize[j]];
@@ -12702,7 +12388,7 @@ acgraph.vector.Renderer.prototype.getStyleHash_ = function(value) {
 };
 acgraph.vector.Renderer.prototype.textBounds = function(text, style, opt_bounds) {
   var boundsCache = this.textBoundsCache;
-  var styleHash = this.getStyleHash_(style);
+  var styleHash = this.getStyleHash(style);
   var styleCache = boundsCache[styleHash];
   if (!styleCache) {
     styleCache = boundsCache[styleHash] = {};
@@ -12710,9 +12396,12 @@ acgraph.vector.Renderer.prototype.textBounds = function(text, style, opt_bounds)
   var textBoundsCache = styleCache[text];
   return textBoundsCache ? textBoundsCache : styleCache[text] = opt_bounds ? opt_bounds : this.measure(text, style);
 };
+acgraph.vector.Renderer.prototype.getBBox = function(element, text, style) {
+  return this.textBounds(text, style);
+};
 acgraph.vector.Renderer.prototype.isInBoundsCache = function(text, style) {
   var boundsCache = this.textBoundsCache;
-  var styleHash = this.getStyleHash_(style);
+  var styleHash = this.getStyleHash(style);
   var styleCache = boundsCache[styleHash];
   return !!(styleCache && styleCache[text]);
 };
@@ -12746,34 +12435,85 @@ acgraph.vector.Renderer.prototype.saveGradientAngle = function(sourceAngle, boun
   }
   return targetAngle % 360;
 };
-acgraph.vector.Renderer.prototype.setId = goog.abstractMethod;
-acgraph.vector.Renderer.prototype.setDisableStrokeScaling = goog.abstractMethod;
+acgraph.vector.Renderer.prototype.setId = function(element) {
+  this.setIdInternal(element.domElement(), (element.id()));
+};
+acgraph.vector.Renderer.prototype.setDisableStrokeScaling = goog.nullFunction;
 acgraph.vector.Renderer.prototype.setVisible = goog.abstractMethod;
-acgraph.vector.Renderer.prototype.setTitle = goog.abstractMethod;
-acgraph.vector.Renderer.prototype.setDesc = goog.abstractMethod;
-acgraph.vector.Renderer.prototype.setAttributes = goog.abstractMethod;
-acgraph.vector.Renderer.prototype.getAttribute = goog.abstractMethod;
+acgraph.vector.Renderer.prototype.setTitle = goog.nullFunction;
+acgraph.vector.Renderer.prototype.setDesc = goog.nullFunction;
+acgraph.vector.Renderer.prototype.setAttributes = function(element, attrs) {
+  var domElement = element.domElement();
+  if (domElement && goog.isObject(attrs)) {
+    for (var key in attrs) {
+      var value = attrs[key];
+      if (goog.isNull(value)) {
+        this.removeAttr(domElement, key);
+      } else {
+        this.setAttr(domElement, key, (value));
+      }
+    }
+  }
+};
+acgraph.vector.Renderer.prototype.getAttribute = function(element, key) {
+  return element ? element.getAttribute(key) : void 0;
+};
 acgraph.vector.Renderer.prototype.createStageElement = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setStageSize = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.createDefsElement = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.createLinearGradientElement = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.createRadialGradientElement = goog.abstractMethod;
-acgraph.vector.Renderer.prototype.appendChild = function(parent, child) {
-  goog.dom.appendChild(parent, child);
+acgraph.vector.Renderer.prototype.setAttrs = function(el, attrs) {
+  for (var key in attrs) {
+    this.setAttr(el, key, attrs[key]);
+  }
 };
-acgraph.vector.Renderer.prototype.insertChildAt = function(parent, child, index) {
-  goog.dom.insertChildAt(parent, child, index);
+acgraph.vector.Renderer.prototype.setAttr = function(el, key, value) {
+  el.setAttribute(key, value);
 };
-acgraph.vector.Renderer.prototype.getParent = function(node) {
-  return goog.dom.getParentElement(node);
+acgraph.vector.Renderer.prototype.removeAttr = function(el, key) {
+  el.removeAttribute(key);
 };
-acgraph.vector.Renderer.prototype.removeNode = function(element) {
-  goog.dom.removeNode(element);
+acgraph.vector.Renderer.prototype.setIdInternal = function(element, id) {
+  if (element) {
+    if (id) {
+      this.setAttr(element, "id", id);
+    } else {
+      this.removeAttr(element, "id");
+    }
+  }
+};
+acgraph.vector.Renderer.prototype.getPathString = function(path, opt_transformed) {
+  if (path.isEmpty()) {
+    return null;
+  }
+  var list = [];
+  var segmentNamesMap = this.pathSegmentNamesMap;
+  var func = opt_transformed ? path.forEachTransformedSegment : path.forEachSegment;
+  func.call(path, function(segment, args) {
+    var name = segmentNamesMap[segment];
+    if (name) {
+      list.push(name);
+      if (segment == acgraph.vector.PathBase.Segment.ARCTO) {
+        this.pushArcToPathString(list, args);
+      } else {
+        if (segment != acgraph.vector.PathBase.Segment.CLOSE) {
+          this.pushToArgs(list, args);
+        }
+      }
+    }
+  }, this);
+  return list.join(" ");
+};
+acgraph.vector.Renderer.prototype.pushArcToPathString = function(list, args) {
+  var extent = args[3];
+  list.push(args[0], args[1], 0, Math.abs(extent) > 180 ? 1 : 0, extent > 0 ? 1 : 0, args[4], args[5]);
+};
+acgraph.vector.Renderer.prototype.pushToArgs = function(list, args) {
+  acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, args, list);
 };
 acgraph.vector.Renderer.prototype.createLayerElement = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setLayerSize = goog.abstractMethod;
-acgraph.vector.Renderer.prototype.createRectElement = goog.abstractMethod;
-acgraph.vector.Renderer.prototype.setRectProperties = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.createCircleElement = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setCircleProperties = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.createFillPatternElement = goog.abstractMethod;
@@ -12782,6 +12522,9 @@ acgraph.vector.Renderer.prototype.createImageElement = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setImageProperties = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.createTextElement = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.createTextSegmentElement = goog.abstractMethod;
+acgraph.vector.Renderer.prototype.createTextPathElement = function() {
+  return null;
+};
 acgraph.vector.Renderer.prototype.createTextNode = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setTextPosition = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setTextProperties = goog.abstractMethod;
@@ -12802,15 +12545,17 @@ acgraph.vector.Renderer.prototype.isImageLoading = function() {
   return false;
 };
 acgraph.vector.Renderer.prototype.getImageLoader = function() {
-  if (!this.imageLoader_) {
+  if (!this.imageLoader_ || this.imageLoader_.isDisposed()) {
     this.imageLoader_ = new goog.net.ImageLoader((goog.global["document"]["body"]));
   }
   return this.imageLoader_;
 };
+acgraph.vector.Renderer.prototype.isImageLoader = function() {
+  return !!(this.imageLoader_ && !this.imageLoader_.isDisposed());
+};
 acgraph.vector.Renderer.prototype.setTransformation = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setPathTransformation = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setImageTransformation = goog.abstractMethod;
-acgraph.vector.Renderer.prototype.setRectTransformation = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setEllipseTransformation = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setLayerTransformation = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setTextTransformation = goog.abstractMethod;
@@ -12821,10 +12566,62 @@ acgraph.vector.Renderer.prototype.needsReRenderOnParentTransformationChange = fu
 acgraph.vector.Renderer.prototype.createClipElement = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setPointerEvents = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.setClip = goog.abstractMethod;
-acgraph.vector.Renderer.prototype.setLayerClip = goog.abstractMethod;
 acgraph.vector.Renderer.prototype.needsReClipOnBoundsChange = function() {
   return false;
 };
+goog.provide("acgraph.vector.SimpleText");
+goog.require("acgraph.utils.IdGenerator");
+goog.require("acgraph.vector.Element");
+goog.require("goog.math.Rect");
+acgraph.vector.SimpleText = function() {
+  this.bounds = new goog.math.Rect(0, 0, 0, 0);
+  goog.base(this);
+};
+goog.inherits(acgraph.vector.SimpleText, acgraph.vector.Element);
+acgraph.vector.SimpleText.prototype.text_ = null;
+acgraph.vector.SimpleText.prototype.SUPPORTED_DIRTY_STATES = acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES | acgraph.vector.Element.DirtyState.DATA;
+acgraph.vector.SimpleText.prototype.getElementTypePrefix = function() {
+  return acgraph.utils.IdGenerator.ElementTypePrefix.SIMPLE_TEXT;
+};
+acgraph.vector.SimpleText.prototype.getBoundsWithoutTransform = function() {
+  return this.bounds.clone();
+};
+acgraph.vector.SimpleText.prototype.text = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (opt_value != this.text_) {
+      this.text_ = String(opt_value);
+      var stageSuspended = !this.getStage() || this.getStage().isSuspended();
+      if (!stageSuspended) {
+        this.getStage().suspend();
+      }
+      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      if (!stageSuspended) {
+        this.getStage().resume();
+      }
+    }
+    return this;
+  }
+  return this.text_;
+};
+acgraph.vector.SimpleText.prototype.createDomInternal = function() {
+  return acgraph.getRenderer().createTextElement();
+};
+acgraph.vector.SimpleText.prototype.renderInternal = function() {
+  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
+    acgraph.getRenderer().setTextData(this);
+    this.clearDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  }
+  goog.base(this, "renderInternal");
+};
+acgraph.vector.SimpleText.prototype.renderTransformation = function() {
+  this.clearDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
+  this.clearDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION);
+};
+(function() {
+  var proto = acgraph.vector.SimpleText.prototype;
+  proto["text"] = proto.text;
+  goog.exportSymbol("acgraph.vector.SimpleText", acgraph.vector.SimpleText);
+})();
 goog.provide("acgraph.utils.HTMLParser");
 goog.require("goog.object");
 acgraph.utils.HTMLParser = function() {
@@ -13348,16 +13145,14 @@ acgraph.vector.TextSegment.prototype.renderData = function() {
   }
   this.domElement_ = acgraph.getRenderer().createTextSegmentElement();
   this.setTextSegmentProperties();
-  goog.dom.appendChild(this.parent_.domElement(), this.domElement_);
 };
 acgraph.vector.TextSegment.prototype.disposeInternal = function() {
-  acgraph.getRenderer().removeNode(this.domElement_);
+  goog.dom.removeNode(this.domElement_);
   this.domElement_ = null;
   goog.base(this, "disposeInternal");
 };
 goog.provide("acgraph.vector.Text");
 goog.provide("acgraph.vector.Text.TextOverflow");
-goog.provide("acgraph.vector.Text.TextWrap");
 goog.require("acgraph.utils.HTMLParser");
 goog.require("acgraph.utils.IdGenerator");
 goog.require("acgraph.vector.Element");
@@ -13368,7 +13163,7 @@ acgraph.vector.Text = function(opt_x, opt_y) {
   this.x_ = opt_x || 0;
   this.y_ = opt_y || 0;
   this.bounds = new goog.math.Rect(this.x_, this.y_, 0, 0);
-  this.realHeigth = 0;
+  this.realHeight = 0;
   this.realWidth = 0;
   this.calcX = 0;
   this.calcY = 0;
@@ -13389,12 +13184,14 @@ acgraph.vector.Text = function(opt_x, opt_y) {
   this.textIndent_ = 0;
   this.rtl = false;
   this.stopAddSegments_ = false;
-  this.defaultStyle_ = ({"fontSize":goog.global["acgraph"]["fontSize"], "color":goog.global["acgraph"]["fontColor"], "fontFamily":goog.global["acgraph"]["fontFamily"], "direction":goog.global["acgraph"]["textDirection"], "textOverflow":acgraph.vector.Text.TextOverflow.CLIP, "textWrap":acgraph.vector.Text.TextWrap.NO_WRAP, "selectable":true, "hAlign":acgraph.vector.Text.HAlign.START});
+  this.defaultStyle_ = ({"fontSize":goog.global["acgraph"]["fontSize"], "color":goog.global["acgraph"]["fontColor"], "fontFamily":goog.global["acgraph"]["fontFamily"], "direction":goog.global["acgraph"]["textDirection"], "textOverflow":acgraph.vector.Text.TextOverflow.CLIP, "wordBreak":acgraph.vector.Text.WordBreak.NORMAL, "wordWrap":acgraph.vector.Text.WordWrap.NORMAL, "selectable":true, "hAlign":acgraph.vector.Text.HAlign.START});
   this.style_ = (this.defaultStyle_);
+  this.textPath = null;
   goog.base(this);
 };
 goog.inherits(acgraph.vector.Text, acgraph.vector.Element);
-acgraph.vector.Text.TextWrap = {NO_WRAP:"noWrap", BY_LETTER:"byLetter"};
+acgraph.vector.Text.WordBreak = {NORMAL:"normal", KEEP_ALL:"keep-all", BREAK_ALL:"break-all"};
+acgraph.vector.Text.WordWrap = {NORMAL:"normal", BREAK_WORD:"break-word"};
 acgraph.vector.Text.TextOverflow = {CLIP:"", ELLIPSIS:"..."};
 acgraph.vector.Text.HAlign = {LEFT:"left", START:"start", CENTER:"center", END:"end", RIGHT:"right"};
 acgraph.vector.Text.VAlign = {TOP:"top", MIDDLE:"middle", BOTTOM:"bottom"};
@@ -13402,7 +13199,7 @@ acgraph.vector.Text.Decoration = {BLINK:"blink", LINE_THROUGH:"line-through", OV
 acgraph.vector.Text.FontVariant = {NORMAL:"normal", SMALL_CAP:"small-caps"};
 acgraph.vector.Text.FontStyle = {NORMAL:"normal", ITALIC:"italic", OBLIQUE:"oblique"};
 acgraph.vector.Text.Direction = {LTR:"ltr", RTL:"rtl"};
-acgraph.vector.Text.prototype.SUPPORTED_DIRTY_STATES = acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES | acgraph.vector.Element.DirtyState.DATA | acgraph.vector.Element.DirtyState.STYLE | acgraph.vector.Element.DirtyState.POSITION;
+acgraph.vector.Text.prototype.SUPPORTED_DIRTY_STATES = acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES | acgraph.vector.Element.DirtyState.DATA | acgraph.vector.Element.DirtyState.STYLE | acgraph.vector.Element.DirtyState.POSITION | acgraph.vector.Element.DirtyState.CHILDREN;
 acgraph.vector.Text.prototype.style_ = null;
 acgraph.vector.Text.prototype.text_ = null;
 acgraph.vector.Text.prototype.x = function(opt_value) {
@@ -13468,7 +13265,7 @@ acgraph.vector.Text.prototype.width = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (this.setStyleProperty("width") != opt_value) {
       if (!goog.isNull(opt_value)) {
-        opt_value = Math.max(opt_value, 0) || 0;
+        opt_value = Math.max(parseFloat(opt_value), 0) || 0;
       }
       this.width_ = opt_value;
     }
@@ -13479,7 +13276,7 @@ acgraph.vector.Text.prototype.height = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (this.setStyleProperty("height") != opt_value) {
       if (!goog.isNull(opt_value)) {
-        opt_value = Math.max(opt_value, 0) || 0;
+        opt_value = Math.max(parseFloat(opt_value), 0) || 0;
       }
     }
     this.height_ = opt_value;
@@ -13585,8 +13382,11 @@ acgraph.vector.Text.prototype.hAlign = function(opt_value) {
   }
   return (this.setStyleProperty("hAlign", (opt_value)));
 };
-acgraph.vector.Text.prototype.textWrap = function(opt_value) {
-  return (this.setStyleProperty("textWrap", (opt_value)));
+acgraph.vector.Text.prototype.wordBreak = function(opt_value) {
+  return (this.setStyleProperty("wordBreak", (opt_value)));
+};
+acgraph.vector.Text.prototype.wordWrap = function(opt_value) {
+  return (this.setStyleProperty("wordWrap", (opt_value)));
 };
 acgraph.vector.Text.prototype.textOverflow = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
@@ -13597,11 +13397,44 @@ acgraph.vector.Text.prototype.textOverflow = function(opt_value) {
 acgraph.vector.Text.prototype.selectable = function(opt_value) {
   return (this.setStyleProperty("selectable", opt_value));
 };
+acgraph.vector.Text.prototype.path = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    this.path_ = opt_value;
+    if (this.getStage()) {
+      this.path_.parent(this.getStage().getDefs());
+    }
+    var stageSuspended = !this.getStage() || this.getStage().isSuspended();
+    if (!stageSuspended) {
+      this.getStage().suspend();
+    }
+    this.defragmented = false;
+    this.setDirtyState(acgraph.vector.Element.DirtyState.STYLE | acgraph.vector.Element.DirtyState.DATA | acgraph.vector.Element.DirtyState.POSITION | acgraph.vector.Element.DirtyState.CHILDREN);
+    this.transformAfterChange();
+    if (!stageSuspended) {
+      this.getStage().resume();
+    }
+    return this;
+  }
+  return this.path_;
+};
 acgraph.vector.Text.prototype.style = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
-    if (opt_value) {
-      goog.object.extend(this.style_, opt_value);
-    }
+    goog.object.forEach(opt_value, function(value, key) {
+      var styleName = key;
+      switch(key) {
+        case "fontDecoration":
+        case "textDecoration":
+          styleName = "decoration";
+          break;
+        case "fontColor":
+          styleName = "color";
+          break;
+        case "fontOpacity":
+          styleName = "opacity";
+          break;
+      }
+      this.style_[styleName] = value;
+    }, this);
     this.width_ = parseFloat(this.style_["width"]) || 0;
     this.height_ = parseFloat(this.style_["height"]) || 0;
     if (this.style_["lineHeight"]) {
@@ -13715,6 +13548,7 @@ acgraph.vector.Text.prototype.htmlText = function(opt_value) {
 };
 acgraph.vector.Text.prototype.init_ = function() {
   if (this.segments_.length != 0) {
+    goog.disposeAll(this.segments_, this.textLines_);
     this.textLines_ = [];
     this.segments_ = [];
   }
@@ -13733,7 +13567,7 @@ acgraph.vector.Text.prototype.init_ = function() {
   this.prevLineWidth_ = 0;
   this.currentDy_ = 0;
   this.realWidth = 0;
-  this.realHeigth = 0;
+  this.realHeight = 0;
   this.accumulatedHeight_ = 0;
   this.currentNumberSeqBreaks_ = 0;
   this.currentLineHeight_ = 0;
@@ -13742,6 +13576,23 @@ acgraph.vector.Text.prototype.init_ = function() {
   this.currentLine_ = [];
   this.calcX = 0;
   this.calcY = 0;
+  this.textByPathBoundsCache = null;
+  this.align = "start";
+  if (this.style_["hAlign"]) {
+    if (this.style_["direction"] == "rtl") {
+      if (goog.userAgent.GECKO || goog.userAgent.IE) {
+        this.align = this.style_["hAlign"] == acgraph.vector.Text.HAlign.END || this.style_["hAlign"] == acgraph.vector.Text.HAlign.LEFT ? acgraph.vector.Text.HAlign.START : this.style_["hAlign"] == acgraph.vector.Text.HAlign.START || this.style_["hAlign"] == acgraph.vector.Text.HAlign.RIGHT ? acgraph.vector.Text.HAlign.END : "middle";
+      } else {
+        this.align = this.style_["hAlign"] == acgraph.vector.Text.HAlign.END || this.style_["hAlign"] == acgraph.vector.Text.HAlign.LEFT ? acgraph.vector.Text.HAlign.END : this.style_["hAlign"] == acgraph.vector.Text.HAlign.START || this.style_["hAlign"] == acgraph.vector.Text.HAlign.RIGHT ? acgraph.vector.Text.HAlign.START : "middle";
+      }
+    } else {
+      this.align = this.style_["hAlign"] == acgraph.vector.Text.HAlign.END || this.style_["hAlign"] == acgraph.vector.Text.HAlign.RIGHT ? acgraph.vector.Text.HAlign.END : this.style_["hAlign"] == acgraph.vector.Text.HAlign.START || this.style_["hAlign"] == acgraph.vector.Text.HAlign.LEFT ? acgraph.vector.Text.HAlign.START : "middle";
+    }
+  }
+  var isWidthProp = goog.isDefAndNotNull(this.style_["width"]);
+  this.isWidthSet = this.path() || isWidthProp;
+  var widthProp = isWidthProp ? parseFloat(this.style_["width"]) : Number.POSITIVE_INFINITY;
+  this.textWidthLimit = Math.max(this.path() ? Math.min(this.path().getLength(), widthProp) : this.width_, 0);
 };
 acgraph.vector.Text.prototype.getElementTypePrefix = function() {
   return acgraph.utils.IdGenerator.ElementTypePrefix.TEXT;
@@ -13759,27 +13610,17 @@ acgraph.vector.Text.prototype.getBoundsWithTransform = function(transform) {
   if (!this.defragmented) {
     this.textDefragmentation();
   }
-  if (!transform) {
-    return this.bounds.clone();
-  }
-  var isSelfTransform = transform == this.getSelfTransformation();
-  var isFullTransform = transform == this.getFullTransformation();
-  if (this.boundsCache && isSelfTransform) {
-    return this.boundsCache.clone();
+  var result;
+  if (transform) {
+    result = acgraph.vector.Text.base(this, "getBoundsWithTransform", transform);
   } else {
-    if (this.absoluteBoundsCache && isFullTransform) {
-      return this.absoluteBoundsCache.clone();
-    } else {
-      var rect = acgraph.math.getBoundsOfRectWithTransform(this.bounds.clone(), transform);
-      if (isSelfTransform) {
-        this.boundsCache = rect.clone();
-      }
-      if (isFullTransform) {
-        this.absoluteBoundsCache = rect.clone();
-      }
-      return rect;
-    }
+    result = this.calcBoundsWithTransform(null);
   }
+  return result;
+};
+acgraph.vector.Text.prototype.calcBoundsWithTransform = function(transform) {
+  var bounds = this.path() ? this.textByPathBoundsCache ? this.textByPathBoundsCache : acgraph.getRenderer().measureTextDom(this) : this.bounds.clone();
+  return acgraph.math.getBoundsOfRectWithTransform(bounds, transform);
 };
 acgraph.vector.Text.prototype.getOriginalBounds = function() {
   if (goog.isDefAndNotNull(this.text_)) {
@@ -13789,6 +13630,10 @@ acgraph.vector.Text.prototype.getOriginalBounds = function() {
     return measure;
   }
   return new goog.math.Rect(0, 0, 0, 0);
+};
+acgraph.vector.Text.prototype.dropBoundsCache = function() {
+  goog.base(this, "dropBoundsCache");
+  this.textByPathBoundsCache = null;
 };
 acgraph.vector.Text.prototype.isHtml = function() {
   return this.htmlOn_;
@@ -13815,7 +13660,19 @@ acgraph.vector.Text.prototype.getTextBounds = function(text, segmentStyle) {
   var style = this.mergeStyles_(this.style_, segmentStyle);
   return acgraph.getRenderer().textBounds(text, style);
 };
-acgraph.vector.Text.prototype.cutTextSegment_ = function(text, style, a, b, segmentBounds) {
+acgraph.vector.Text.prototype.getTextWidth = function() {
+  if (!this.defragmented) {
+    this.textDefragmentation();
+  }
+  return this.realWidth;
+};
+acgraph.vector.Text.prototype.getTextHeight = function() {
+  if (!this.defragmented) {
+    this.textDefragmentation();
+  }
+  return this.realHeight;
+};
+acgraph.vector.Text.prototype.cutTextSegment_ = function(text, style, a, b, segmentBounds, opt_ignoreByWord) {
   var subWrappedText;
   var subSegmentBounds;
   var width = b - a;
@@ -13839,6 +13696,28 @@ acgraph.vector.Text.prototype.cutTextSegment_ = function(text, style, a, b, segm
   var bounds = segmentBounds.clone();
   bounds.width = cutTextWidth;
   acgraph.getRenderer().textBounds(cutText, resultStatus, bounds);
+  var isWWBreak = this.style_["wordWrap"] != acgraph.vector.Text.WordWrap.NORMAL;
+  var isWBCJK = this.style_["wordBreak"] == acgraph.vector.Text.WordBreak.KEEP_ALL;
+  var isWBBreak = this.style_["wordBreak"] == acgraph.vector.Text.WordBreak.BREAK_ALL;
+  if (!isWBBreak && !opt_ignoreByWord) {
+    var anyWhiteSpace = /\s+/g;
+    var anyNonWhiteSpace = /\S+/g;
+    var cjkChar = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uffef\u4e00-\u9faf\uAC00-\uD7A3\u1100\u2013\u11FF\u3130-\u318F\uA960-\uA97F\uD7B0-\uD7FF]+/g;
+    var left = subWrappedText[subWrappedText.length - 1];
+    var right = cutText[0];
+    var cjkCase = !isWBCJK && (cjkChar.test(left) || cjkChar.test(right));
+    if (!(anyWhiteSpace.test(left) || anyWhiteSpace.test(right) || cjkCase)) {
+      if (anyWhiteSpace.test(subWrappedText)) {
+        var words = subWrappedText.match(anyNonWhiteSpace);
+        pos = subWrappedText.lastIndexOf(words[words.length - 1]);
+      } else {
+        var tt = anyNonWhiteSpace.exec(text)[0];
+        if (!isWWBreak) {
+          pos = tt.length;
+        }
+      }
+    }
+  }
   return pos;
 };
 acgraph.vector.Text.prototype.createSegment_ = function(text, style, bounds, opt_shift) {
@@ -13865,18 +13744,24 @@ acgraph.vector.Text.prototype.createSegment_ = function(text, style, bounds, opt
   segment.parent(this);
   return segment;
 };
-acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
+acgraph.vector.Text.prototype.applyTextOverflow_ = function(opt_line) {
   var segment, index, cutPos, textSegmentEllipsis;
-  var line = (goog.array.peek(this.textLines_));
+  var line = (opt_line || goog.array.peek(this.textLines_));
   var peekSegment = (goog.array.peek(line));
   var ellipsisBounds = this.getTextBounds(this.ellipsis_, peekSegment.getStyle());
   var ellipsis = this.ellipsis_;
-  if (ellipsisBounds.width > this.width_) {
-    cutPos = this.cutTextSegment_(this.ellipsis_, peekSegment.getStyle(), 0, this.width_, ellipsisBounds);
+  var preLastSegment = line.length > 1 && line[line.length - 2];
+  if (preLastSegment && preLastSegment.elipsisAlreadyApplying) {
+    index = goog.array.indexOf(this.segments_, peekSegment) + 1;
+    goog.array.splice(this.segments_, index, this.segments_.length - index);
+    return;
+  }
+  if (ellipsisBounds.width > this.textWidthLimit) {
+    cutPos = this.cutTextSegment_(this.ellipsis_, peekSegment.getStyle(), 0, this.textWidthLimit, ellipsisBounds, true);
     ellipsis = this.ellipsis_.substring(0, cutPos);
   }
   var left = this.prevLineWidth_;
-  var right = this.width_;
+  var right = this.textWidthLimit;
   if (ellipsis == "") {
     index = goog.array.indexOf(this.segments_, peekSegment) + 1;
     goog.array.splice(this.segments_, index, this.segments_.length - index);
@@ -13897,7 +13782,7 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
         peekSegment = line[i];
         ellipsisBounds = this.getTextBounds(ellipsis, peekSegment.getStyle());
         segmentBounds = this.getTextBounds(peekSegment.text, peekSegment.getStyle());
-        if (left - segmentBounds.width + ellipsisBounds.width <= this.width_) {
+        if (left - segmentBounds.width + ellipsisBounds.width <= this.textWidthLimit) {
           segment = peekSegment;
         }
         left -= segmentBounds.width;
@@ -13919,7 +13804,7 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
         this.currentLineWidth_ = 0;
         this.currentBaseLine_ = 0;
         segmentBounds = this.getTextBounds(segment.text, segment.getStyle());
-        cutPos = this.cutTextSegment_(segment.text, segment.getStyle(), left, right, segmentBounds);
+        cutPos = this.cutTextSegment_(segment.text, segment.getStyle(), left, right, segmentBounds, true);
         if (cutPos < 1) {
           cutPos = 1;
         }
@@ -13928,8 +13813,9 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
         var lastSegmentInline = this.createSegment_(cutText, segment.getStyle(), segment_bounds, ellipsisBounds.width);
         lastSegmentInline.x = segment.x;
         lastSegmentInline.y = segment.y;
-        if (segment_bounds.width + ellipsisBounds.width > this.width_) {
-          cutPos = this.cutTextSegment_(this.ellipsis_, peekSegment.getStyle(), segment_bounds.width, this.width_, ellipsisBounds);
+        lastSegmentInline.elipsisAlreadyApplying = true;
+        if (segment_bounds.width + ellipsisBounds.width > this.textWidthLimit) {
+          cutPos = this.cutTextSegment_(this.ellipsis_, peekSegment.getStyle(), segment_bounds.width, this.textWidthLimit, ellipsisBounds, true);
           ellipsis = this.ellipsis_.substring(0, cutPos);
         }
         if (cutPos > 0) {
@@ -13954,33 +13840,29 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function() {
     index = goog.array.indexOf(this.segments_, firstLineSegment);
     goog.array.insertAt(this.segments_, textSegmentEllipsis, index);
   }
-  this.stopAddSegments_ = true;
 };
 acgraph.vector.Text.prototype.addBreak = function() {
-  if (this.currentLineEmpty_) {
-    this.addSegment("");
-  }
   this.finalizeTextLine();
   this.currentNumberSeqBreaks_++;
-  this.addSegment("");
+  this.addSegment("", null, true);
   var height = this.currentLine_[0] ? this.currentLine_[0].height : 0;
   this.accumulatedHeight_ += goog.isString(this.lineHeight_) ? parseInt(this.lineHeight_, 0) + height : this.lineHeight_ * height;
 };
-acgraph.vector.Text.prototype.addSegment = function(text, opt_style) {
+acgraph.vector.Text.prototype.addSegment = function(text, opt_style, opt_break) {
   if (this.stopAddSegments_) {
     return;
   }
   var style = opt_style || {};
   var segment_bounds = this.getTextBounds(text, style);
   var shift = this.segments_.length == 0 ? this.textIndent_ : 0;
-  if (this.style_["width"]) {
-    while (this.currentLineWidth_ + segment_bounds.width + shift > this.width_ && !this.stopAddSegments_) {
-      var cutPos = this.cutTextSegment_(text, style, shift + this.currentLineWidth_, this.width_, segment_bounds);
+  if (this.isWidthSet) {
+    while (this.currentLineWidth_ + segment_bounds.width + shift > this.textWidthLimit && !this.stopAddSegments_) {
+      var cutPos = this.cutTextSegment_(text, style, shift + this.currentLineWidth_, this.textWidthLimit, segment_bounds);
       if (cutPos < 1 && this.currentLine_.length == 0) {
         cutPos = 1;
       }
       if (cutPos != 0) {
-        var cutText = goog.string.trimRight(text.substring(0, cutPos));
+        var cutText = goog.string.trimLeft(text.substring(0, cutPos));
         segment_bounds = this.getTextBounds(cutText, style);
         this.createSegment_(cutText, style, segment_bounds);
       }
@@ -13989,34 +13871,23 @@ acgraph.vector.Text.prototype.addSegment = function(text, opt_style) {
         this.stopAddSegments_ = true;
       }
       shift = 0;
-      if (this.style_["textWrap"] == acgraph.vector.Text.TextWrap.BY_LETTER) {
-        text = goog.string.trimLeft(text.substring(cutPos, text.length));
-        segment_bounds = this.getTextBounds(text, style);
-      } else {
-        if (this.htmlOn_) {
-          text = "";
-          segment_bounds = this.getTextBounds(text, style);
-        } else {
-          this.stopAddSegments_ = true;
-        }
-      }
+      text = goog.string.trimLeft(text.substring(cutPos, text.length));
+      segment_bounds = this.getTextBounds(text, style);
     }
   }
-  if (!this.stopAddSegments_) {
+  if (!this.stopAddSegments_ && (text.length || opt_break)) {
     this.createSegment_(text, style, segment_bounds);
   }
 };
 acgraph.vector.Text.prototype.finalizeTextLine = function() {
-  if (this.textWrap() == acgraph.vector.Text.TextWrap.NO_WRAP && this.textLines_.length == 1 && !this.htmlOn_) {
-    this.applyTextOverflow_();
-  }
   if (this.stopAddSegments_ || this.currentLine_.length == 0) {
     return;
   }
   var firstLine = this.textLines_.length == 0;
-  var endOfText = this.height_ && this.realHeigth + this.currentLineHeight_ > this.height_ && this.textLines_.length != 0;
+  var endOfText = this.height_ && this.realHeight + this.currentLineHeight_ > this.height_ && this.textLines_.length != 0;
   if (endOfText) {
     this.applyTextOverflow_();
+    this.stopAddSegments_ = true;
   } else {
     this.currentLineHeight_ = goog.isString(this.lineHeight_) ? parseInt(this.lineHeight_, 0) + this.currentLineHeight_ : this.lineHeight_ * this.currentLineHeight_;
     if (acgraph.getRenderer().needsAnotherBehaviourForCalcText()) {
@@ -14033,7 +13904,7 @@ acgraph.vector.Text.prototype.finalizeTextLine = function() {
         for (i = 0, len = this.currentLine_.length;i < len;i++) {
           segment = this.currentLine_[i];
           segment.x = shift;
-          segment.y = this.realHeigth + this.currentBaseLine_ + segment.height - segment.baseLine * 1.5;
+          segment.y = this.realHeight + this.currentBaseLine_ + segment.height - segment.baseLine * 1.5;
           shift += segment.width;
         }
       } else {
@@ -14049,7 +13920,7 @@ acgraph.vector.Text.prototype.finalizeTextLine = function() {
           for (i = 0, len = this.currentLine_.length;i < len;i++) {
             segment = this.currentLine_[i];
             segment.x = shift + segment.width / 2;
-            segment.y = this.realHeigth + this.currentBaseLine_ + segment.height - segment.baseLine * 1.5;
+            segment.y = this.realHeight + this.currentBaseLine_ + segment.height - segment.baseLine * 1.5;
             shift += segment.width;
           }
         } else {
@@ -14062,15 +13933,15 @@ acgraph.vector.Text.prototype.finalizeTextLine = function() {
             for (i = this.currentLine_.length - 1;i >= 0;i--) {
               segment = this.currentLine_[i];
               segment.x = shift;
-              segment.y = this.realHeigth + this.currentBaseLine_ + segment.height - segment.baseLine * 1.5;
+              segment.y = this.realHeight + this.currentBaseLine_ + segment.height - segment.baseLine * 1.5;
               shift -= segment.width;
             }
           }
         }
       }
     }
+    var firstSegment;
     if (!firstLine) {
-      var firstSegment;
       for (var i = 0;i < this.currentLine_.length;i++) {
         if (this.currentLine_[i].text != "") {
           firstSegment = this.currentLine_[i];
@@ -14088,12 +13959,35 @@ acgraph.vector.Text.prototype.finalizeTextLine = function() {
         }
       }
     } else {
-      this.currentLine_[0].baseLine = this.currentBaseLine_;
+      firstSegment = this.currentLine_[0];
+      firstSegment.baseLine = this.currentBaseLine_;
+      firstSegment.firstInLine = true;
       if (this.textIndent_ && this.style_["hAlign"] == acgraph.vector.Text.HAlign.CENTER) {
-        this.currentLine_[0].dx = this.rtl ? -this.textIndent_ / 2 : this.textIndent_ / 2;
+        firstSegment.dx = this.rtl ? -this.textIndent_ / 2 : this.textIndent_ / 2;
       }
     }
-    this.realHeigth += this.currentLineHeight_;
+    if (this.isWidthSet && this.style_["wordWrap"] == acgraph.vector.Text.WordWrap.NORMAL && this.currentLineWidth_ > this.textWidthLimit) {
+      if (this.currentLine_.length > 1 && !this.currentLine_[0].text.length) {
+        var index = goog.array.indexOf(this.segments_, this.currentLine_[0]);
+        goog.array.removeAt(this.currentLine_, 0);
+        goog.array.removeAt(this.segments_, index);
+      }
+      segment = goog.array.peek(this.currentLine_);
+      var segment_bounds = this.getTextBounds(segment.text, segment.getStyle());
+      var cutLimit = this.textWidthLimit - (this.currentLineWidth_ - segment_bounds.width);
+      var cutPos = this.cutTextSegment_(segment.text, segment.getStyle(), 0, cutLimit, segment_bounds, true);
+      var cutText = segment.text.substring(0, cutPos);
+      segment_bounds = this.getTextBounds(cutText, segment.getStyle());
+      segment.text = cutText;
+      segment.width = segment_bounds.width;
+      this.currentLineWidth_ = segment_bounds.width;
+      this.prevLineWidth_ = this.currentLineWidth_;
+      this.applyTextOverflow_(this.currentLine_);
+    }
+    if (this.path()) {
+      this.currentLine_[0].dx = this.align == "start" ? 0 : this.align == "middle" ? this.path().getLength() / 2 - this.currentLineWidth_ / 2 : this.path().getLength() - this.currentLineWidth_;
+    }
+    this.realHeight += this.currentLineHeight_;
     this.realWidth = Math.max(this.realWidth, this.currentLineWidth_);
     this.currentDy_ = this.currentLineHeight_ - this.currentBaseLine_;
     this.prevLineWidth_ = this.currentLineWidth_;
@@ -14128,20 +14022,37 @@ acgraph.vector.Text.prototype.calculateX = function() {
   }
 };
 acgraph.vector.Text.prototype.calculateY = function() {
-  this.calcY = this.y_ + (this.segments_.length == 0 ? 0 : this.segments_[0].baseLine);
-  if (this.style_["vAlign"] && this.realHeigth < this.style_["height"]) {
-    if (this.style_["vAlign"] == acgraph.vector.Text.VAlign.MIDDLE) {
-      this.calcY += this.height_ / 2 - this.realHeigth / 2;
-    } else {
-      if (this.style_["vAlign"] == acgraph.vector.Text.VAlign.BOTTOM) {
-        this.calcY += this.height_ - this.realHeigth;
+  if (this.path()) {
+    if (this.style_["vAlign"]) {
+      var firstSegment = this.segments_[0];
+      if (this.style_["vAlign"] == acgraph.vector.Text.VAlign.MIDDLE) {
+        firstSegment.dy += firstSegment.baseLine - this.realHeight / 2;
+      } else {
+        if (this.style_["vAlign"] == acgraph.vector.Text.VAlign.BOTTOM) {
+          firstSegment.dy += firstSegment.baseLine - this.realHeight;
+        } else {
+          if (this.style_["vAlign"] == acgraph.vector.Text.VAlign.TOP) {
+            firstSegment.dy += firstSegment.baseLine;
+          }
+        }
+      }
+    }
+  } else {
+    this.calcY = this.y_ + (this.segments_.length == 0 ? 0 : this.segments_[0].baseLine);
+    if (this.style_["vAlign"] && this.realHeight < this.style_["height"]) {
+      if (this.style_["vAlign"] == acgraph.vector.Text.VAlign.MIDDLE) {
+        this.calcY += this.height_ / 2 - this.realHeight / 2;
+      } else {
+        if (this.style_["vAlign"] == acgraph.vector.Text.VAlign.BOTTOM) {
+          this.calcY += this.height_ - this.realHeight;
+        }
       }
     }
   }
 };
 acgraph.vector.Text.prototype.textDefragmentation = function() {
   this.init_();
-  var text, i;
+  var text, i, segment;
   if (this.text_ == null) {
     return;
   }
@@ -14151,21 +14062,49 @@ acgraph.vector.Text.prototype.textDefragmentation = function() {
     var q = /\n/g;
     this.text_ = goog.string.canonicalizeNewlines(goog.string.normalizeSpaces(this.text_));
     var textArr = this.text_.split(q);
-    for (i = 0;i < textArr.length;i++) {
-      text = textArr[i];
-      if (goog.isDefAndNotNull(text)) {
-        if (text == "") {
-          this.addBreak();
-        } else {
-          this.addSegment(text);
-          this.addBreak();
+    if (textArr.length == 1 && !goog.isDef(this.style_["width"]) && !this.path()) {
+      if (!this.domElement()) {
+        this.createDom(true);
+      }
+      if (this.hasDirtyState(acgraph.vector.Element.DirtyState.STYLE)) {
+        this.renderStyle();
+      }
+      segment = new acgraph.vector.TextSegment(this.text_, {});
+      this.currentLine_.push(segment);
+      this.segments_.push(segment);
+      segment.parent(this);
+      if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
+        this.renderData();
+      }
+      var bounds = acgraph.getRenderer().getBBox(this.domElement(), this.text_, this.style_);
+      segment.baseLine = -bounds.top;
+      segment.height = bounds.height;
+      segment.width = bounds.width;
+      this.currentLineHeight_ = bounds.height;
+      this.currentLineWidth_ = bounds.width + this.textIndent_;
+      this.currentBaseLine_ = segment.baseLine;
+      this.currentLineEmpty_ = this.text_.length == 0;
+      this.finalizeTextLine();
+      this.currentNumberSeqBreaks_++;
+      var height = this.currentLine_[0] ? this.currentLine_[0].height : 0;
+      this.accumulatedHeight_ += goog.isString(this.lineHeight_) ? parseInt(this.lineHeight_, 0) + height : this.lineHeight_ * height;
+    } else {
+      for (i = 0;i < textArr.length;i++) {
+        text = goog.string.trimLeft(textArr[i]);
+        if (goog.isDefAndNotNull(text)) {
+          if (text == "") {
+            this.addBreak();
+          } else {
+            this.addSegment(text);
+            this.addBreak();
+          }
         }
       }
     }
   }
   if (this.textIndent_ && this.textLines_.length > 0) {
     var line = this.textLines_[0];
-    var segment = line[0];
+    segment = line[0];
     if (this.rtl) {
       if (!this.style_["hAlign"] || this.style_["hAlign"] == acgraph.vector.Text.HAlign.START || this.style_["hAlign"] == acgraph.vector.Text.HAlign.RIGHT) {
         segment.dx -= this.textIndent_;
@@ -14180,7 +14119,7 @@ acgraph.vector.Text.prototype.textDefragmentation = function() {
     this.width_ = this.realWidth;
   }
   if (!this.style_["height"]) {
-    this.height_ = this.realHeigth;
+    this.height_ = this.realHeight;
   }
   this.calculateX();
   this.calculateY();
@@ -14194,6 +14133,9 @@ acgraph.vector.Text.prototype.renderInternal = function() {
   if (!this.defragmented) {
     this.textDefragmentation();
   }
+  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.CHILDREN)) {
+    this.renderTextPath();
+  }
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.STYLE)) {
     this.renderStyle();
   }
@@ -14204,6 +14146,17 @@ acgraph.vector.Text.prototype.renderInternal = function() {
     this.renderPosition();
   }
   goog.base(this, "renderInternal");
+};
+acgraph.vector.Text.prototype.renderTextPath = function() {
+  if (this.path_ && !this.textPath) {
+    this.textPath = acgraph.getRenderer().createTextPathElement();
+  } else {
+    if (!this.path_) {
+      goog.dom.removeNode(this.textPath);
+      this.textPath = null;
+    }
+  }
+  this.clearDirtyState(acgraph.vector.Element.DirtyState.CHILDREN);
 };
 acgraph.vector.Text.prototype.renderPosition = function() {
   for (var i = 0, len = this.segments_.length;i < len;i++) {
@@ -14219,6 +14172,10 @@ acgraph.vector.Text.prototype.renderStyle = function() {
 acgraph.vector.Text.prototype.renderData = function() {
   if (this.domElement()) {
     goog.dom.removeChildren(this.domElement());
+  }
+  if (this.textPath) {
+    goog.dom.removeChildren(this.textPath);
+    goog.dom.appendChild(this.domElement(), this.textPath);
   }
   for (var i = 0, len = this.segments_.length;i < len;i++) {
     this.segments_[i].renderData();
@@ -14250,7 +14207,6 @@ acgraph.vector.Text.prototype.disposeInternal = function() {
   delete this.segments_;
   delete this.textLines_;
   delete this.bounds;
-  delete this.bounds;
   goog.base(this, "disposeInternal");
 };
 (function() {
@@ -14259,6 +14215,7 @@ acgraph.vector.Text.prototype.disposeInternal = function() {
   proto["text"] = proto.text;
   proto["style"] = proto.style;
   proto["htmlText"] = proto.htmlText;
+  proto["path"] = proto.path;
   proto["x"] = proto.x;
   proto["y"] = proto.y;
   proto["fontSize"] = proto.fontSize;
@@ -14277,33 +14234,12 @@ acgraph.vector.Text.prototype.disposeInternal = function() {
   proto["hAlign"] = proto.hAlign;
   proto["width"] = proto.width;
   proto["height"] = proto.height;
-  proto["textWrap"] = proto.textWrap;
+  proto["getTextHeight"] = proto.getTextHeight;
+  proto["getTextWidth"] = proto.getTextWidth;
+  proto["wordWrap"] = proto.wordWrap;
+  proto["wordBreak"] = proto.wordBreak;
   proto["textOverflow"] = proto.textOverflow;
   proto["selectable"] = proto.selectable;
-  goog.exportSymbol("acgraph.vector.Text.TextWrap.NO_WRAP", acgraph.vector.Text.TextWrap.NO_WRAP);
-  goog.exportSymbol("acgraph.vector.Text.TextWrap.BY_LETTER", acgraph.vector.Text.TextWrap.BY_LETTER);
-  goog.exportSymbol("acgraph.vector.Text.TextOverflow.CLIP", acgraph.vector.Text.TextOverflow.CLIP);
-  goog.exportSymbol("acgraph.vector.Text.TextOverflow.ELLIPSIS", acgraph.vector.Text.TextOverflow.ELLIPSIS);
-  goog.exportSymbol("acgraph.vector.Text.FontStyle.ITALIC", acgraph.vector.Text.FontStyle.ITALIC);
-  goog.exportSymbol("acgraph.vector.Text.FontStyle.NORMAL", acgraph.vector.Text.FontStyle.NORMAL);
-  goog.exportSymbol("acgraph.vector.Text.FontStyle.OBLIQUE", acgraph.vector.Text.FontStyle.OBLIQUE);
-  goog.exportSymbol("acgraph.vector.Text.FontVariant.NORMAL", acgraph.vector.Text.FontVariant.NORMAL);
-  goog.exportSymbol("acgraph.vector.Text.FontVariant.SMALL_CAP", acgraph.vector.Text.FontVariant.SMALL_CAP);
-  goog.exportSymbol("acgraph.vector.Text.Direction.LTR", acgraph.vector.Text.Direction.LTR);
-  goog.exportSymbol("acgraph.vector.Text.Direction.RTL", acgraph.vector.Text.Direction.RTL);
-  goog.exportSymbol("acgraph.vector.Text.Decoration.BLINK", acgraph.vector.Text.Decoration.BLINK);
-  goog.exportSymbol("acgraph.vector.Text.Decoration.LINE_THROUGH", acgraph.vector.Text.Decoration.LINE_THROUGH);
-  goog.exportSymbol("acgraph.vector.Text.Decoration.OVERLINE", acgraph.vector.Text.Decoration.OVERLINE);
-  goog.exportSymbol("acgraph.vector.Text.Decoration.UNDERLINE", acgraph.vector.Text.Decoration.UNDERLINE);
-  goog.exportSymbol("acgraph.vector.Text.Decoration.NONE", acgraph.vector.Text.Decoration.NONE);
-  goog.exportSymbol("acgraph.vector.Text.HAlign.START", acgraph.vector.Text.HAlign.START);
-  goog.exportSymbol("acgraph.vector.Text.HAlign.LEFT", acgraph.vector.Text.HAlign.LEFT);
-  goog.exportSymbol("acgraph.vector.Text.HAlign.CENTER", acgraph.vector.Text.HAlign.CENTER);
-  goog.exportSymbol("acgraph.vector.Text.HAlign.END", acgraph.vector.Text.HAlign.END);
-  goog.exportSymbol("acgraph.vector.Text.HAlign.RIGHT", acgraph.vector.Text.HAlign.RIGHT);
-  goog.exportSymbol("acgraph.vector.Text.VAlign.TOP", acgraph.vector.Text.VAlign.TOP);
-  goog.exportSymbol("acgraph.vector.Text.VAlign.MIDDLE", acgraph.vector.Text.VAlign.MIDDLE);
-  goog.exportSymbol("acgraph.vector.Text.VAlign.BOTTOM", acgraph.vector.Text.VAlign.BOTTOM);
 })();
 goog.provide("acgraph.vector.UnmanagedLayer");
 goog.require("acgraph.utils.IdGenerator");
@@ -14343,28 +14279,8 @@ acgraph.vector.UnmanagedLayer.prototype.renderInternal = function() {
     this.clearDirtyState(acgraph.vector.Element.DirtyState.DATA);
   }
 };
-acgraph.vector.UnmanagedLayer.prototype.getBoundsWithTransform = function(transform) {
-  var isSelfTransform = transform == this.getSelfTransformation();
-  var isFullTransform = transform == this.getFullTransformation();
-  if (this.boundsCache && isSelfTransform) {
-    return this.boundsCache.clone();
-  } else {
-    if (this.absoluteBoundsCache && isFullTransform) {
-      return this.absoluteBoundsCache.clone();
-    } else {
-      var bounds = acgraph.getRenderer().measureElement(this.content_);
-      if (transform) {
-        bounds = acgraph.math.getBoundsOfRectWithTransform(bounds, transform);
-      }
-      if (isSelfTransform) {
-        this.boundsCache = bounds.clone();
-      }
-      if (isFullTransform) {
-        this.absoluteBoundsCache = bounds.clone();
-      }
-      return bounds;
-    }
-  }
+acgraph.vector.UnmanagedLayer.prototype.getBoundsWithoutTransform = function() {
+  return acgraph.getRenderer().measureElement(this.content_);
 };
 acgraph.vector.UnmanagedLayer.prototype.deserialize = function(data) {
   if ("content" in data) {
@@ -14725,6 +14641,7 @@ goog.math.Line.prototype.getClosestSegmentPoint = function(x, opt_y) {
 };
 goog.provide("acgraph.vector.svg.Renderer");
 goog.require("acgraph.utils.IdGenerator");
+goog.require("acgraph.vector.PathBase");
 goog.require("acgraph.vector.Renderer");
 goog.require("goog.dom");
 goog.require("goog.math.Line");
@@ -14732,7 +14649,7 @@ goog.require("goog.math.Rect");
 goog.require("goog.object");
 goog.require("goog.userAgent");
 acgraph.vector.svg.Renderer = function() {
-  goog.base(this);
+  acgraph.vector.svg.Renderer.base(this, "constructor");
 };
 goog.inherits(acgraph.vector.svg.Renderer, acgraph.vector.Renderer);
 goog.addSingletonGetter(acgraph.vector.svg.Renderer);
@@ -14744,36 +14661,40 @@ acgraph.vector.svg.Renderer.prototype.measurementTextNode_ = null;
 acgraph.vector.svg.Renderer.prototype.measurementGroupNode_ = null;
 acgraph.vector.svg.Renderer.prototype.imageLoader_ = null;
 acgraph.vector.svg.Renderer.prototype.createSVGElement_ = function(tag) {
-  return goog.dom.getDocument().createElementNS(acgraph.vector.svg.Renderer.SVG_NS_, tag);
+  return goog.global["document"].createElementNS(acgraph.vector.svg.Renderer.SVG_NS_, tag);
 };
-acgraph.vector.svg.Renderer.prototype.setAttribute_ = function(el, key, value) {
-  el.setAttribute(key, value);
-};
-acgraph.vector.svg.Renderer.prototype.removeAttribute_ = function(el, key) {
-  el.removeAttribute(key);
-};
-acgraph.vector.svg.Renderer.prototype.setAttributes_ = function(el, attrs) {
-  goog.object.forEach(attrs, function(val, key) {
-    this.setAttribute_(el, key, val);
-  }, this);
-};
-acgraph.vector.svg.Renderer.prototype.getAttribute_ = function(el, key) {
-  return el.getAttribute(key);
-};
-acgraph.vector.svg.Renderer.prototype.createMeasurement_ = function() {
+acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
   this.measurement_ = this.createSVGElement_("svg");
   this.measurementText_ = this.createTextElement();
   this.measurementTextNode_ = this.createTextNode("");
+  this.mesurmentDef_ = this.createDefsElement();
   goog.dom.appendChild(this.measurementText_, this.measurementTextNode_);
   goog.dom.appendChild(this.measurement_, this.measurementText_);
-  goog.dom.appendChild(goog.dom.getDocument().body, this.measurement_);
-  this.setAttributes_(this.measurement_, {"display":"block", "width":0, "height":0});
+  goog.dom.appendChild(this.measurement_, this.mesurmentDef_);
+  goog.dom.appendChild(goog.global["document"].body, this.measurement_);
+  this.measurementLayerForBBox_ = this.createLayerElement();
+  goog.dom.appendChild(this.measurement_, this.measurementLayerForBBox_);
+  this.setAttrs(this.measurement_, {"display":"block", "width":0, "height":0});
   this.measurementGroupNode_ = this.createLayerElement();
   goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
 };
+acgraph.vector.svg.Renderer.prototype.disposeMeasurement = function() {
+  goog.dom.removeNode(this.measurementText_);
+  goog.dom.removeNode(this.measurementTextNode_);
+  goog.dom.removeNode(this.mesurmentDef_);
+  goog.dom.removeNode(this.measurementLayerForBBox_);
+  goog.dom.removeNode(this.measurementGroupNode_);
+  goog.dom.removeNode(this.measurement_);
+  this.measurementText_ = null;
+  this.measurementTextNode_ = null;
+  this.mesurmentDef_ = null;
+  this.measurementLayerForBBox_ = null;
+  this.measurementGroupNode_ = null;
+  this.measurement_ = null;
+};
 acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
   if (!this.measurement_) {
-    this.createMeasurement_();
+    this.createMeasurement();
   }
   var spaceWidth = null;
   var additionWidth = 0;
@@ -14790,13 +14711,13 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
       additionWidth += spaceWidth || this.getSpaceBounds(style).width;
     }
   }
-  style["fontStyle"] ? this.setAttribute_(this.measurementText_, "font-style", style["fontStyle"]) : this.removeAttribute_(this.measurementText_, "font-style");
-  style["fontVariant"] ? this.setAttribute_(this.measurementText_, "font-variant", style["fontVariant"]) : this.removeAttribute_(this.measurementText_, "font-variant");
-  style["fontFamily"] ? this.setAttribute_(this.measurementText_, "font-family", style["fontFamily"]) : this.removeAttribute_(this.measurementText_, "font-family");
-  style["fontSize"] ? this.setAttribute_(this.measurementText_, "font-size", style["fontSize"]) : this.removeAttribute_(this.measurementText_, "font-size");
-  style["fontWeight"] ? this.setAttribute_(this.measurementText_, "font-weight", style["fontWeight"]) : this.removeAttribute_(this.measurementText_, "font-weight");
-  style["letterSpacing"] ? this.setAttribute_(this.measurementText_, "letter-spacing", style["letterSpacing"]) : this.removeAttribute_(this.measurementText_, "letter-spacing");
-  style["decoration"] ? this.setAttribute_(this.measurementText_, "text-decoration", style["decoration"]) : this.removeAttribute_(this.measurementText_, "text-decoration");
+  style["fontStyle"] ? this.setAttr(this.measurementText_, "font-style", style["fontStyle"]) : this.removeAttr(this.measurementText_, "font-style");
+  style["fontVariant"] ? this.setAttr(this.measurementText_, "font-variant", style["fontVariant"]) : this.removeAttr(this.measurementText_, "font-variant");
+  style["fontFamily"] ? this.setAttr(this.measurementText_, "font-family", style["fontFamily"]) : this.removeAttr(this.measurementText_, "font-family");
+  style["fontSize"] ? this.setAttr(this.measurementText_, "font-size", style["fontSize"]) : this.removeAttr(this.measurementText_, "font-size");
+  style["fontWeight"] ? this.setAttr(this.measurementText_, "font-weight", style["fontWeight"]) : this.removeAttr(this.measurementText_, "font-weight");
+  style["letterSpacing"] ? this.setAttr(this.measurementText_, "letter-spacing", style["letterSpacing"]) : this.removeAttr(this.measurementText_, "letter-spacing");
+  style["decoration"] ? this.setAttr(this.measurementText_, "text-decoration", style["decoration"]) : this.removeAttr(this.measurementText_, "text-decoration");
   this.measurementTextNode_.nodeValue = text;
   var bbox = this.measurementText_["getBBox"]();
   this.measurementTextNode_.nodeValue = "";
@@ -14806,9 +14727,88 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
   }
   return new goog.math.Rect(bbox.x, bbox.y, bbox.width + additionWidth, bbox.height);
 };
+acgraph.vector.svg.Renderer.prototype.measureTextDom = function(element) {
+  if (!this.measurement_) {
+    this.createMeasurement();
+  }
+  if (!element.defragmented) {
+    element.textDefragmentation();
+  }
+  var parent, id;
+  var path = (element.path());
+  if (!path.domElement()) {
+    path.createDom(true);
+  }
+  this.setPathProperties(path);
+  parent = path.domElement().parentNode;
+  goog.dom.appendChild(this.mesurmentDef_, path.domElement());
+  if (!parent) {
+    id = acgraph.utils.IdGenerator.getInstance().identify(path.domElement(), acgraph.utils.IdGenerator.ElementTypePrefix.PATH);
+    this.setIdInternal(path.domElement(), id);
+  }
+  if (!element.domElement()) {
+    element.createDom(true);
+  }
+  element.renderTextPath();
+  element.renderData();
+  element.renderStyle();
+  element.renderPosition();
+  element.renderTransformation();
+  id = acgraph.utils.IdGenerator.getInstance().identify(path.domElement(), acgraph.utils.IdGenerator.ElementTypePrefix.PATH);
+  var pathPrefix = acgraph.getReference();
+  element.textPath.setAttributeNS(acgraph.vector.svg.Renderer.XLINK_NS_, "href", pathPrefix + "#" + id);
+  var domElement = element.domElement();
+  parent = domElement.parentNode;
+  goog.dom.appendChild(this.measurement_, domElement);
+  var bbox = element.domElement()["getBBox"]();
+  if (parent) {
+    goog.dom.appendChild(parent, domElement);
+  }
+  return new goog.math.Rect(bbox.x, bbox.y, bbox.width, bbox.height);
+};
+acgraph.vector.svg.Renderer.prototype.getBBox = function(element, text, style) {
+  if (!this.measurement_) {
+    this.createMeasurement();
+  }
+  var boundsCache = this.textBoundsCache;
+  var styleHash = this.getStyleHash(style);
+  var styleCache = boundsCache[styleHash];
+  if (!styleCache) {
+    styleCache = boundsCache[styleHash] = {};
+  }
+  var textBoundsCache = styleCache[text];
+  if (textBoundsCache) {
+    return textBoundsCache;
+  } else {
+    var spaceWidth = null;
+    var additionWidth = 0;
+    if (text.length == 0) {
+      return this.getEmptyStringBounds(style);
+    }
+    if (goog.string.isSpace(text)) {
+      return this.getSpaceBounds(style);
+    } else {
+      if (goog.string.startsWith(text, " ")) {
+        additionWidth += spaceWidth = this.getSpaceBounds(style).width;
+      }
+      if (goog.string.endsWith(text, " ")) {
+        additionWidth += spaceWidth || this.getSpaceBounds(style).width;
+      }
+    }
+    var parentNode = element.parentNode;
+    this.measurementLayerForBBox_.appendChild(element);
+    var bbox = element["getBBox"]();
+    if (parentNode) {
+      parentNode.appendChild(element);
+    }
+    var x = element.getAttribute("x") || 0;
+    var y = element.getAttribute("y") || 0;
+    return styleCache[text] = new goog.math.Rect(bbox.x - x, bbox.y - y, bbox.width + additionWidth, bbox.height);
+  }
+};
 acgraph.vector.svg.Renderer.prototype.measureElement = function(element) {
   if (!this.measurement_) {
-    this.createMeasurement_();
+    this.createMeasurement();
   }
   if (goog.isString(element)) {
     this.measurementGroupNode_.innerHTML = element;
@@ -14846,36 +14846,15 @@ acgraph.vector.svg.Renderer.prototype.onImageLoadHandler_ = function(e) {
 acgraph.vector.svg.Renderer.prototype.isImageLoading = function() {
   return this.starLoadImage_;
 };
-acgraph.vector.svg.Renderer.prototype.getSvgPath_ = function(path) {
-  if (path.isEmpty()) {
-    return null;
-  }
-  var list = [];
-  path.forEachSegment(function(segment, args) {
-    switch(segment) {
-      case acgraph.vector.PathBase.Segment.MOVETO:
-        list.push("M");
-        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, args, list);
-        break;
-      case acgraph.vector.PathBase.Segment.LINETO:
-        list.push("L");
-        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, args, list);
-        break;
-      case acgraph.vector.PathBase.Segment.CURVETO:
-        list.push("C");
-        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, args, list);
-        break;
-      case acgraph.vector.PathBase.Segment.ARCTO:
-        var extent = args[3];
-        list.push("A", args[0], args[1], 0, Math.abs(extent) > 180 ? 1 : 0, extent > 0 ? 1 : 0, args[4], args[5]);
-        break;
-      case acgraph.vector.PathBase.Segment.CLOSE:
-        list.push("Z");
-        break;
-    }
-  });
-  return list.join(" ");
-};
+acgraph.vector.svg.Renderer.prototype.pathSegmentNamesMap = function() {
+  var map = {};
+  map[acgraph.vector.PathBase.Segment.MOVETO] = "M";
+  map[acgraph.vector.PathBase.Segment.LINETO] = "L";
+  map[acgraph.vector.PathBase.Segment.CURVETO] = "C";
+  map[acgraph.vector.PathBase.Segment.ARCTO] = "A";
+  map[acgraph.vector.PathBase.Segment.CLOSE] = "Z";
+  return map;
+}();
 acgraph.vector.svg.Renderer.prototype.getObjectBoundingBoxGradientVector_ = function(angle) {
   var radAngle = goog.math.toRadians(angle);
   var tanAngle = Math.tan(radAngle);
@@ -14923,9 +14902,9 @@ acgraph.vector.svg.Renderer.prototype.getUserSpaceOnUseGradientVector_ = functio
 acgraph.vector.svg.Renderer.prototype.createStageElement = function() {
   var element = this.createSVGElement_("svg");
   if (!goog.userAgent.IE) {
-    this.setAttribute_(element, "xmlns", acgraph.vector.svg.Renderer.SVG_NS_);
+    this.setAttr(element, "xmlns", acgraph.vector.svg.Renderer.SVG_NS_);
   }
-  this.setAttribute_(element, "border", "0");
+  this.setAttr(element, "border", "0");
   return element;
 };
 acgraph.vector.svg.Renderer.prototype.createLinearGradientElement = function() {
@@ -14946,9 +14925,6 @@ acgraph.vector.svg.Renderer.prototype.createGradientKey = function() {
 acgraph.vector.svg.Renderer.prototype.createLayerElement = function() {
   return this.createSVGElement_("g");
 };
-acgraph.vector.svg.Renderer.prototype.createRectElement = function() {
-  return this.createSVGElement_("rect");
-};
 acgraph.vector.svg.Renderer.prototype.createCircleElement = function() {
   return this.createSVGElement_("circle");
 };
@@ -14964,6 +14940,9 @@ acgraph.vector.svg.Renderer.prototype.createDefsElement = function() {
 acgraph.vector.svg.Renderer.prototype.createTextElement = function() {
   return this.createSVGElement_("text");
 };
+acgraph.vector.svg.Renderer.prototype.createTextPathElement = function() {
+  return this.createSVGElement_("textPath");
+};
 acgraph.vector.svg.Renderer.prototype.createTextSegmentElement = function() {
   return this.createSVGElement_("tspan");
 };
@@ -14972,14 +14951,50 @@ acgraph.vector.svg.Renderer.prototype.createTextNode = function(text) {
 };
 acgraph.vector.svg.Renderer.prototype.setFillPatternProperties = function(element) {
   var bounds = element.getBoundsWithoutTransform();
-  this.setAttributes_(element.domElement(), {"x":bounds.left, "y":bounds.top, "width":bounds.width, "height":bounds.height, "patternUnits":"userSpaceOnUse"});
+  this.setAttrs(element.domElement(), {"x":bounds.left, "y":bounds.top, "width":bounds.width, "height":bounds.height, "patternUnits":"userSpaceOnUse"});
+};
+acgraph.vector.svg.Renderer.prototype.getPreserveAspectRatio = function(element) {
+  var align;
+  switch(element.align()) {
+    case "x-min-y-min":
+      align = "xMinYMin";
+      break;
+    case "x-mid-y-min":
+      align = "xMidYMin";
+      break;
+    case "x-max-y-min":
+      align = "xMaxYMin";
+      break;
+    case "x-min-y-mid":
+      align = "xMinYMid";
+      break;
+    case "x-mid-y-mid":
+      align = "xMidYMid";
+      break;
+    case "x-max-y-mid":
+      align = "xMaxYMid";
+      break;
+    case "x-min-y-max":
+      align = "xMinYMax";
+      break;
+    case "x-mid-y-max":
+      align = "xMidYMax";
+      break;
+    case "x-max-y-max":
+      align = "xMaxYMax";
+      break;
+    case "none":
+    default:
+      align = "none";
+  }
+  return align + " " + element.fittingMode();
 };
 acgraph.vector.svg.Renderer.prototype.setImageProperties = function(element) {
   var bounds = element.getBoundsWithoutTransform();
   this.measuringImage((element.src()), goog.nullFunction);
   var src = (element.src() || "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
   var domElement = element.domElement();
-  this.setAttributes_(domElement, {"x":bounds.left, "y":bounds.top, "width":bounds.width, "height":bounds.height, "image-rendering":"optimizeQuality", "preserveAspectRatio":element.align() + " " + element.fittingMode(), "opacity":element.opacity()});
+  this.setAttrs(domElement, {"x":bounds.left, "y":bounds.top, "width":bounds.width, "height":bounds.height, "image-rendering":"optimizeQuality", "preserveAspectRatio":this.getPreserveAspectRatio(element), "opacity":element.opacity()});
   domElement.setAttributeNS(acgraph.vector.svg.Renderer.XLINK_NS_, "href", src);
 };
 acgraph.vector.svg.Renderer.prototype.setCursorProperties = function(element, cursor) {
@@ -14990,12 +15005,28 @@ acgraph.vector.svg.Renderer.prototype.setCursorProperties = function(element, cu
 };
 acgraph.vector.svg.Renderer.prototype.setTextPosition = function(element) {
   var domElement = element.domElement();
-  this.setAttribute_(domElement, "x", element.calcX);
-  this.setAttribute_(domElement, "y", element.calcY);
+  this.setAttr(domElement, "x", element.calcX);
+  this.setAttr(domElement, "y", element.calcY);
+};
+acgraph.vector.svg.Renderer.prototype.setTextData = function(element) {
+  element.domElement().textContent = element.text();
 };
 acgraph.vector.svg.Renderer.prototype.setTextProperties = function(element) {
   var style = element.style();
+  var path = (element.path());
   var domElement = element.domElement();
+  if (path && element.getStage()) {
+    var defs = (element.getStage().getDefs());
+    path.parent(defs);
+    path.render();
+    path.clearDirtyState(acgraph.vector.Element.DirtyState.ALL);
+    var pathElement = path.domElement();
+    goog.dom.appendChild(defs.domElement(), pathElement);
+    var id = acgraph.utils.IdGenerator.getInstance().identify(pathElement, acgraph.utils.IdGenerator.ElementTypePrefix.PATH);
+    this.setIdInternal(pathElement, id);
+    var pathPrefix = acgraph.getReference();
+    element.textPath.setAttributeNS(acgraph.vector.svg.Renderer.XLINK_NS_, "href", pathPrefix + "#" + id);
+  }
   if (!element.selectable()) {
     domElement.style["-webkit-touch-callout"] = "none";
     domElement.style["-webkit-user-select"] = "none";
@@ -15005,8 +15036,8 @@ acgraph.vector.svg.Renderer.prototype.setTextProperties = function(element) {
     domElement.style["-o-user-select"] = "none";
     domElement.style["user-select"] = "none";
     if (goog.userAgent.IE && goog.userAgent.DOCUMENT_MODE == 9 || goog.userAgent.OPERA) {
-      this.setAttribute_(domElement, "unselectable", "on");
-      this.setAttribute_(domElement, "onselectstart", "return false;");
+      this.setAttr(domElement, "unselectable", "on");
+      this.setAttr(domElement, "onselectstart", "return false;");
     }
   } else {
     domElement.style["-webkit-touch-callout"] = "";
@@ -15017,68 +15048,68 @@ acgraph.vector.svg.Renderer.prototype.setTextProperties = function(element) {
     domElement.style["-o-user-select"] = "";
     domElement.style["user-select"] = "";
     if (goog.userAgent.IE && goog.userAgent.DOCUMENT_MODE == 9 || goog.userAgent.OPERA) {
-      this.removeAttribute_(domElement, "unselectable");
-      this.removeAttribute_(domElement, "onselectstart");
+      this.removeAttr(domElement, "unselectable");
+      this.removeAttr(domElement, "onselectstart");
     }
   }
   if (style["fontStyle"]) {
-    this.setAttribute_(domElement, "font-style", style["fontStyle"]);
+    this.setAttr(domElement, "font-style", style["fontStyle"]);
   } else {
-    this.removeAttribute_(domElement, "font-style");
+    this.removeAttr(domElement, "font-style");
   }
   if (style.fontVariant) {
     if (goog.userAgent.GECKO) {
       domElement.style["font-variant"] = style["fontVariant"];
     } else {
-      this.setAttribute_(domElement, "font-variant", style["fontVariant"]);
+      this.setAttr(domElement, "font-variant", style["fontVariant"]);
     }
   } else {
     if (goog.userAgent.GECKO) {
       domElement.style["font-variant"] = "";
     } else {
-      this.removeAttribute_(domElement, "font-variant");
+      this.removeAttr(domElement, "font-variant");
     }
   }
   if (style["fontFamily"]) {
-    this.setAttribute_(domElement, "font-family", style["fontFamily"]);
+    this.setAttr(domElement, "font-family", style["fontFamily"]);
   } else {
-    this.removeAttribute_(domElement, "font-family");
+    this.removeAttr(domElement, "font-family");
   }
   if (style["fontSize"]) {
-    this.setAttribute_(domElement, "font-size", style["fontSize"]);
+    this.setAttr(domElement, "font-size", style["fontSize"]);
   } else {
-    this.removeAttribute_(domElement, "font-size");
+    this.removeAttr(domElement, "font-size");
   }
   if (style["fontWeight"]) {
-    this.setAttribute_(domElement, "font-weight", style["fontWeight"]);
+    this.setAttr(domElement, "font-weight", style["fontWeight"]);
   } else {
-    this.removeAttribute_(domElement, "font-weight");
+    this.removeAttr(domElement, "font-weight");
   }
   if (style["color"]) {
-    this.setAttribute_(domElement, "fill", style["color"]);
+    this.setAttr(domElement, "fill", style["color"]);
   } else {
-    this.removeAttribute_(domElement, "fill");
+    this.removeAttr(domElement, "fill");
   }
   if (style["letterSpacing"]) {
-    this.setAttribute_(domElement, "letter-spacing", style["letterSpacing"]);
+    this.setAttr(domElement, "letter-spacing", style["letterSpacing"]);
   } else {
-    this.removeAttribute_(domElement, "letter-spacing");
+    this.removeAttr(domElement, "letter-spacing");
   }
   if (style["decoration"]) {
     if (goog.userAgent.GECKO) {
-      this.setAttribute_(domElement, "text-decoration", style["decoration"]);
+      this.setAttr(domElement, "text-decoration", style["decoration"]);
     } else {
-      this.setAttribute_(domElement, "text-decoration", style["decoration"]);
+      this.setAttr(domElement, "text-decoration", style["decoration"]);
     }
   } else {
-    this.removeAttribute_(domElement, "text-decoration");
+    this.removeAttr(domElement, "text-decoration");
   }
   if (style["direction"]) {
-    this.setAttribute_(domElement, "direction", style["direction"]);
+    this.setAttr(domElement, "direction", style["direction"]);
   } else {
-    this.removeAttribute_(domElement, "direction");
+    this.removeAttr(domElement, "direction");
   }
-  if (style["hAlign"]) {
+  if (style["hAlign"] && !path) {
     var align;
     if (style["direction"] == "rtl") {
       if (goog.userAgent.GECKO || goog.userAgent.IE) {
@@ -15089,9 +15120,9 @@ acgraph.vector.svg.Renderer.prototype.setTextProperties = function(element) {
     } else {
       align = style["hAlign"] == acgraph.vector.Text.HAlign.END || style["hAlign"] == acgraph.vector.Text.HAlign.RIGHT ? acgraph.vector.Text.HAlign.END : style["hAlign"] == acgraph.vector.Text.HAlign.START || style["hAlign"] == acgraph.vector.Text.HAlign.LEFT ? acgraph.vector.Text.HAlign.START : "middle";
     }
-    this.setAttribute_(domElement, "text-anchor", (align));
+    this.setAttr(domElement, "text-anchor", (align));
   } else {
-    this.removeAttribute_(domElement, "text-anchor");
+    this.removeAttr(domElement, "text-anchor");
   }
   if (style["opacity"]) {
     domElement.style["opacity"] = style["opacity"];
@@ -15103,9 +15134,9 @@ acgraph.vector.svg.Renderer.prototype.setTextSegmentPosition = function(element)
   var domElement = element.domElement();
   var text = element.parent();
   if (element.firstInLine || element.dx) {
-    this.setAttribute_(domElement, "x", text.calcX + element.dx);
+    this.setAttr(domElement, "x", text.path() ? element.dx : text.calcX + element.dx);
   }
-  this.setAttribute_(domElement, "dy", element.dy);
+  this.setAttr(domElement, "dy", element.dy);
 };
 acgraph.vector.svg.Renderer.prototype.setTextSegmentProperties = function(element) {
   var style = element.getStyle();
@@ -15115,37 +15146,39 @@ acgraph.vector.svg.Renderer.prototype.setTextSegmentProperties = function(elemen
   goog.dom.appendChild(domElement, textNode);
   if (goog.userAgent.IE && goog.userAgent.DOCUMENT_MODE == 9 || goog.userAgent.OPERA) {
     if (!text.selectable()) {
-      this.setAttribute_(domElement, "onselectstart", "return false;");
-      this.setAttribute_(domElement, "unselectable", "on");
+      this.setAttr(domElement, "onselectstart", "return false;");
+      this.setAttr(domElement, "unselectable", "on");
     } else {
-      this.removeAttribute_(domElement, "onselectstart");
-      this.removeAttribute_(domElement, "unselectable");
+      this.removeAttr(domElement, "onselectstart");
+      this.removeAttr(domElement, "unselectable");
     }
   }
   if (style.fontStyle) {
-    this.setAttribute_(domElement, "font-style", style.fontStyle);
+    this.setAttr(domElement, "font-style", style.fontStyle);
   }
   if (style.fontVariant) {
-    this.setAttribute_(domElement, "font-variant", style.fontVariant);
+    this.setAttr(domElement, "font-variant", style.fontVariant);
   }
   if (style.fontFamily) {
-    this.setAttribute_(domElement, "font-family", style.fontFamily);
+    this.setAttr(domElement, "font-family", style.fontFamily);
   }
   if (style.fontSize) {
-    this.setAttribute_(domElement, "font-size", style.fontSize);
+    this.setAttr(domElement, "font-size", style.fontSize);
   }
   if (style.fontWeight) {
-    this.setAttribute_(domElement, "font-weight", style.fontWeight);
+    this.setAttr(domElement, "font-weight", style.fontWeight);
   }
   if (style.color) {
-    this.setAttribute_(domElement, "fill", style.color);
+    this.setAttr(domElement, "fill", style.color);
   }
   if (style.letterSpacing) {
-    this.setAttribute_(domElement, "letter-spacing", style.letterSpacing);
+    this.setAttr(domElement, "letter-spacing", style.letterSpacing);
   }
   if (style.decoration) {
-    this.setAttribute_(domElement, "text-decoration", style.decoration);
+    this.setAttr(domElement, "text-decoration", style.decoration);
   }
+  var targetDomElement = element.parent().path() ? element.parent().textPath : element.parent().domElement();
+  goog.dom.appendChild(targetDomElement, domElement);
 };
 acgraph.vector.svg.Renderer.prototype.createClipElement = function() {
   return this.createSVGElement_("clipPath");
@@ -15155,21 +15188,21 @@ acgraph.vector.svg.Renderer.prototype.renderRadialGradient = function(fill, defs
   if (!gradient.rendered) {
     var fillDomElement = this.createRadialGradientElement();
     this.setIdInternal(fillDomElement, gradient.id());
-    this.appendChild(defs.domElement(), fillDomElement);
+    goog.dom.appendChild(defs.domElement(), fillDomElement);
     gradient.defs = defs;
     gradient.rendered = true;
     goog.array.forEach(gradient.keys, function(key) {
       var keyDomElement = this.createGradientKey();
-      this.setAttributes_(keyDomElement, {"offset":key["offset"], "style":"stop-color:" + key["color"] + ";stop-opacity:" + (isNaN(key["opacity"]) ? gradient.opacity : key["opacity"])});
-      this.appendChild(fillDomElement, keyDomElement);
+      this.setAttrs(keyDomElement, {"offset":key["offset"], "style":"stop-color:" + key["color"] + ";stop-opacity:" + (isNaN(key["opacity"]) ? gradient.opacity : key["opacity"])});
+      goog.dom.appendChild(fillDomElement, keyDomElement);
     }, this);
     if (gradient.bounds) {
-      this.setAttributes_(fillDomElement, {"cx":gradient.cx * gradient.bounds.width + gradient.bounds.left, "cy":gradient.cy * gradient.bounds.height + gradient.bounds.top, "fx":gradient.fx * gradient.bounds.width + gradient.bounds.left, "fy":gradient.fy * gradient.bounds.height + gradient.bounds.top, "r":Math.min(gradient.bounds.width, gradient.bounds.height) / 2, "spreadMethod":"pad", "gradientUnits":"userSpaceOnUse"});
+      this.setAttrs(fillDomElement, {"cx":gradient.cx * gradient.bounds.width + gradient.bounds.left, "cy":gradient.cy * gradient.bounds.height + gradient.bounds.top, "fx":gradient.fx * gradient.bounds.width + gradient.bounds.left, "fy":gradient.fy * gradient.bounds.height + gradient.bounds.top, "r":Math.min(gradient.bounds.width, gradient.bounds.height) / 2, "spreadMethod":"pad", "gradientUnits":"userSpaceOnUse"});
     } else {
-      this.setAttributes_(fillDomElement, {"cx":gradient.cx, "cy":gradient.cy, "fx":gradient.fx, "fy":gradient.fy, "gradientUnits":"objectBoundingBox"});
+      this.setAttrs(fillDomElement, {"cx":gradient.cx, "cy":gradient.cy, "fx":gradient.fx, "fy":gradient.fy, "gradientUnits":"objectBoundingBox"});
     }
     if (gradient.transform) {
-      this.setAttribute_(fillDomElement, "gradientTransform", gradient.transform.toString());
+      this.setAttr(fillDomElement, "gradientTransform", gradient.transform.toString());
     }
   }
   return gradient.id();
@@ -15180,24 +15213,24 @@ acgraph.vector.svg.Renderer.prototype.renderLinearGradient = function(fill, defs
   if (!gradient.rendered) {
     var fillDomElement = this.createLinearGradientElement();
     this.setIdInternal(fillDomElement, gradient.id());
-    this.appendChild(defs.domElement(), fillDomElement);
+    goog.dom.appendChild(defs.domElement(), fillDomElement);
     gradient.defs = defs;
     gradient.rendered = true;
     goog.array.forEach(gradient.keys, function(key) {
       var keyDomElement = this.createGradientKey();
-      this.setAttributes_(keyDomElement, {"offset":key["offset"], "style":"stop-color:" + key["color"] + ";stop-opacity:" + (isNaN(key["opacity"]) ? gradient.opacity : key["opacity"])});
-      this.appendChild(fillDomElement, keyDomElement);
+      this.setAttrs(keyDomElement, {"offset":key["offset"], "style":"stop-color:" + key["color"] + ";stop-opacity:" + (isNaN(key["opacity"]) ? gradient.opacity : key["opacity"])});
+      goog.dom.appendChild(fillDomElement, keyDomElement);
     }, this);
     var vector;
     if (gradient.bounds) {
       vector = this.getUserSpaceOnUseGradientVector_(gradient.angle, gradient.bounds);
-      this.setAttributes_(fillDomElement, {"x1":vector.x0, "y1":vector.y0, "x2":vector.x1, "y2":vector.y1, "spreadMethod":"pad", "gradientUnits":"userSpaceOnUse"});
+      this.setAttrs(fillDomElement, {"x1":vector.x0, "y1":vector.y0, "x2":vector.x1, "y2":vector.y1, "spreadMethod":"pad", "gradientUnits":"userSpaceOnUse"});
     } else {
       vector = this.getObjectBoundingBoxGradientVector_(gradient.angle);
-      this.setAttributes_(fillDomElement, {"x1":vector.x0, "y1":vector.y0, "x2":vector.x1, "y2":vector.y1, "gradientUnits":"objectBoundingBox"});
+      this.setAttrs(fillDomElement, {"x1":vector.x0, "y1":vector.y0, "x2":vector.x1, "y2":vector.y1, "gradientUnits":"objectBoundingBox"});
     }
     if (gradient.transform) {
-      this.setAttribute_(fillDomElement, "gradientTransform", gradient.transform.toString());
+      this.setAttr(fillDomElement, "gradientTransform", gradient.transform.toString());
     }
   }
   return gradient.id();
@@ -15207,19 +15240,19 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
   var defs = element.getStage().getDefs();
   var pathPrefix = "url(" + acgraph.getReference() + "#";
   if (goog.isString(fill)) {
-    this.setAttribute_(element.domElement(), "fill", (fill));
-    this.removeAttribute_(element.domElement(), "fill-opacity");
+    this.setAttr(element.domElement(), "fill", (fill));
+    this.removeAttr(element.domElement(), "fill-opacity");
   } else {
     if (goog.isArray(fill["keys"]) && fill["cx"] && fill["cy"]) {
-      this.setAttribute_(element.domElement(), "fill", pathPrefix + this.renderRadialGradient((fill), defs) + ")");
-      this.removeAttribute_(element.domElement(), "fill-opacity");
+      this.setAttr(element.domElement(), "fill", pathPrefix + this.renderRadialGradient((fill), defs) + ")");
+      this.removeAttr(element.domElement(), "fill-opacity");
     } else {
       if (goog.isArray(fill["keys"])) {
         if (!element.getBounds()) {
           return;
         }
-        this.setAttribute_(element.domElement(), "fill", pathPrefix + this.renderLinearGradient((fill), defs, element.getBounds()) + ")");
-        this.removeAttribute_(element.domElement(), "fill-opacity");
+        this.setAttr(element.domElement(), "fill", pathPrefix + this.renderLinearGradient((fill), defs, element.getBounds()) + ")");
+        this.removeAttr(element.domElement(), "fill-opacity");
       } else {
         if (fill["src"]) {
           var b = element.getBoundsWithoutTransform();
@@ -15235,33 +15268,34 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
             var callback = function(imageFill) {
               imageFill.id();
               imageFill.parent(element.getStage()).render();
-              acgraph.getRenderer().setAttribute_(element.domElement(), "fill", pathPrefix + imageFill.id() + ")");
+              acgraph.getRenderer().setAttr(element.domElement(), "fill", pathPrefix + imageFill.id() + ")");
             };
             defs.getImageFill(fill["src"], b, fill["mode"], fill["opacity"], callback);
           } else {
             var imageFill = defs.getImageFill(fill["src"], b, fill["mode"], fill["opacity"]);
             imageFill.id();
             imageFill.parent(element.getStage()).render();
-            this.setAttribute_(element.domElement(), "fill", pathPrefix + imageFill.id() + ")");
+            this.setAttr(element.domElement(), "fill", pathPrefix + imageFill.id() + ")");
+            this.setAttr(element.domElement(), "fill-opacity", goog.isDef(fill["opacity"]) ? fill["opacity"] : 1);
           }
         } else {
-          if (fill instanceof acgraph.vector.HatchFill) {
+          if (acgraph.utils.instanceOf(fill, acgraph.vector.HatchFill)) {
             var hatch = (fill);
             hatch = defs.getHatchFill(hatch.type, hatch.color, hatch.thickness, hatch.size);
             hatch.id();
             hatch.parent(element.getStage()).render();
-            this.setAttribute_(element.domElement(), "fill", pathPrefix + hatch.id() + ")");
+            this.setAttr(element.domElement(), "fill", pathPrefix + hatch.id() + ")");
           } else {
-            if (fill instanceof acgraph.vector.PatternFill) {
+            if (acgraph.utils.instanceOf(fill, acgraph.vector.PatternFill)) {
               var pattern = (fill);
               pattern.id();
               pattern.parent(element.getStage()).render();
-              this.setAttribute_(element.domElement(), "fill", pathPrefix + pattern.id() + ")");
+              this.setAttr(element.domElement(), "fill", pathPrefix + pattern.id() + ")");
             } else {
               if (fill["opacity"] <= 1E-4 && goog.userAgent.IE && goog.userAgent.isVersionOrHigher("9")) {
                 fill["opacity"] = 1E-4;
               }
-              this.setAttributes_(element.domElement(), {"fill":(fill)["color"], "fill-opacity":(fill)["opacity"]});
+              this.setAttrs(element.domElement(), {"fill":(fill)["color"], "fill-opacity":(fill)["opacity"]});
             }
           }
         }
@@ -15275,45 +15309,45 @@ acgraph.vector.svg.Renderer.prototype.applyStroke = function(element) {
   var domElement = element.domElement();
   var pathPrefix = "url(" + acgraph.getReference() + "#";
   if (goog.isString(stroke)) {
-    this.setAttribute_(domElement, "stroke", (stroke));
+    this.setAttr(domElement, "stroke", (stroke));
   } else {
     if (goog.isArray(stroke["keys"]) && stroke["cx"] && stroke["cy"]) {
-      this.setAttribute_(domElement, "stroke", pathPrefix + this.renderRadialGradient((stroke), defs) + ")");
+      this.setAttr(domElement, "stroke", pathPrefix + this.renderRadialGradient((stroke), defs) + ")");
     } else {
       if (goog.isArray(stroke["keys"])) {
         if (!element.getBounds()) {
           return;
         }
-        this.setAttribute_(domElement, "stroke", pathPrefix + this.renderLinearGradient((stroke), defs, element.getBounds()) + ")");
+        this.setAttr(domElement, "stroke", pathPrefix + this.renderLinearGradient((stroke), defs, element.getBounds()) + ")");
       } else {
-        this.setAttribute_(domElement, "stroke", stroke["color"]);
+        this.setAttr(domElement, "stroke", stroke["color"]);
       }
     }
   }
   if (stroke["lineJoin"]) {
-    this.setAttribute_(domElement, "stroke-linejoin", stroke["lineJoin"]);
+    this.setAttr(domElement, "stroke-linejoin", stroke["lineJoin"]);
   } else {
-    this.removeAttribute_(domElement, "stroke-linejoin");
+    this.removeAttr(domElement, "stroke-linejoin");
   }
   if (stroke["lineCap"]) {
-    this.setAttribute_(domElement, "stroke-linecap", stroke["lineCap"]);
+    this.setAttr(domElement, "stroke-linecap", stroke["lineCap"]);
   } else {
-    this.removeAttribute_(domElement, "stroke-linecap");
+    this.removeAttr(domElement, "stroke-linecap");
   }
   if (stroke["opacity"]) {
-    this.setAttribute_(domElement, "stroke-opacity", stroke["opacity"]);
+    this.setAttr(domElement, "stroke-opacity", stroke["opacity"]);
   } else {
-    this.removeAttribute_(domElement, "stroke-opacity");
+    this.removeAttr(domElement, "stroke-opacity");
   }
   if (stroke["thickness"]) {
-    this.setAttribute_(domElement, "stroke-width", stroke["thickness"]);
+    this.setAttr(domElement, "stroke-width", stroke["thickness"]);
   } else {
-    this.removeAttribute_(domElement, "stroke-width");
+    this.removeAttr(domElement, "stroke-width");
   }
   if (stroke["dash"]) {
-    this.setAttribute_(domElement, "stroke-dasharray", stroke["dash"]);
+    this.setAttr(domElement, "stroke-dasharray", stroke["dash"]);
   } else {
-    this.removeAttribute_(domElement, "stroke-dasharray");
+    this.removeAttr(domElement, "stroke-dasharray");
   }
 };
 acgraph.vector.svg.Renderer.prototype.applyFillAndStroke = function(element) {
@@ -15322,47 +15356,34 @@ acgraph.vector.svg.Renderer.prototype.applyFillAndStroke = function(element) {
 };
 acgraph.vector.svg.Renderer.prototype.setVisible = function(element) {
   if (element.visible()) {
-    this.removeAttribute_(element.domElement(), "visibility");
+    this.removeAttr(element.domElement(), "visibility");
   } else {
-    this.setAttribute_(element.domElement(), "visibility", "hidden");
+    this.setAttr(element.domElement(), "visibility", "hidden");
   }
 };
 acgraph.vector.svg.Renderer.prototype.setTransformation = function(element) {
   var transformation = element.getSelfTransformation();
   if (transformation && !transformation.isIdentity()) {
-    this.setAttribute_(element.domElement(), "transform", transformation.toString());
+    this.setAttr(element.domElement(), "transform", transformation.toString());
   } else {
-    this.removeAttribute_(element.domElement(), "transform");
+    this.removeAttr(element.domElement(), "transform");
   }
 };
 acgraph.vector.svg.Renderer.prototype.setPatternTransformation = function(element) {
   var transformation = element.getSelfTransformation();
   if (transformation && !transformation.isIdentity()) {
-    this.setAttribute_(element.domElement(), "patternTransform", transformation.toString());
+    this.setAttr(element.domElement(), "patternTransform", transformation.toString());
   } else {
-    this.removeAttribute_(element.domElement(), "patternTransform");
+    this.removeAttr(element.domElement(), "patternTransform");
   }
 };
 acgraph.vector.svg.Renderer.prototype.setPathTransformation = acgraph.vector.svg.Renderer.prototype.setTransformation;
 acgraph.vector.svg.Renderer.prototype.setImageTransformation = acgraph.vector.svg.Renderer.prototype.setTransformation;
 acgraph.vector.svg.Renderer.prototype.setLayerTransformation = acgraph.vector.svg.Renderer.prototype.setTransformation;
 acgraph.vector.svg.Renderer.prototype.setTextTransformation = acgraph.vector.svg.Renderer.prototype.setTransformation;
-acgraph.vector.svg.Renderer.prototype.setRectTransformation = acgraph.vector.svg.Renderer.prototype.setTransformation;
 acgraph.vector.svg.Renderer.prototype.setEllipseTransformation = acgraph.vector.svg.Renderer.prototype.setTransformation;
 acgraph.vector.svg.Renderer.prototype.setStageSize = function(el, width, height) {
-  this.setAttributes_(el, {"width":width, "height":height});
-};
-acgraph.vector.svg.Renderer.prototype.setId = function(element, id) {
-  this.setIdInternal(element.domElement(), id);
-};
-acgraph.vector.svg.Renderer.prototype.setIdInternal = function(element, id) {
-  if (element) {
-    if (id) {
-      this.setAttribute_(element, "id", id);
-    } else {
-      this.removeAttribute_(element, "id");
-    }
-  }
+  this.setAttrs(el, {"width":width, "height":height});
 };
 acgraph.vector.svg.Renderer.prototype.setTitle = function(element, title) {
   var domElement = element.domElement();
@@ -15370,7 +15391,7 @@ acgraph.vector.svg.Renderer.prototype.setTitle = function(element, title) {
     if (goog.isDefAndNotNull(title)) {
       if (!element.titleElement) {
         element.titleElement = this.createSVGElement_("title");
-        this.setAttribute_(element.titleElement, "aria-label", "");
+        this.setAttr(element.titleElement, "aria-label", "");
       }
       if (!goog.dom.getParentElement(element.titleElement)) {
         goog.dom.insertChildAt(domElement, element.titleElement, 0);
@@ -15389,7 +15410,7 @@ acgraph.vector.svg.Renderer.prototype.setDesc = function(element, desc) {
     if (goog.isDefAndNotNull(desc)) {
       if (!element.descElement) {
         element.descElement = this.createSVGElement_("desc");
-        this.setAttribute_(element.descElement, "aria-label", "");
+        this.setAttr(element.descElement, "aria-label", "");
       }
       if (!goog.dom.getParentElement(element.descElement)) {
         goog.dom.insertChildAt(domElement, element.descElement, 0);
@@ -15402,58 +15423,39 @@ acgraph.vector.svg.Renderer.prototype.setDesc = function(element, desc) {
     }
   }
 };
-acgraph.vector.svg.Renderer.prototype.setAttributes = function(element, attrs) {
-  var domElement = element.domElement();
-  if (domElement && goog.isObject(attrs)) {
-    for (var key in attrs) {
-      var value = attrs[key];
-      if (goog.isNull(value)) {
-        this.removeAttribute_(domElement, key);
-      } else {
-        this.setAttribute_(domElement, key, (value));
-      }
-    }
-  }
-};
-acgraph.vector.svg.Renderer.prototype.getAttribute = function(element, key) {
-  return element ? element.getAttribute(key) : void 0;
-};
 acgraph.vector.svg.Renderer.prototype.setDisableStrokeScaling = function(element, isDisabled) {
   var domElement = element.domElement();
   if (domElement) {
     if (isDisabled) {
-      this.setAttribute_(domElement, "vector-effect", "non-scaling-stroke");
+      this.setAttr(domElement, "vector-effect", "non-scaling-stroke");
     } else {
-      this.removeAttribute_(domElement, "vector-effect");
+      this.removeAttr(domElement, "vector-effect");
     }
   }
 };
 acgraph.vector.svg.Renderer.prototype.setLayerSize = goog.nullFunction;
-acgraph.vector.svg.Renderer.prototype.setRectProperties = function(rect) {
-  var boundsWithoutTransform = rect.getBoundsWithoutTransform();
-  this.setAttributes_(rect.domElement(), {"x":boundsWithoutTransform.left, "y":boundsWithoutTransform.top, "width":boundsWithoutTransform.width, "height":boundsWithoutTransform.height});
-};
 acgraph.vector.svg.Renderer.prototype.setCircleProperties = function(circle) {
-  this.setAttributes_(circle.domElement(), {"cx":circle.centerX(), "cy":circle.centerY(), "r":circle.radius()});
+  this.setAttrs(circle.domElement(), {"cx":circle.centerX(), "cy":circle.centerY(), "r":circle.radius()});
 };
 acgraph.vector.svg.Renderer.prototype.setEllipseProperties = function(ellipse) {
-  this.setAttributes_(ellipse.domElement(), {"cx":ellipse.centerX(), "cy":ellipse.centerY(), "rx":ellipse.radiusX(), "ry":ellipse.radiusY()});
+  this.setAttrs(ellipse.domElement(), {"cx":ellipse.centerX(), "cy":ellipse.centerY(), "rx":ellipse.radiusX(), "ry":ellipse.radiusY()});
 };
 acgraph.vector.svg.Renderer.prototype.setPathProperties = function(path) {
-  var pathData = this.getSvgPath_(path);
+  var pathData = this.getPathString(path, false);
   if (pathData) {
-    this.setAttribute_(path.domElement(), "d", pathData);
+    this.setAttr(path.domElement(), "d", pathData);
   } else {
-    this.setAttribute_(path.domElement(), "d", "M 0,0");
+    this.setAttr(path.domElement(), "d", "M 0,0");
   }
 };
 acgraph.vector.svg.Renderer.prototype.createClip_ = function(element, clipElement) {
-  var defs = (element.getStage().getDefs());
+  var stage = element.getStage();
+  var defs = (stage.getDefs());
   var clipDomElement = defs.getClipPathElement(clipElement);
   var id = acgraph.utils.IdGenerator.getInstance().identify(clipDomElement, acgraph.utils.IdGenerator.ElementTypePrefix.CLIP);
   var clipShapeElement;
   if (goog.dom.getParentElement(clipDomElement) != defs.domElement()) {
-    this.setAttribute_(clipDomElement, "clip-rule", "nonzero");
+    this.setAttr(clipDomElement, "clip-rule", "nonzero");
     this.setIdInternal(clipDomElement, id);
   }
   clipElement.stage(element.getStage());
@@ -15462,8 +15464,8 @@ acgraph.vector.svg.Renderer.prototype.createClip_ = function(element, clipElemen
   clipShape.render();
   clipShapeElement = clipShape.domElement();
   if (clipShapeElement) {
-    this.appendChild(clipDomElement, clipShapeElement);
-    this.appendChild(defs.domElement(), clipDomElement);
+    goog.dom.appendChild(clipDomElement, clipShapeElement);
+    goog.dom.appendChild(defs.domElement(), clipDomElement);
   }
   return id;
 };
@@ -15479,17 +15481,17 @@ acgraph.vector.svg.Renderer.prototype.disposeClip = function(clip) {
   var clipPath = goog.dom.getElement(clipId);
   if (clipPath) {
     var clipPathElement = goog.dom.getFirstElementChild(clipPath);
-    this.removeNode(clipPathElement);
-    this.removeNode(clipPath);
+    goog.dom.removeNode(clipPathElement);
+    goog.dom.removeNode(clipPath);
   }
 };
 acgraph.vector.svg.Renderer.prototype.addClip_ = function(element, clipId) {
   var pathPrefix = acgraph.getReference();
-  this.setAttributes_(element.domElement(), {"clip-path":"url(" + pathPrefix + "#" + clipId + ")", "clipPathUnits":"userSpaceOnUse"});
+  this.setAttrs(element.domElement(), {"clip-path":"url(" + pathPrefix + "#" + clipId + ")", "clipPathUnits":"userSpaceOnUse"});
 };
 acgraph.vector.svg.Renderer.prototype.removeClip_ = function(element) {
-  this.removeAttribute_(element.domElement(), "clip-path");
-  this.removeAttribute_(element.domElement(), "clipPathUnits");
+  this.removeAttr(element.domElement(), "clip-path");
+  this.removeAttr(element.domElement(), "clipPathUnits");
 };
 acgraph.vector.svg.Renderer.prototype.updateClip = function(clipElement) {
   var clipShape = clipElement.shape();
@@ -15499,7 +15501,7 @@ acgraph.vector.svg.Renderer.prototype.updateClip = function(clipElement) {
     var clipDomElement = defs.getClipPathElement(clipElement);
     clipShape.render();
     var clipShapeElement = clipShape.domElement();
-    this.appendChild(clipDomElement, clipShapeElement);
+    goog.dom.appendChild(clipDomElement, clipShapeElement);
   } else {
     clipElement.shape().render();
   }
@@ -15508,7 +15510,7 @@ acgraph.vector.svg.Renderer.prototype.setClip = function(element) {
   var clipelement = (element.clip());
   if (clipelement) {
     var clipId;
-    if (clipelement instanceof acgraph.vector.Clip) {
+    if (acgraph.utils.instanceOf(clipelement, acgraph.vector.Clip)) {
       clipId = (clipelement.id());
     }
     if (!clipId) {
@@ -15521,9 +15523,9 @@ acgraph.vector.svg.Renderer.prototype.setClip = function(element) {
 };
 acgraph.vector.svg.Renderer.prototype.setPointerEvents = function(element) {
   if (element.disablePointerEvents()) {
-    this.setAttribute_(element.domElement(), "pointer-events", "none");
+    this.setAttr(element.domElement(), "pointer-events", "none");
   } else {
-    this.removeAttribute_(element.domElement(), "pointer-events");
+    this.removeAttr(element.domElement(), "pointer-events");
   }
 };
 acgraph.vector.svg.Renderer.prototype.getPathStringFromRect_ = function(rect) {
@@ -15534,9 +15536,9 @@ acgraph.vector.svg.Renderer.prototype.getPathStringFromRect_ = function(rect) {
   return ["M", left, top, "L", right, top, right, bottom, left, bottom, "Z"].join(" ");
 };
 acgraph.vector.svg.Renderer.prototype.setPrintAttributes = function(element, stage) {
-  this.setAttribute_(element, "width", "100%");
-  this.setAttribute_(element, "height", "100%");
-  this.setAttribute_(element, "viewBox", "0 0 " + stage.width() + " " + stage.height());
+  this.setAttr(element, "width", "100%");
+  this.setAttr(element, "height", "100%");
+  this.setAttr(element, "viewBox", "0 0 " + stage.width() + " " + stage.height());
   goog.style.setStyle(element, "width", "100%");
   goog.style.setStyle(element, "height", "");
   goog.style.setStyle(element, "max-height", "100%");
@@ -16734,7 +16736,7 @@ acgraph.utils.exporting.fullPagePrint = function(stage, opt_paperSizeOrWidth, op
   var iFrameDocument = iFrame["contentWindow"].document;
   var div = goog.dom.createDom(goog.dom.TagName.DIV);
   goog.style.setStyle(div, {"width":size.width, "height":size.height});
-  iFrameDocument.body.appendChild(div);
+  goog.dom.appendChild(iFrameDocument.body, div);
   var sourceStageWidth = stage.width();
   var sourceStageHeight = stage.height();
   var printStageSize = goog.style.getContentBoxSize(div);
@@ -16772,7 +16774,7 @@ acgraph.utils.exporting.openPrint_ = function() {
     var iFrame = acgraph.utils.exporting.printIFrame_;
     var iFrameWindow = iFrame["contentWindow"];
     if (goog.userAgent.EDGE) {
-      acgraph.utils.exporting.printWindow_ = window.open();
+      acgraph.utils.exporting.printWindow_ = goog.global.open();
       acgraph.utils.exporting.printWindow_.document.write(iFrameWindow.document.documentElement.innerHTML);
       acgraph.utils.exporting.disposePrint_();
       acgraph.utils.exporting.printWindow_["onafterprint"] = function() {
@@ -16820,7 +16822,7 @@ acgraph.vector.LinearGradient = function(keys, opt_opacity, opt_angle, opt_mode,
   this.angle = goog.isDefAndNotNull(opt_angle) ? goog.math.standardAngle(opt_angle) : 0;
   this.mode = goog.isDefAndNotNull(opt_mode) ? opt_mode : false;
   this.saveAngle = !!opt_mode;
-  this.bounds = opt_mode && opt_mode instanceof goog.math.Rect ? (opt_mode) : null;
+  this.bounds = opt_mode && acgraph.utils.instanceOf(opt_mode, goog.math.Rect) ? (opt_mode) : null;
   this.transform = goog.isDefAndNotNull(opt_transform) ? opt_transform : null;
 };
 goog.inherits(acgraph.vector.LinearGradient, goog.Disposable);
@@ -16828,7 +16830,7 @@ acgraph.vector.LinearGradient.serialize = function(keys, opt_opacity, opt_angle,
   var angle = goog.isDefAndNotNull(opt_angle) ? goog.math.standardAngle(opt_angle) : 0;
   var opacity = goog.isDefAndNotNull(opt_opacity) ? goog.math.clamp(opt_opacity, 0, 1) : 1;
   var saveAngle = !!opt_mode;
-  var bounds = goog.isDefAndNotNull(opt_mode) ? opt_mode instanceof goog.math.Rect ? opt_mode : null : null;
+  var bounds = goog.isDefAndNotNull(opt_mode) ? acgraph.utils.instanceOf(opt_mode, goog.math.Rect) ? (opt_mode) : null : null;
   var gradientKeys = [];
   goog.array.forEach(keys, function(el) {
     gradientKeys.push("" + el["offset"] + el["color"] + (el["opacity"] ? el["opacity"] : null));
@@ -16917,6 +16919,7 @@ acgraph.vector.RadialGradient.prototype.disposeInternal = function() {
 })();
 goog.provide("acgraph.vector.Defs");
 goog.require("acgraph.vector.HatchFill");
+goog.require("acgraph.vector.ILayer");
 goog.require("acgraph.vector.LinearGradient");
 goog.require("acgraph.vector.PatternFill");
 goog.require("acgraph.vector.RadialGradient");
@@ -17040,14 +17043,1550 @@ acgraph.vector.Defs.prototype.removeRadialGradient = function(element) {
   var radialGradientDomElement = goog.dom.getElement(element.id());
   goog.dom.removeNode(radialGradientDomElement);
 };
+acgraph.vector.Defs.prototype.render = function() {
+  this.createDom();
+  goog.dom.appendChild(this.stage.domElement(), this.domElement());
+};
+acgraph.vector.Defs.prototype.addChild = function(child) {
+  child.remove();
+  child.setParent(this);
+  return this;
+};
+acgraph.vector.Defs.prototype.removeChild = function(element) {
+  element.setParent(null);
+  goog.dom.removeNode(element.domElement());
+  return element;
+};
+acgraph.vector.Defs.prototype.getFullTransformation = function() {
+  return null;
+};
+acgraph.vector.Defs.prototype.notifyRemoved = goog.nullFunction;
+acgraph.vector.Defs.prototype.getStage = function() {
+  return (this.stage);
+};
+acgraph.vector.Defs.prototype.setDirtyState = goog.nullFunction;
 acgraph.vector.Defs.prototype.disposeInternal = function() {
-  acgraph.getRenderer().removeNode(this.domElement_);
+  goog.dom.removeNode(this.domElement_);
   this.domElement_ = null;
-  goog.disposeAll(this.linearGradients_);
-  goog.disposeAll(this.radialGradients_);
-  goog.disposeAll(this.imageFills_);
+  goog.object.forEach(this.linearGradients_, function(v) {
+    goog.dispose(v);
+  });
+  goog.object.forEach(this.radialGradients_, function(v) {
+    goog.dispose(v);
+  });
+  goog.object.forEach(this.imageFills_, function(v) {
+    goog.dispose(v);
+  });
+  goog.object.forEach(this.hatchFills_, function(v) {
+    goog.dispose(v);
+  });
+  this.linearGradients_ = null;
+  this.radialGradients_ = null;
+  this.imageFills_ = null;
+  this.hatchFills_ = null;
   delete this.stage;
 };
+goog.provide("goog.dom.classlist");
+goog.require("goog.array");
+goog.define("goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST", false);
+goog.dom.classlist.get = function(element) {
+  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
+    return element.classList;
+  }
+  var className = element.className;
+  return goog.isString(className) && className.match(/\S+/g) || [];
+};
+goog.dom.classlist.set = function(element, className) {
+  element.className = className;
+};
+goog.dom.classlist.contains = function(element, className) {
+  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
+    return element.classList.contains(className);
+  }
+  return goog.array.contains(goog.dom.classlist.get(element), className);
+};
+goog.dom.classlist.add = function(element, className) {
+  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
+    element.classList.add(className);
+    return;
+  }
+  if (!goog.dom.classlist.contains(element, className)) {
+    element.className += element.className.length > 0 ? " " + className : className;
+  }
+};
+goog.dom.classlist.addAll = function(element, classesToAdd) {
+  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
+    goog.array.forEach(classesToAdd, function(className) {
+      goog.dom.classlist.add(element, className);
+    });
+    return;
+  }
+  var classMap = {};
+  goog.array.forEach(goog.dom.classlist.get(element), function(className) {
+    classMap[className] = true;
+  });
+  goog.array.forEach(classesToAdd, function(className) {
+    classMap[className] = true;
+  });
+  element.className = "";
+  for (var className in classMap) {
+    element.className += element.className.length > 0 ? " " + className : className;
+  }
+};
+goog.dom.classlist.remove = function(element, className) {
+  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
+    element.classList.remove(className);
+    return;
+  }
+  if (goog.dom.classlist.contains(element, className)) {
+    element.className = goog.array.filter(goog.dom.classlist.get(element), function(c) {
+      return c != className;
+    }).join(" ");
+  }
+};
+goog.dom.classlist.removeAll = function(element, classesToRemove) {
+  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
+    goog.array.forEach(classesToRemove, function(className) {
+      goog.dom.classlist.remove(element, className);
+    });
+    return;
+  }
+  element.className = goog.array.filter(goog.dom.classlist.get(element), function(className) {
+    return !goog.array.contains(classesToRemove, className);
+  }).join(" ");
+};
+goog.dom.classlist.enable = function(element, className, enabled) {
+  if (enabled) {
+    goog.dom.classlist.add(element, className);
+  } else {
+    goog.dom.classlist.remove(element, className);
+  }
+};
+goog.dom.classlist.enableAll = function(element, classesToEnable, enabled) {
+  var f = enabled ? goog.dom.classlist.addAll : goog.dom.classlist.removeAll;
+  f(element, classesToEnable);
+};
+goog.dom.classlist.swap = function(element, fromClass, toClass) {
+  if (goog.dom.classlist.contains(element, fromClass)) {
+    goog.dom.classlist.remove(element, fromClass);
+    goog.dom.classlist.add(element, toClass);
+    return true;
+  }
+  return false;
+};
+goog.dom.classlist.toggle = function(element, className) {
+  var add = !goog.dom.classlist.contains(element, className);
+  goog.dom.classlist.enable(element, className, add);
+  return add;
+};
+goog.dom.classlist.addRemove = function(element, classToRemove, classToAdd) {
+  goog.dom.classlist.remove(element, classToRemove);
+  goog.dom.classlist.add(element, classToAdd);
+};
+goog.provide("goog.dom.fullscreen");
+goog.provide("goog.dom.fullscreen.EventType");
+goog.require("goog.dom");
+goog.require("goog.userAgent");
+goog.dom.fullscreen.EventType = {CHANGE:function() {
+  if (goog.userAgent.WEBKIT) {
+    return "webkitfullscreenchange";
+  }
+  if (goog.userAgent.GECKO) {
+    return "mozfullscreenchange";
+  }
+  if (goog.userAgent.IE) {
+    return "MSFullscreenChange";
+  }
+  return "fullscreenchange";
+}()};
+goog.dom.fullscreen.isSupported = function(opt_domHelper) {
+  var doc = goog.dom.fullscreen.getDocument_(opt_domHelper);
+  var body = doc.body;
+  return !!(body.webkitRequestFullscreen || body.mozRequestFullScreen && doc.mozFullScreenEnabled || body.msRequestFullscreen && doc.msFullscreenEnabled || body.requestFullscreen && doc.fullscreenEnabled);
+};
+goog.dom.fullscreen.requestFullScreen = function(element) {
+  if (element.webkitRequestFullscreen) {
+    element.webkitRequestFullscreen();
+  } else {
+    if (element.mozRequestFullScreen) {
+      element.mozRequestFullScreen();
+    } else {
+      if (element.msRequestFullscreen) {
+        element.msRequestFullscreen();
+      } else {
+        if (element.requestFullscreen) {
+          element.requestFullscreen();
+        }
+      }
+    }
+  }
+};
+goog.dom.fullscreen.requestFullScreenWithKeys = function(element) {
+  if (element.mozRequestFullScreenWithKeys) {
+    element.mozRequestFullScreenWithKeys();
+  } else {
+    if (element.webkitRequestFullscreen) {
+      element.webkitRequestFullscreen();
+    } else {
+      goog.dom.fullscreen.requestFullScreen(element);
+    }
+  }
+};
+goog.dom.fullscreen.exitFullScreen = function(opt_domHelper) {
+  var doc = goog.dom.fullscreen.getDocument_(opt_domHelper);
+  if (doc.webkitCancelFullScreen) {
+    doc.webkitCancelFullScreen();
+  } else {
+    if (doc.mozCancelFullScreen) {
+      doc.mozCancelFullScreen();
+    } else {
+      if (doc.msExitFullscreen) {
+        doc.msExitFullscreen();
+      } else {
+        if (doc.exitFullscreen) {
+          doc.exitFullscreen();
+        }
+      }
+    }
+  }
+};
+goog.dom.fullscreen.isFullScreen = function(opt_domHelper) {
+  var doc = goog.dom.fullscreen.getDocument_(opt_domHelper);
+  return !!(doc.webkitIsFullScreen || doc.mozFullScreen || doc.msFullscreenElement || doc.fullscreenElement);
+};
+goog.dom.fullscreen.getFullScreenElement = function(opt_domHelper) {
+  var doc = goog.dom.fullscreen.getDocument_(opt_domHelper);
+  var element_list = [doc.webkitFullscreenElement, doc.mozFullScreenElement, doc.msFullscreenElement, doc.fullscreenElement];
+  for (var i = 0;i < element_list.length;i++) {
+    if (element_list[i] != null) {
+      return element_list[i];
+    }
+  }
+  return null;
+};
+goog.dom.fullscreen.getDocument_ = function(opt_domHelper) {
+  return opt_domHelper ? opt_domHelper.getDocument() : goog.dom.getDomHelper().getDocument();
+};
+goog.provide("acgraph.vector.Stage");
+goog.require("acgraph.error");
+goog.require("acgraph.events.BrowserEvent");
+goog.require("acgraph.utils.IdGenerator");
+goog.require("acgraph.utils.exporting");
+goog.require("acgraph.vector.Circle");
+goog.require("acgraph.vector.Clip");
+goog.require("acgraph.vector.Defs");
+goog.require("acgraph.vector.Ellipse");
+goog.require("acgraph.vector.HatchFill");
+goog.require("acgraph.vector.ILayer");
+goog.require("acgraph.vector.Image");
+goog.require("acgraph.vector.Layer");
+goog.require("acgraph.vector.Path");
+goog.require("acgraph.vector.PatternFill");
+goog.require("acgraph.vector.Rect");
+goog.require("acgraph.vector.Text");
+goog.require("acgraph.vector.UnmanagedLayer");
+goog.require("goog.array");
+goog.require("goog.dom");
+goog.require("goog.dom.classlist");
+goog.require("goog.dom.fullscreen");
+goog.require("goog.events.EventHandler");
+goog.require("goog.events.EventTarget");
+goog.require("goog.events.Listenable");
+goog.require("goog.math.Coordinate");
+goog.require("goog.math.Rect");
+goog.require("goog.math.Size");
+goog.require("goog.style");
+acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
+  goog.base(this);
+  this.renderAsync_ = goog.bind(this.renderAsync_, this);
+  this.checkSize = goog.bind(this.checkSize, this);
+  var doc = goog.global["document"];
+  if (!goog.global["acgraph"].stages) {
+    goog.global["acgraph"].stages = {};
+  }
+  var id = acgraph.utils.IdGenerator.getInstance().identify(this, acgraph.utils.IdGenerator.ElementTypePrefix.STAGE);
+  goog.global["acgraph"].stages[id] = this;
+  this.charts = {};
+  this.eventHandler_ = new goog.events.EventHandler(this);
+  this.internalContainer_ = doc.createElement(goog.dom.TagName.DIV);
+  goog.style.setStyle(this.internalContainer_, {"position":"relative", "left":0, "top":0, "overflow":"hidden"});
+  this.domElement_ = acgraph.getRenderer().createStageElement();
+  acgraph.register(this);
+  acgraph.getRenderer().setStageSize(this.domElement_, "100%", "100%");
+  goog.style.setStyle(this.domElement_, "display", "block");
+  goog.dom.classlist.add(this.domElement_, "anychart-ui-support");
+  goog.dom.appendChild(this.internalContainer_, this.domElement_);
+  this.domElement_.setAttribute("ac-id", id);
+  this.clipsToRender_ = [];
+  this.defs_ = this.createDefs();
+  this.defs_.render();
+  this.rootLayer_ = new acgraph.vector.Layer;
+  this.rootLayer_.setParent(this).render();
+  goog.dom.appendChild(this.domElement_, this.rootLayer_.domElement());
+  acgraph.getRenderer().createMeasurement();
+  this.eventHandler_.listen(this.domElement(), [goog.events.EventType.MOUSEDOWN, goog.events.EventType.MOUSEOVER, goog.events.EventType.MOUSEOUT, goog.events.EventType.CLICK, goog.events.EventType.DBLCLICK, goog.events.EventType.TOUCHSTART, goog.events.EventType.TOUCHEND, goog.events.EventType.TOUCHCANCEL, goog.events.EventType.MSPOINTERDOWN, goog.events.EventType.MSPOINTERUP, goog.events.EventType.POINTERDOWN, goog.events.EventType.POINTERUP, goog.events.EventType.CONTEXTMENU], this.handleMouseEvent_, 
+  false);
+  this.setWidth_(opt_width || "100%");
+  this.setHeight_(opt_height || "100%");
+  this.container_ = goog.isString(opt_container) ? doc.getElementById(opt_container) : opt_container;
+  if (this.container_) {
+    this.updateContainer_();
+  }
+  this.checkSize(true, true);
+  this.resume();
+};
+goog.inherits(acgraph.vector.Stage, goog.events.EventTarget);
+acgraph.vector.Stage.DomChangeType = {ELEMENT_CREATE:1, ELEMENT_ADD:2, ELEMENT_REMOVE:3, APPLY_FILL:4, APPLY_STROKE:5};
+acgraph.vector.Stage.EventType = {RENDER_START:"renderstart", RENDER_FINISH:"renderfinish", STAGE_RESIZE:"stageresize", STAGE_RENDERED:"stagerendered"};
+acgraph.vector.Stage.ExportType = {SVG:"svg", JPG:"jpg", PNG:"png", PDF:"pdf"};
+acgraph.vector.Stage.HANDLED_EVENT_TYPES_CAPTURE_SHIFT = 12;
+acgraph.vector.Stage.prototype.width_ = NaN;
+acgraph.vector.Stage.prototype.height_ = NaN;
+acgraph.vector.Stage.prototype.fixedWidth_ = NaN;
+acgraph.vector.Stage.prototype.fixedHeight_ = NaN;
+acgraph.vector.Stage.prototype.currentWidth_ = NaN;
+acgraph.vector.Stage.prototype.currentHeight_ = NaN;
+acgraph.vector.Stage.prototype.maxResizeDelay_ = 100;
+acgraph.vector.Stage.prototype.checkSizeTimer_ = NaN;
+acgraph.vector.Stage.prototype.currentDomChangesCount = 0;
+acgraph.vector.Stage.prototype.maxDomChanges = 500;
+acgraph.vector.Stage.prototype["pathToRadialGradientImage"] = "RadialGradient.png";
+acgraph.vector.Stage.prototype.id_ = undefined;
+acgraph.vector.Stage.prototype.suspended_ = 1;
+acgraph.vector.Stage.prototype.container_ = null;
+acgraph.vector.Stage.prototype.titleElement = null;
+acgraph.vector.Stage.prototype.titleVal_ = void 0;
+acgraph.vector.Stage.prototype.descElement = null;
+acgraph.vector.Stage.prototype.descVal_ = void 0;
+acgraph.vector.Stage.prototype.asyncMode_ = false;
+acgraph.vector.Stage.prototype.isRendering_ = false;
+acgraph.vector.Stage.prototype.id = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    var id = opt_value || "";
+    if (this.id_ != id) {
+      this.id_ = id;
+      acgraph.getRenderer().setIdInternal(this.domElement_, this.id_);
+    }
+    return this;
+  }
+  if (!goog.isDef(this.id_)) {
+    this.id(acgraph.utils.IdGenerator.getInstance().generateId(this));
+  }
+  return (this.id_);
+};
+acgraph.vector.Stage.prototype.getStage = function() {
+  return this;
+};
+acgraph.vector.Stage.prototype.parent = function() {
+  return this;
+};
+acgraph.vector.Stage.prototype.domElement = function() {
+  return this.domElement_;
+};
+acgraph.vector.Stage.prototype.width = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (this.setWidth_(opt_value)) {
+      this.checkSize(true);
+    }
+    return this;
+  }
+  return this.width_ || 0;
+};
+acgraph.vector.Stage.prototype.height = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (this.setHeight_(opt_value)) {
+      this.checkSize(true);
+    }
+    return this;
+  }
+  return this.height_ || 0;
+};
+acgraph.vector.Stage.prototype.resize = function(width, height) {
+  var widthChanged = this.setWidth_(width);
+  var heightChanged = this.setHeight_(height);
+  if (widthChanged || heightChanged) {
+    this.checkSize(true);
+  }
+};
+acgraph.vector.Stage.prototype.maxResizeDelay = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    var val = parseFloat(opt_value);
+    if (val >= 0) {
+      if (this.maxResizeDelay_ > val && !isNaN(this.checkSizeTimer_)) {
+        clearTimeout(this.checkSizeTimer_);
+      }
+      this.maxResizeDelay_ = val;
+      this.checkSize(true);
+    }
+    return this;
+  }
+  return this.maxResizeDelay_;
+};
+acgraph.vector.Stage.prototype.container = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    var container = goog.dom.getElement(opt_value || null);
+    if (this.container_ != container) {
+      this.container_ = container;
+      this.updateContainer_();
+      this.checkSize(true);
+      this.render();
+    }
+    return this;
+  }
+  return this.container_ ? this.internalContainer_ : null;
+};
+acgraph.vector.Stage.prototype.getContainerElement = function() {
+  return this.container_;
+};
+acgraph.vector.Stage.prototype.getDomWrapper = function() {
+  return this.internalContainer_;
+};
+acgraph.vector.Stage.prototype.suspend = function() {
+  this.suspended_++;
+  return this;
+};
+acgraph.vector.Stage.prototype.resume = function(opt_force) {
+  this.suspended_ = opt_force ? 0 : Math.max(this.suspended_ - 1, 0);
+  this.render();
+  return this;
+};
+acgraph.vector.Stage.prototype.asyncMode = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    this.asyncMode_ = !!opt_value;
+    return this;
+  }
+  return this.asyncMode_;
+};
+acgraph.vector.Stage.prototype.isSuspended = function() {
+  return !!this.suspended_;
+};
+acgraph.vector.Stage.prototype.isRendering = function() {
+  return this.isRendering_;
+};
+acgraph.vector.Stage.prototype.title = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (this.titleVal_ != opt_value) {
+      this.titleVal_ = opt_value;
+      acgraph.getRenderer().setTitle(this, this.titleVal_);
+    }
+    return this;
+  } else {
+    return this.titleVal_;
+  }
+};
+acgraph.vector.Stage.prototype.desc = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (this.descVal_ != opt_value) {
+      this.descVal_ = opt_value;
+      acgraph.getRenderer().setDesc(this, this.descVal_);
+    }
+    return this;
+  } else {
+    return this.descVal_;
+  }
+};
+acgraph.vector.Stage.prototype.visible = function(opt_isVisible) {
+  if (arguments.length == 0) {
+    return (this.rootLayer_.visible());
+  }
+  this.rootLayer_.visible(opt_isVisible);
+  return this;
+};
+acgraph.vector.Stage.prototype.data = function(opt_value) {
+  if (arguments.length == 0) {
+    return this.serialize();
+  } else {
+    var primitive;
+    var type = opt_value["type"];
+    if (!type) {
+      this.deserialize(opt_value);
+    } else {
+      switch(type) {
+        case "rect":
+          primitive = this.rect();
+          break;
+        case "circle":
+          primitive = this.circle();
+          break;
+        case "ellipse":
+          primitive = this.ellipse();
+          break;
+        case "image":
+          primitive = this.image();
+          break;
+        case "text":
+          primitive = this.text();
+          break;
+        case "path":
+          primitive = this.path();
+          break;
+        case "layer":
+          primitive = this.layer();
+          break;
+        default:
+          primitive = null;
+          break;
+      }
+    }
+    if (primitive) {
+      primitive.deserialize(opt_value);
+    }
+    return this;
+  }
+};
+acgraph.vector.Stage.prototype.remove = function() {
+  return (this.container(null));
+};
+acgraph.vector.Stage.prototype.getX = function() {
+  return 0;
+};
+acgraph.vector.Stage.prototype.getY = function() {
+  return 0;
+};
+acgraph.vector.Stage.prototype.getBounds = function() {
+  return new goog.math.Rect(0, 0, (this.width()), (this.height()));
+};
+acgraph.vector.Stage.prototype.clip = function(opt_value) {
+  return this.rootLayer_.clip(opt_value);
+};
+acgraph.vector.Stage.prototype.getCharts = function() {
+  return this.charts;
+};
+acgraph.vector.Stage.prototype.fullScreen = function(opt_value) {
+  var container = (this.getDomWrapper());
+  if (goog.isDef(opt_value)) {
+    if (container && this.isFullScreenAvailable()) {
+      opt_value = !!opt_value;
+      if (this.fullScreen() != opt_value) {
+        if (opt_value) {
+          goog.dom.fullscreen.requestFullScreenWithKeys(container);
+        } else {
+          goog.dom.fullscreen.exitFullScreen();
+        }
+      }
+    }
+    return this;
+  }
+  return !!(container && goog.dom.fullscreen.getFullScreenElement() == container);
+};
+acgraph.vector.Stage.prototype.isFullScreenAvailable = function() {
+  return goog.dom.fullscreen.isSupported();
+};
+acgraph.vector.Stage.prototype.getElementTypePrefix = function() {
+  return acgraph.utils.IdGenerator.ElementTypePrefix.STAGE;
+};
+acgraph.vector.Stage.prototype.getRootLayer = function() {
+  return this.rootLayer_;
+};
+acgraph.vector.Stage.prototype.notifyRemoved = function(child) {
+  this.rootLayer_.notifyRemoved(child);
+};
+acgraph.vector.Stage.prototype.childClipChanged = goog.nullFunction;
+acgraph.vector.Stage.prototype.checkSize = function(opt_directCall, opt_silent) {
+  if (opt_directCall && !isNaN(this.checkSizeTimer_)) {
+    clearTimeout(this.checkSizeTimer_);
+  }
+  this.checkSizeTimer_ = NaN;
+  var width, height;
+  var isDynamicWidth = isNaN(this.fixedWidth_);
+  var isDynamicHeight = isNaN(this.fixedHeight_);
+  var isDynamicSize = isDynamicWidth || isDynamicHeight;
+  var detachedOrHidden;
+  if (isDynamicSize) {
+    var size;
+    if (this.fullScreen()) {
+      size = goog.style.getContentBoxSize(this.internalContainer_);
+    } else {
+      size = this.container_ ? goog.style.getContentBoxSize(this.container_) : new goog.math.Size(NaN, NaN);
+    }
+    size.width = Math.max(size.width || 0, 0);
+    size.height = Math.max(size.height || 0, 0);
+    detachedOrHidden = !size.width && !size.height;
+    width = isDynamicWidth ? size.width : this.fixedWidth_;
+    height = isDynamicHeight ? size.height : this.fixedHeight_;
+  } else {
+    width = this.fixedWidth_;
+    height = this.fixedHeight_;
+    detachedOrHidden = false;
+  }
+  if ((width != this.width_ || height != this.height_) && !detachedOrHidden) {
+    this.width_ = width;
+    this.height_ = height;
+    if (!opt_silent) {
+      this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RESIZE);
+    }
+  }
+  if (this.container_ && isDynamicSize && !goog.global["acgraph"]["isNodeJS"]) {
+    this.checkSizeTimer_ = setTimeout(this.checkSize, this.maxResizeDelay_);
+  }
+};
+acgraph.vector.Stage.prototype.setWidth_ = function(width) {
+  if (this.currentWidth_ != width) {
+    var num = parseFloat(width);
+    if (!isNaN(num)) {
+      this.currentWidth_ = goog.isNumber(width) ? width : String(width);
+      this.fixedWidth_ = goog.isString(width) && goog.string.endsWith(width, "%") ? NaN : num;
+      goog.style.setWidth(this.internalContainer_, this.currentWidth_);
+      return true;
+    }
+  }
+  return false;
+};
+acgraph.vector.Stage.prototype.setHeight_ = function(height) {
+  if (this.currentHeight_ != height) {
+    var num = parseFloat(height);
+    if (!isNaN(num)) {
+      this.currentHeight_ = goog.isNumber(height) ? height : String(height);
+      this.fixedHeight_ = goog.isString(height) && goog.string.endsWith(height, "%") ? NaN : num;
+      goog.style.setHeight(this.internalContainer_, this.currentHeight_);
+      return true;
+    }
+  }
+  return false;
+};
+acgraph.vector.Stage.prototype.createDefs = goog.abstractMethod;
+acgraph.vector.Stage.prototype.getDefs = function() {
+  return this.defs_;
+};
+acgraph.vector.Stage.prototype.clearDefs = function() {
+  this.defs_.clear();
+};
+acgraph.vector.Stage.prototype.addClipForRender = function(clip) {
+  if (!this.isSuspended()) {
+    clip.render();
+  } else {
+    this.clipsToRender_.push(clip);
+  }
+};
+acgraph.vector.Stage.prototype.removeClipFromRender = function(clip) {
+  goog.array.remove(this.clipsToRender_, clip);
+};
+acgraph.vector.Stage.prototype.deserialize = function(data) {
+  this.width(data["width"]);
+  this.height(data["height"]);
+  data["type"] = "layer";
+  this.getRootLayer().deserialize(data);
+  this.getRootLayer().id("");
+  if ("id" in data) {
+    this.id(data["id"]);
+  }
+};
+acgraph.vector.Stage.prototype.serialize = function() {
+  var data = this.getRootLayer().serialize();
+  if (this.id_) {
+    data["id"] = this.id_;
+  }
+  data["width"] = this.currentWidth_;
+  data["height"] = this.currentHeight_;
+  delete data["type"];
+  return data;
+};
+acgraph.vector.Stage.prototype.getClientPosition = function() {
+  return this.internalContainer_ ? goog.style.getClientPosition(this.internalContainer_) : new goog.math.Coordinate(0, 0);
+};
+acgraph.vector.Stage.prototype.acquireDomChangesSync_ = function(wantedCount) {
+  this.currentDomChangesCount += wantedCount;
+  return wantedCount;
+};
+acgraph.vector.Stage.prototype.acquireDomChangesAsync_ = function(wantedCount) {
+  var allowed = Math.min(this.maxDomChanges - this.currentDomChangesCount, wantedCount);
+  this.currentDomChangesCount += allowed;
+  return allowed;
+};
+acgraph.vector.Stage.prototype.acquireDomChanges = acgraph.vector.Stage.prototype.acquireDomChangesSync_;
+acgraph.vector.Stage.prototype.acquireDomChange = function(changeType) {
+  if (changeType == acgraph.vector.Stage.DomChangeType.ELEMENT_CREATE || changeType == acgraph.vector.Stage.DomChangeType.ELEMENT_ADD || changeType == acgraph.vector.Stage.DomChangeType.ELEMENT_REMOVE) {
+    return this.acquireDomChanges(1) > 0;
+  }
+  return true;
+};
+acgraph.vector.Stage.prototype.blockChangesForAdding = function() {
+  var wanted = Math.floor(Math.max(this.maxDomChanges - this.currentDomChangesCount, 0) / 3);
+  return this.acquireDomChanges(wanted);
+};
+acgraph.vector.Stage.prototype.releaseDomChanges = function(allowed, made) {
+  this.currentDomChangesCount -= allowed - made;
+};
+acgraph.vector.Stage.prototype.render = function() {
+  if (!this.suspended_) {
+    if (this.container_ && !this.isRendering_) {
+      this.isRendering_ = true;
+      this.dispatchEvent(acgraph.vector.Stage.EventType.RENDER_START);
+      this.currentDomChangesCount = 0;
+      if (this.asyncMode_) {
+        this.acquireDomChanges = this.acquireDomChangesAsync_;
+        setTimeout(this.renderAsync_, 0);
+      } else {
+        this.acquireDomChanges = this.acquireDomChangesSync_;
+        this.renderInternal();
+        if (this.isDirty()) {
+          throw acgraph.error.getErrorMessage(acgraph.error.Code.DIRTY_AFTER_SYNC_RENDER);
+        }
+        this.finishRendering_();
+      }
+    }
+  }
+};
+acgraph.vector.Stage.prototype.updateContainer_ = function() {
+  if (this.container_) {
+    if (this.internalContainer_.parentNode != this.container_) {
+      goog.dom.appendChild(this.container_, this.internalContainer_);
+    }
+  } else {
+    goog.dom.removeNode(this.internalContainer_);
+  }
+};
+acgraph.vector.Stage.prototype.renderAsync_ = function() {
+  this.renderInternal();
+  if (this.isDirty()) {
+    setTimeout(this.renderAsync_, 0);
+  } else {
+    this.finishRendering_();
+  }
+};
+acgraph.vector.Stage.prototype.renderInternal = function() {
+  if (this.clipsToRender_ && this.clipsToRender_.length) {
+    for (var i = 0;i < this.clipsToRender_.length;i++) {
+      var clip = this.clipsToRender_[i];
+      if (clip.isDirty()) {
+        clip.render();
+      }
+    }
+    this.clipsToRender_.length = 0;
+  }
+  if (this.rootLayer_.isDirty()) {
+    this.rootLayer_.render();
+  }
+  if (this.credits) {
+    this.credits().render();
+  }
+};
+acgraph.vector.Stage.prototype.finishRendering_ = function() {
+  this.isRendering_ = false;
+  this.dispatchEvent(acgraph.vector.Stage.EventType.RENDER_FINISH);
+  var imageLoader = acgraph.getRenderer().getImageLoader();
+  var isImageLoading = acgraph.getRenderer().isImageLoading();
+  if (imageLoader && isImageLoading) {
+    if (!this.imageLoadingListener_) {
+      this.imageLoadingListener_ = true;
+      goog.events.listenOnce(imageLoader, goog.net.EventType.COMPLETE, function(e) {
+        this.imageLoadingListener_ = false;
+        if (!this.isRendering_) {
+          this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RENDERED);
+        }
+      }, false, this);
+    }
+  } else {
+    this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RENDERED);
+  }
+};
+acgraph.vector.Stage.prototype.setDirtyState = function(state) {
+};
+acgraph.vector.Stage.prototype.isDirty = function() {
+  return this.rootLayer_.isDirty();
+};
+acgraph.vector.Stage.prototype.hasDirtyState = function(state) {
+  return this.rootLayer_.hasDirtyState(state);
+};
+acgraph.vector.Stage.prototype.layer = acgraph.vector.Layer.prototype.layer;
+acgraph.vector.Stage.prototype.unmanagedLayer = acgraph.vector.Layer.prototype.unmanagedLayer;
+acgraph.vector.Stage.prototype.text = acgraph.vector.Layer.prototype.text;
+acgraph.vector.Stage.prototype.html = acgraph.vector.Layer.prototype.html;
+acgraph.vector.Stage.prototype.rect = acgraph.vector.Layer.prototype.rect;
+acgraph.vector.Stage.prototype.image = acgraph.vector.Layer.prototype.image;
+acgraph.vector.Stage.prototype.roundedRect = acgraph.vector.Layer.prototype.roundedRect;
+acgraph.vector.Stage.prototype.roundedInnerRect = acgraph.vector.Layer.prototype.roundedInnerRect;
+acgraph.vector.Stage.prototype.truncatedRect = acgraph.vector.Layer.prototype.truncatedRect;
+acgraph.vector.Stage.prototype.circle = acgraph.vector.Layer.prototype.circle;
+acgraph.vector.Stage.prototype.ellipse = acgraph.vector.Layer.prototype.ellipse;
+acgraph.vector.Stage.prototype.path = acgraph.vector.Layer.prototype.path;
+acgraph.vector.Stage.prototype.star = acgraph.vector.Layer.prototype.star;
+acgraph.vector.Stage.prototype.star4 = acgraph.vector.Layer.prototype.star4;
+acgraph.vector.Stage.prototype.star5 = acgraph.vector.Layer.prototype.star5;
+acgraph.vector.Stage.prototype.star6 = acgraph.vector.Layer.prototype.star6;
+acgraph.vector.Stage.prototype.star7 = acgraph.vector.Layer.prototype.star7;
+acgraph.vector.Stage.prototype.star10 = acgraph.vector.Layer.prototype.star10;
+acgraph.vector.Stage.prototype.triangleUp = acgraph.vector.Layer.prototype.triangleUp;
+acgraph.vector.Stage.prototype.triangleDown = acgraph.vector.Layer.prototype.triangleDown;
+acgraph.vector.Stage.prototype.triangleRight = acgraph.vector.Layer.prototype.triangleRight;
+acgraph.vector.Stage.prototype.triangleLeft = acgraph.vector.Layer.prototype.triangleLeft;
+acgraph.vector.Stage.prototype.diamond = acgraph.vector.Layer.prototype.diamond;
+acgraph.vector.Stage.prototype.cross = acgraph.vector.Layer.prototype.cross;
+acgraph.vector.Stage.prototype.diagonalCross = acgraph.vector.Layer.prototype.diagonalCross;
+acgraph.vector.Stage.prototype.hLine = acgraph.vector.Layer.prototype.hLine;
+acgraph.vector.Stage.prototype.vLine = acgraph.vector.Layer.prototype.vLine;
+acgraph.vector.Stage.prototype.pie = acgraph.vector.Layer.prototype.pie;
+acgraph.vector.Stage.prototype.donut = acgraph.vector.Layer.prototype.donut;
+acgraph.vector.Stage.prototype.createClip = function(opt_leftOrRect, opt_top, opt_width, opt_height) {
+  return new acgraph.vector.Clip(this, opt_leftOrRect, opt_top, opt_width, opt_height);
+};
+acgraph.vector.Stage.prototype.pattern = function(bounds) {
+  return new acgraph.vector.PatternFill(bounds);
+};
+acgraph.vector.Stage.prototype.hatchFill = function(opt_type, opt_color, opt_thickness, opt_size) {
+  return acgraph.hatchFill(opt_type, opt_color, opt_thickness, opt_size);
+};
+acgraph.vector.Stage.prototype.numChildren = function() {
+  return this.rootLayer_.numChildren();
+};
+acgraph.vector.Stage.prototype.addChild = function(element) {
+  this.rootLayer_.addChild(element);
+  return this;
+};
+acgraph.vector.Stage.prototype.addChildAt = function(element, index) {
+  this.rootLayer_.addChildAt(element, index);
+  return this;
+};
+acgraph.vector.Stage.prototype.getChildAt = function(index) {
+  return this.rootLayer_.getChildAt(index);
+};
+acgraph.vector.Stage.prototype.removeChild = function(element) {
+  return this.rootLayer_.removeChild(element);
+};
+acgraph.vector.Stage.prototype.removeChildAt = function(index) {
+  return this.rootLayer_.removeChildAt(index);
+};
+acgraph.vector.Stage.prototype.removeChildren = function() {
+  return this.rootLayer_.removeChildren();
+};
+acgraph.vector.Stage.prototype.hasChild = function(element) {
+  return this.rootLayer_.hasChild(element);
+};
+acgraph.vector.Stage.prototype.indexOfChild = function(element) {
+  return this.rootLayer_.indexOfChild(element);
+};
+acgraph.vector.Stage.prototype.swapChildren = function(element1, element2) {
+  this.rootLayer_.swapChildren(element1, element2);
+  return this;
+};
+acgraph.vector.Stage.prototype.swapChildrenAt = function(index1, index2) {
+  this.rootLayer_.swapChildrenAt(index1, index2);
+  return this;
+};
+acgraph.vector.Stage.prototype.forEachChild = function(callback, opt_this) {
+  this.rootLayer_.forEachChild(callback, opt_this);
+  return this;
+};
+acgraph.vector.Stage.prototype.rotate = function(degrees, opt_cx, opt_cy) {
+  this.rootLayer_.rotate(degrees, opt_cx, opt_cy);
+  return this;
+};
+acgraph.vector.Stage.prototype.rotateByAnchor = function(degrees, opt_anchor) {
+  this.rootLayer_.rotateByAnchor(degrees, opt_anchor);
+  return this;
+};
+acgraph.vector.Stage.prototype.setRotation = function(degrees, opt_cx, opt_cy) {
+  this.rootLayer_.setRotation(degrees, opt_cx, opt_cy);
+  return this;
+};
+acgraph.vector.Stage.prototype.setRotationByAnchor = function(degrees, opt_anchor) {
+  this.rootLayer_.setRotationByAnchor(degrees, opt_anchor);
+  return this;
+};
+acgraph.vector.Stage.prototype.translate = function(tx, ty) {
+  this.rootLayer_.translate(tx, ty);
+  return this;
+};
+acgraph.vector.Stage.prototype.setPosition = function(x, y) {
+  this.rootLayer_.setPosition(x, y);
+  return this;
+};
+acgraph.vector.Stage.prototype.scale = function(sx, sy, opt_cx, opt_cy) {
+  this.rootLayer_.scale(sx, sy, opt_cx, opt_cy);
+  return this;
+};
+acgraph.vector.Stage.prototype.scaleByAnchor = function(sx, sy, opt_anchor) {
+  this.rootLayer_.scaleByAnchor(sx, sy, opt_anchor);
+  return this;
+};
+acgraph.vector.Stage.prototype.appendTransformationMatrix = function(m00, m10, m01, m11, m02, m12) {
+  this.rootLayer_.appendTransformationMatrix(m00, m10, m01, m11, m02, m12);
+  return this;
+};
+acgraph.vector.Stage.prototype.setTransformationMatrix = function(m00, m10, m01, m11, m02, m12) {
+  this.rootLayer_.setTransformationMatrix(m00, m10, m01, m11, m02, m12);
+  return this;
+};
+acgraph.vector.Stage.prototype.getRotationAngle = function() {
+  return this.rootLayer_.getRotationAngle();
+};
+acgraph.vector.Stage.prototype.getTransformationMatrix = function() {
+  return this.rootLayer_.getTransformationMatrix();
+};
+acgraph.vector.Stage.prototype.getFullTransformation = function() {
+  return null;
+};
+acgraph.vector.Stage.prototype.dispatchEvent = function(e) {
+  if (goog.isString(e)) {
+    e = e.toLowerCase();
+  } else {
+    if ("type" in e) {
+      e.type = String(e.type).toLowerCase();
+    }
+  }
+  return goog.base(this, "dispatchEvent", e);
+};
+acgraph.vector.Stage.prototype.listen = function(type, listener, opt_useCapture, opt_listenerScope) {
+  return (goog.base(this, "listen", String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope));
+};
+acgraph.vector.Stage.prototype.listenOnce = function(type, listener, opt_useCapture, opt_listenerScope) {
+  return (goog.base(this, "listenOnce", String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope));
+};
+acgraph.vector.Stage.prototype.unlisten = function(type, listener, opt_useCapture, opt_listenerScope) {
+  return goog.base(this, "unlisten", String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
+};
+acgraph.vector.Stage.prototype.unlistenByKey;
+acgraph.vector.Stage.prototype.removeAllListeners = function(opt_type) {
+  if (goog.isDef(opt_type)) {
+    opt_type = String(opt_type).toLowerCase();
+  }
+  return goog.base(this, "removeAllListeners", opt_type);
+};
+acgraph.vector.Stage.prototype.handleMouseEvent_ = function(e) {
+  var event = new acgraph.events.BrowserEvent(e, this);
+  if (acgraph.utils.instanceOf(event["target"], acgraph.vector.Element)) {
+    var el = (event["target"]);
+    el.dispatchEvent(event);
+    var type = event["type"];
+    if (event.defaultPrevented) {
+      e.preventDefault();
+    }
+    if (!acgraph.utils.instanceOf(event["relatedTarget"], acgraph.vector.Element) || (event["relatedTarget"]).getStage() != this) {
+      if (type == acgraph.events.EventType.MOUSEOVER) {
+        this.eventHandler_.listen(goog.dom.getDocument(), acgraph.events.EventType.MOUSEMOVE, this.handleMouseEvent_, false);
+      } else {
+        if (type == acgraph.events.EventType.MOUSEOUT) {
+          this.eventHandler_.unlisten(goog.dom.getDocument(), acgraph.events.EventType.MOUSEMOVE, this.handleMouseEvent_, false);
+        }
+      }
+    }
+    switch(type) {
+      case acgraph.events.EventType.MOUSEDOWN:
+        this.eventHandler_.listen(goog.dom.getDocument(), acgraph.events.EventType.MOUSEUP, this.handleMouseEvent_, false);
+        break;
+      case acgraph.events.EventType.MOUSEUP:
+        this.eventHandler_.unlisten(goog.dom.getDocument(), acgraph.events.EventType.MOUSEUP, this.handleMouseEvent_, false);
+        break;
+      case acgraph.events.EventType.TOUCHSTART:
+        this.eventHandler_.listen(goog.dom.getDocument(), acgraph.events.EventType.TOUCHMOVE, this.handleMouseEvent_, false);
+        break;
+      case acgraph.events.EventType.TOUCHEND:
+        this.eventHandler_.unlisten(goog.dom.getDocument(), acgraph.events.EventType.TOUCHMOVE, this.handleMouseEvent_, false);
+        break;
+      case goog.events.EventType.POINTERDOWN:
+        this.eventHandler_.listen(goog.dom.getDocument(), goog.events.EventType.POINTERMOVE, this.handleMouseEvent_, false);
+        break;
+      case goog.events.EventType.POINTERUP:
+        this.eventHandler_.unlisten(goog.dom.getDocument(), goog.events.EventType.POINTERMOVE, this.handleMouseEvent_, false);
+        break;
+    }
+  }
+};
+acgraph.vector.Stage.prototype.dispose = function() {
+  acgraph.vector.Stage.base(this, "dispose");
+};
+acgraph.vector.Stage.prototype.disposeInternal = function() {
+  acgraph.vector.Stage.base(this, "disposeInternal");
+  goog.object.forEach(this.charts, function(value, key, arr) {
+    value.remove();
+    delete arr[value];
+  });
+  goog.dispose(this.eventHandler_);
+  this.eventHandler_ = null;
+  goog.dispose(this.defs_);
+  delete this.defs_;
+  goog.dispose(this.rootLayer_);
+  this.renderInternal();
+  this.rootLayer_.finalizeDisposing();
+  delete this.rootLayer_;
+  var id = acgraph.utils.IdGenerator.getInstance().identify(this, acgraph.utils.IdGenerator.ElementTypePrefix.STAGE);
+  delete goog.global["acgraph"].stages[id];
+  acgraph.unregister(this);
+  goog.dom.removeNode(this.internalContainer_);
+  this.container_ = null;
+  delete this.internalContainer_;
+  this.domElement_ = null;
+  acgraph.getRenderer().disposeMeasurement();
+  if (this.credits_) {
+    this.credits_.dispose();
+    this.credits_ = null;
+  }
+};
+(function() {
+  var proto = acgraph.vector.Stage.prototype;
+  goog.exportSymbol("acgraph.vector.Stage", acgraph.vector.Stage);
+  proto["id"] = proto.id;
+  proto["container"] = proto.container;
+  proto["getContainerElement"] = proto.getContainerElement;
+  proto["getDomWrapper"] = proto.getDomWrapper;
+  proto["maxResizeDelay"] = proto.maxResizeDelay;
+  proto["dispose"] = proto.dispose;
+  proto["getBounds"] = proto.getBounds;
+  proto["layer"] = proto.layer;
+  proto["unmanagedLayer"] = proto.unmanagedLayer;
+  proto["circle"] = proto.circle;
+  proto["ellipse"] = proto.ellipse;
+  proto["rect"] = proto.rect;
+  proto["truncatedRect"] = proto.truncatedRect;
+  proto["roundedRect"] = proto.roundedRect;
+  proto["roundedInnerRect"] = proto.roundedInnerRect;
+  proto["path"] = proto.path;
+  proto["star"] = proto.star;
+  proto["star4"] = proto.star4;
+  proto["star5"] = proto.star5;
+  proto["star6"] = proto.star6;
+  proto["star7"] = proto.star7;
+  proto["star10"] = proto.star10;
+  proto["diamond"] = proto.diamond;
+  proto["triangleUp"] = proto.triangleUp;
+  proto["triangleDown"] = proto.triangleDown;
+  proto["triangleRight"] = proto.triangleRight;
+  proto["triangleLeft"] = proto.triangleLeft;
+  proto["cross"] = proto.cross;
+  proto["diagonalCross"] = proto.diagonalCross;
+  proto["hLine"] = proto.hLine;
+  proto["vLine"] = proto.vLine;
+  proto["pie"] = proto.pie;
+  proto["donut"] = proto.donut;
+  proto["text"] = proto.text;
+  proto["html"] = proto.html;
+  proto["image"] = proto.image;
+  proto["data"] = proto.data;
+  proto["pattern"] = proto.pattern;
+  proto["hatchFill"] = proto.hatchFill;
+  proto["clearDefs"] = proto.clearDefs;
+  proto["numChildren"] = proto.numChildren;
+  proto["addChild"] = proto.addChild;
+  proto["addChildAt"] = proto.addChildAt;
+  proto["removeChild"] = proto.removeChild;
+  proto["removeChildAt"] = proto.removeChildAt;
+  proto["removeChildren"] = proto.removeChildren;
+  proto["swapChildren"] = proto.swapChildren;
+  proto["swapChildrenAt"] = proto.swapChildrenAt;
+  proto["getChildAt"] = proto.getChildAt;
+  proto["hasChild"] = proto.hasChild;
+  proto["forEachChild"] = proto.forEachChild;
+  proto["indexOfChild"] = proto.indexOfChild;
+  proto["getX"] = proto.getX;
+  proto["getY"] = proto.getY;
+  proto["width"] = proto.width;
+  proto["height"] = proto.height;
+  proto["getBounds"] = proto.getBounds;
+  proto["resize"] = proto.resize;
+  proto["asyncMode"] = proto.asyncMode;
+  proto["resume"] = proto.resume;
+  proto["suspend"] = proto.suspend;
+  proto["isRendering"] = proto.isRendering;
+  proto["isSuspended"] = proto.isSuspended;
+  proto["remove"] = proto.remove;
+  proto["domElement"] = proto.domElement;
+  proto["visible"] = proto.visible;
+  proto["rotate"] = proto.rotate;
+  proto["rotateByAnchor"] = proto.rotateByAnchor;
+  proto["setRotation"] = proto.setRotation;
+  proto["setRotationByAnchor"] = proto.setRotationByAnchor;
+  proto["translate"] = proto.translate;
+  proto["setPosition"] = proto.setPosition;
+  proto["scale"] = proto.scale;
+  proto["scaleByAnchor"] = proto.scaleByAnchor;
+  proto["appendTransformationMatrix"] = proto.appendTransformationMatrix;
+  proto["setTransformationMatrix"] = proto.setTransformationMatrix;
+  proto["getRotationAngle"] = proto.getRotationAngle;
+  proto["getTransformationMatrix"] = proto.getTransformationMatrix;
+  proto["clip"] = proto.clip;
+  proto["createClip"] = proto.createClip;
+  proto["parent"] = proto.parent;
+  proto["getStage"] = proto.getStage;
+  proto["listen"] = proto.listen;
+  proto["listenOnce"] = proto.listenOnce;
+  proto["unlisten"] = proto.unlisten;
+  proto["unlistenByKey"] = proto.unlistenByKey;
+  proto["removeAllListeners"] = proto.removeAllListeners;
+  proto["title"] = proto.title;
+  proto["desc"] = proto.desc;
+  proto["getCharts"] = proto.getCharts;
+  proto["fullScreen"] = proto.fullScreen;
+  proto["isFullScreenAvailable"] = proto.isFullScreenAvailable;
+})();
+goog.provide("acgraph.vector.svg.Defs");
+goog.require("acgraph.vector.Defs");
+acgraph.vector.svg.Defs = function(stage) {
+  goog.base(this, stage);
+  this.clips_ = {};
+};
+goog.inherits(acgraph.vector.svg.Defs, acgraph.vector.Defs);
+acgraph.vector.svg.Defs.CLIP_FRACTION_DIGITS = 4;
+acgraph.vector.svg.Defs.prototype.clear = function() {
+  goog.object.clear(this.clips_);
+  goog.base(this, "clear");
+};
+acgraph.vector.svg.Defs.prototype.getClipPathElement = function(clipShape) {
+  var id = acgraph.utils.IdGenerator.getInstance().identify(clipShape);
+  var res = this.clips_[id];
+  if (!res) {
+    this.clips_[id] = res = acgraph.getRenderer().createClipElement();
+  }
+  return res;
+};
+acgraph.vector.svg.Defs.prototype.disposeInternal = function() {
+  goog.base(this, "disposeInternal");
+  for (var i in this.clips_) {
+    delete this.clips_[i];
+  }
+  delete this.clips_;
+};
+goog.provide("acgraph.vector.svg.Stage");
+goog.require("acgraph.vector.Stage");
+goog.require("acgraph.vector.svg.Defs");
+acgraph.vector.svg.Stage = function(opt_container, opt_width, opt_height) {
+  goog.base(this, opt_container, opt_width, opt_height);
+};
+goog.inherits(acgraph.vector.svg.Stage, acgraph.vector.Stage);
+acgraph.vector.svg.Stage.prototype.createDefs = function() {
+  return new acgraph.vector.svg.Defs(this);
+};
+goog.provide("acgraph.vector.svg");
+goog.require("acgraph.vector.svg.Renderer");
+goog.require("acgraph.vector.svg.Stage");
+goog.provide("goog.cssom");
+goog.provide("goog.cssom.CssRuleType");
+goog.require("goog.array");
+goog.require("goog.dom");
+goog.require("goog.dom.TagName");
+goog.cssom.CssRuleType = {STYLE:1, IMPORT:3, MEDIA:4, FONT_FACE:5, PAGE:6, NAMESPACE:7};
+goog.cssom.getAllCssText = function(opt_styleSheet) {
+  var styleSheet = opt_styleSheet || document.styleSheets;
+  return (goog.cssom.getAllCss_(styleSheet, true));
+};
+goog.cssom.getAllCssStyleRules = function(opt_styleSheet) {
+  var styleSheet = opt_styleSheet || document.styleSheets;
+  return (goog.cssom.getAllCss_(styleSheet, false));
+};
+goog.cssom.getCssRulesFromStyleSheet = function(styleSheet) {
+  var cssRuleList = null;
+  try {
+    cssRuleList = styleSheet.cssRules || styleSheet.rules;
+  } catch (e) {
+    if (e.code == 15) {
+      e.styleSheet = styleSheet;
+      throw e;
+    }
+  }
+  return cssRuleList;
+};
+goog.cssom.getAllCssStyleSheets = function(opt_styleSheet, opt_includeDisabled) {
+  var styleSheetsOutput = [];
+  var styleSheet = opt_styleSheet || document.styleSheets;
+  var includeDisabled = goog.isDef(opt_includeDisabled) ? opt_includeDisabled : false;
+  if (styleSheet.imports && styleSheet.imports.length) {
+    for (var i = 0, n = styleSheet.imports.length;i < n;i++) {
+      goog.array.extend(styleSheetsOutput, goog.cssom.getAllCssStyleSheets((styleSheet.imports[i])));
+    }
+  } else {
+    if (styleSheet.length) {
+      for (var i = 0, n = styleSheet.length;i < n;i++) {
+        goog.array.extend(styleSheetsOutput, goog.cssom.getAllCssStyleSheets(styleSheet[i]));
+      }
+    } else {
+      var cssRuleList = goog.cssom.getCssRulesFromStyleSheet((styleSheet));
+      if (cssRuleList && cssRuleList.length) {
+        for (var i = 0, n = cssRuleList.length, cssRule;i < n;i++) {
+          cssRule = cssRuleList[i];
+          if (cssRule.styleSheet) {
+            goog.array.extend(styleSheetsOutput, goog.cssom.getAllCssStyleSheets(cssRule.styleSheet));
+          }
+        }
+      }
+    }
+  }
+  if ((styleSheet.type || styleSheet.rules || styleSheet.cssRules) && (!styleSheet.disabled || includeDisabled)) {
+    styleSheetsOutput.push(styleSheet);
+  }
+  return styleSheetsOutput;
+};
+goog.cssom.getCssTextFromCssRule = function(cssRule) {
+  var cssText = "";
+  if (cssRule.cssText) {
+    cssText = cssRule.cssText;
+  } else {
+    if (cssRule.style && cssRule.style.cssText && cssRule.selectorText) {
+      var styleCssText = cssRule.style.cssText.replace(/\s*-closure-parent-stylesheet:\s*\[object\];?\s*/gi, "").replace(/\s*-closure-rule-index:\s*[\d]+;?\s*/gi, "");
+      var thisCssText = cssRule.selectorText + " { " + styleCssText + " }";
+      cssText = thisCssText;
+    }
+  }
+  return cssText;
+};
+goog.cssom.getCssRuleIndexInParentStyleSheet = function(cssRule, opt_parentStyleSheet) {
+  if (cssRule.style && cssRule.style["-closure-rule-index"]) {
+    return cssRule.style["-closure-rule-index"];
+  }
+  var parentStyleSheet = opt_parentStyleSheet || goog.cssom.getParentStyleSheet(cssRule);
+  if (!parentStyleSheet) {
+    throw Error("Cannot find a parentStyleSheet.");
+  }
+  var cssRuleList = goog.cssom.getCssRulesFromStyleSheet(parentStyleSheet);
+  if (cssRuleList && cssRuleList.length) {
+    for (var i = 0, n = cssRuleList.length, thisCssRule;i < n;i++) {
+      thisCssRule = cssRuleList[i];
+      if (thisCssRule == cssRule) {
+        return i;
+      }
+    }
+  }
+  return -1;
+};
+goog.cssom.getParentStyleSheet = function(cssRule) {
+  return cssRule.parentStyleSheet || cssRule.style && cssRule.style["-closure-parent-stylesheet"];
+};
+goog.cssom.replaceCssRule = function(cssRule, cssText, opt_parentStyleSheet, opt_index) {
+  var parentStyleSheet = opt_parentStyleSheet || goog.cssom.getParentStyleSheet(cssRule);
+  if (parentStyleSheet) {
+    var index = Number(opt_index) >= 0 ? Number(opt_index) : goog.cssom.getCssRuleIndexInParentStyleSheet(cssRule, parentStyleSheet);
+    if (index >= 0) {
+      goog.cssom.removeCssRule(parentStyleSheet, index);
+      goog.cssom.addCssRule(parentStyleSheet, cssText, index);
+    } else {
+      throw Error("Cannot proceed without the index of the cssRule.");
+    }
+  } else {
+    throw Error("Cannot proceed without the parentStyleSheet.");
+  }
+};
+goog.cssom.addCssRule = function(cssStyleSheet, cssText, opt_index) {
+  var index = opt_index;
+  if (index == undefined || index < 0) {
+    var rules = goog.cssom.getCssRulesFromStyleSheet(cssStyleSheet);
+    index = rules.length;
+  }
+  if (cssStyleSheet.insertRule) {
+    cssStyleSheet.insertRule(cssText, index);
+  } else {
+    var matches = /^([^\{]+)\{([^\{]+)\}/.exec(cssText);
+    if (matches.length == 3) {
+      var selector = matches[1];
+      var style = matches[2];
+      cssStyleSheet.addRule(selector, style, index);
+    } else {
+      throw Error("Your CSSRule appears to be ill-formatted.");
+    }
+  }
+};
+goog.cssom.removeCssRule = function(cssStyleSheet, index) {
+  if (cssStyleSheet.deleteRule) {
+    cssStyleSheet.deleteRule(index);
+  } else {
+    cssStyleSheet.removeRule(index);
+  }
+};
+goog.cssom.addCssText = function(cssText, opt_domHelper) {
+  var domHelper = opt_domHelper || goog.dom.getDomHelper();
+  var document = domHelper.getDocument();
+  var cssNode = domHelper.createElement(goog.dom.TagName.STYLE);
+  cssNode.type = "text/css";
+  var head = domHelper.getElementsByTagName(goog.dom.TagName.HEAD)[0];
+  head.appendChild(cssNode);
+  if (cssNode.styleSheet) {
+    cssNode.styleSheet.cssText = cssText;
+  } else {
+    var cssTextNode = document.createTextNode(cssText);
+    cssNode.appendChild(cssTextNode);
+  }
+  return cssNode;
+};
+goog.cssom.getFileNameFromStyleSheet = function(styleSheet) {
+  var href = styleSheet.href;
+  if (!href) {
+    return null;
+  }
+  var matches = /([^\/\?]+)[^\/]*$/.exec(href);
+  var filename = matches[1];
+  return filename;
+};
+goog.cssom.getAllCss_ = function(styleSheet, isTextOutput) {
+  var cssOut = [];
+  var styleSheets = goog.cssom.getAllCssStyleSheets(styleSheet);
+  for (var i = 0;styleSheet = styleSheets[i];i++) {
+    var cssRuleList = goog.cssom.getCssRulesFromStyleSheet(styleSheet);
+    if (cssRuleList && cssRuleList.length) {
+      var ruleIndex = 0;
+      for (var j = 0, n = cssRuleList.length, cssRule;j < n;j++) {
+        cssRule = cssRuleList[j];
+        if (isTextOutput && !cssRule.href) {
+          var res = goog.cssom.getCssTextFromCssRule(cssRule);
+          cssOut.push(res);
+        } else {
+          if (!cssRule.href) {
+            if (cssRule.style) {
+              if (!cssRule.parentStyleSheet) {
+                cssRule.style["-closure-parent-stylesheet"] = styleSheet;
+              }
+              cssRule.style["-closure-rule-index"] = isTextOutput ? undefined : ruleIndex;
+            }
+            cssOut.push(cssRule);
+          }
+        }
+        if (!isTextOutput) {
+          ruleIndex++;
+        }
+      }
+    }
+  }
+  return isTextOutput ? cssOut.join(" ") : cssOut;
+};
+goog.provide("acgraph");
+goog.require("acgraph.compatibility");
+goog.require("acgraph.vector");
+goog.require("acgraph.vector.Circle");
+goog.require("acgraph.vector.Clip");
+goog.require("acgraph.vector.Ellipse");
+goog.require("acgraph.vector.HatchFill");
+goog.require("acgraph.vector.Image");
+goog.require("acgraph.vector.Layer");
+goog.require("acgraph.vector.Path");
+goog.require("acgraph.vector.PatternFill");
+goog.require("acgraph.vector.Rect");
+goog.require("acgraph.vector.Renderer");
+goog.require("acgraph.vector.SimpleText");
+goog.require("acgraph.vector.Text");
+goog.require("acgraph.vector.UnmanagedLayer");
+goog.require("acgraph.vector.primitives");
+goog.require("acgraph.vector.svg");
+goog.require("goog.cssom");
+goog.require("goog.dom");
+goog.require("goog.userAgent");
+acgraph.WRAPPER_ID_PROP_NAME_ = "data-ac-wrapper-id";
+acgraph.wrappers_ = {};
+acgraph.register = function(wrapper) {
+  var node = wrapper.domElement();
+  if (node) {
+    var id = String(goog.getUid(wrapper));
+    acgraph.wrappers_[id] = wrapper;
+    node.setAttribute(acgraph.WRAPPER_ID_PROP_NAME_, id);
+  }
+};
+acgraph.unregister = function(wrapper) {
+  delete acgraph.wrappers_[String(goog.getUid(wrapper))];
+  var node = wrapper.domElement();
+  if (node) {
+    node.removeAttribute(acgraph.WRAPPER_ID_PROP_NAME_);
+  }
+};
+acgraph.getWrapperForDOM = function(node, stage) {
+  var uid;
+  var domRoot = stage.domElement().parentNode;
+  while (node && node != domRoot) {
+    uid = node.getAttribute && node.getAttribute(acgraph.WRAPPER_ID_PROP_NAME_) || null;
+    if (goog.isDefAndNotNull(uid)) {
+      break;
+    }
+    node = (node.parentNode);
+  }
+  var res = acgraph.wrappers_[uid || ""] || null;
+  return res && res.domElement() == node ? res : null;
+};
+acgraph.StageType = {SVG:"svg", VML:"vml"};
+acgraph.type_ = null;
+if (goog.userAgent.IE && !goog.userAgent.isVersionOrHigher("9")) {
+  acgraph.type_ = acgraph.StageType.VML;
+} else {
+  acgraph.type_ = acgraph.StageType.SVG;
+}
+acgraph.type = function() {
+  return (acgraph.type_);
+};
+acgraph.renderer_;
+acgraph.getRenderer = function() {
+  if (!acgraph.renderer_) {
+    if (acgraph.type_ == acgraph.StageType.VML) {
+      var vml = goog.global["acgraph"]["vml"];
+      if (vml) {
+        acgraph.renderer_ = vml["getRenderer"]();
+      } else {
+        throw Error("VML module should be included to render AnyChart in IE8-");
+      }
+    } else {
+      acgraph.renderer_ = acgraph.vector.svg.Renderer.getInstance();
+    }
+  }
+  return acgraph.renderer_;
+};
+acgraph.create = function(opt_container, opt_width, opt_height) {
+  var stage;
+  if (acgraph.type_ == acgraph.StageType.VML) {
+    var vml = goog.global["acgraph"]["vml"];
+    if (vml) {
+      stage = new vml["Stage"](opt_container, opt_width, opt_height);
+    } else {
+      throw Error("VML module should be included to render AnyChart in IE8-");
+    }
+  } else {
+    stage = new acgraph.vector.svg.Stage(opt_container, opt_width, opt_height);
+  }
+  return stage;
+};
+acgraph.getStage = function(id) {
+  return goog.global["acgraph"].stages[id];
+};
+acgraph.embedCss = function(css, opt_doc) {
+  var styleElement = null;
+  if (css) {
+    styleElement = goog.dom.createDom(goog.dom.TagName.STYLE);
+    styleElement.type = "text/css";
+    if (styleElement.styleSheet) {
+      styleElement["styleSheet"]["cssText"] = css;
+    } else {
+      goog.dom.appendChild(styleElement, goog.dom.createTextNode(css));
+    }
+    goog.dom.insertChildAt(goog.dom.getElementsByTagNameAndClass("head", undefined, opt_doc)[0], styleElement, 0);
+  }
+  return styleElement;
+};
+goog.global["acgraph"] = goog.global["acgraph"] || {};
+goog.global["acgraph"]["fontSize"] = "10px";
+goog.global["acgraph"]["fontColor"] = "#000";
+goog.global["acgraph"]["textDirection"] = acgraph.vector.Text.Direction.LTR;
+goog.global["acgraph"]["fontFamily"] = "Verdana";
+acgraph.rect = function(opt_x, opt_y, opt_width, opt_height) {
+  return new acgraph.vector.Rect(opt_x, opt_y, opt_width, opt_height);
+};
+acgraph.circle = function(opt_cx, opt_cy, opt_radius) {
+  return new acgraph.vector.Circle(opt_cx, opt_cy, opt_radius);
+};
+acgraph.layer = function() {
+  return new acgraph.vector.Layer;
+};
+acgraph.ellipse = function(opt_cx, opt_cy, opt_rx, opt_ry) {
+  return new acgraph.vector.Ellipse(opt_cx, opt_cy, opt_rx, opt_ry);
+};
+acgraph.path = function() {
+  return new acgraph.vector.Path;
+};
+acgraph.image = function(opt_src, opt_x, opt_y, opt_width, opt_height) {
+  return new acgraph.vector.Image(opt_src, opt_x, opt_y, opt_width, opt_height);
+};
+acgraph.text = function(opt_x, opt_y, opt_text, opt_style) {
+  var text;
+  if (acgraph.type_ == acgraph.StageType.VML) {
+    var vml = goog.global["acgraph"]["vml"];
+    if (vml) {
+      text = new vml["Text"](opt_x, opt_y);
+    } else {
+      throw Error("VML module should be included to render AnyChart in IE8-");
+    }
+  } else {
+    text = new acgraph.vector.Text(opt_x, opt_y);
+  }
+  if (opt_style) {
+    text.style(opt_style);
+  }
+  if (opt_text) {
+    text.text(opt_text);
+  }
+  return text;
+};
+acgraph.simpleText = function(opt_text) {
+  var text = new acgraph.vector.SimpleText;
+  if (opt_text) {
+    text.text(opt_text);
+  }
+  return text;
+};
+acgraph.hatchFill = function(opt_type, opt_color, opt_thickness, opt_size) {
+  return new acgraph.vector.HatchFill(opt_type, opt_color, opt_thickness, opt_size);
+};
+acgraph.patternFill = function(bounds) {
+  return new acgraph.vector.PatternFill(bounds);
+};
+acgraph.clip = function(opt_leftOrShape, opt_top, opt_width, opt_height) {
+  if (acgraph.type_ == acgraph.StageType.VML) {
+    var vml = goog.global["acgraph"]["vml"];
+    if (vml) {
+      return new vml["Clip"](null, opt_leftOrShape, opt_top, opt_width, opt_height);
+    } else {
+      throw Error("VML module should be included to render AnyChart in IE8-");
+    }
+  } else {
+    return new acgraph.vector.Clip(null, opt_leftOrShape, opt_top, opt_width, opt_height);
+  }
+};
+acgraph.unmanagedLayer = function(opt_content) {
+  return new acgraph.vector.UnmanagedLayer(opt_content);
+};
+acgraph.useAbsoluteReferences = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    acgraph.compatibility.USE_ABSOLUTE_REFERENCES = opt_value;
+  } else {
+    return !!acgraph.getReference();
+  }
+};
+acgraph.getReferenceValue_ = undefined;
+acgraph.getReference = function() {
+  if (goog.isDef(acgraph.getReferenceValue_)) {
+    return acgraph.getReferenceValue_;
+  }
+  if (goog.userAgent.IE && goog.userAgent.isVersionOrHigher("9") && !goog.userAgent.isVersionOrHigher("10")) {
+    return acgraph.getReferenceValue_ = "";
+  }
+  return acgraph.getReferenceValue_ = acgraph.compatibility.USE_ABSOLUTE_REFERENCES || goog.isNull(acgraph.compatibility.USE_ABSOLUTE_REFERENCES) && goog.dom.getElementsByTagNameAndClass("base").length ? goog.global.location.origin + goog.global.location.pathname + goog.global.location.search : "";
+};
+acgraph.updateReferences = function() {
+  var oldReference = acgraph.getReferenceValue_;
+  acgraph.getReferenceValue_ = undefined;
+  if (!goog.isDef(oldReference) || acgraph.getReference() == oldReference) {
+    return;
+  }
+  var wrapper;
+  var renderer = acgraph.getRenderer();
+  for (var id in acgraph.wrappers_) {
+    if (!acgraph.wrappers_.hasOwnProperty(id)) {
+      continue;
+    }
+    wrapper = acgraph.wrappers_[id];
+    var wrapperStage = wrapper.getStage();
+    if (!wrapperStage) {
+      continue;
+    }
+    if (acgraph.utils.instanceOf(wrapper, acgraph.vector.Element)) {
+      if (wrapperStage.isSuspended()) {
+        wrapper.setDirtyState(acgraph.vector.Element.DirtyState.CLIP);
+      } else {
+        if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.CLIP)) {
+          renderer.setClip((wrapper));
+        }
+      }
+    }
+    if (acgraph.utils.instanceOf(wrapper, acgraph.vector.Shape)) {
+      if (wrapperStage.isSuspended()) {
+        wrapper.setDirtyState(acgraph.vector.Element.DirtyState.FILL | acgraph.vector.Element.DirtyState.STROKE);
+      } else {
+        if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.FILL)) {
+          renderer.applyFill((wrapper));
+        }
+        if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE)) {
+          renderer.applyStroke((wrapper));
+        }
+      }
+    }
+  }
+};
+(function() {
+  goog.exportSymbol("acgraph.create", acgraph.create);
+  goog.exportSymbol("acgraph.getStage", acgraph.getStage);
+  goog.exportSymbol("acgraph.type", acgraph.type);
+  goog.exportSymbol("acgraph.rect", acgraph.rect);
+  goog.exportSymbol("acgraph.circle", acgraph.circle);
+  goog.exportSymbol("acgraph.ellipse", acgraph.ellipse);
+  goog.exportSymbol("acgraph.path", acgraph.path);
+  goog.exportSymbol("acgraph.text", acgraph.text);
+  goog.exportSymbol("acgraph.layer", acgraph.layer);
+  goog.exportSymbol("acgraph.image", acgraph.image);
+  goog.exportSymbol("acgraph.hatchFill", acgraph.hatchFill);
+  goog.exportSymbol("acgraph.patternFill", acgraph.patternFill);
+  goog.exportSymbol("acgraph.clip", acgraph.clip);
+  goog.exportSymbol("acgraph.useAbsoluteReferences", acgraph.useAbsoluteReferences);
+  goog.exportSymbol("acgraph.updateReferences", acgraph.updateReferences);
+})();
 goog.provide("goog.structs");
 goog.require("goog.array");
 goog.require("goog.object");
@@ -17287,9 +18826,9 @@ goog.iter.forEach = function(iterable, f, opt_obj) {
       while (true) {
         f.call(opt_obj, iterable.next(), undefined, iterable);
       }
-    } catch (ex) {
-      if (ex !== goog.iter.StopIteration) {
-        throw ex;
+    } catch (ex$0) {
+      if (ex$0 !== goog.iter.StopIteration) {
+        throw ex$0;
       }
     }
   }
@@ -18848,223 +20387,6 @@ goog.Uri.QueryData.prototype.extend = function(var_args) {
     }, this);
   }
 };
-goog.provide("goog.dom.classlist");
-goog.require("goog.array");
-goog.define("goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST", false);
-goog.dom.classlist.get = function(element) {
-  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
-    return element.classList;
-  }
-  var className = element.className;
-  return goog.isString(className) && className.match(/\S+/g) || [];
-};
-goog.dom.classlist.set = function(element, className) {
-  element.className = className;
-};
-goog.dom.classlist.contains = function(element, className) {
-  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
-    return element.classList.contains(className);
-  }
-  return goog.array.contains(goog.dom.classlist.get(element), className);
-};
-goog.dom.classlist.add = function(element, className) {
-  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
-    element.classList.add(className);
-    return;
-  }
-  if (!goog.dom.classlist.contains(element, className)) {
-    element.className += element.className.length > 0 ? " " + className : className;
-  }
-};
-goog.dom.classlist.addAll = function(element, classesToAdd) {
-  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
-    goog.array.forEach(classesToAdd, function(className) {
-      goog.dom.classlist.add(element, className);
-    });
-    return;
-  }
-  var classMap = {};
-  goog.array.forEach(goog.dom.classlist.get(element), function(className) {
-    classMap[className] = true;
-  });
-  goog.array.forEach(classesToAdd, function(className) {
-    classMap[className] = true;
-  });
-  element.className = "";
-  for (var className in classMap) {
-    element.className += element.className.length > 0 ? " " + className : className;
-  }
-};
-goog.dom.classlist.remove = function(element, className) {
-  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
-    element.classList.remove(className);
-    return;
-  }
-  if (goog.dom.classlist.contains(element, className)) {
-    element.className = goog.array.filter(goog.dom.classlist.get(element), function(c) {
-      return c != className;
-    }).join(" ");
-  }
-};
-goog.dom.classlist.removeAll = function(element, classesToRemove) {
-  if (goog.dom.classlist.ALWAYS_USE_DOM_TOKEN_LIST || element.classList) {
-    goog.array.forEach(classesToRemove, function(className) {
-      goog.dom.classlist.remove(element, className);
-    });
-    return;
-  }
-  element.className = goog.array.filter(goog.dom.classlist.get(element), function(className) {
-    return !goog.array.contains(classesToRemove, className);
-  }).join(" ");
-};
-goog.dom.classlist.enable = function(element, className, enabled) {
-  if (enabled) {
-    goog.dom.classlist.add(element, className);
-  } else {
-    goog.dom.classlist.remove(element, className);
-  }
-};
-goog.dom.classlist.enableAll = function(element, classesToEnable, enabled) {
-  var f = enabled ? goog.dom.classlist.addAll : goog.dom.classlist.removeAll;
-  f(element, classesToEnable);
-};
-goog.dom.classlist.swap = function(element, fromClass, toClass) {
-  if (goog.dom.classlist.contains(element, fromClass)) {
-    goog.dom.classlist.remove(element, fromClass);
-    goog.dom.classlist.add(element, toClass);
-    return true;
-  }
-  return false;
-};
-goog.dom.classlist.toggle = function(element, className) {
-  var add = !goog.dom.classlist.contains(element, className);
-  goog.dom.classlist.enable(element, className, add);
-  return add;
-};
-goog.dom.classlist.addRemove = function(element, classToRemove, classToAdd) {
-  goog.dom.classlist.remove(element, classToRemove);
-  goog.dom.classlist.add(element, classToAdd);
-};
-goog.provide("goog.json");
-goog.provide("goog.json.Replacer");
-goog.provide("goog.json.Reviver");
-goog.provide("goog.json.Serializer");
-goog.define("goog.json.USE_NATIVE_JSON", false);
-goog.json.isValid = function(s) {
-  if (/^\s*$/.test(s)) {
-    return false;
-  }
-  var backslashesRe = /\\["\\\/bfnrtu]/g;
-  var simpleValuesRe = /(?:"[^"\\\n\r\u2028\u2029\x00-\x08\x0a-\x1f]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)[\s\u2028\u2029]*(?=:|,|]|}|$)/g;
-  var openBracketsRe = /(?:^|:|,)(?:[\s\u2028\u2029]*\[)+/g;
-  var remainderRe = /^[\],:{}\s\u2028\u2029]*$/;
-  return remainderRe.test(s.replace(backslashesRe, "@").replace(simpleValuesRe, "]").replace(openBracketsRe, ""));
-};
-goog.json.parse = goog.json.USE_NATIVE_JSON ? (goog.global["JSON"]["parse"]) : function(s) {
-  var o = String(s);
-  if (goog.json.isValid(o)) {
-    try {
-      return (eval("(" + o + ")"));
-    } catch (ex) {
-    }
-  }
-  throw Error("Invalid JSON string: " + o);
-};
-goog.json.unsafeParse = goog.json.USE_NATIVE_JSON ? (goog.global["JSON"]["parse"]) : function(s) {
-  return (eval("(" + s + ")"));
-};
-goog.json.Replacer;
-goog.json.Reviver;
-goog.json.serialize = goog.json.USE_NATIVE_JSON ? (goog.global["JSON"]["stringify"]) : function(object, opt_replacer) {
-  return (new goog.json.Serializer(opt_replacer)).serialize(object);
-};
-goog.json.Serializer = function(opt_replacer) {
-  this.replacer_ = opt_replacer;
-};
-goog.json.Serializer.prototype.serialize = function(object) {
-  var sb = [];
-  this.serializeInternal(object, sb);
-  return sb.join("");
-};
-goog.json.Serializer.prototype.serializeInternal = function(object, sb) {
-  if (object == null) {
-    sb.push("null");
-    return;
-  }
-  if (typeof object == "object") {
-    if (goog.isArray(object)) {
-      this.serializeArray(object, sb);
-      return;
-    } else {
-      if (object instanceof String || object instanceof Number || object instanceof Boolean) {
-        object = object.valueOf();
-      } else {
-        this.serializeObject_((object), sb);
-        return;
-      }
-    }
-  }
-  switch(typeof object) {
-    case "string":
-      this.serializeString_(object, sb);
-      break;
-    case "number":
-      this.serializeNumber_(object, sb);
-      break;
-    case "boolean":
-      sb.push(String(object));
-      break;
-    case "function":
-      sb.push("null");
-      break;
-    default:
-      throw Error("Unknown type: " + typeof object);
-  }
-};
-goog.json.Serializer.charToJsonCharCache_ = {'"':'\\"', "\\":"\\\\", "/":"\\/", "\b":"\\b", "\f":"\\f", "\n":"\\n", "\r":"\\r", "\t":"\\t", "\x0B":"\\u000b"};
-goog.json.Serializer.charsToReplace_ = /\uffff/.test("￿") ? /[\\\"\x00-\x1f\x7f-\uffff]/g : /[\\\"\x00-\x1f\x7f-\xff]/g;
-goog.json.Serializer.prototype.serializeString_ = function(s, sb) {
-  sb.push('"', s.replace(goog.json.Serializer.charsToReplace_, function(c) {
-    var rv = goog.json.Serializer.charToJsonCharCache_[c];
-    if (!rv) {
-      rv = "\\u" + (c.charCodeAt(0) | 65536).toString(16).substr(1);
-      goog.json.Serializer.charToJsonCharCache_[c] = rv;
-    }
-    return rv;
-  }), '"');
-};
-goog.json.Serializer.prototype.serializeNumber_ = function(n, sb) {
-  sb.push(isFinite(n) && !isNaN(n) ? String(n) : "null");
-};
-goog.json.Serializer.prototype.serializeArray = function(arr, sb) {
-  var l = arr.length;
-  sb.push("[");
-  var sep = "";
-  for (var i = 0;i < l;i++) {
-    sb.push(sep);
-    var value = arr[i];
-    this.serializeInternal(this.replacer_ ? this.replacer_.call(arr, String(i), value) : value, sb);
-    sep = ",";
-  }
-  sb.push("]");
-};
-goog.json.Serializer.prototype.serializeObject_ = function(obj, sb) {
-  sb.push("{");
-  var sep = "";
-  for (var key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      var value = obj[key];
-      if (typeof value != "function") {
-        sb.push(sep);
-        this.serializeString_(key, sb);
-        sb.push(":");
-        this.serializeInternal(this.replacer_ ? this.replacer_.call(obj, key, value) : value, sb);
-        sep = ",";
-      }
-    }
-  }
-  sb.push("}");
-};
 goog.provide("goog.structs.Collection");
 goog.structs.Collection = function() {
 };
@@ -19314,7 +20636,7 @@ goog.debug.normalizeErrorObject = function(err) {
   }
   try {
     fileName = err.fileName || err.filename || err.sourceURL || goog.global["$googDebugFname"] || href;
-  } catch (e) {
+  } catch (e$1) {
     fileName = "Not available";
     threwError = true;
   }
@@ -19507,6 +20829,128 @@ goog.debug.runtimeType = function(value) {
 };
 goog.debug.fnNameCache_ = {};
 goog.debug.fnNameResolver_;
+goog.provide("goog.dom.InputType");
+goog.dom.InputType = {BUTTON:"button", CHECKBOX:"checkbox", COLOR:"color", DATE:"date", DATETIME:"datetime", DATETIME_LOCAL:"datetime-local", EMAIL:"email", FILE:"file", HIDDEN:"hidden", IMAGE:"image", MENU:"menu", MONTH:"month", NUMBER:"number", PASSWORD:"password", RADIO:"radio", RANGE:"range", RESET:"reset", SEARCH:"search", SELECT_MULTIPLE:"select-multiple", SELECT_ONE:"select-one", SUBMIT:"submit", TEL:"tel", TEXT:"text", TEXTAREA:"textarea", TIME:"time", URL:"url", WEEK:"week"};
+goog.provide("goog.json");
+goog.provide("goog.json.Replacer");
+goog.provide("goog.json.Reviver");
+goog.provide("goog.json.Serializer");
+goog.define("goog.json.USE_NATIVE_JSON", false);
+goog.json.isValid = function(s) {
+  if (/^\s*$/.test(s)) {
+    return false;
+  }
+  var backslashesRe = /\\["\\\/bfnrtu]/g;
+  var simpleValuesRe = /(?:"[^"\\\n\r\u2028\u2029\x00-\x08\x0a-\x1f]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)[\s\u2028\u2029]*(?=:|,|]|}|$)/g;
+  var openBracketsRe = /(?:^|:|,)(?:[\s\u2028\u2029]*\[)+/g;
+  var remainderRe = /^[\],:{}\s\u2028\u2029]*$/;
+  return remainderRe.test(s.replace(backslashesRe, "@").replace(simpleValuesRe, "]").replace(openBracketsRe, ""));
+};
+goog.json.parse = goog.json.USE_NATIVE_JSON ? (goog.global["JSON"]["parse"]) : function(s) {
+  var o = String(s);
+  if (goog.json.isValid(o)) {
+    try {
+      return (eval("(" + o + ")"));
+    } catch (ex) {
+    }
+  }
+  throw Error("Invalid JSON string: " + o);
+};
+goog.json.unsafeParse = goog.json.USE_NATIVE_JSON ? (goog.global["JSON"]["parse"]) : function(s) {
+  return (eval("(" + s + ")"));
+};
+goog.json.Replacer;
+goog.json.Reviver;
+goog.json.serialize = goog.json.USE_NATIVE_JSON ? (goog.global["JSON"]["stringify"]) : function(object, opt_replacer) {
+  return (new goog.json.Serializer(opt_replacer)).serialize(object);
+};
+goog.json.Serializer = function(opt_replacer) {
+  this.replacer_ = opt_replacer;
+};
+goog.json.Serializer.prototype.serialize = function(object) {
+  var sb = [];
+  this.serializeInternal(object, sb);
+  return sb.join("");
+};
+goog.json.Serializer.prototype.serializeInternal = function(object, sb) {
+  if (object == null) {
+    sb.push("null");
+    return;
+  }
+  if (typeof object == "object") {
+    if (goog.isArray(object)) {
+      this.serializeArray(object, sb);
+      return;
+    } else {
+      if (object instanceof String || object instanceof Number || object instanceof Boolean) {
+        object = object.valueOf();
+      } else {
+        this.serializeObject_((object), sb);
+        return;
+      }
+    }
+  }
+  switch(typeof object) {
+    case "string":
+      this.serializeString_(object, sb);
+      break;
+    case "number":
+      this.serializeNumber_(object, sb);
+      break;
+    case "boolean":
+      sb.push(String(object));
+      break;
+    case "function":
+      sb.push("null");
+      break;
+    default:
+      throw Error("Unknown type: " + typeof object);
+  }
+};
+goog.json.Serializer.charToJsonCharCache_ = {'"':'\\"', "\\":"\\\\", "/":"\\/", "\b":"\\b", "\f":"\\f", "\n":"\\n", "\r":"\\r", "\t":"\\t", "\x0B":"\\u000b"};
+goog.json.Serializer.charsToReplace_ = /\uffff/.test("\uffff") ? /[\\\"\x00-\x1f\x7f-\uffff]/g : /[\\\"\x00-\x1f\x7f-\xff]/g;
+goog.json.Serializer.prototype.serializeString_ = function(s, sb) {
+  sb.push('"', s.replace(goog.json.Serializer.charsToReplace_, function(c) {
+    var rv = goog.json.Serializer.charToJsonCharCache_[c];
+    if (!rv) {
+      rv = "\\u" + (c.charCodeAt(0) | 65536).toString(16).substr(1);
+      goog.json.Serializer.charToJsonCharCache_[c] = rv;
+    }
+    return rv;
+  }), '"');
+};
+goog.json.Serializer.prototype.serializeNumber_ = function(n, sb) {
+  sb.push(isFinite(n) && !isNaN(n) ? String(n) : "null");
+};
+goog.json.Serializer.prototype.serializeArray = function(arr, sb) {
+  var l = arr.length;
+  sb.push("[");
+  var sep = "";
+  for (var i = 0;i < l;i++) {
+    sb.push(sep);
+    var value = arr[i];
+    this.serializeInternal(this.replacer_ ? this.replacer_.call(arr, String(i), value) : value, sb);
+    sep = ",";
+  }
+  sb.push("]");
+};
+goog.json.Serializer.prototype.serializeObject_ = function(obj, sb) {
+  sb.push("{");
+  var sep = "";
+  for (var key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      var value = obj[key];
+      if (typeof value != "function") {
+        sb.push(sep);
+        this.serializeString_(key, sb);
+        sb.push(":");
+        this.serializeInternal(this.replacer_ ? this.replacer_.call(obj, key, value) : value, sb);
+        sep = ",";
+      }
+    }
+  }
+  sb.push("}");
+};
 goog.provide("goog.debug.LogRecord");
 goog.debug.LogRecord = function(level, msg, loggerName, opt_time, opt_sequenceNumber) {
   this.reset(level, msg, loggerName, opt_time, opt_sequenceNumber);
@@ -19983,6 +21427,519 @@ goog.net.ErrorCode.getDebugMessage = function(errorCode) {
       return "Unrecognized error code";
   }
 };
+goog.provide("goog.net.IframeIo");
+goog.provide("goog.net.IframeIo.IncrementalDataEvent");
+goog.require("goog.Timer");
+goog.require("goog.Uri");
+goog.require("goog.array");
+goog.require("goog.asserts");
+goog.require("goog.debug");
+goog.require("goog.dom");
+goog.require("goog.dom.InputType");
+goog.require("goog.dom.TagName");
+goog.require("goog.dom.safe");
+goog.require("goog.events");
+goog.require("goog.events.Event");
+goog.require("goog.events.EventTarget");
+goog.require("goog.events.EventType");
+goog.require("goog.html.uncheckedconversions");
+goog.require("goog.json");
+goog.require("goog.log");
+goog.require("goog.log.Level");
+goog.require("goog.net.ErrorCode");
+goog.require("goog.net.EventType");
+goog.require("goog.reflect");
+goog.require("goog.string");
+goog.require("goog.string.Const");
+goog.require("goog.structs");
+goog.require("goog.userAgent");
+goog.net.IframeIo = function() {
+  goog.net.IframeIo.base(this, "constructor");
+  this.name_ = goog.net.IframeIo.getNextName_();
+  this.iframesForDisposal_ = [];
+  goog.net.IframeIo.instances_[this.name_] = this;
+};
+goog.inherits(goog.net.IframeIo, goog.events.EventTarget);
+goog.net.IframeIo.instances_ = {};
+goog.net.IframeIo.FRAME_NAME_PREFIX = "closure_frame";
+goog.net.IframeIo.INNER_FRAME_SUFFIX = "_inner";
+goog.net.IframeIo.IFRAME_DISPOSE_DELAY_MS = 2E3;
+goog.net.IframeIo.counter_ = 0;
+goog.net.IframeIo.form_;
+goog.net.IframeIo.send = function(uri, opt_callback, opt_method, opt_noCache, opt_data) {
+  var io = new goog.net.IframeIo;
+  goog.events.listen(io, goog.net.EventType.READY, io.dispose, false, io);
+  if (opt_callback) {
+    goog.events.listen(io, goog.net.EventType.COMPLETE, opt_callback);
+  }
+  io.send(uri, opt_method, opt_noCache, opt_data);
+};
+goog.net.IframeIo.getIframeByName = function(fname) {
+  return window.frames[fname];
+};
+goog.net.IframeIo.getInstanceByName = function(fname) {
+  return goog.net.IframeIo.instances_[fname];
+};
+goog.net.IframeIo.handleIncrementalData = function(win, data) {
+  var iframeName = goog.string.endsWith(win.name, goog.net.IframeIo.INNER_FRAME_SUFFIX) ? win.parent.name : win.name;
+  var iframeIoName = iframeName.substring(0, iframeName.lastIndexOf("_"));
+  var iframeIo = goog.net.IframeIo.getInstanceByName(iframeIoName);
+  if (iframeIo && iframeName == iframeIo.iframeName_) {
+    iframeIo.handleIncrementalData_(data);
+  } else {
+    var logger = goog.log.getLogger("goog.net.IframeIo");
+    goog.log.info(logger, "Incremental iframe data routed for unknown iframe");
+  }
+};
+goog.net.IframeIo.getNextName_ = function() {
+  return goog.net.IframeIo.FRAME_NAME_PREFIX + goog.net.IframeIo.counter_++;
+};
+goog.net.IframeIo.getForm_ = function() {
+  if (!goog.net.IframeIo.form_) {
+    goog.net.IframeIo.form_ = goog.dom.createDom(goog.dom.TagName.FORM);
+    goog.net.IframeIo.form_.acceptCharset = "utf-8";
+    var s = goog.net.IframeIo.form_.style;
+    s.position = "absolute";
+    s.visibility = "hidden";
+    s.top = s.left = "-10px";
+    s.width = s.height = "10px";
+    s.overflow = "hidden";
+    goog.dom.getDocument().body.appendChild(goog.net.IframeIo.form_);
+  }
+  return goog.net.IframeIo.form_;
+};
+goog.net.IframeIo.addFormInputs_ = function(form, data) {
+  var helper = goog.dom.getDomHelper(form);
+  goog.structs.forEach(data, function(value, key) {
+    if (!goog.isArray(value)) {
+      value = [value];
+    }
+    goog.array.forEach(value, function(value) {
+      var inp = helper.createDom(goog.dom.TagName.INPUT, {"type":goog.dom.InputType.HIDDEN, "name":key, "value":value});
+      form.appendChild(inp);
+    });
+  });
+};
+goog.net.IframeIo.useIeReadyStateCodePath_ = function() {
+  return goog.userAgent.IE && !goog.userAgent.isVersionOrHigher("11");
+};
+goog.net.IframeIo.prototype.logger_ = goog.log.getLogger("goog.net.IframeIo");
+goog.net.IframeIo.prototype.form_ = null;
+goog.net.IframeIo.prototype.iframe_ = null;
+goog.net.IframeIo.prototype.iframeName_ = null;
+goog.net.IframeIo.prototype.nextIframeId_ = 0;
+goog.net.IframeIo.prototype.active_ = false;
+goog.net.IframeIo.prototype.complete_ = false;
+goog.net.IframeIo.prototype.success_ = false;
+goog.net.IframeIo.prototype.lastUri_ = null;
+goog.net.IframeIo.prototype.lastContent_ = null;
+goog.net.IframeIo.prototype.lastErrorCode_ = goog.net.ErrorCode.NO_ERROR;
+goog.net.IframeIo.prototype.firefoxSilentErrorTimeout_ = null;
+goog.net.IframeIo.prototype.iframeDisposalTimer_ = null;
+goog.net.IframeIo.prototype.errorHandled_;
+goog.net.IframeIo.prototype.ignoreResponse_ = false;
+goog.net.IframeIo.prototype.errorChecker_;
+goog.net.IframeIo.prototype.lastCustomError_;
+goog.net.IframeIo.prototype.lastContentHtml_;
+goog.net.IframeIo.prototype.send = function(uri, opt_method, opt_noCache, opt_data) {
+  if (this.active_) {
+    throw Error("[goog.net.IframeIo] Unable to send, already active.");
+  }
+  var uriObj = new goog.Uri(uri);
+  this.lastUri_ = uriObj;
+  var method = opt_method ? opt_method.toUpperCase() : "GET";
+  if (opt_noCache) {
+    uriObj.makeUnique();
+  }
+  goog.log.info(this.logger_, "Sending iframe request: " + uriObj + " [" + method + "]");
+  this.form_ = goog.net.IframeIo.getForm_();
+  if (method == "GET") {
+    goog.net.IframeIo.addFormInputs_(this.form_, uriObj.getQueryData());
+  }
+  if (opt_data) {
+    goog.net.IframeIo.addFormInputs_(this.form_, opt_data);
+  }
+  this.form_.action = uriObj.toString();
+  this.form_.method = method;
+  this.sendFormInternal_();
+  this.clearForm_();
+};
+goog.net.IframeIo.prototype.sendFromForm = function(form, opt_uri, opt_noCache) {
+  if (this.active_) {
+    throw Error("[goog.net.IframeIo] Unable to send, already active.");
+  }
+  var uri = new goog.Uri(opt_uri || form.action);
+  if (opt_noCache) {
+    uri.makeUnique();
+  }
+  goog.log.info(this.logger_, "Sending iframe request from form: " + uri);
+  this.lastUri_ = uri;
+  this.form_ = form;
+  this.form_.action = uri.toString();
+  this.sendFormInternal_();
+};
+goog.net.IframeIo.prototype.abort = function(opt_failureCode) {
+  if (this.active_) {
+    goog.log.info(this.logger_, "Request aborted");
+    var requestIframe = this.getRequestIframe();
+    goog.asserts.assert(requestIframe);
+    goog.events.removeAll(requestIframe);
+    this.complete_ = false;
+    this.active_ = false;
+    this.success_ = false;
+    this.lastErrorCode_ = opt_failureCode || goog.net.ErrorCode.ABORT;
+    this.dispatchEvent(goog.net.EventType.ABORT);
+    this.makeReady_();
+  }
+};
+goog.net.IframeIo.prototype.disposeInternal = function() {
+  goog.log.fine(this.logger_, "Disposing iframeIo instance");
+  if (this.active_) {
+    goog.log.fine(this.logger_, "Aborting active request");
+    this.abort();
+  }
+  goog.net.IframeIo.superClass_.disposeInternal.call(this);
+  if (this.iframe_) {
+    this.scheduleIframeDisposal_();
+  }
+  this.disposeForm_();
+  delete this.errorChecker_;
+  this.form_ = null;
+  this.lastCustomError_ = this.lastContent_ = this.lastContentHtml_ = null;
+  this.lastUri_ = null;
+  this.lastErrorCode_ = goog.net.ErrorCode.NO_ERROR;
+  delete goog.net.IframeIo.instances_[this.name_];
+};
+goog.net.IframeIo.prototype.isComplete = function() {
+  return this.complete_;
+};
+goog.net.IframeIo.prototype.isSuccess = function() {
+  return this.success_;
+};
+goog.net.IframeIo.prototype.isActive = function() {
+  return this.active_;
+};
+goog.net.IframeIo.prototype.getResponseText = function() {
+  return this.lastContent_;
+};
+goog.net.IframeIo.prototype.getResponseHtml = function() {
+  return this.lastContentHtml_;
+};
+goog.net.IframeIo.prototype.getResponseJson = function() {
+  return goog.json.parse(this.lastContent_);
+};
+goog.net.IframeIo.prototype.getResponseXml = function() {
+  if (!this.iframe_) {
+    return null;
+  }
+  return this.getContentDocument_();
+};
+goog.net.IframeIo.prototype.getLastUri = function() {
+  return this.lastUri_;
+};
+goog.net.IframeIo.prototype.getLastErrorCode = function() {
+  return this.lastErrorCode_;
+};
+goog.net.IframeIo.prototype.getLastError = function() {
+  return goog.net.ErrorCode.getDebugMessage(this.lastErrorCode_);
+};
+goog.net.IframeIo.prototype.getLastCustomError = function() {
+  return this.lastCustomError_;
+};
+goog.net.IframeIo.prototype.setErrorChecker = function(fn) {
+  this.errorChecker_ = fn;
+};
+goog.net.IframeIo.prototype.getErrorChecker = function() {
+  return this.errorChecker_;
+};
+goog.net.IframeIo.prototype.isIgnoringResponse = function() {
+  return this.ignoreResponse_;
+};
+goog.net.IframeIo.prototype.setIgnoreResponse = function(ignore) {
+  this.ignoreResponse_ = ignore;
+};
+goog.net.IframeIo.prototype.sendFormInternal_ = function() {
+  this.active_ = true;
+  this.complete_ = false;
+  this.lastErrorCode_ = goog.net.ErrorCode.NO_ERROR;
+  this.createIframe_();
+  if (goog.net.IframeIo.useIeReadyStateCodePath_()) {
+    this.form_.target = this.iframeName_ || "";
+    this.appendIframe_();
+    if (!this.ignoreResponse_) {
+      goog.events.listen(this.iframe_, goog.events.EventType.READYSTATECHANGE, this.onIeReadyStateChange_, false, this);
+    }
+    try {
+      this.errorHandled_ = false;
+      this.form_.submit();
+    } catch (e) {
+      if (!this.ignoreResponse_) {
+        goog.events.unlisten(this.iframe_, goog.events.EventType.READYSTATECHANGE, this.onIeReadyStateChange_, false, this);
+      }
+      this.handleError_(goog.net.ErrorCode.ACCESS_DENIED);
+    }
+  } else {
+    goog.log.fine(this.logger_, "Setting up iframes and cloning form");
+    this.appendIframe_();
+    var innerFrameName = this.iframeName_ + goog.net.IframeIo.INNER_FRAME_SUFFIX;
+    var doc = goog.dom.getFrameContentDocument(this.iframe_);
+    var html;
+    if (document.baseURI) {
+      html = goog.net.IframeIo.createIframeHtmlWithBaseUri_(innerFrameName);
+    } else {
+      html = goog.net.IframeIo.createIframeHtml_(innerFrameName);
+    }
+    if (goog.userAgent.OPERA && !goog.userAgent.WEBKIT) {
+      goog.dom.safe.setInnerHtml(doc.documentElement, html);
+    } else {
+      goog.dom.safe.documentWrite(doc, html);
+    }
+    if (!this.ignoreResponse_) {
+      goog.events.listen(doc.getElementById(innerFrameName), goog.events.EventType.LOAD, this.onIframeLoaded_, false, this);
+    }
+    var textareas = goog.dom.getElementsByTagName(goog.dom.TagName.TEXTAREA, goog.asserts.assert(this.form_));
+    for (var i = 0, n = textareas.length;i < n;i++) {
+      var value = textareas[i].value;
+      if (goog.dom.getRawTextContent(textareas[i]) != value) {
+        goog.dom.setTextContent(textareas[i], value);
+        textareas[i].value = value;
+      }
+    }
+    var clone = doc.importNode(this.form_, true);
+    clone.target = innerFrameName;
+    clone.action = this.form_.action;
+    doc.body.appendChild(clone);
+    var selects = goog.dom.getElementsByTagName(goog.dom.TagName.SELECT, goog.asserts.assert(this.form_));
+    var clones = goog.dom.getElementsByTagName(goog.dom.TagName.SELECT, (clone));
+    for (var i = 0, n = selects.length;i < n;i++) {
+      var selectsOptions = goog.dom.getElementsByTagName(goog.dom.TagName.OPTION, selects[i]);
+      var clonesOptions = goog.dom.getElementsByTagName(goog.dom.TagName.OPTION, clones[i]);
+      for (var j = 0, m = selectsOptions.length;j < m;j++) {
+        clonesOptions[j].selected = selectsOptions[j].selected;
+      }
+    }
+    var inputs = goog.dom.getElementsByTagName(goog.dom.TagName.INPUT, goog.asserts.assert(this.form_));
+    var inputClones = goog.dom.getElementsByTagName(goog.dom.TagName.INPUT, (clone));
+    for (var i = 0, n = inputs.length;i < n;i++) {
+      if (inputs[i].type == goog.dom.InputType.FILE) {
+        if (inputs[i].value != inputClones[i].value) {
+          goog.log.fine(this.logger_, "File input value not cloned properly.  Will " + "submit using original form.");
+          this.form_.target = innerFrameName;
+          clone = this.form_;
+          break;
+        }
+      }
+    }
+    goog.log.fine(this.logger_, "Submitting form");
+    try {
+      this.errorHandled_ = false;
+      clone.submit();
+      doc.close();
+      if (goog.userAgent.GECKO) {
+        this.firefoxSilentErrorTimeout_ = goog.Timer.callOnce(this.testForFirefoxSilentError_, 250, this);
+      }
+    } catch (e$2) {
+      goog.log.error(this.logger_, "Error when submitting form: " + goog.debug.exposeException(e$2));
+      if (!this.ignoreResponse_) {
+        goog.events.unlisten(doc.getElementById(innerFrameName), goog.events.EventType.LOAD, this.onIframeLoaded_, false, this);
+      }
+      doc.close();
+      this.handleError_(goog.net.ErrorCode.FILE_NOT_FOUND);
+    }
+  }
+};
+goog.net.IframeIo.createIframeHtml_ = function(innerFrameName) {
+  var innerFrameNameEscaped = goog.string.htmlEscape(innerFrameName);
+  return goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(goog.string.Const.from("Short HTML snippet, input escaped, for performance"), '<body><iframe id="' + innerFrameNameEscaped + '" name="' + innerFrameNameEscaped + '"></iframe>');
+};
+goog.net.IframeIo.createIframeHtmlWithBaseUri_ = function(innerFrameName) {
+  var innerFrameNameEscaped = goog.string.htmlEscape(innerFrameName);
+  return goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(goog.string.Const.from("Short HTML snippet, input escaped, safe URL, for performance"), '<head><base href="' + goog.string.htmlEscape((document.baseURI)) + '"></head>' + '<body><iframe id="' + innerFrameNameEscaped + '" name="' + innerFrameNameEscaped + '"></iframe>');
+};
+goog.net.IframeIo.prototype.onIeReadyStateChange_ = function(e) {
+  if (this.iframe_.readyState == "complete") {
+    goog.events.unlisten(this.iframe_, goog.events.EventType.READYSTATECHANGE, this.onIeReadyStateChange_, false, this);
+    var doc;
+    try {
+      doc = goog.dom.getFrameContentDocument(this.iframe_);
+      if (goog.userAgent.IE && doc.location == "about:blank" && !navigator.onLine) {
+        this.handleError_(goog.net.ErrorCode.OFFLINE);
+        return;
+      }
+    } catch (ex) {
+      this.handleError_(goog.net.ErrorCode.ACCESS_DENIED);
+      return;
+    }
+    this.handleLoad_((doc));
+  }
+};
+goog.net.IframeIo.prototype.onIframeLoaded_ = function(e) {
+  if (goog.userAgent.OPERA && !goog.userAgent.WEBKIT && this.getContentDocument_().location == "about:blank") {
+    return;
+  }
+  goog.events.unlisten(this.getRequestIframe(), goog.events.EventType.LOAD, this.onIframeLoaded_, false, this);
+  try {
+    this.handleLoad_(this.getContentDocument_());
+  } catch (ex) {
+    this.handleError_(goog.net.ErrorCode.ACCESS_DENIED);
+  }
+};
+goog.net.IframeIo.prototype.handleLoad_ = function(contentDocument) {
+  goog.log.fine(this.logger_, "Iframe loaded");
+  this.complete_ = true;
+  this.active_ = false;
+  var errorCode;
+  try {
+    var body = contentDocument.body;
+    this.lastContent_ = body.textContent || body.innerText;
+    this.lastContentHtml_ = body.innerHTML;
+  } catch (ex) {
+    errorCode = goog.net.ErrorCode.ACCESS_DENIED;
+  }
+  var customError;
+  if (!errorCode && typeof this.errorChecker_ == "function") {
+    customError = this.errorChecker_(contentDocument);
+    if (customError) {
+      errorCode = goog.net.ErrorCode.CUSTOM_ERROR;
+    }
+  }
+  goog.log.log(this.logger_, goog.log.Level.FINER, "Last content: " + this.lastContent_);
+  goog.log.log(this.logger_, goog.log.Level.FINER, "Last uri: " + this.lastUri_);
+  if (errorCode) {
+    goog.log.fine(this.logger_, "Load event occurred but failed");
+    this.handleError_(errorCode, customError);
+  } else {
+    goog.log.fine(this.logger_, "Load succeeded");
+    this.success_ = true;
+    this.lastErrorCode_ = goog.net.ErrorCode.NO_ERROR;
+    this.dispatchEvent(goog.net.EventType.COMPLETE);
+    this.dispatchEvent(goog.net.EventType.SUCCESS);
+    this.makeReady_();
+  }
+};
+goog.net.IframeIo.prototype.handleError_ = function(errorCode, opt_customError) {
+  if (!this.errorHandled_) {
+    this.success_ = false;
+    this.active_ = false;
+    this.complete_ = true;
+    this.lastErrorCode_ = errorCode;
+    if (errorCode == goog.net.ErrorCode.CUSTOM_ERROR) {
+      goog.asserts.assert(goog.isDef(opt_customError));
+      this.lastCustomError_ = opt_customError;
+    }
+    this.dispatchEvent(goog.net.EventType.COMPLETE);
+    this.dispatchEvent(goog.net.EventType.ERROR);
+    this.makeReady_();
+    this.errorHandled_ = true;
+  }
+};
+goog.net.IframeIo.prototype.handleIncrementalData_ = function(data) {
+  this.dispatchEvent(new goog.net.IframeIo.IncrementalDataEvent(data));
+};
+goog.net.IframeIo.prototype.makeReady_ = function() {
+  goog.log.info(this.logger_, "Ready for new requests");
+  this.scheduleIframeDisposal_();
+  this.disposeForm_();
+  this.dispatchEvent(goog.net.EventType.READY);
+};
+goog.net.IframeIo.prototype.createIframe_ = function() {
+  goog.log.fine(this.logger_, "Creating iframe");
+  this.iframeName_ = this.name_ + "_" + (this.nextIframeId_++).toString(36);
+  var iframeAttributes = {"name":this.iframeName_, "id":this.iframeName_};
+  if (goog.userAgent.IE && Number(goog.userAgent.VERSION) < 7) {
+    iframeAttributes.src = 'javascript:""';
+  }
+  this.iframe_ = goog.dom.getDomHelper(this.form_).createDom(goog.dom.TagName.IFRAME, iframeAttributes);
+  var s = this.iframe_.style;
+  s.visibility = "hidden";
+  s.width = s.height = "10px";
+  s.display = "none";
+  if (!goog.userAgent.WEBKIT) {
+    s.position = "absolute";
+    s.top = s.left = "-10px";
+  } else {
+    s.marginTop = s.marginLeft = "-10px";
+  }
+};
+goog.net.IframeIo.prototype.appendIframe_ = function() {
+  goog.dom.getDomHelper(this.form_).getDocument().body.appendChild(this.iframe_);
+};
+goog.net.IframeIo.prototype.scheduleIframeDisposal_ = function() {
+  var iframe = this.iframe_;
+  if (iframe) {
+    iframe.onreadystatechange = null;
+    iframe.onload = null;
+    iframe.onerror = null;
+    this.iframesForDisposal_.push(iframe);
+  }
+  if (this.iframeDisposalTimer_) {
+    goog.Timer.clear(this.iframeDisposalTimer_);
+    this.iframeDisposalTimer_ = null;
+  }
+  if (goog.userAgent.GECKO || goog.userAgent.OPERA && !goog.userAgent.WEBKIT) {
+    this.iframeDisposalTimer_ = goog.Timer.callOnce(this.disposeIframes_, goog.net.IframeIo.IFRAME_DISPOSE_DELAY_MS, this);
+  } else {
+    this.disposeIframes_();
+  }
+  this.iframe_ = null;
+  this.iframeName_ = null;
+};
+goog.net.IframeIo.prototype.disposeIframes_ = function() {
+  if (this.iframeDisposalTimer_) {
+    goog.Timer.clear(this.iframeDisposalTimer_);
+    this.iframeDisposalTimer_ = null;
+  }
+  while (this.iframesForDisposal_.length != 0) {
+    var iframe = this.iframesForDisposal_.pop();
+    goog.log.info(this.logger_, "Disposing iframe");
+    goog.dom.removeNode(iframe);
+  }
+};
+goog.net.IframeIo.prototype.clearForm_ = function() {
+  if (this.form_ && this.form_ == goog.net.IframeIo.form_) {
+    goog.dom.removeChildren(this.form_);
+  }
+};
+goog.net.IframeIo.prototype.disposeForm_ = function() {
+  this.clearForm_();
+  this.form_ = null;
+};
+goog.net.IframeIo.prototype.getContentDocument_ = function() {
+  if (this.iframe_) {
+    return (goog.dom.getFrameContentDocument(this.getRequestIframe()));
+  }
+  return null;
+};
+goog.net.IframeIo.prototype.getRequestIframe = function() {
+  if (this.iframe_) {
+    return (goog.net.IframeIo.useIeReadyStateCodePath_() ? this.iframe_ : goog.dom.getFrameContentDocument(this.iframe_).getElementById(this.iframeName_ + goog.net.IframeIo.INNER_FRAME_SUFFIX));
+  }
+  return null;
+};
+goog.net.IframeIo.prototype.testForFirefoxSilentError_ = function() {
+  if (this.active_) {
+    var doc = this.getContentDocument_();
+    if (doc && !goog.reflect.canAccessProperty(doc, "documentUri")) {
+      if (!this.ignoreResponse_) {
+        goog.events.unlisten(this.getRequestIframe(), goog.events.EventType.LOAD, this.onIframeLoaded_, false, this);
+      }
+      if (navigator.onLine) {
+        goog.log.warning(this.logger_, "Silent Firefox error detected");
+        this.handleError_(goog.net.ErrorCode.FF_SILENT_ERROR);
+      } else {
+        goog.log.warning(this.logger_, "Firefox is offline so report offline error " + "instead of silent error");
+        this.handleError_(goog.net.ErrorCode.OFFLINE);
+      }
+      return;
+    }
+    this.firefoxSilentErrorTimeout_ = goog.Timer.callOnce(this.testForFirefoxSilentError_, 250, this);
+  }
+};
+goog.net.IframeIo.IncrementalDataEvent = function(data) {
+  goog.events.Event.call(this, goog.net.EventType.INCREMENTAL_DATA);
+  this.data = data;
+};
+goog.inherits(goog.net.IframeIo.IncrementalDataEvent, goog.events.Event);
 goog.provide("goog.net.HttpStatus");
 goog.net.HttpStatus = {CONTINUE:100, SWITCHING_PROTOCOLS:101, OK:200, CREATED:201, ACCEPTED:202, NON_AUTHORITATIVE_INFORMATION:203, NO_CONTENT:204, RESET_CONTENT:205, PARTIAL_CONTENT:206, MULTIPLE_CHOICES:300, MOVED_PERMANENTLY:301, FOUND:302, SEE_OTHER:303, NOT_MODIFIED:304, USE_PROXY:305, TEMPORARY_REDIRECT:307, BAD_REQUEST:400, UNAUTHORIZED:401, PAYMENT_REQUIRED:402, FORBIDDEN:403, NOT_FOUND:404, METHOD_NOT_ALLOWED:405, NOT_ACCEPTABLE:406, PROXY_AUTHENTICATION_REQUIRED:407, REQUEST_TIMEOUT:408, 
 CONFLICT:409, GONE:410, LENGTH_REQUIRED:411, PRECONDITION_FAILED:412, REQUEST_ENTITY_TOO_LARGE:413, REQUEST_URI_TOO_LONG:414, UNSUPPORTED_MEDIA_TYPE:415, REQUEST_RANGE_NOT_SATISFIABLE:416, EXPECTATION_FAILED:417, PRECONDITION_REQUIRED:428, TOO_MANY_REQUESTS:429, REQUEST_HEADER_FIELDS_TOO_LARGE:431, INTERNAL_SERVER_ERROR:500, NOT_IMPLEMENTED:501, BAD_GATEWAY:502, SERVICE_UNAVAILABLE:503, GATEWAY_TIMEOUT:504, HTTP_VERSION_NOT_SUPPORTED:505, NETWORK_AUTHENTICATION_REQUIRED:511, QUIRK_IE_NO_CONTENT:1223};
@@ -20289,9 +22246,9 @@ goog.net.XhrIo.prototype.send = function(url, opt_method, opt_content, opt_heade
     this.inSend_ = true;
     this.xhr_.send(content);
     this.inSend_ = false;
-  } catch (err) {
-    goog.log.fine(this.logger_, this.formatMsg_("Send error: " + err.message));
-    this.error_(goog.net.ErrorCode.EXCEPTION, err);
+  } catch (err$3) {
+    goog.log.fine(this.logger_, this.formatMsg_("Send error: " + err$3.message));
+    this.error_(goog.net.ErrorCode.EXCEPTION, err$3);
   }
 };
 goog.net.XhrIo.shouldUseXhr2Timeout_ = function(xhr) {
@@ -20578,491 +22535,27 @@ goog.net.XhrIo.prototype.formatMsg_ = function(msg) {
 goog.debug.entryPointRegistry.register(function(transformer) {
   goog.net.XhrIo.prototype.onReadyStateChangeEntryPoint_ = transformer(goog.net.XhrIo.prototype.onReadyStateChangeEntryPoint_);
 });
-goog.provide("acgraph.vector.Stage");
-goog.require("acgraph.error");
-goog.require("acgraph.events.BrowserEvent");
-goog.require("acgraph.utils.IdGenerator");
-goog.require("acgraph.utils.exporting");
-goog.require("acgraph.vector.Circle");
-goog.require("acgraph.vector.Clip");
-goog.require("acgraph.vector.Defs");
-goog.require("acgraph.vector.Ellipse");
-goog.require("acgraph.vector.HatchFill");
-goog.require("acgraph.vector.ILayer");
-goog.require("acgraph.vector.Image");
-goog.require("acgraph.vector.Layer");
-goog.require("acgraph.vector.Path");
-goog.require("acgraph.vector.PatternFill");
-goog.require("acgraph.vector.Rect");
-goog.require("acgraph.vector.Text");
-goog.require("acgraph.vector.UnmanagedLayer");
+goog.provide("acgraph.exporting");
+goog.require("acgraph.vector.Stage");
 goog.require("goog.Uri.QueryData");
-goog.require("goog.array");
-goog.require("goog.dom");
-goog.require("goog.dom.classlist");
-goog.require("goog.events.EventHandler");
-goog.require("goog.events.EventTarget");
-goog.require("goog.events.Listenable");
-goog.require("goog.math.Coordinate");
-goog.require("goog.math.Rect");
-goog.require("goog.math.Size");
+goog.require("goog.net.IframeIo");
 goog.require("goog.net.XhrIo");
 goog.require("goog.structs.Map");
-goog.require("goog.style");
-acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
-  goog.base(this);
-  this.renderAsync_ = goog.bind(this.renderAsync_, this);
-  this.checkSize_ = goog.bind(this.checkSize_, this);
-  this.eventHandler_ = new goog.events.EventHandler(this);
-  this.internalContainer_ = goog.dom.createDom(goog.dom.TagName.DIV, {style:"position:relative;left:0;top:0;overflow:hidden;"});
-  this.domElement_ = acgraph.getRenderer().createStageElement();
-  acgraph.register(this);
-  acgraph.getRenderer().setStageSize(this.domElement_, "100%", "100%");
-  goog.style.setStyle(this.domElement_, "display", "block");
-  goog.dom.classlist.add(this.domElement_, "anychart-ui-support");
-  goog.dom.appendChild(this.internalContainer_, this.domElement_);
-  this.clipsToRender_ = [];
-  this.defs_ = this.createDefs();
-  this.defs_.createDom();
-  acgraph.getRenderer().appendChild(this.domElement_, this.defs_.domElement());
-  this.rootLayer_ = new acgraph.vector.Layer;
-  this.rootLayer_.setParent(this).render();
-  acgraph.getRenderer().appendChild(this.domElement_, this.rootLayer_.domElement());
-  this.eventHandler_.listen(this.domElement(), [goog.events.EventType.MOUSEDOWN, goog.events.EventType.MOUSEOVER, goog.events.EventType.MOUSEOUT, goog.events.EventType.CLICK, goog.events.EventType.DBLCLICK, goog.events.EventType.TOUCHSTART, goog.events.EventType.TOUCHEND, goog.events.EventType.TOUCHCANCEL, goog.events.EventType.MSPOINTERDOWN, goog.events.EventType.MSPOINTERUP, goog.events.EventType.POINTERDOWN, goog.events.EventType.POINTERUP, goog.events.EventType.CONTEXTMENU], this.handleMouseEvent_, 
-  false);
-  this.setWidth_(opt_width || "100%");
-  this.setHeight_(opt_height || "100%");
-  this.container_ = goog.dom.getElement(opt_container || null);
-  if (this.container_) {
-    this.updateContainer_();
+acgraph.exportServer = "//export.anychart.com";
+acgraph.server = function(opt_address) {
+  if (goog.isDef(opt_address)) {
+    acgraph.exportServer = opt_address;
   }
-  this.checkSize_(true, true);
-  this.resume();
+  return acgraph.exportServer;
 };
-goog.inherits(acgraph.vector.Stage, goog.events.EventTarget);
-acgraph.vector.Stage.Error = {CONTAINER_SHOULD_BE_DEFINED:"Container to render stage should be defined", STAGE_SHOULD_HAVE_DOM_ELEMENT:"Stage should have dom element", IN_RENDERING_PROCESS:"Stage already in rendering process"};
-acgraph.vector.Stage.DomChangeType = {ELEMENT_CREATE:1, ELEMENT_ADD:2, ELEMENT_REMOVE:3, APPLY_FILL:4, APPLY_STROKE:5};
-acgraph.vector.Stage.EventType = {RENDER_START:"renderstart", RENDER_FINISH:"renderfinish", STAGE_RESIZE:"stageresize", STAGE_RENDERED:"stagerendered"};
-acgraph.vector.Stage.ExportType = {SVG:"svg", JPG:"jpg", PNG:"png", PDF:"pdf"};
-acgraph.vector.Stage.HANDLED_EVENT_TYPES_CAPTURE_SHIFT = 12;
-acgraph.vector.Stage.prototype.width_ = NaN;
-acgraph.vector.Stage.prototype.height_ = NaN;
-acgraph.vector.Stage.prototype.fixedWidth_ = NaN;
-acgraph.vector.Stage.prototype.fixedHeight_ = NaN;
-acgraph.vector.Stage.prototype.currentWidth_ = NaN;
-acgraph.vector.Stage.prototype.currentHeight_ = NaN;
-acgraph.vector.Stage.prototype.maxResizeDelay_ = 100;
-acgraph.vector.Stage.prototype.checkSizeTimer_ = NaN;
-acgraph.vector.Stage.prototype.currentDomChangesCount = 0;
-acgraph.vector.Stage.prototype.maxDomChanges = 500;
-acgraph.vector.Stage.prototype["pathToRadialGradientImage"] = "RadialGradient.png";
-acgraph.vector.Stage.prototype.id_ = undefined;
-acgraph.vector.Stage.prototype.suspended_ = 1;
-acgraph.vector.Stage.prototype.container_ = null;
-acgraph.vector.Stage.prototype.titleElement = null;
-acgraph.vector.Stage.prototype.titleVal_ = void 0;
-acgraph.vector.Stage.prototype.descElement = null;
-acgraph.vector.Stage.prototype.descVal_ = void 0;
-acgraph.vector.Stage.prototype.asyncMode_ = false;
-acgraph.vector.Stage.prototype.isRendering_ = false;
-acgraph.vector.Stage.prototype.id = function(opt_value) {
-  if (goog.isDef(opt_value)) {
-    var id = opt_value || "";
-    if (this.id_ !== id) {
-      this.id_ = id;
-      acgraph.getRenderer().setId(this, this.id_);
-    }
-    return this;
-  }
-  if (!goog.isDef(this.id_)) {
-    this.id(acgraph.utils.IdGenerator.getInstance().generateId(this));
-  }
-  return (this.id_);
+acgraph.sendRequestToExportServer = function(url, opt_arguments) {
+  goog.net.IframeIo.send(url, undefined, "POST", false, opt_arguments);
 };
-acgraph.vector.Stage.prototype.getStage = function() {
-  return this;
-};
-acgraph.vector.Stage.prototype.parent = function() {
-  return this;
-};
-acgraph.vector.Stage.prototype.domElement = function() {
-  return this.domElement_;
-};
-acgraph.vector.Stage.prototype.width = function(opt_value) {
-  if (goog.isDef(opt_value)) {
-    if (this.setWidth_(opt_value)) {
-      this.checkSize_(true);
-    }
-    return this;
-  }
-  return this.width_ || 0;
-};
-acgraph.vector.Stage.prototype.height = function(opt_value) {
-  if (goog.isDef(opt_value)) {
-    if (this.setHeight_(opt_value)) {
-      this.checkSize_(true);
-    }
-    return this;
-  }
-  return this.height_ || 0;
-};
-acgraph.vector.Stage.prototype.resize = function(width, height) {
-  var widthChanged = this.setWidth_(width);
-  var heightChanged = this.setHeight_(height);
-  if (widthChanged || heightChanged) {
-    this.checkSize_(true);
-  }
-};
-acgraph.vector.Stage.prototype.maxResizeDelay = function(opt_value) {
-  if (goog.isDef(opt_value)) {
-    var val = parseFloat(opt_value);
-    if (val >= 0) {
-      if (this.maxResizeDelay_ > val && !isNaN(this.checkSizeTimer_)) {
-        clearTimeout(this.checkSizeTimer_);
-      }
-      this.maxResizeDelay_ = val;
-      this.checkSize_(true);
-    }
-    return this;
-  }
-  return this.maxResizeDelay_;
-};
-acgraph.vector.Stage.prototype.container = function(opt_value) {
-  if (goog.isDef(opt_value)) {
-    var container = goog.dom.getElement(opt_value || null);
-    if (this.container_ != container) {
-      this.container_ = container;
-      this.updateContainer_();
-      this.checkSize_(true);
-      this.render();
-    }
-    return this;
-  }
-  return this.container_ ? this.internalContainer_ : null;
-};
-acgraph.vector.Stage.prototype.getContainerElement = function() {
-  return this.container_;
-};
-acgraph.vector.Stage.prototype.getDomWrapper = function() {
-  return this.internalContainer_;
-};
-acgraph.vector.Stage.prototype.suspend = function() {
-  this.suspended_++;
-  return this;
-};
-acgraph.vector.Stage.prototype.resume = function(opt_force) {
-  this.suspended_ = opt_force ? 0 : Math.max(this.suspended_ - 1, 0);
-  this.render();
-  return this;
-};
-acgraph.vector.Stage.prototype.asyncMode = function(opt_value) {
-  if (goog.isDef(opt_value)) {
-    this.asyncMode_ = !!opt_value;
-    return this;
-  }
-  return this.asyncMode_;
-};
-acgraph.vector.Stage.prototype.isSuspended = function() {
-  return !!this.suspended_;
-};
-acgraph.vector.Stage.prototype.isRendering = function() {
-  return this.isRendering_;
-};
-acgraph.vector.Stage.prototype.title = function(opt_value) {
-  if (goog.isDef(opt_value)) {
-    if (this.titleVal_ != opt_value) {
-      this.titleVal_ = opt_value;
-      acgraph.getRenderer().setTitle(this, this.titleVal_);
-    }
-    return this;
-  } else {
-    return this.titleVal_;
-  }
-};
-acgraph.vector.Stage.prototype.desc = function(opt_value) {
-  if (goog.isDef(opt_value)) {
-    if (this.descVal_ != opt_value) {
-      this.descVal_ = opt_value;
-      acgraph.getRenderer().setDesc(this, this.descVal_);
-    }
-    return this;
-  } else {
-    return this.descVal_;
-  }
-};
-acgraph.vector.Stage.prototype.visible = function(opt_isVisible) {
-  if (arguments.length == 0) {
-    return (this.rootLayer_.visible());
-  }
-  this.rootLayer_.visible(opt_isVisible);
-  return this;
-};
-acgraph.vector.Stage.prototype.data = function(opt_value) {
-  if (arguments.length == 0) {
-    return this.serialize();
-  } else {
-    var primitive;
-    var type = opt_value["type"];
-    if (!type) {
-      this.deserialize(opt_value);
-    } else {
-      switch(type) {
-        case "rect":
-          primitive = this.rect();
-          break;
-        case "circle":
-          primitive = this.circle();
-          break;
-        case "ellipse":
-          primitive = this.ellipse();
-          break;
-        case "image":
-          primitive = this.image();
-          break;
-        case "text":
-          primitive = this.text();
-          break;
-        case "path":
-          primitive = this.path();
-          break;
-        case "layer":
-          primitive = this.layer();
-          break;
-        default:
-          primitive = null;
-          break;
-      }
-    }
-    if (primitive) {
-      primitive.deserialize(opt_value);
-    }
-    return this;
-  }
-};
-acgraph.vector.Stage.prototype.remove = function() {
-  return (this.container(null));
-};
-acgraph.vector.Stage.prototype.getX = function() {
-  return 0;
-};
-acgraph.vector.Stage.prototype.getY = function() {
-  return 0;
-};
-acgraph.vector.Stage.prototype.getBounds = function() {
-  return new goog.math.Rect(0, 0, (this.width()), (this.height()));
-};
-acgraph.vector.Stage.prototype.clip = function(opt_value) {
-  return this.rootLayer_.clip(opt_value);
-};
-acgraph.vector.Stage.prototype.getElementTypePrefix = function() {
-  return acgraph.utils.IdGenerator.ElementTypePrefix.STAGE;
-};
-acgraph.vector.Stage.prototype.getRootLayer = function() {
-  return this.rootLayer_;
-};
-acgraph.vector.Stage.prototype.notifyRemoved = function(child) {
-  this.rootLayer_.notifyRemoved(child);
-};
-acgraph.vector.Stage.prototype.childClipChanged = goog.nullFunction;
-acgraph.vector.Stage.prototype.checkSize_ = function(opt_directCall, opt_silent) {
-  if (opt_directCall && !isNaN(this.checkSizeTimer_)) {
-    clearTimeout(this.checkSizeTimer_);
-  }
-  this.checkSizeTimer_ = NaN;
-  var width, height;
-  var isDynamicWidth = isNaN(this.fixedWidth_);
-  var isDynamicHeight = isNaN(this.fixedHeight_);
-  var isDynamicSize = isDynamicWidth || isDynamicHeight;
-  var detachedOrHidden;
-  if (isDynamicSize) {
-    var size = this.container_ ? goog.style.getContentBoxSize(this.container_) : new goog.math.Size(NaN, NaN);
-    size.width = Math.max(size.width || 0, 0);
-    size.height = Math.max(size.height || 0, 0);
-    detachedOrHidden = !size.width && !size.height;
-    width = isDynamicWidth ? size.width : this.fixedWidth_;
-    height = isDynamicHeight ? size.height : this.fixedHeight_;
-  } else {
-    width = this.fixedWidth_;
-    height = this.fixedHeight_;
-    detachedOrHidden = false;
-  }
-  if ((width != this.width_ || height != this.height_) && !detachedOrHidden) {
-    this.width_ = width;
-    this.height_ = height;
-    if (!opt_silent) {
-      this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RESIZE);
-    }
-  }
-  if (this.container_ && isDynamicSize) {
-    this.checkSizeTimer_ = setTimeout(this.checkSize_, this.maxResizeDelay_);
-  }
-};
-acgraph.vector.Stage.prototype.setWidth_ = function(width) {
-  if (this.currentWidth_ != width) {
-    var num = parseFloat(width);
-    if (!isNaN(num)) {
-      this.currentWidth_ = goog.isNumber(width) ? width : String(width);
-      this.fixedWidth_ = goog.isString(width) && goog.string.endsWith(width, "%") ? NaN : num;
-      goog.style.setWidth(this.internalContainer_, this.currentWidth_);
-      return true;
-    }
-  }
-  return false;
-};
-acgraph.vector.Stage.prototype.setHeight_ = function(height) {
-  if (this.currentHeight_ != height) {
-    var num = parseFloat(height);
-    if (!isNaN(num)) {
-      this.currentHeight_ = goog.isNumber(height) ? height : String(height);
-      this.fixedHeight_ = goog.isString(height) && goog.string.endsWith(height, "%") ? NaN : num;
-      goog.style.setHeight(this.internalContainer_, this.currentHeight_);
-      return true;
-    }
-  }
-  return false;
-};
-acgraph.vector.Stage.prototype.createDefs = goog.abstractMethod;
-acgraph.vector.Stage.prototype.getDefs = function() {
-  return this.defs_;
-};
-acgraph.vector.Stage.prototype.clearDefs = function() {
-  this.defs_.clear();
-};
-acgraph.vector.Stage.prototype.addClipForRender = function(clip) {
-  if (!this.isSuspended()) {
-    clip.render();
-  } else {
-    this.clipsToRender_.push(clip);
-  }
-};
-acgraph.vector.Stage.prototype.removeClipFromRender = function(clip) {
-  goog.array.remove(this.clipsToRender_, clip);
-};
-acgraph.vector.Stage.prototype.deserialize = function(data) {
-  this.width(data["width"]);
-  this.height(data["height"]);
-  data["type"] = "layer";
-  this.getRootLayer().deserialize(data);
-  this.getRootLayer().id("");
-  if ("id" in data) {
-    this.id(data["id"]);
-  }
-};
-acgraph.vector.Stage.prototype.serialize = function() {
-  var data = this.getRootLayer().serialize();
-  if (this.id_) {
-    data["id"] = this.id_;
-  }
-  data["width"] = this.currentWidth_;
-  data["height"] = this.currentHeight_;
-  delete data["type"];
-  return data;
-};
-acgraph.vector.Stage.prototype.getClientPosition = function() {
-  return this.internalContainer_ ? goog.style.getClientPosition(this.internalContainer_) : new goog.math.Coordinate(0, 0);
-};
-acgraph.vector.Stage.prototype.acquireDomChangesSync_ = function(wantedCount) {
-  this.currentDomChangesCount += wantedCount;
-  return wantedCount;
-};
-acgraph.vector.Stage.prototype.acquireDomChangesAsync_ = function(wantedCount) {
-  var allowed = Math.min(this.maxDomChanges - this.currentDomChangesCount, wantedCount);
-  this.currentDomChangesCount += allowed;
-  return allowed;
-};
-acgraph.vector.Stage.prototype.acquireDomChanges = acgraph.vector.Stage.prototype.acquireDomChangesSync_;
-acgraph.vector.Stage.prototype.acquireDomChange = function(changeType) {
-  if (changeType == acgraph.vector.Stage.DomChangeType.ELEMENT_CREATE || changeType == acgraph.vector.Stage.DomChangeType.ELEMENT_ADD || changeType == acgraph.vector.Stage.DomChangeType.ELEMENT_REMOVE) {
-    return this.acquireDomChanges(1) > 0;
-  }
-  return true;
-};
-acgraph.vector.Stage.prototype.blockChangesForAdding = function() {
-  var wanted = Math.floor(Math.max(this.maxDomChanges - this.currentDomChangesCount, 0) / 3);
-  return this.acquireDomChanges(wanted);
-};
-acgraph.vector.Stage.prototype.releaseDomChanges = function(allowed, made) {
-  this.currentDomChangesCount -= allowed - made;
-};
-acgraph.vector.Stage.prototype.render = function() {
-  if (!this.suspended_) {
-    if (this.container_ && !this.isRendering_) {
-      this.isRendering_ = true;
-      this.dispatchEvent(acgraph.vector.Stage.EventType.RENDER_START);
-      this.currentDomChangesCount = 0;
-      if (this.asyncMode_) {
-        this.acquireDomChanges = this.acquireDomChangesAsync_;
-        setTimeout(this.renderAsync_, 0);
-      } else {
-        this.acquireDomChanges = this.acquireDomChangesSync_;
-        this.renderInternal();
-        if (this.isDirty()) {
-          throw acgraph.error.getErrorMessage(acgraph.error.Code.DIRTY_AFTER_SYNC_RENDER);
-        }
-        this.finishRendering_();
-      }
-    }
-  }
-};
-acgraph.vector.Stage.prototype.updateContainer_ = function() {
-  if (this.container_) {
-    if (this.internalContainer_.parentNode != this.container_) {
-      goog.dom.appendChild(this.container_, this.internalContainer_);
-    }
-  } else {
-    goog.dom.removeNode(this.internalContainer_);
-  }
-};
-acgraph.vector.Stage.prototype.renderAsync_ = function() {
-  this.renderInternal();
-  if (this.isDirty()) {
-    setTimeout(this.renderAsync_, 0);
-  } else {
-    this.finishRendering_();
-  }
-};
-acgraph.vector.Stage.prototype.renderInternal = function() {
-  if (this.clipsToRender_ && this.clipsToRender_.length) {
-    for (var i = 0;i < this.clipsToRender_.length;i++) {
-      var clip = this.clipsToRender_[i];
-      if (clip.isDirty()) {
-        clip.render();
-      }
-    }
-    this.clipsToRender_.length = 0;
-  }
-  if (this.rootLayer_.isDirty()) {
-    this.rootLayer_.render();
-  }
-  if (this.credits) {
-    this.credits().render();
-  }
-};
-acgraph.vector.Stage.prototype.finishRendering_ = function() {
-  this.isRendering_ = false;
-  this.dispatchEvent(acgraph.vector.Stage.EventType.RENDER_FINISH);
-  var imageLoader = acgraph.getRenderer().getImageLoader();
-  var isImageLoading = acgraph.getRenderer().isImageLoading();
-  if (imageLoader && isImageLoading) {
-    if (!this.imageLoadingListener_) {
-      this.imageLoadingListener_ = goog.events.listenOnce(imageLoader, goog.net.EventType.COMPLETE, function(e) {
-        this.imageLoadingListener_ = null;
-        if (!this.isRendering_) {
-          this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RENDERED);
-        }
-      }, false, this);
-    }
-  } else {
-    this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RENDERED);
-  }
-};
-acgraph.vector.Stage.prototype.setDirtyState = function(state) {
-};
-acgraph.vector.Stage.prototype.isDirty = function() {
-  return this.rootLayer_.isDirty();
-};
-acgraph.vector.Stage.prototype.hasDirtyState = function(state) {
-  return this.rootLayer_.hasDirtyState(state);
+acgraph.vector.Stage.prototype.normalizeImageSize_ = function(opt_width, opt_height) {
+  var ratio = this.width() / this.height();
+  opt_width = goog.isDef(opt_width) ? opt_width : opt_height ? Math.round(opt_height * ratio) : (this.width());
+  opt_height = goog.isDef(opt_height) ? opt_height : opt_width ? Math.round(opt_width / ratio) : (this.height());
+  return {width:opt_width, height:opt_height};
 };
 acgraph.vector.Stage.prototype.shareUrl_ = function(type, data, asBase64, saveAndShare, onSuccess, opt_onError) {
   if (asBase64) {
@@ -21085,15 +22578,12 @@ acgraph.vector.Stage.prototype.shareUrl_ = function(type, data, asBase64, saveAn
   goog.net.XhrIo.send(acgraph.exportServer + "/" + type, callback, "POST", data.toString());
 };
 acgraph.vector.Stage.prototype.addPngData_ = function(data, opt_width, opt_height, opt_quality, opt_filename) {
-  data["data"] = this.toSvg(opt_width, opt_height);
+  var size = this.normalizeImageSize_(opt_width, opt_height);
+  data["data"] = this.toSvg(size.width, size.height);
   data["dataType"] = "svg";
   data["responseType"] = "file";
-  if (goog.isDef(opt_width)) {
-    data["width"] = opt_width;
-  }
-  if (goog.isDef(opt_height)) {
-    data["height"] = opt_height;
-  }
+  data["width"] = size.width;
+  data["height"] = size.height;
   if (goog.isDef(opt_quality)) {
     data["quality"] = opt_quality;
   }
@@ -21112,15 +22602,12 @@ acgraph.vector.Stage.prototype.shareAsPng = function(onSuccess, opt_onError, opt
   }
 };
 acgraph.vector.Stage.prototype.addJpgData_ = function(data, opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename) {
-  data["data"] = this.toSvg(opt_width, opt_height);
+  var size = this.normalizeImageSize_(opt_width, opt_height);
+  data["data"] = this.toSvg(size.width, size.height);
   data["dataType"] = "svg";
   data["responseType"] = "file";
-  if (goog.isDef(opt_width)) {
-    data["width"] = opt_width;
-  }
-  if (goog.isDef(opt_height)) {
-    data["height"] = opt_height;
-  }
+  data["width"] = size.width;
+  data["height"] = size.height;
   if (goog.isDef(opt_quality)) {
     data["quality"] = opt_quality;
   }
@@ -21326,262 +22813,9 @@ acgraph.vector.Stage.prototype.serializeToString_ = function(node) {
   }
   return result;
 };
-acgraph.vector.Stage.prototype.layer = acgraph.vector.Layer.prototype.layer;
-acgraph.vector.Stage.prototype.unmanagedLayer = acgraph.vector.Layer.prototype.unmanagedLayer;
-acgraph.vector.Stage.prototype.text = acgraph.vector.Layer.prototype.text;
-acgraph.vector.Stage.prototype.html = acgraph.vector.Layer.prototype.html;
-acgraph.vector.Stage.prototype.rect = acgraph.vector.Layer.prototype.rect;
-acgraph.vector.Stage.prototype.image = acgraph.vector.Layer.prototype.image;
-acgraph.vector.Stage.prototype.roundedRect = acgraph.vector.Layer.prototype.roundedRect;
-acgraph.vector.Stage.prototype.roundedInnerRect = acgraph.vector.Layer.prototype.roundedInnerRect;
-acgraph.vector.Stage.prototype.truncatedRect = acgraph.vector.Layer.prototype.truncatedRect;
-acgraph.vector.Stage.prototype.circle = acgraph.vector.Layer.prototype.circle;
-acgraph.vector.Stage.prototype.ellipse = acgraph.vector.Layer.prototype.ellipse;
-acgraph.vector.Stage.prototype.path = acgraph.vector.Layer.prototype.path;
-acgraph.vector.Stage.prototype.star = acgraph.vector.Layer.prototype.star;
-acgraph.vector.Stage.prototype.star4 = acgraph.vector.Layer.prototype.star4;
-acgraph.vector.Stage.prototype.star5 = acgraph.vector.Layer.prototype.star5;
-acgraph.vector.Stage.prototype.star6 = acgraph.vector.Layer.prototype.star6;
-acgraph.vector.Stage.prototype.star7 = acgraph.vector.Layer.prototype.star7;
-acgraph.vector.Stage.prototype.star10 = acgraph.vector.Layer.prototype.star10;
-acgraph.vector.Stage.prototype.triangleUp = acgraph.vector.Layer.prototype.triangleUp;
-acgraph.vector.Stage.prototype.triangleDown = acgraph.vector.Layer.prototype.triangleDown;
-acgraph.vector.Stage.prototype.triangleRight = acgraph.vector.Layer.prototype.triangleRight;
-acgraph.vector.Stage.prototype.triangleLeft = acgraph.vector.Layer.prototype.triangleLeft;
-acgraph.vector.Stage.prototype.diamond = acgraph.vector.Layer.prototype.diamond;
-acgraph.vector.Stage.prototype.cross = acgraph.vector.Layer.prototype.cross;
-acgraph.vector.Stage.prototype.diagonalCross = acgraph.vector.Layer.prototype.diagonalCross;
-acgraph.vector.Stage.prototype.hLine = acgraph.vector.Layer.prototype.hLine;
-acgraph.vector.Stage.prototype.vLine = acgraph.vector.Layer.prototype.vLine;
-acgraph.vector.Stage.prototype.pie = acgraph.vector.Layer.prototype.pie;
-acgraph.vector.Stage.prototype.donut = acgraph.vector.Layer.prototype.donut;
-acgraph.vector.Stage.prototype.createClip = function(opt_leftOrRect, opt_top, opt_width, opt_height) {
-  return new acgraph.vector.Clip(this, opt_leftOrRect, opt_top, opt_width, opt_height);
-};
-acgraph.vector.Stage.prototype.pattern = function(bounds) {
-  return new acgraph.vector.PatternFill(bounds);
-};
-acgraph.vector.Stage.prototype.hatchFill = function(opt_type, opt_color, opt_thickness, opt_size) {
-  return acgraph.hatchFill(opt_type, opt_color, opt_thickness, opt_size);
-};
-acgraph.vector.Stage.prototype.numChildren = function() {
-  return this.rootLayer_.numChildren();
-};
-acgraph.vector.Stage.prototype.addChild = function(element) {
-  this.rootLayer_.addChild(element);
-  return this;
-};
-acgraph.vector.Stage.prototype.addChildAt = function(element, index) {
-  this.rootLayer_.addChildAt(element, index);
-  return this;
-};
-acgraph.vector.Stage.prototype.getChildAt = function(index) {
-  return this.rootLayer_.getChildAt(index);
-};
-acgraph.vector.Stage.prototype.removeChild = function(element) {
-  return this.rootLayer_.removeChild(element);
-};
-acgraph.vector.Stage.prototype.removeChildAt = function(index) {
-  return this.rootLayer_.removeChildAt(index);
-};
-acgraph.vector.Stage.prototype.removeChildren = function() {
-  return this.rootLayer_.removeChildren();
-};
-acgraph.vector.Stage.prototype.hasChild = function(element) {
-  return this.rootLayer_.hasChild(element);
-};
-acgraph.vector.Stage.prototype.indexOfChild = function(element) {
-  return this.rootLayer_.indexOfChild(element);
-};
-acgraph.vector.Stage.prototype.swapChildren = function(element1, element2) {
-  this.rootLayer_.swapChildren(element1, element2);
-  return this;
-};
-acgraph.vector.Stage.prototype.swapChildrenAt = function(index1, index2) {
-  this.rootLayer_.swapChildrenAt(index1, index2);
-  return this;
-};
-acgraph.vector.Stage.prototype.forEachChild = function(callback, opt_this) {
-  this.rootLayer_.forEachChild(callback, opt_this);
-  return this;
-};
-acgraph.vector.Stage.prototype.rotate = function(degrees, opt_cx, opt_cy) {
-  this.rootLayer_.rotate(degrees, opt_cx, opt_cy);
-  return this;
-};
-acgraph.vector.Stage.prototype.rotateByAnchor = function(degrees, opt_anchor) {
-  this.rootLayer_.rotateByAnchor(degrees, opt_anchor);
-  return this;
-};
-acgraph.vector.Stage.prototype.setRotation = function(degrees, opt_cx, opt_cy) {
-  this.rootLayer_.setRotation(degrees, opt_cx, opt_cy);
-  return this;
-};
-acgraph.vector.Stage.prototype.setRotationByAnchor = function(degrees, opt_anchor) {
-  this.rootLayer_.setRotationByAnchor(degrees, opt_anchor);
-  return this;
-};
-acgraph.vector.Stage.prototype.translate = function(tx, ty) {
-  this.rootLayer_.translate(tx, ty);
-  return this;
-};
-acgraph.vector.Stage.prototype.setPosition = function(x, y) {
-  this.rootLayer_.setPosition(x, y);
-  return this;
-};
-acgraph.vector.Stage.prototype.scale = function(sx, sy, opt_cx, opt_cy) {
-  this.rootLayer_.scale(sx, sy, opt_cx, opt_cy);
-  return this;
-};
-acgraph.vector.Stage.prototype.scaleByAnchor = function(sx, sy, opt_anchor) {
-  this.rootLayer_.scaleByAnchor(sx, sy, opt_anchor);
-  return this;
-};
-acgraph.vector.Stage.prototype.appendTransformationMatrix = function(m00, m10, m01, m11, m02, m12) {
-  this.rootLayer_.appendTransformationMatrix(m00, m10, m01, m11, m02, m12);
-  return this;
-};
-acgraph.vector.Stage.prototype.setTransformationMatrix = function(m00, m10, m01, m11, m02, m12) {
-  this.rootLayer_.setTransformationMatrix(m00, m10, m01, m11, m02, m12);
-  return this;
-};
-acgraph.vector.Stage.prototype.getRotationAngle = function() {
-  return this.rootLayer_.getRotationAngle();
-};
-acgraph.vector.Stage.prototype.getTransformationMatrix = function() {
-  return this.rootLayer_.getTransformationMatrix();
-};
-acgraph.vector.Stage.prototype.getFullTransformation = function() {
-  return null;
-};
-acgraph.vector.Stage.prototype.dispatchEvent = function(e) {
-  if (goog.isString(e)) {
-    e = e.toLowerCase();
-  } else {
-    if ("type" in e) {
-      e.type = String(e.type).toLowerCase();
-    }
-  }
-  return goog.base(this, "dispatchEvent", e);
-};
-acgraph.vector.Stage.prototype.listen = function(type, listener, opt_useCapture, opt_listenerScope) {
-  return (goog.base(this, "listen", String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope));
-};
-acgraph.vector.Stage.prototype.listenOnce = function(type, listener, opt_useCapture, opt_listenerScope) {
-  return (goog.base(this, "listenOnce", String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope));
-};
-acgraph.vector.Stage.prototype.unlisten = function(type, listener, opt_useCapture, opt_listenerScope) {
-  return goog.base(this, "unlisten", String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
-};
-acgraph.vector.Stage.prototype.unlistenByKey;
-acgraph.vector.Stage.prototype.removeAllListeners = function(opt_type) {
-  if (goog.isDef(opt_type)) {
-    opt_type = String(opt_type).toLowerCase();
-  }
-  return goog.base(this, "removeAllListeners", opt_type);
-};
-acgraph.vector.Stage.prototype.handleMouseEvent_ = function(e) {
-  var event = new acgraph.events.BrowserEvent(e, this);
-  if (event["target"] instanceof acgraph.vector.Element) {
-    var el = (event["target"]);
-    el.dispatchEvent(event);
-    var type = event["type"];
-    if (event.defaultPrevented) {
-      e.preventDefault();
-    }
-    if (!(event["relatedTarget"] instanceof acgraph.vector.Element) || (event["relatedTarget"]).getStage() != this) {
-      if (type == acgraph.events.EventType.MOUSEOVER) {
-        this.eventHandler_.listen(goog.dom.getDocument(), acgraph.events.EventType.MOUSEMOVE, this.handleMouseEvent_, false);
-      } else {
-        if (type == acgraph.events.EventType.MOUSEOUT) {
-          this.eventHandler_.unlisten(goog.dom.getDocument(), acgraph.events.EventType.MOUSEMOVE, this.handleMouseEvent_, false);
-        }
-      }
-    }
-    switch(type) {
-      case acgraph.events.EventType.MOUSEDOWN:
-        this.eventHandler_.listen(goog.dom.getDocument(), acgraph.events.EventType.MOUSEUP, this.handleMouseEvent_, false);
-        break;
-      case acgraph.events.EventType.MOUSEUP:
-        this.eventHandler_.unlisten(goog.dom.getDocument(), acgraph.events.EventType.MOUSEUP, this.handleMouseEvent_, false);
-        break;
-      case acgraph.events.EventType.TOUCHSTART:
-        this.eventHandler_.listen(goog.dom.getDocument(), acgraph.events.EventType.TOUCHMOVE, this.handleMouseEvent_, false);
-        break;
-      case acgraph.events.EventType.TOUCHEND:
-        this.eventHandler_.unlisten(goog.dom.getDocument(), acgraph.events.EventType.TOUCHMOVE, this.handleMouseEvent_, false);
-        break;
-      case goog.events.EventType.POINTERDOWN:
-        this.eventHandler_.listen(goog.dom.getDocument(), goog.events.EventType.POINTERMOVE, this.handleMouseEvent_, false);
-        break;
-      case goog.events.EventType.POINTERUP:
-        this.eventHandler_.unlisten(goog.dom.getDocument(), goog.events.EventType.POINTERMOVE, this.handleMouseEvent_, false);
-        break;
-    }
-  }
-};
-acgraph.vector.Stage.prototype.dispose = function() {
-  acgraph.vector.Stage.base(this, "dispose");
-};
-acgraph.vector.Stage.prototype.disposeInternal = function() {
-  acgraph.vector.Stage.base(this, "disposeInternal");
-  goog.dispose(this.eventHandler_);
-  this.eventHandler_ = null;
-  goog.dispose(this.rootLayer_);
-  this.renderInternal();
-  delete this.rootLayer_;
-  goog.dispose(this.defs_);
-  delete this.defs_;
-  acgraph.unregister(this);
-  goog.dom.removeNode(this.internalContainer_);
-  this.container_ = null;
-  delete this.internalContainer_;
-  this.domElement_ = null;
-  if (this.credits_) {
-    this.credits_.dispose();
-    this.credits_ = null;
-  }
-};
 (function() {
+  goog.exportSymbol("acgraph.server", acgraph.server);
   var proto = acgraph.vector.Stage.prototype;
-  goog.exportSymbol("acgraph.vector.Stage", acgraph.vector.Stage);
-  proto["id"] = proto.id;
-  proto["container"] = proto.container;
-  proto["getContainerElement"] = proto.getContainerElement;
-  proto["getDomWrapper"] = proto.getDomWrapper;
-  proto["maxResizeDelay"] = proto.maxResizeDelay;
-  proto["dispose"] = proto.dispose;
-  proto["getBounds"] = proto.getBounds;
-  proto["layer"] = proto.layer;
-  proto["unmanagedLayer"] = proto.unmanagedLayer;
-  proto["circle"] = proto.circle;
-  proto["ellipse"] = proto.ellipse;
-  proto["rect"] = proto.rect;
-  proto["truncatedRect"] = proto.truncatedRect;
-  proto["roundedRect"] = proto.roundedRect;
-  proto["roundedInnerRect"] = proto.roundedInnerRect;
-  proto["path"] = proto.path;
-  proto["star"] = proto.star;
-  proto["star4"] = proto.star4;
-  proto["star5"] = proto.star5;
-  proto["star6"] = proto.star6;
-  proto["star7"] = proto.star7;
-  proto["star10"] = proto.star10;
-  proto["diamond"] = proto.diamond;
-  proto["triangleUp"] = proto.triangleUp;
-  proto["triangleDown"] = proto.triangleDown;
-  proto["triangleRight"] = proto.triangleRight;
-  proto["triangleLeft"] = proto.triangleLeft;
-  proto["cross"] = proto.cross;
-  proto["diagonalCross"] = proto.diagonalCross;
-  proto["hLine"] = proto.hLine;
-  proto["vLine"] = proto.vLine;
-  proto["pie"] = proto.pie;
-  proto["donut"] = proto.donut;
-  proto["text"] = proto.text;
-  proto["html"] = proto.html;
-  proto["image"] = proto.image;
-  proto["data"] = proto.data;
   proto["saveAsPNG"] = proto.saveAsPng;
   proto["saveAsJPG"] = proto.saveAsJpg;
   proto["saveAsPDF"] = proto.saveAsPdf;
@@ -21600,103 +22834,7 @@ acgraph.vector.Stage.prototype.disposeInternal = function() {
   proto["getPdfBase64String"] = proto.getPdfBase64String;
   proto["print"] = proto.print;
   proto["toSvg"] = proto.toSvg;
-  proto["pattern"] = proto.pattern;
-  proto["hatchFill"] = proto.hatchFill;
-  proto["clearDefs"] = proto.clearDefs;
-  proto["numChildren"] = proto.numChildren;
-  proto["addChild"] = proto.addChild;
-  proto["addChildAt"] = proto.addChildAt;
-  proto["removeChild"] = proto.removeChild;
-  proto["removeChildAt"] = proto.removeChildAt;
-  proto["removeChildren"] = proto.removeChildren;
-  proto["swapChildren"] = proto.swapChildren;
-  proto["swapChildrenAt"] = proto.swapChildrenAt;
-  proto["getChildAt"] = proto.getChildAt;
-  proto["hasChild"] = proto.hasChild;
-  proto["forEachChild"] = proto.forEachChild;
-  proto["indexOfChild"] = proto.indexOfChild;
-  proto["getX"] = proto.getX;
-  proto["getY"] = proto.getY;
-  proto["width"] = proto.width;
-  proto["height"] = proto.height;
-  proto["getBounds"] = proto.getBounds;
-  proto["resize"] = proto.resize;
-  proto["asyncMode"] = proto.asyncMode;
-  proto["resume"] = proto.resume;
-  proto["suspend"] = proto.suspend;
-  proto["isRendering"] = proto.isRendering;
-  proto["isSuspended"] = proto.isSuspended;
-  proto["remove"] = proto.remove;
-  proto["domElement"] = proto.domElement;
-  proto["visible"] = proto.visible;
-  proto["rotate"] = proto.rotate;
-  proto["rotateByAnchor"] = proto.rotateByAnchor;
-  proto["setRotation"] = proto.setRotation;
-  proto["setRotationByAnchor"] = proto.setRotationByAnchor;
-  proto["translate"] = proto.translate;
-  proto["setPosition"] = proto.setPosition;
-  proto["scale"] = proto.scale;
-  proto["scaleByAnchor"] = proto.scaleByAnchor;
-  proto["appendTransformationMatrix"] = proto.appendTransformationMatrix;
-  proto["setTransformationMatrix"] = proto.setTransformationMatrix;
-  proto["getRotationAngle"] = proto.getRotationAngle;
-  proto["getTransformationMatrix"] = proto.getTransformationMatrix;
-  proto["clip"] = proto.clip;
-  proto["createClip"] = proto.createClip;
-  proto["parent"] = proto.parent;
-  proto["getStage"] = proto.getStage;
-  proto["listen"] = proto.listen;
-  proto["listenOnce"] = proto.listenOnce;
-  proto["unlisten"] = proto.unlisten;
-  proto["unlistenByKey"] = proto.unlistenByKey;
-  proto["removeAllListeners"] = proto.removeAllListeners;
-  proto["title"] = proto.title;
-  proto["desc"] = proto.desc;
-  goog.exportSymbol("acgraph.events.EventType.RENDER_START", acgraph.vector.Stage.EventType.RENDER_START);
-  goog.exportSymbol("acgraph.events.EventType.RENDER_FINISH", acgraph.vector.Stage.EventType.RENDER_FINISH);
-  goog.exportSymbol("acgraph.vector.Stage.EventType.STAGE_RESIZE", acgraph.vector.Stage.EventType.STAGE_RESIZE);
-  goog.exportSymbol("acgraph.vector.Stage.EventType.STAGE_RENDERED", acgraph.vector.Stage.EventType.STAGE_RENDERED);
 })();
-goog.provide("acgraph.vector.svg.Defs");
-goog.require("acgraph.vector.Defs");
-acgraph.vector.svg.Defs = function(stage) {
-  goog.base(this, stage);
-  this.clips_ = {};
-};
-goog.inherits(acgraph.vector.svg.Defs, acgraph.vector.Defs);
-acgraph.vector.svg.Defs.CLIP_FRACTION_DIGITS = 4;
-acgraph.vector.svg.Defs.prototype.clear = function() {
-  goog.object.clear(this.clips_);
-  goog.base(this, "clear");
-};
-acgraph.vector.svg.Defs.prototype.getClipPathElement = function(clipShape) {
-  var id = acgraph.utils.IdGenerator.getInstance().identify(clipShape);
-  var res = this.clips_[id];
-  if (!res) {
-    this.clips_[id] = res = acgraph.getRenderer().createClipElement();
-  }
-  return res;
-};
-acgraph.vector.svg.Defs.prototype.disposeInternal = function() {
-  goog.base(this, "disposeInternal");
-  for (var i in this.clips_) {
-    delete this.clips_[i];
-  }
-  delete this.clips_;
-};
-goog.provide("acgraph.vector.svg.Stage");
-goog.require("acgraph.vector.Stage");
-goog.require("acgraph.vector.svg.Defs");
-acgraph.vector.svg.Stage = function(opt_container, opt_width, opt_height) {
-  goog.base(this, opt_container, opt_width, opt_height);
-};
-goog.inherits(acgraph.vector.svg.Stage, acgraph.vector.Stage);
-acgraph.vector.svg.Stage.prototype.createDefs = function() {
-  return new acgraph.vector.svg.Defs(this);
-};
-goog.provide("acgraph.vector.svg");
-goog.require("acgraph.vector.svg.Renderer");
-goog.require("acgraph.vector.svg.Stage");
 goog.provide("acgraph.vector.vml.Clip");
 goog.require("acgraph.vector.Clip");
 acgraph.vector.vml.Clip = function(stage, opt_leftOrRect, opt_top, opt_width, opt_height) {
@@ -21716,6 +22854,7 @@ acgraph.vector.vml.Clip.prototype.render = function() {
     stage.resume();
   }
 };
+goog.exportSymbol("acgraph.vml.Clip", acgraph.vector.vml.Clip);
 goog.provide("acgraph.vector.vml.RadialGradient");
 goog.require("acgraph.vector.RadialGradient");
 acgraph.vector.vml.RadialGradient = function(keys, cx, cy, size_x, size_y, opt_opacity, opt_mode) {
@@ -22085,195 +23224,10 @@ goog.color.yiqBrightnessDiff_ = function(rgb1, rgb2) {
 goog.color.colorDiff_ = function(rgb1, rgb2) {
   return Math.abs(rgb1[0] - rgb2[0]) + Math.abs(rgb1[1] - rgb2[1]) + Math.abs(rgb1[2] - rgb2[2]);
 };
-goog.provide("goog.cssom");
-goog.provide("goog.cssom.CssRuleType");
-goog.require("goog.array");
-goog.require("goog.dom");
-goog.require("goog.dom.TagName");
-goog.cssom.CssRuleType = {STYLE:1, IMPORT:3, MEDIA:4, FONT_FACE:5, PAGE:6, NAMESPACE:7};
-goog.cssom.getAllCssText = function(opt_styleSheet) {
-  var styleSheet = opt_styleSheet || document.styleSheets;
-  return (goog.cssom.getAllCss_(styleSheet, true));
-};
-goog.cssom.getAllCssStyleRules = function(opt_styleSheet) {
-  var styleSheet = opt_styleSheet || document.styleSheets;
-  return (goog.cssom.getAllCss_(styleSheet, false));
-};
-goog.cssom.getCssRulesFromStyleSheet = function(styleSheet) {
-  var cssRuleList = null;
-  try {
-    cssRuleList = styleSheet.cssRules || styleSheet.rules;
-  } catch (e) {
-    if (e.code == 15) {
-      e.styleSheet = styleSheet;
-      throw e;
-    }
-  }
-  return cssRuleList;
-};
-goog.cssom.getAllCssStyleSheets = function(opt_styleSheet, opt_includeDisabled) {
-  var styleSheetsOutput = [];
-  var styleSheet = opt_styleSheet || document.styleSheets;
-  var includeDisabled = goog.isDef(opt_includeDisabled) ? opt_includeDisabled : false;
-  if (styleSheet.imports && styleSheet.imports.length) {
-    for (var i = 0, n = styleSheet.imports.length;i < n;i++) {
-      goog.array.extend(styleSheetsOutput, goog.cssom.getAllCssStyleSheets((styleSheet.imports[i])));
-    }
-  } else {
-    if (styleSheet.length) {
-      for (var i = 0, n = styleSheet.length;i < n;i++) {
-        goog.array.extend(styleSheetsOutput, goog.cssom.getAllCssStyleSheets(styleSheet[i]));
-      }
-    } else {
-      var cssRuleList = goog.cssom.getCssRulesFromStyleSheet((styleSheet));
-      if (cssRuleList && cssRuleList.length) {
-        for (var i = 0, n = cssRuleList.length, cssRule;i < n;i++) {
-          cssRule = cssRuleList[i];
-          if (cssRule.styleSheet) {
-            goog.array.extend(styleSheetsOutput, goog.cssom.getAllCssStyleSheets(cssRule.styleSheet));
-          }
-        }
-      }
-    }
-  }
-  if ((styleSheet.type || styleSheet.rules || styleSheet.cssRules) && (!styleSheet.disabled || includeDisabled)) {
-    styleSheetsOutput.push(styleSheet);
-  }
-  return styleSheetsOutput;
-};
-goog.cssom.getCssTextFromCssRule = function(cssRule) {
-  var cssText = "";
-  if (cssRule.cssText) {
-    cssText = cssRule.cssText;
-  } else {
-    if (cssRule.style && cssRule.style.cssText && cssRule.selectorText) {
-      var styleCssText = cssRule.style.cssText.replace(/\s*-closure-parent-stylesheet:\s*\[object\];?\s*/gi, "").replace(/\s*-closure-rule-index:\s*[\d]+;?\s*/gi, "");
-      var thisCssText = cssRule.selectorText + " { " + styleCssText + " }";
-      cssText = thisCssText;
-    }
-  }
-  return cssText;
-};
-goog.cssom.getCssRuleIndexInParentStyleSheet = function(cssRule, opt_parentStyleSheet) {
-  if (cssRule.style && cssRule.style["-closure-rule-index"]) {
-    return cssRule.style["-closure-rule-index"];
-  }
-  var parentStyleSheet = opt_parentStyleSheet || goog.cssom.getParentStyleSheet(cssRule);
-  if (!parentStyleSheet) {
-    throw Error("Cannot find a parentStyleSheet.");
-  }
-  var cssRuleList = goog.cssom.getCssRulesFromStyleSheet(parentStyleSheet);
-  if (cssRuleList && cssRuleList.length) {
-    for (var i = 0, n = cssRuleList.length, thisCssRule;i < n;i++) {
-      thisCssRule = cssRuleList[i];
-      if (thisCssRule == cssRule) {
-        return i;
-      }
-    }
-  }
-  return -1;
-};
-goog.cssom.getParentStyleSheet = function(cssRule) {
-  return cssRule.parentStyleSheet || cssRule.style && cssRule.style["-closure-parent-stylesheet"];
-};
-goog.cssom.replaceCssRule = function(cssRule, cssText, opt_parentStyleSheet, opt_index) {
-  var parentStyleSheet = opt_parentStyleSheet || goog.cssom.getParentStyleSheet(cssRule);
-  if (parentStyleSheet) {
-    var index = Number(opt_index) >= 0 ? Number(opt_index) : goog.cssom.getCssRuleIndexInParentStyleSheet(cssRule, parentStyleSheet);
-    if (index >= 0) {
-      goog.cssom.removeCssRule(parentStyleSheet, index);
-      goog.cssom.addCssRule(parentStyleSheet, cssText, index);
-    } else {
-      throw Error("Cannot proceed without the index of the cssRule.");
-    }
-  } else {
-    throw Error("Cannot proceed without the parentStyleSheet.");
-  }
-};
-goog.cssom.addCssRule = function(cssStyleSheet, cssText, opt_index) {
-  var index = opt_index;
-  if (index == undefined || index < 0) {
-    var rules = goog.cssom.getCssRulesFromStyleSheet(cssStyleSheet);
-    index = rules.length;
-  }
-  if (cssStyleSheet.insertRule) {
-    cssStyleSheet.insertRule(cssText, index);
-  } else {
-    var matches = /^([^\{]+)\{([^\{]+)\}/.exec(cssText);
-    if (matches.length == 3) {
-      var selector = matches[1];
-      var style = matches[2];
-      cssStyleSheet.addRule(selector, style, index);
-    } else {
-      throw Error("Your CSSRule appears to be ill-formatted.");
-    }
-  }
-};
-goog.cssom.removeCssRule = function(cssStyleSheet, index) {
-  if (cssStyleSheet.deleteRule) {
-    cssStyleSheet.deleteRule(index);
-  } else {
-    cssStyleSheet.removeRule(index);
-  }
-};
-goog.cssom.addCssText = function(cssText, opt_domHelper) {
-  var domHelper = opt_domHelper || goog.dom.getDomHelper();
-  var document = domHelper.getDocument();
-  var cssNode = domHelper.createElement(goog.dom.TagName.STYLE);
-  cssNode.type = "text/css";
-  var head = domHelper.getElementsByTagName(goog.dom.TagName.HEAD)[0];
-  head.appendChild(cssNode);
-  if (cssNode.styleSheet) {
-    cssNode.styleSheet.cssText = cssText;
-  } else {
-    var cssTextNode = document.createTextNode(cssText);
-    cssNode.appendChild(cssTextNode);
-  }
-  return cssNode;
-};
-goog.cssom.getFileNameFromStyleSheet = function(styleSheet) {
-  var href = styleSheet.href;
-  if (!href) {
-    return null;
-  }
-  var matches = /([^\/\?]+)[^\/]*$/.exec(href);
-  var filename = matches[1];
-  return filename;
-};
-goog.cssom.getAllCss_ = function(styleSheet, isTextOutput) {
-  var cssOut = [];
-  var styleSheets = goog.cssom.getAllCssStyleSheets(styleSheet);
-  for (var i = 0;styleSheet = styleSheets[i];i++) {
-    var cssRuleList = goog.cssom.getCssRulesFromStyleSheet(styleSheet);
-    if (cssRuleList && cssRuleList.length) {
-      var ruleIndex = 0;
-      for (var j = 0, n = cssRuleList.length, cssRule;j < n;j++) {
-        cssRule = cssRuleList[j];
-        if (isTextOutput && !cssRule.href) {
-          var res = goog.cssom.getCssTextFromCssRule(cssRule);
-          cssOut.push(res);
-        } else {
-          if (!cssRule.href) {
-            if (cssRule.style) {
-              if (!cssRule.parentStyleSheet) {
-                cssRule.style["-closure-parent-stylesheet"] = styleSheet;
-              }
-              cssRule.style["-closure-rule-index"] = isTextOutput ? undefined : ruleIndex;
-            }
-            cssOut.push(cssRule);
-          }
-        }
-        if (!isTextOutput) {
-          ruleIndex++;
-        }
-      }
-    }
-  }
-  return isTextOutput ? cssOut.join(" ") : cssOut;
-};
 goog.provide("acgraph.vector.vml.Renderer");
 goog.require("acgraph.utils.IdGenerator");
 goog.require("acgraph.vector.LinearGradient");
+goog.require("acgraph.vector.PathBase");
 goog.require("acgraph.vector.Renderer");
 goog.require("acgraph.vector.vml.RadialGradient");
 goog.require("goog.array");
@@ -22284,7 +23238,7 @@ goog.require("goog.math.Coordinate");
 goog.require("goog.math.Rect");
 goog.require("goog.object");
 acgraph.vector.vml.Renderer = function() {
-  goog.base(this);
+  acgraph.vector.vml.Renderer.base(this, "constructor");
   var doc = goog.dom.getDocument();
   if (!this.isVMLClassDefined()) {
     doc.createStyleSheet().addRule("." + acgraph.vector.vml.Renderer.VML_CLASS_, "behavior:url(#default#VML)");
@@ -22301,16 +23255,24 @@ acgraph.vector.vml.Renderer = function() {
       return goog.dom.createDom(acgraph.vector.vml.Renderer.VML_PREFIX_ + ":" + tagName, {"class":acgraph.vector.vml.Renderer.VML_CLASS_, "xmlns":"urn:schemas-microsoft.com:vml"});
     };
   }
+  if (acgraph.vector.vml.Renderer.IE8_MODE) {
+    this.setAttr = this.setAttrIE8_;
+  }
 };
 goog.inherits(acgraph.vector.vml.Renderer, acgraph.vector.Renderer);
 goog.addSingletonGetter(acgraph.vector.vml.Renderer);
 acgraph.vector.vml.Renderer.VML_NS_ = "urn:schemas-microsoft-com:vml";
 acgraph.vector.vml.Renderer.VML_PREFIX_ = "any_vml";
 acgraph.vector.vml.Renderer.VML_CLASS_ = "any_vml";
-acgraph.vector.vml.Renderer.VML_IMPORT_ = "#default#VML";
 acgraph.vector.vml.Renderer.IE8_MODE = goog.global.document && goog.global.document.documentMode && goog.global.document.documentMode >= 8;
 acgraph.vector.vml.Renderer.COORD_MULTIPLIER_ = 100;
 acgraph.vector.vml.Renderer.SHIFT_ = 0;
+acgraph.vector.vml.Renderer.toCssSize_ = function(size) {
+  return goog.isString(size) && goog.string.endsWith(size, "%") ? parseFloat(size) + "%" : parseFloat(String(size)) + "px";
+};
+acgraph.vector.vml.Renderer.toSizeCoord_ = function(number) {
+  return Math.round(number) * acgraph.vector.vml.Renderer.COORD_MULTIPLIER_;
+};
 acgraph.vector.vml.Renderer.prototype.measurement_ = null;
 acgraph.vector.vml.Renderer.prototype.measurementText_ = null;
 acgraph.vector.vml.Renderer.measurementSimpleText_ = null;
@@ -22318,11 +23280,17 @@ acgraph.vector.vml.Renderer.prototype.virtualBaseLine_ = null;
 acgraph.vector.vml.Renderer.prototype.measurementVMLShape_ = null;
 acgraph.vector.vml.Renderer.prototype.measurementVMLTextPath_ = null;
 acgraph.vector.vml.Renderer.prototype.measurementImage_ = null;
-acgraph.vector.vml.Renderer.prototype.createMeasurement_ = function() {
+acgraph.vector.vml.Renderer.prototype.setAttrIE8_ = function(el, key, value) {
+  el[key] = value;
+};
+acgraph.vector.vml.Renderer.prototype.createDiv_ = function() {
+  return goog.dom.createElement("div");
+};
+acgraph.vector.vml.Renderer.prototype.createMeasurement = function() {
   this.measurementVMLShape_ = this.createTextSegmentElement();
   this.setPositionAndSize_(this.measurementVMLShape_, 0, 0, 1, 1);
   this.measurementVMLShape_.style["display"] = "none";
-  this.setAttributes_(this.measurementVMLShape_, {"filled":"true", "fillcolor":"black", "stroked":"false", "path":"m0,0 l1,0 e"});
+  this.setAttrs(this.measurementVMLShape_, {"filled":"true", "fillcolor":"black", "stroked":"false", "path":"m0,0 l1,0 e"});
   goog.dom.appendChild(document.body, this.measurementVMLShape_);
   this.measurement_ = goog.dom.createDom(goog.dom.TagName.DIV);
   this.measurementText_ = goog.dom.createDom(goog.dom.TagName.SPAN);
@@ -22345,61 +23313,17 @@ acgraph.vector.vml.Renderer.prototype.createMeasurement_ = function() {
 };
 acgraph.vector.vml.Renderer.prototype.measuringImage = function(src) {
   if (!this.measurement_) {
-    this.createMeasurement_();
+    this.createMeasurement();
   }
-  this.setAttribute_(this.measurementImage_, "src", src);
+  this.setAttr(this.measurementImage_, "src", src);
   return goog.style.getBounds(this.measurementImage_);
-};
-acgraph.vector.vml.Renderer.prototype.measuringSimpleText = function(text, segmentStyle, textStyle) {
-  if (!this.measurement_) {
-    this.createMeasurement_();
-  }
-  this.measurementSimpleText_.style.cssText = "";
-  if (textStyle["fontStyle"]) {
-    goog.style.setStyle(this.measurementSimpleText_, "font-style", textStyle["fontStyle"]);
-  }
-  if (textStyle["fontVariant"]) {
-    goog.style.setStyle(this.measurementSimpleText_, "font-variant", textStyle["fontVariant"]);
-  }
-  if (textStyle["fontFamily"]) {
-    goog.style.setStyle(this.measurementSimpleText_, "font-family", textStyle["fontFamily"]);
-  }
-  if (textStyle["fontSize"]) {
-    goog.style.setStyle(this.measurementSimpleText_, "font-size", textStyle["fontSize"]);
-  }
-  if (textStyle["fontWeight"]) {
-    goog.style.setStyle(this.measurementSimpleText_, "font-weight", textStyle["fontWeight"]);
-  }
-  if (textStyle["letterSpacing"]) {
-    goog.style.setStyle(this.measurementSimpleText_, "letter-spacing", textStyle["letterSpacing"]);
-  }
-  if (textStyle["decoration"]) {
-    goog.style.setStyle(this.measurementSimpleText_, "text-decoration", textStyle["decoration"]);
-  }
-  if (textStyle["textIndent"]) {
-    goog.style.setStyle(this.measurementSimpleText_, "text-indent", textStyle["textIndent"]);
-  }
-  if (textStyle["textWrap"] && textStyle["width"] && textStyle["textWrap"] == acgraph.vector.Text.TextWrap.BY_LETTER) {
-    goog.style.setStyle(this.measurementSimpleText_, "word-break", "break-all");
-  } else {
-    goog.style.setStyle(this.measurementSimpleText_, "white-space", "nowrap");
-  }
-  if (textStyle["width"]) {
-    goog.style.setStyle(this.measurementSimpleText_, "width", textStyle["width"]);
-  }
-  goog.style.setStyle(this.measurement_, {"left":0, "top":0, "width":"1px", height:"1px"});
-  goog.style.setStyle(this.measurementSimpleText_, {"border":"0 solid", "position":"absolute", "left":0, "top":0});
-  this.measurementSimpleText_.innerHTML = text;
-  var boundsTargetText = goog.style.getBounds(this.measurementSimpleText_);
-  this.measurementSimpleText_.innerHTML = "";
-  return boundsTargetText;
 };
 acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
   if (text == "") {
     return new goog.math.Rect(0, 0, 0, 0);
   }
   if (!this.measurement_) {
-    this.createMeasurement_();
+    this.createMeasurement();
   }
   goog.dom.removeNode(this.measurementVMLTextPath_);
   this.measurementVMLTextPath_ = (this.createTextNode(""));
@@ -22449,14 +23373,14 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
   }
   if (style.letterSpacing) {
     goog.style.setStyle(this.measurementText_, "letter-spacing", style["letterSpacing"]);
-    this.measurementVMLTextPath_.style["v-text-spacing"] = style["letterSpacing"];
+    this.measurementVMLTextPath_.style["v-text-spacing"] = style["letterSpacing"] == "normal" ? "" : style["letterSpacing"];
   }
   if (style.decoration) {
     goog.style.setStyle(this.measurementText_, "text-decoration", style["decoration"]);
     goog.style.setStyle(this.measurementVMLTextPath_, "text-decoration", style["decoration"]);
   }
   goog.style.setStyle(this.measurementText_, "border", "0 solid");
-  this.setAttribute_(this.measurementVMLTextPath_, "string", text);
+  this.setAttr(this.measurementVMLTextPath_, "string", text);
   var width = goog.style.getBounds(this.measurementVMLShape_).width;
   goog.style.setStyle(this.measurement_, {"left":0, "top":0, "width":"auto", "height":"auto"});
   this.measurementText_.innerHTML = text;
@@ -22468,9 +23392,53 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
   this.measurementText_.innerHTML = "";
   return boundsTargetText;
 };
+acgraph.vector.vml.Renderer.prototype.measuringSimpleText = function(text, segmentStyle, textStyle) {
+  if (!this.measurement_) {
+    this.createMeasurement();
+  }
+  this.measurementSimpleText_.style.cssText = "";
+  if (textStyle["fontStyle"]) {
+    goog.style.setStyle(this.measurementSimpleText_, "font-style", textStyle["fontStyle"]);
+  }
+  if (textStyle["fontVariant"]) {
+    goog.style.setStyle(this.measurementSimpleText_, "font-variant", textStyle["fontVariant"]);
+  }
+  if (textStyle["fontFamily"]) {
+    goog.style.setStyle(this.measurementSimpleText_, "font-family", textStyle["fontFamily"]);
+  }
+  if (textStyle["fontSize"]) {
+    goog.style.setStyle(this.measurementSimpleText_, "font-size", textStyle["fontSize"]);
+  }
+  if (textStyle["fontWeight"]) {
+    goog.style.setStyle(this.measurementSimpleText_, "font-weight", textStyle["fontWeight"]);
+  }
+  if (textStyle["letterSpacing"]) {
+    goog.style.setStyle(this.measurementSimpleText_, "letter-spacing", textStyle["letterSpacing"]);
+  }
+  if (textStyle["decoration"]) {
+    goog.style.setStyle(this.measurementSimpleText_, "text-decoration", textStyle["decoration"]);
+  }
+  if (textStyle["textIndent"]) {
+    goog.style.setStyle(this.measurementSimpleText_, "text-indent", textStyle["textIndent"]);
+  }
+  goog.style.setStyle(this.measurementSimpleText_, "word-break", textStyle["wordBreak"]);
+  goog.style.setStyle(this.measurementSimpleText_, "word-wrap", textStyle["wordWrap"]);
+  if (!goog.isDefAndNotNull(textStyle["width"])) {
+    goog.style.setStyle(this.measurementSimpleText_, "white-space", "nowrap");
+  }
+  if (textStyle["width"]) {
+    goog.style.setStyle(this.measurementSimpleText_, "width", textStyle["width"]);
+  }
+  goog.style.setStyle(this.measurement_, {"left":0, "top":0, "width":"1px", height:"1px"});
+  goog.style.setStyle(this.measurementSimpleText_, {"border":"0 solid", "position":"absolute", "left":0, "top":0});
+  this.measurementSimpleText_.innerHTML = text;
+  var boundsTargetText = goog.style.getBounds(this.measurementSimpleText_);
+  this.measurementSimpleText_.innerHTML = "";
+  return boundsTargetText;
+};
 acgraph.vector.vml.Renderer.prototype.measureElement = function(element) {
   if (!this.measurement_) {
-    this.createMeasurement_();
+    this.createMeasurement();
   }
   if (goog.isString(element)) {
     this.measurementGroupNode_.innerHTML = element;
@@ -22481,109 +23449,43 @@ acgraph.vector.vml.Renderer.prototype.measureElement = function(element) {
   this.measurementGroupNode_.innerHTML = "";
   return bounds;
 };
-acgraph.vector.vml.Renderer.prototype.setAttribute_ = function(element, key, value) {
-  if (acgraph.vector.vml.Renderer.IE8_MODE) {
-    element[key] = value;
-  } else {
-    element.setAttribute(key, value);
-  }
-};
-acgraph.vector.vml.Renderer.prototype.setAttributes_ = function(element, attrs) {
-  goog.object.forEach(attrs, function(val, key) {
-    this.setAttribute_(element, key, val);
-  }, this);
-};
 acgraph.vector.vml.Renderer.prototype.removeStyle_ = function(style, key) {
   if (!style[key]) {
     return;
   }
   style["cssText"] = style["cssText"].replace(new RegExp("(^|; )(" + key + ": [^;]*)(;|$)", "ig"), ";");
 };
-acgraph.vector.vml.Renderer.prototype.removeAttribute_ = function(element, key) {
-  element.removeAttribute(key);
-};
-acgraph.vector.vml.Renderer.prototype.toCssSize_ = function(size) {
-  return goog.isString(size) && goog.string.endsWith(size, "%") ? parseFloat(size) + "%" : parseFloat(String(size)) + "px";
-};
-acgraph.vector.vml.Renderer.prototype.toSizeCoord_ = function(number) {
-  return Math.round(number) * acgraph.vector.vml.Renderer.COORD_MULTIPLIER_;
-};
 acgraph.vector.vml.Renderer.prototype.setPositionAndSize_ = function(element, x, y, width, height) {
   this.setCoordSize(element);
-  this.setAttributes_(element["style"], {"position":"absolute", "left":this.toCssSize_(x), "top":this.toCssSize_(y), "width":this.toCssSize_(width), "height":this.toCssSize_(height)});
+  this.setAttrs(element["style"], {"position":"absolute", "left":acgraph.vector.vml.Renderer.toCssSize_(x), "top":acgraph.vector.vml.Renderer.toCssSize_(y), "width":acgraph.vector.vml.Renderer.toCssSize_(width), "height":acgraph.vector.vml.Renderer.toCssSize_(height)});
 };
-acgraph.vector.vml.Renderer.prototype.getVmlPath_ = function(path, opt_transformed) {
-  if (path.isEmpty()) {
-    return null;
-  }
-  var list = [];
-  var func = opt_transformed ? path.forEachTransformedSegment : path.forEachSegment;
-  func.call(path, function(segment, args) {
-    switch(segment) {
-      case acgraph.vector.PathBase.Segment.MOVETO:
-        list.push("m");
-        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(args, this.toSizeCoord_), list);
-        break;
-      case acgraph.vector.PathBase.Segment.LINETO:
-        list.push("l");
-        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(args, this.toSizeCoord_), list);
-        break;
-      case acgraph.vector.PathBase.Segment.CURVETO:
-        list.push("c");
-        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(args, this.toSizeCoord_), list);
-        break;
-      case acgraph.vector.PathBase.Segment.CLOSE:
-        list.push("x");
-        break;
-      case acgraph.vector.PathBase.Segment.ARCTO:
-        var toAngle = args[2] + args[3];
-        var cx = this.toSizeCoord_(args[4] - goog.math.angleDx(toAngle, args[0]));
-        var cy = this.toSizeCoord_(args[5] - goog.math.angleDy(toAngle, args[1]));
-        var rx = this.toSizeCoord_(args[0]);
-        var ry = this.toSizeCoord_(args[1]);
-        var fromAngle = Math.round(args[2] * -65536);
-        var extent = Math.round(args[3] * -65536);
-        list.push("ae", cx, cy, rx, ry, fromAngle, extent);
-        break;
-    }
-  }, this);
-  return list.join(" ");
+acgraph.vector.vml.Renderer.prototype.pathSegmentNamesMap = function() {
+  var map = {};
+  map[acgraph.vector.PathBase.Segment.MOVETO] = "m";
+  map[acgraph.vector.PathBase.Segment.LINETO] = "l";
+  map[acgraph.vector.PathBase.Segment.CURVETO] = "c";
+  map[acgraph.vector.PathBase.Segment.ARCTO] = "ae";
+  map[acgraph.vector.PathBase.Segment.CLOSE] = "x";
+  return map;
+}();
+acgraph.vector.vml.Renderer.prototype.pushArcToPathString = function(list, args) {
+  var toAngle = args[2] + args[3];
+  var cx = acgraph.vector.vml.Renderer.toSizeCoord_(args[4] - goog.math.angleDx(toAngle, args[0]));
+  var cy = acgraph.vector.vml.Renderer.toSizeCoord_(args[5] - goog.math.angleDy(toAngle, args[1]));
+  var rx = acgraph.vector.vml.Renderer.toSizeCoord_(args[0]);
+  var ry = acgraph.vector.vml.Renderer.toSizeCoord_(args[1]);
+  var fromAngle = Math.round(args[2] * -65536);
+  var extent = Math.round(args[3] * -65536);
+  list.push(cx, cy, rx, ry, fromAngle, extent);
+};
+acgraph.vector.vml.Renderer.prototype.pushToArgs = function(list, args) {
+  acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(args, acgraph.vector.vml.Renderer.toSizeCoord_), list);
 };
 acgraph.vector.vml.Renderer.prototype.createVMLElement_;
 acgraph.vector.vml.Renderer.prototype.isVMLClassDefined = function() {
   return !!goog.array.find(goog.cssom.getAllCssStyleRules(), function(cssRule) {
     return cssRule.selectorText === "." + acgraph.vector.vml.Renderer.VML_CLASS_;
   });
-};
-acgraph.vector.vml.Renderer.prototype.setId = function(element, id) {
-  this.setIdInternal(element.domElement(), id);
-};
-acgraph.vector.vml.Renderer.prototype.setIdInternal = function(element, id) {
-  if (element) {
-    if (id) {
-      this.setAttribute_(element, "id", id);
-    } else {
-      this.removeAttribute_(element, "id");
-    }
-  }
-};
-acgraph.vector.vml.Renderer.prototype.setTitle = goog.nullFunction;
-acgraph.vector.vml.Renderer.prototype.setDesc = goog.nullFunction;
-acgraph.vector.vml.Renderer.prototype.setAttributes = function(element, attrs) {
-  var domElement = element.domElement();
-  if (domElement && goog.isObject(attrs)) {
-    for (var key in attrs) {
-      var value = attrs[key];
-      if (goog.isNull(value)) {
-        this.removeAttribute_(domElement, key);
-      } else {
-        this.setAttribute_(domElement, key, (value));
-      }
-    }
-  }
-};
-acgraph.vector.vml.Renderer.prototype.getAttribute = function(element, key) {
-  return element ? element.getAttribute(key) : void 0;
 };
 acgraph.vector.vml.Renderer.prototype.getUserSpaceOnUseGradientVector_ = function(angle, bounds) {
   var angleTransform = angle % 90;
@@ -22734,19 +23636,12 @@ acgraph.vector.vml.Renderer.prototype.createStageElement = function() {
   return goog.dom.createDom("div", {"style":"overflow:hidden;position:relative;"});
 };
 acgraph.vector.vml.Renderer.prototype.setStageSize = function(el, width, height) {
-  this.setAttributes_(el["style"], {"width":this.toCssSize_(width), "height":this.toCssSize_(height)});
+  this.setAttrs(el["style"], {"width":acgraph.vector.vml.Renderer.toCssSize_(width), "height":acgraph.vector.vml.Renderer.toCssSize_(height)});
 };
-acgraph.vector.vml.Renderer.prototype.createDefsElement = function() {
-  return goog.dom.createElement("div");
-};
-acgraph.vector.vml.Renderer.prototype.createLayerElement = function() {
-  return goog.dom.createElement("div");
-};
+acgraph.vector.vml.Renderer.prototype.createDefsElement = acgraph.vector.vml.Renderer.prototype.createDiv_;
+acgraph.vector.vml.Renderer.prototype.createLayerElement = acgraph.vector.vml.Renderer.prototype.createDiv_;
 acgraph.vector.vml.Renderer.prototype.createImageElement = function() {
   return this.createVMLElement_("image");
-};
-acgraph.vector.vml.Renderer.prototype.createRectElement = function() {
-  return this.createVMLElement_("shape");
 };
 acgraph.vector.vml.Renderer.prototype.createCircleElement = function() {
   return this.createVMLElement_("shape");
@@ -22769,16 +23664,14 @@ acgraph.vector.vml.Renderer.prototype.createFillElement = function() {
 acgraph.vector.vml.Renderer.prototype.createStrokeElement = function() {
   return this.createVMLElement_("stroke");
 };
-acgraph.vector.vml.Renderer.prototype.createFillPatternElement = function() {
-  return goog.dom.createElement("div");
-};
+acgraph.vector.vml.Renderer.prototype.createFillPatternElement = acgraph.vector.vml.Renderer.prototype.createDiv_;
 acgraph.vector.vml.Renderer.prototype.setFillPatternProperties = goog.nullFunction;
 acgraph.vector.vml.Renderer.prototype.setPatternTransformation = goog.nullFunction;
 acgraph.vector.vml.Renderer.prototype.setLayerSize = function(layer) {
-  this.setAttributes_(layer.domElement()["style"], {"position":"absolute", "left":this.toCssSize_(0), "top":this.toCssSize_(0), "width":this.toCssSize_(1), "height":this.toCssSize_(1)});
+  this.setAttrs(layer.domElement()["style"], {"position":"absolute", "left":acgraph.vector.vml.Renderer.toCssSize_(0), "top":acgraph.vector.vml.Renderer.toCssSize_(0), "width":acgraph.vector.vml.Renderer.toCssSize_(1), "height":acgraph.vector.vml.Renderer.toCssSize_(1)});
 };
 acgraph.vector.vml.Renderer.prototype.setCoordSize = function(element) {
-  this.setAttribute_(element, "coordsize", this.toSizeCoord_(1) + " " + this.toSizeCoord_(1));
+  this.setAttr(element, "coordsize", acgraph.vector.vml.Renderer.toSizeCoord_(1) + " " + acgraph.vector.vml.Renderer.toSizeCoord_(1));
 };
 acgraph.vector.vml.Renderer.prototype.setImageProperties = function(element) {
   var bounds = element.getBoundsWithoutTransform();
@@ -22848,8 +23741,8 @@ acgraph.vector.vml.Renderer.prototype.setImageProperties = function(element) {
         break;
     }
   }
-  this.setAttributes_(domElement["style"], {"position":"absolute", "left":this.toCssSize_(calcX), "top":this.toCssSize_(calcY), "width":this.toCssSize_(calcWidth), "height":this.toCssSize_(calcHeight)});
-  this.setAttribute_(domElement, "src", src);
+  this.setAttrs(domElement["style"], {"position":"absolute", "left":acgraph.vector.vml.Renderer.toCssSize_(calcX), "top":acgraph.vector.vml.Renderer.toCssSize_(calcY), "width":acgraph.vector.vml.Renderer.toCssSize_(calcWidth), "height":acgraph.vector.vml.Renderer.toCssSize_(calcHeight)});
+  this.setAttr(domElement, "src", src);
   element.clip(bounds);
 };
 acgraph.vector.vml.Renderer.prototype.setCircleProperties = function(circle) {
@@ -22868,25 +23761,25 @@ acgraph.vector.vml.Renderer.prototype.setEllipseProperties = function(ellipse) {
     var curves = acgraph.math.arcToBezier(cx, cy, rx, ry, 0, 360, false);
     var len = curves.length;
     transform.transform(curves, 0, curves, 0, len / 2);
-    list = ["m", this.toSizeCoord_(curves[len - 2]), this.toSizeCoord_(curves[len - 1]), "c"];
-    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(curves, this.toSizeCoord_), list);
+    list = ["m", acgraph.vector.vml.Renderer.toSizeCoord_(curves[len - 2]), acgraph.vector.vml.Renderer.toSizeCoord_(curves[len - 1]), "c"];
+    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(curves, acgraph.vector.vml.Renderer.toSizeCoord_), list);
   } else {
-    list = ["ae", this.toSizeCoord_(cx), this.toSizeCoord_(cy), this.toSizeCoord_(rx), this.toSizeCoord_(ry), 0, Math.round(360 * -65536)];
+    list = ["ae", acgraph.vector.vml.Renderer.toSizeCoord_(cx), acgraph.vector.vml.Renderer.toSizeCoord_(cy), acgraph.vector.vml.Renderer.toSizeCoord_(rx), acgraph.vector.vml.Renderer.toSizeCoord_(ry), 0, Math.round(360 * -65536)];
   }
   list.push("x");
   ellipse.clearDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
   ellipse.clearDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION);
-  this.setAttribute_(domElement, "path", list.join(" "));
+  this.setAttr(domElement, "path", list.join(" "));
 };
 acgraph.vector.vml.Renderer.prototype.setPathProperties = function(path) {
   var element = path.domElement();
   this.setPositionAndSize_(element, 0, 0, 1, 1);
-  var pathData = this.getVmlPath_(path, true);
+  var pathData = this.getPathString(path, true);
   if (pathData) {
-    this.setAttribute_(element, "path", pathData);
+    this.setAttr(element, "path", pathData);
   } else {
-    this.setAttribute_(element, "path", "M 0,0");
-    this.removeAttribute_(element, "path");
+    this.setAttr(element, "path", "M 0,0");
+    this.removeAttr(element, "path");
   }
   path.clearDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
   path.clearDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION);
@@ -22918,24 +23811,26 @@ acgraph.vector.vml.Renderer.prototype.setTextPosition = function(element) {
   var domElementStyle = domElement["style"];
   var x, y;
   if (element.isComplex()) {
-    y = element.calcY;
-    if (element.getSegments().length) {
-      y -= element.getSegments()[0].baseLine;
+    if (!element.path()) {
+      y = element.calcY;
+      if (element.getSegments().length) {
+        y -= element.getSegments()[0].baseLine;
+      }
+      x = element.calcX;
+      this.setAttrs(domElementStyle, {"position":"absolute", "overflow":"visible", "left":acgraph.vector.vml.Renderer.toCssSize_(x), "top":acgraph.vector.vml.Renderer.toCssSize_(y)});
     }
-    x = element.calcX;
-    this.setAttributes_(domElementStyle, {"position":"absolute", "overflow":"visible", "left":this.toCssSize_(x), "top":this.toCssSize_(y)});
   } else {
     x = (element.x());
     y = (element.y());
-    if (element.vAlign() && element.height() && element.height() > element.realHeigth) {
+    if (element.vAlign() && element.height() && element.height() > element.realHeight) {
       if (element.vAlign() == acgraph.vector.Text.VAlign.MIDDLE) {
-        y += element.height() / 2 - element.realHeigth / 2;
+        y += element.height() / 2 - element.realHeight / 2;
       }
       if (element.vAlign() == acgraph.vector.Text.VAlign.BOTTOM) {
-        y += element.height() - element.realHeigth;
+        y += element.height() - element.realHeight;
       }
     }
-    this.setAttributes_(domElementStyle, {"position":"absolute", "overflow":"hidden", "left":this.toCssSize_(x), "top":this.toCssSize_(y)});
+    this.setAttrs(domElementStyle, {"position":"absolute", "overflow":"hidden", "left":acgraph.vector.vml.Renderer.toCssSize_(x), "top":acgraph.vector.vml.Renderer.toCssSize_(y)});
   }
 };
 acgraph.vector.vml.Renderer.prototype.setTextProperties = function(element) {
@@ -22943,7 +23838,9 @@ acgraph.vector.vml.Renderer.prototype.setTextProperties = function(element) {
   var domElementStyle = domElement["style"];
   domElement.style.cssText = "";
   if (element.isComplex()) {
-    this.setAttributes_(domElementStyle, {"width":this.toCssSize_(1), "height":this.toCssSize_(1)});
+    if (!element.path()) {
+      this.setAttrs(domElementStyle, {"width":acgraph.vector.vml.Renderer.toCssSize_(1), "height":acgraph.vector.vml.Renderer.toCssSize_(1)});
+    }
     domElement.innerHTML = "";
   } else {
     var text = element.getSimpleText();
@@ -22992,12 +23889,12 @@ acgraph.vector.vml.Renderer.prototype.setTextProperties = function(element) {
     if (element.direction()) {
       goog.style.setStyle(domElement, "direction", (element.direction()));
     }
-    if (element.textWrap() == acgraph.vector.Text.TextWrap.BY_LETTER && element.width()) {
-      goog.style.setStyle(domElement, "word-break", "break-all");
-      goog.style.setStyle(domElement, "white-space", "normal");
+    goog.style.setStyle(domElement, "word-break", (element.wordBreak()));
+    goog.style.setStyle(domElement, "word-wrap", (element.wordWrap()));
+    if (!goog.isDefAndNotNull(element.width())) {
+      goog.style.setStyle(this.measurementSimpleText_, "white-space", "nowrap");
     } else {
-      goog.style.setStyle(domElement, "word-break", "normal");
-      goog.style.setStyle(domElement, "white-space", "nowrap");
+      goog.style.setStyle(this.measurementSimpleText_, "white-space", "normal");
     }
     if (element.hAlign()) {
       if (element.rtl) {
@@ -23008,14 +23905,22 @@ acgraph.vector.vml.Renderer.prototype.setTextProperties = function(element) {
     }
     goog.style.setUnselectable(domElement, !element.selectable());
     domElement.innerHTML = element.getSimpleText();
-    this.setAttribute_(domElementStyle, "width", String(element.width() ? this.toCssSize_((element.width())) : element.getBounds().width));
-    this.setAttribute_(domElementStyle, "height", String(element.height() ? this.toCssSize_((element.height())) : element.getBounds().height));
+    this.setAttr(domElementStyle, "width", String(element.width() ? acgraph.vector.vml.Renderer.toCssSize_((element.width())) : element.getBounds().width));
+    this.setAttr(domElementStyle, "height", String(element.height() ? acgraph.vector.vml.Renderer.toCssSize_((element.height())) : element.getBounds().height));
   }
 };
 acgraph.vector.vml.Renderer.prototype.setTextSegmentPosition = function(element) {
   var domElement = element.domElement();
-  var path = "m " + this.toSizeCoord_(element.x) + "," + this.toSizeCoord_(element.y) + " l " + (this.toSizeCoord_(element.x) + 1) + "," + this.toSizeCoord_(element.y) + " e";
-  domElement.setAttribute("path", path);
+  var originalPath = element.parent().path();
+  if (originalPath) {
+    var textPath = (acgraph.path());
+    textPath.deserialize(originalPath.serializePathArgs());
+    if (element.firstInLine) {
+      textPath.translate(element.dx, element.dy);
+    }
+    var path = originalPath ? this.getPathString(textPath, true) : "m " + acgraph.vector.vml.Renderer.toSizeCoord_(element.x) + "," + acgraph.vector.vml.Renderer.toSizeCoord_(element.y) + " l " + (acgraph.vector.vml.Renderer.toSizeCoord_(element.x) + 1) + "," + acgraph.vector.vml.Renderer.toSizeCoord_(element.y) + " e";
+    domElement.setAttribute("path", (path));
+  }
 };
 acgraph.vector.vml.Renderer.prototype.setTextSegmentProperties = function(element) {
   var textEntry = element.parent();
@@ -23041,7 +23946,7 @@ acgraph.vector.vml.Renderer.prototype.setTextSegmentProperties = function(elemen
     goog.style.setStyle(textNode, "font-weight", style["fontWeight"]);
   }
   if (style["letterSpacing"]) {
-    textNode.style["v-text-spacing"] = style["letterSpacing"];
+    textNode.style["v-text-spacing"] = style["letterSpacing"] == "normal" ? "" : style["letterSpacing"];
   }
   if (style["decoration"]) {
     goog.style.setStyle(textNode, "text-decoration", style["decoration"]);
@@ -23055,12 +23960,12 @@ acgraph.vector.vml.Renderer.prototype.setTextSegmentProperties = function(elemen
   }
   if (style["opacity"]) {
     var fill = this.createFillElement();
-    this.setAttribute_(fill, "opacity", style["opacity"]);
+    this.setAttr(fill, "opacity", style["opacity"]);
     goog.dom.appendChild(domElement, fill);
   }
   goog.dom.appendChild(domElement, textNode);
   if (!textEntry.selectable()) {
-    this.setAttribute_(domElement, "unselectable", "on");
+    this.setAttr(domElement, "unselectable", "on");
   } else {
     domElement.removeAttribute("unselectable");
   }
@@ -23068,6 +23973,7 @@ acgraph.vector.vml.Renderer.prototype.setTextSegmentProperties = function(elemen
   domElement.setAttribute("filled", "t");
   domElement.setAttribute("fillcolor", style["color"]);
   domElement.setAttribute("stroked", "f");
+  goog.dom.appendChild(textEntry.domElement(), domElement);
 };
 acgraph.vector.vml.Renderer.prototype.textEarsFeint = function(element) {
   var domElement = element.domElement();
@@ -23080,7 +23986,7 @@ acgraph.vector.vml.Renderer.prototype.needsAnotherBehaviourForCalcText = functio
 };
 acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
   var fill = (element.fill());
-  if (fill instanceof acgraph.vector.PatternFill) {
+  if (acgraph.utils.instanceOf(fill, acgraph.vector.PatternFill)) {
     fill = "black";
   }
   var stroke = (element.stroke());
@@ -23104,19 +24010,19 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
   var requireShapeType = isRadialGradient || isLinearGradient || complexFill || complexStroke;
   var firstKey, lastKey, userSpaceOnUse, angle, keys;
   if (!requireShapeType) {
-    this.setAttributes_(element.domElement(), {"type":"", "filled":filled, "fillcolor":fill["color"] || fill, "stroked":stroked, "strokecolor":strokeColor, "strokeweight":stroke["thickness"] ? stroke["thickness"] + "px" : "1px"});
+    this.setAttrs(element.domElement(), {"type":"", "filled":filled, "fillcolor":fill["color"] || fill, "stroked":stroked, "strokecolor":strokeColor, "strokeweight":stroke["thickness"] ? stroke["thickness"] + "px" : "1px"});
   } else {
     var stage = element.getStage();
     var defs = stage.getDefs();
     var elBounds;
-    if (element instanceof acgraph.vector.Path && (element).isEmpty()) {
+    if (acgraph.utils.instanceOf(element, acgraph.vector.Path) && (element).isEmpty()) {
       elBounds = new goog.math.Rect(0, 0, 1, 1);
     } else {
       elBounds = element.getBounds();
     }
     var normalizedFill;
     if (isLinearGradient) {
-      userSpaceOnUse = fill["mode"] instanceof goog.math.Rect;
+      userSpaceOnUse = acgraph.utils.instanceOf(fill["mode"], goog.math.Rect);
       keys = goog.array.slice(fill["keys"], 0);
       if (keys[0]["offset"] != 0) {
         keys.unshift({"offset":0, "color":keys[0]["color"], "opacity":keys[0]["opacity"]});
@@ -23153,7 +24059,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
     if (!shapeType.rendered) {
       shapeTypeDomElement = this.createShapeTypeElement();
       this.setIdInternal(shapeTypeDomElement, acgraph.utils.IdGenerator.getInstance().identify(shapeType));
-      this.appendChild(defs.domElement(), shapeTypeDomElement);
+      goog.dom.appendChild(defs.domElement(), shapeTypeDomElement);
       shapeType.rendered = true;
       var fillDomElement = null;
       if (isLinearGradient) {
@@ -23173,8 +24079,8 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
         firstKey = keys[0];
         var opacity = userSpaceOnUse ? lg.opacity : isNaN(firstKey["opacity"]) ? lg.opacity : firstKey["opacity"];
         var opacity2 = userSpaceOnUse ? lg.opacity : isNaN(lastKey["opacity"]) ? lg.opacity : lastKey["opacity"];
-        this.setAttributes_(fillDomElement, {"type":"gradient", "method":"none", "colors":colors.join(","), "angle":angle, "color":firstKey["color"], "opacity":opacity2, "color2":lastKey["color"], "o:opacity2":opacity});
-        this.appendChild(shapeTypeDomElement, fillDomElement);
+        this.setAttrs(fillDomElement, {"type":"gradient", "method":"none", "colors":colors.join(","), "angle":angle, "color":firstKey["color"], "opacity":opacity2, "color2":lastKey["color"], "o:opacity2":opacity});
+        goog.dom.appendChild(shapeTypeDomElement, fillDomElement);
         lg.defs = defs;
         lg.rendered = true;
       } else {
@@ -23188,37 +24094,37 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
           keys = rg.keys;
           firstKey = keys[keys.length - 1];
           lastKey = keys[0];
-          this.setAttributes_(fillDomElement, {"src":stage["pathToRadialGradientImage"], "size":rg.size_x + "," + rg.size_y, "origin":".5, .5", "position":rg.cx + "," + rg.cy, "type":"pattern", "method":"linear sigma", "colors":"0 " + firstKey["color"] + ";1 " + lastKey["color"], "color":firstKey["color"], "opacity":isNaN(firstKey["opacity"]) ? rg.opacity : firstKey["opacity"], "color2":lastKey["color"], "o:opacity2":isNaN(lastKey["opacity"]) ? rg.opacity : lastKey["opacity"]});
-          this.appendChild(shapeTypeDomElement, fillDomElement);
+          this.setAttrs(fillDomElement, {"src":stage["pathToRadialGradientImage"], "size":rg.size_x + "," + rg.size_y, "origin":".5, .5", "position":rg.cx + "," + rg.cy, "type":"pattern", "method":"linear sigma", "colors":"0 " + firstKey["color"] + ";1 " + lastKey["color"], "color":firstKey["color"], "opacity":isNaN(firstKey["opacity"]) ? rg.opacity : firstKey["opacity"], "color2":lastKey["color"], "o:opacity2":isNaN(lastKey["opacity"]) ? rg.opacity : lastKey["opacity"]});
+          goog.dom.appendChild(shapeTypeDomElement, fillDomElement);
           rg.defs = defs;
           rg.rendered = true;
         } else {
           if (isFill) {
             fillDomElement = shapeType.fillDomElement ? shapeType.fillDomElement : shapeType.fillDomElement = this.createFillElement();
             if (goog.isString(fill)) {
-              this.setAttributes_(element.domElement(), {"fillcolor":fill, "filled":fill != "none"});
-              this.setAttributes_(fillDomElement, {"type":"solid", "on":fill != "none", "color":fill, "opacity":1});
+              this.setAttrs(element.domElement(), {"fillcolor":fill, "filled":fill != "none"});
+              this.setAttrs(fillDomElement, {"type":"solid", "on":fill != "none", "color":fill, "opacity":1});
             } else {
-              this.setAttributes_(element.domElement(), {"fillcolor":fill["color"], "filled":fill["color"] != "none"});
-              this.setAttributes_(fillDomElement, {"type":"solid", "on":fill["color"] != "none", "color":fill["color"], "opacity":isNaN(fill["opacity"]) ? 1 : fill["opacity"]});
+              this.setAttrs(element.domElement(), {"fillcolor":fill["color"], "filled":fill["color"] != "none"});
+              this.setAttrs(fillDomElement, {"type":"solid", "on":fill["color"] != "none", "color":fill["color"], "opacity":isNaN(fill["opacity"]) ? 1 : fill["opacity"]});
             }
           }
         }
       }
-      this.appendChild(shapeTypeDomElement, fillDomElement);
+      goog.dom.appendChild(shapeTypeDomElement, fillDomElement);
       var strokeDomElement = shapeType.strokeDomElement ? shapeType.strokeDomElement : shapeType.strokeDomElement = this.createStrokeElement();
       var thickness = stroke["thickness"] ? stroke["thickness"] : 1;
       var dash = this.vmlizeDash(stroke["dash"], thickness);
       var cap = dash ? "flat" : stroke["lineCap"];
-      this.setAttributes_(strokeDomElement, {"joinstyle":stroke["lineJoin"] || acgraph.vector.StrokeLineJoin.MITER, "endcap":cap == acgraph.vector.StrokeLineCap.BUTT ? "flat" : cap, "dashstyle":dash, "on":stroked, "color":strokeColor, "opacity":goog.isObject(stroke) && "opacity" in stroke ? stroke["opacity"] : 1, "weight":thickness + "px"});
-      this.appendChild(shapeTypeDomElement, strokeDomElement);
+      this.setAttrs(strokeDomElement, {"joinstyle":stroke["lineJoin"] || acgraph.vector.StrokeLineJoin.MITER, "endcap":cap == acgraph.vector.StrokeLineCap.BUTT ? "flat" : cap, "dashstyle":dash, "on":stroked, "color":strokeColor, "opacity":goog.isObject(stroke) && "opacity" in stroke ? stroke["opacity"] : 1, "weight":thickness + "px"});
+      goog.dom.appendChild(shapeTypeDomElement, strokeDomElement);
     }
     if (isRadialGradient || isLinearGradient) {
       firstKey = normalizedFill.keys[normalizedFill.keys.length - 1];
-      this.setAttributes_(element.domElement(), {"fillcolor":firstKey["color"], "filled":firstKey["color"] != "none"});
+      this.setAttrs(element.domElement(), {"fillcolor":firstKey["color"], "filled":firstKey["color"] != "none"});
     }
-    this.setAttributes_(element.domElement(), {"filled":filled, "fillcolor":fill["color"] || fill, "stroked":stroked, "strokecolor":strokeColor, "strokeweight":stroke["thickness"] ? stroke["thickness"] + "px" : "1px"});
-    this.setAttributes_(element.domElement(), {"type":"#" + acgraph.utils.IdGenerator.getInstance().identify(shapeType)});
+    this.setAttrs(element.domElement(), {"filled":filled, "fillcolor":fill["color"] || fill, "stroked":stroked, "strokecolor":strokeColor, "strokeweight":stroke["thickness"] ? stroke["thickness"] + "px" : "1px"});
+    this.setAttrs(element.domElement(), {"type":"#" + acgraph.utils.IdGenerator.getInstance().identify(shapeType)});
   }
 };
 acgraph.vector.vml.Renderer.prototype.vmlizeDash = function(dash, lineThickness) {
@@ -23238,28 +24144,10 @@ acgraph.vector.vml.Renderer.prototype.vmlizeDash = function(dash, lineThickness)
 };
 acgraph.vector.vml.Renderer.prototype.setVisible = function(element) {
   var style = element.domElement()["style"];
-  this.setAttribute_(style, "visibility", element.visible() ? "" : "hidden");
+  this.setAttr(style, "visibility", element.visible() ? "" : "hidden");
 };
 acgraph.vector.vml.Renderer.prototype.setTransformation = function(element) {
   this.setTransform_(element, element.getBoundsWithoutTransform());
-};
-acgraph.vector.vml.Renderer.prototype.setRectTransformation = function(element) {
-  var bounds = element.getBoundsWithoutTransform();
-  var domElement = element.domElement();
-  var left = bounds.left;
-  var top = bounds.top;
-  var right = left + bounds.width;
-  var bottom = top + bounds.height;
-  var points = [right, top, right, bottom, left, bottom, left, top];
-  var transform = element.getFullTransformation();
-  if (transform && !transform.isIdentity()) {
-    transform.transform(points, 0, points, 0, points.length / 2);
-  }
-  points = goog.array.map(points, this.toSizeCoord_);
-  var pathData = ["m", points[6], points[7], "l"];
-  acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, points, pathData);
-  pathData.push("x");
-  this.setAttribute_(domElement, "path", pathData.join(" "));
 };
 acgraph.vector.vml.Renderer.prototype.setEllipseTransformation = function(element) {
   var domElement = element.domElement();
@@ -23273,13 +24161,13 @@ acgraph.vector.vml.Renderer.prototype.setEllipseTransformation = function(elemen
     var curves = acgraph.math.arcToBezier(cx, cy, rx, ry, 0, 360, false);
     var len = curves.length;
     transform.transform(curves, 0, curves, 0, len / 2);
-    list = ["m", this.toSizeCoord_(curves[len - 2]), this.toSizeCoord_(curves[len - 1]), "c"];
-    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(curves, this.toSizeCoord_), list);
+    list = ["m", acgraph.vector.vml.Renderer.toSizeCoord_(curves[len - 2]), acgraph.vector.vml.Renderer.toSizeCoord_(curves[len - 1]), "c"];
+    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(curves, acgraph.vector.vml.Renderer.toSizeCoord_), list);
   } else {
-    list = ["ae", this.toSizeCoord_(cx), this.toSizeCoord_(cy), this.toSizeCoord_(rx), this.toSizeCoord_(ry), 0, Math.round(360 * -65536)];
+    list = ["ae", acgraph.vector.vml.Renderer.toSizeCoord_(cx), acgraph.vector.vml.Renderer.toSizeCoord_(cy), acgraph.vector.vml.Renderer.toSizeCoord_(rx), acgraph.vector.vml.Renderer.toSizeCoord_(ry), 0, Math.round(360 * -65536)];
   }
   list.push("x");
-  this.setAttribute_(domElement, "path", list.join(" "));
+  this.setAttr(domElement, "path", list.join(" "));
 };
 acgraph.vector.vml.Renderer.prototype.setImageTransformation = function(element) {
   var style = element.domElement()["style"];
@@ -23288,15 +24176,15 @@ acgraph.vector.vml.Renderer.prototype.setImageTransformation = function(element)
     return;
   }
   var angle = acgraph.math.getRotationAngle(tx);
-  this.setAttribute_(style, "rotation", String(angle));
+  this.setAttr(style, "rotation", String(angle));
 };
 acgraph.vector.vml.Renderer.prototype.setPathTransformation = function(path) {
   var element = path.domElement();
-  var pathData = this.getVmlPath_(path, true);
+  var pathData = this.getPathString(path, true);
   if (pathData) {
-    this.setAttribute_(element, "path", pathData);
+    this.setAttr(element, "path", pathData);
   } else {
-    this.removeAttribute_(element, "path");
+    this.removeAttr(element, "path");
   }
 };
 acgraph.vector.vml.Renderer.prototype.setLayerTransformation = goog.nullFunction;
@@ -23311,12 +24199,14 @@ acgraph.vector.vml.Renderer.prototype.setTextTransformation = function(element) 
   var i, len;
   var x, y;
   if (element.isComplex()) {
-    y = element.calcY;
-    if (element.getSegments().length) {
-      y -= element.getSegments()[0].baseLine;
+    if (!element.path()) {
+      y = element.calcY;
+      if (element.getSegments().length) {
+        y -= element.getSegments()[0].baseLine;
+      }
+      x = element.calcX;
+      this.setAttrs(domElementStyle, {"position":"absolute", "overflow":"visible", "left":acgraph.vector.vml.Renderer.toCssSize_(x + tx.getTranslateX()), "top":acgraph.vector.vml.Renderer.toCssSize_(y + tx.getTranslateY())});
     }
-    x = element.calcX;
-    this.setAttributes_(domElementStyle, {"position":"absolute", "overflow":"visible", "left":this.toCssSize_(x + tx.getTranslateX()), "top":this.toCssSize_(y + tx.getTranslateY())});
     var changed = element.isScaleOrShearChanged();
     if (changed) {
       for (i = 0, len = segments.length;i < len;i++) {
@@ -23324,33 +24214,33 @@ acgraph.vector.vml.Renderer.prototype.setTextTransformation = function(element) 
         var skew;
         if (segment.skew) {
           skew = segment.skew;
-          this.setAttributes_(skew, {"origin":[-.5 - x, -.5 - y].join(","), "matrix":[acgraph.math.round(tx.getScaleX(), 6), acgraph.math.round(tx.getShearX(), 6), acgraph.math.round(tx.getShearY(), 6), acgraph.math.round(tx.getScaleY(), 6), 0, 0].join(",")});
+          this.setAttrs(skew, {"origin":[-.5 - x, -.5 - y].join(","), "matrix":[acgraph.math.round(tx.getScaleX(), 6), acgraph.math.round(tx.getShearX(), 6), acgraph.math.round(tx.getShearY(), 6), acgraph.math.round(tx.getScaleY(), 6), 0, 0].join(",")});
         } else {
           skew = segment.skew = this.createVMLElement_("skew");
         }
         if (!segment.skewAttached && segment.domElement()) {
-          this.appendChild(segment.domElement(), skew);
+          goog.dom.appendChild(segment.domElement(), skew);
           segment.skewAttached = true;
         }
         var origin = [-.5 - x, -.5 - y].join(",");
         if (segment.domElement()) {
           segment.domElement()["rotation"] = 0;
         }
-        this.setAttributes_(skew, {"on":"true", "origin":origin, "matrix":[acgraph.math.round(tx.getScaleX(), 6), acgraph.math.round(tx.getShearX(), 6), acgraph.math.round(tx.getShearY(), 6), acgraph.math.round(tx.getScaleY(), 6), 0, 0].join(",")});
+        this.setAttrs(skew, {"on":"true", "origin":origin, "matrix":[acgraph.math.round(tx.getScaleX(), 6), acgraph.math.round(tx.getShearX(), 6), acgraph.math.round(tx.getShearY(), 6), acgraph.math.round(tx.getScaleY(), 6), 0, 0].join(",")});
       }
     }
   } else {
     x = element.x();
     y = element.y();
-    if (element.vAlign() && element.height() && element.height() > element.realHeigth) {
+    if (element.vAlign() && element.height() && element.height() > element.realHeight) {
       if (element.vAlign() == "middle") {
-        y += element.height() / 2 - element.realHeigth / 2;
+        y += element.height() / 2 - element.realHeight / 2;
       }
       if (element.vAlign() == "bottom") {
-        y += element.height() - element.realHeigth;
+        y += element.height() - element.realHeight;
       }
     }
-    this.setAttributes_(domElementStyle, {"position":"absolute", "overflow":"hidden", "left":this.toCssSize_(x + tx.getTranslateX()), "top":this.toCssSize_(y + tx.getTranslateY())});
+    this.setAttrs(domElementStyle, {"position":"absolute", "overflow":"hidden", "left":acgraph.vector.vml.Renderer.toCssSize_(x + tx.getTranslateX()), "top":acgraph.vector.vml.Renderer.toCssSize_(y + tx.getTranslateY())});
   }
 };
 acgraph.vector.vml.Renderer.prototype.needsReRenderOnParentTransformationChange = function() {
@@ -23360,7 +24250,7 @@ acgraph.vector.vml.Renderer.prototype.setTransform_ = function(element, bounds) 
   var tx = element.getFullTransformation();
   if (!tx) {
     if (element.skewAttached) {
-      this.removeNode(element.skew);
+      goog.dom.removeNode(element.skew);
       element.skewAttached = false;
     }
     return;
@@ -23372,16 +24262,15 @@ acgraph.vector.vml.Renderer.prototype.setTransform_ = function(element, bounds) 
     skew = element.skew = this.createVMLElement_("skew");
   }
   if (!element.skewAttached) {
-    this.appendChild(element.domElement(), skew);
+    goog.dom.appendChild(element.domElement(), skew);
     element.skewAttached = true;
   }
   var origin = [-.5 - bounds.left / bounds.width, -.5 - bounds.top / bounds.height].join(",");
-  this.setAttributes_(skew, {"on":"true", "origin":origin, "matrix":[acgraph.math.round(tx.getScaleX(), 6), acgraph.math.round(tx.getShearX(), 6), acgraph.math.round(tx.getShearY(), 6), acgraph.math.round(tx.getScaleY(), 6), 0, 0].join(",")});
-  this.setAttributes_(element.domElement()["style"], {"left":this.toCssSize_(bounds.left + tx.getTranslateX()), "top":this.toCssSize_(bounds.top + tx.getTranslateY())});
+  this.setAttrs(skew, {"on":"true", "origin":origin, "matrix":[acgraph.math.round(tx.getScaleX(), 6), acgraph.math.round(tx.getShearX(), 6), acgraph.math.round(tx.getShearY(), 6), acgraph.math.round(tx.getScaleY(), 6), 0, 0].join(",")});
+  this.setAttrs(element.domElement()["style"], {"left":acgraph.vector.vml.Renderer.toCssSize_(bounds.left + tx.getTranslateX()), "top":acgraph.vector.vml.Renderer.toCssSize_(bounds.top + tx.getTranslateY())});
 };
 acgraph.vector.vml.Renderer.prototype.setPointerEvents = goog.nullFunction;
 acgraph.vector.vml.Renderer.prototype.disposeClip = goog.nullFunction;
-acgraph.vector.vml.Renderer.prototype.setDisableStrokeScaling = goog.nullFunction;
 acgraph.vector.vml.Renderer.prototype.addClip_ = function(element, clipRect, isLayer) {
   clipRect = clipRect.clone();
   var style = element.domElement()["style"];
@@ -23389,22 +24278,24 @@ acgraph.vector.vml.Renderer.prototype.addClip_ = function(element, clipRect, isL
     var tx = element.getFullTransformation();
     clipRect = acgraph.math.getBoundsOfRectWithTransform(clipRect, tx);
   } else {
-    clipRect.left -= element.getX();
-    clipRect.top -= element.getY();
+    if (!(acgraph.utils.instanceOf(element, acgraph.vector.vml.Text) && !element.isComplex())) {
+      clipRect.left -= element.getX() || 0;
+      clipRect.top -= element.getY() || 0;
+    }
   }
   var left = clipRect.left;
   var top = clipRect.top;
   var right = left + clipRect.width;
   var bottom = top + clipRect.height;
   var clipVal = ["rect(", top + "px", right + "px", bottom + "px", left + "px", ")"].join(" ");
-  this.setAttribute_(style, "clip", clipVal);
+  this.setAttr(style, "clip", clipVal);
 };
 acgraph.vector.vml.Renderer.prototype.removeClip_ = function(element) {
   var style = element.domElement()["style"];
   this.removeStyle_(style, "clip");
 };
 acgraph.vector.vml.Renderer.prototype.setClip = function(element) {
-  var isLayer = element instanceof acgraph.vector.Layer;
+  var isLayer = acgraph.utils.instanceOf(element, acgraph.vector.Layer);
   var clipElement = (element.clip());
   if (clipElement) {
     var shape = (clipElement.shape());
@@ -23434,7 +24325,7 @@ acgraph.vector.vml.ShapeType.prototype.setFill = function(value) {
 };
 acgraph.vector.vml.ShapeType.prototype.removeFill = function() {
   delete this.fill_;
-  acgraph.vector.vml.Renderer.getInstance().removeNode(this.fillDomElement);
+  goog.dom.removeNode(this.fillDomElement);
   this.fillDomElement = null;
 };
 acgraph.vector.vml.ShapeType.prototype.fillDomElement = null;
@@ -23446,9 +24337,9 @@ acgraph.vector.vml.ShapeType.prototype.getElementTypePrefix = function() {
 acgraph.vector.vml.ShapeType.prototype.disposeInternal = function() {
   delete this.fill_;
   delete this.stroke_;
-  acgraph.vector.vml.Renderer.getInstance().removeNode(this.fillDomElement);
+  goog.dom.removeNode(this.fillDomElement);
   this.fillDomElement = null;
-  acgraph.vector.vml.Renderer.getInstance().removeNode(this.strokeDomElement);
+  goog.dom.removeNode(this.strokeDomElement);
   this.strokeDomElement = null;
 };
 goog.provide("acgraph.vector.vml.Defs");
@@ -23480,11 +24371,11 @@ acgraph.vector.vml.Defs.prototype.serializeFill = function(fill) {
   if (goog.isString(fill)) {
     stringParam += fill + "1";
   } else {
-    if (fill instanceof acgraph.vector.RadialGradient) {
+    if (acgraph.utils.instanceOf(fill, acgraph.vector.RadialGradient)) {
       var rg = (fill);
       stringParam = acgraph.vector.vml.RadialGradient.serialize(rg.keys, rg.cx, rg.cy, rg.size_x, rg.size_y, rg.opacity, rg.bounds);
     } else {
-      if (fill instanceof acgraph.vector.LinearGradient) {
+      if (acgraph.utils.instanceOf(fill, acgraph.vector.LinearGradient)) {
         var lg = (fill);
         stringParam = acgraph.vector.LinearGradient.serialize(lg.keys, lg.opacity, lg.angle, lg.mode);
       } else {
@@ -23566,6 +24457,7 @@ acgraph.vector.vml.Stage.prototype.createDefs = function() {
 acgraph.vector.vml.Stage.prototype.createClip = function(opt_leftOrRect, opt_top, opt_width, opt_height) {
   return new acgraph.vector.vml.Clip(this, opt_leftOrRect, opt_top, opt_width, opt_height);
 };
+goog.exportSymbol("acgraph.vml.Stage", acgraph.vector.vml.Stage);
 goog.provide("acgraph.vector.vml.Text");
 goog.require("acgraph.vector.Text");
 goog.require("goog.math.Rect");
@@ -23646,7 +24538,7 @@ acgraph.vector.vml.Text.prototype.isComplex = function() {
 };
 acgraph.vector.vml.Text.prototype.getBoundsWithTransform = function(transform) {
   this.isComplex_ = this.isComplex();
-  return goog.base(this, "getBoundsWithTransform", transform);
+  return acgraph.vector.vml.Text.base(this, "getBoundsWithTransform", transform);
 };
 acgraph.vector.vml.Text.prototype.render = function() {
   goog.base(this, "render");
@@ -23654,6 +24546,9 @@ acgraph.vector.vml.Text.prototype.render = function() {
     acgraph.getRenderer().textEarsFeint(this);
   }
   return this;
+};
+acgraph.vector.vml.Text.prototype.renderTextPath = function() {
+  this.clearDirtyState(acgraph.vector.Element.DirtyState.CHILDREN);
 };
 acgraph.vector.vml.Text.prototype.renderPosition = function() {
   if (this.isComplex_) {
@@ -23693,7 +24588,7 @@ acgraph.vector.vml.Text.prototype.getTextBounds = function(text, segmentStyle) {
     var bounds = acgraph.getRenderer().measuringSimpleText(text, segmentStyle, this.style());
     bounds.left = this.x();
     bounds.top = this.y();
-    this.realHeigth = bounds.height;
+    this.realHeight = bounds.height;
     if (this.height()) {
       bounds.height = this.height();
     }
@@ -23781,738 +24676,18 @@ acgraph.vector.vml.Text.prototype.disposeInternal = function() {
   proto["color"] = proto.color;
   proto["opacity"] = proto.opacity;
   proto["textOverflow"] = proto.textOverflow;
+  goog.exportSymbol("acgraph.vml.Text", acgraph.vector.vml.Text);
 })();
 goog.provide("acgraph.vector.vml");
 goog.require("acgraph.vector.vml.Clip");
 goog.require("acgraph.vector.vml.Renderer");
 goog.require("acgraph.vector.vml.Stage");
 goog.require("acgraph.vector.vml.Text");
-goog.provide("goog.dom.InputType");
-goog.dom.InputType = {BUTTON:"button", CHECKBOX:"checkbox", COLOR:"color", DATE:"date", DATETIME:"datetime", DATETIME_LOCAL:"datetime-local", EMAIL:"email", FILE:"file", HIDDEN:"hidden", IMAGE:"image", MENU:"menu", MONTH:"month", NUMBER:"number", PASSWORD:"password", RADIO:"radio", RANGE:"range", RESET:"reset", SEARCH:"search", SELECT_MULTIPLE:"select-multiple", SELECT_ONE:"select-one", SUBMIT:"submit", TEL:"tel", TEXT:"text", TEXTAREA:"textarea", TIME:"time", URL:"url", WEEK:"week"};
-goog.provide("goog.net.IframeIo");
-goog.provide("goog.net.IframeIo.IncrementalDataEvent");
-goog.require("goog.Timer");
-goog.require("goog.Uri");
-goog.require("goog.array");
-goog.require("goog.asserts");
-goog.require("goog.debug");
-goog.require("goog.dom");
-goog.require("goog.dom.InputType");
-goog.require("goog.dom.TagName");
-goog.require("goog.dom.safe");
-goog.require("goog.events");
-goog.require("goog.events.Event");
-goog.require("goog.events.EventTarget");
-goog.require("goog.events.EventType");
-goog.require("goog.html.uncheckedconversions");
-goog.require("goog.json");
-goog.require("goog.log");
-goog.require("goog.log.Level");
-goog.require("goog.net.ErrorCode");
-goog.require("goog.net.EventType");
-goog.require("goog.reflect");
-goog.require("goog.string");
-goog.require("goog.string.Const");
-goog.require("goog.structs");
-goog.require("goog.userAgent");
-goog.net.IframeIo = function() {
-  goog.net.IframeIo.base(this, "constructor");
-  this.name_ = goog.net.IframeIo.getNextName_();
-  this.iframesForDisposal_ = [];
-  goog.net.IframeIo.instances_[this.name_] = this;
-};
-goog.inherits(goog.net.IframeIo, goog.events.EventTarget);
-goog.net.IframeIo.instances_ = {};
-goog.net.IframeIo.FRAME_NAME_PREFIX = "closure_frame";
-goog.net.IframeIo.INNER_FRAME_SUFFIX = "_inner";
-goog.net.IframeIo.IFRAME_DISPOSE_DELAY_MS = 2E3;
-goog.net.IframeIo.counter_ = 0;
-goog.net.IframeIo.form_;
-goog.net.IframeIo.send = function(uri, opt_callback, opt_method, opt_noCache, opt_data) {
-  var io = new goog.net.IframeIo;
-  goog.events.listen(io, goog.net.EventType.READY, io.dispose, false, io);
-  if (opt_callback) {
-    goog.events.listen(io, goog.net.EventType.COMPLETE, opt_callback);
-  }
-  io.send(uri, opt_method, opt_noCache, opt_data);
-};
-goog.net.IframeIo.getIframeByName = function(fname) {
-  return window.frames[fname];
-};
-goog.net.IframeIo.getInstanceByName = function(fname) {
-  return goog.net.IframeIo.instances_[fname];
-};
-goog.net.IframeIo.handleIncrementalData = function(win, data) {
-  var iframeName = goog.string.endsWith(win.name, goog.net.IframeIo.INNER_FRAME_SUFFIX) ? win.parent.name : win.name;
-  var iframeIoName = iframeName.substring(0, iframeName.lastIndexOf("_"));
-  var iframeIo = goog.net.IframeIo.getInstanceByName(iframeIoName);
-  if (iframeIo && iframeName == iframeIo.iframeName_) {
-    iframeIo.handleIncrementalData_(data);
-  } else {
-    var logger = goog.log.getLogger("goog.net.IframeIo");
-    goog.log.info(logger, "Incremental iframe data routed for unknown iframe");
-  }
-};
-goog.net.IframeIo.getNextName_ = function() {
-  return goog.net.IframeIo.FRAME_NAME_PREFIX + goog.net.IframeIo.counter_++;
-};
-goog.net.IframeIo.getForm_ = function() {
-  if (!goog.net.IframeIo.form_) {
-    goog.net.IframeIo.form_ = goog.dom.createDom(goog.dom.TagName.FORM);
-    goog.net.IframeIo.form_.acceptCharset = "utf-8";
-    var s = goog.net.IframeIo.form_.style;
-    s.position = "absolute";
-    s.visibility = "hidden";
-    s.top = s.left = "-10px";
-    s.width = s.height = "10px";
-    s.overflow = "hidden";
-    goog.dom.getDocument().body.appendChild(goog.net.IframeIo.form_);
-  }
-  return goog.net.IframeIo.form_;
-};
-goog.net.IframeIo.addFormInputs_ = function(form, data) {
-  var helper = goog.dom.getDomHelper(form);
-  goog.structs.forEach(data, function(value, key) {
-    if (!goog.isArray(value)) {
-      value = [value];
-    }
-    goog.array.forEach(value, function(value) {
-      var inp = helper.createDom(goog.dom.TagName.INPUT, {"type":goog.dom.InputType.HIDDEN, "name":key, "value":value});
-      form.appendChild(inp);
-    });
-  });
-};
-goog.net.IframeIo.useIeReadyStateCodePath_ = function() {
-  return goog.userAgent.IE && !goog.userAgent.isVersionOrHigher("11");
-};
-goog.net.IframeIo.prototype.logger_ = goog.log.getLogger("goog.net.IframeIo");
-goog.net.IframeIo.prototype.form_ = null;
-goog.net.IframeIo.prototype.iframe_ = null;
-goog.net.IframeIo.prototype.iframeName_ = null;
-goog.net.IframeIo.prototype.nextIframeId_ = 0;
-goog.net.IframeIo.prototype.active_ = false;
-goog.net.IframeIo.prototype.complete_ = false;
-goog.net.IframeIo.prototype.success_ = false;
-goog.net.IframeIo.prototype.lastUri_ = null;
-goog.net.IframeIo.prototype.lastContent_ = null;
-goog.net.IframeIo.prototype.lastErrorCode_ = goog.net.ErrorCode.NO_ERROR;
-goog.net.IframeIo.prototype.firefoxSilentErrorTimeout_ = null;
-goog.net.IframeIo.prototype.iframeDisposalTimer_ = null;
-goog.net.IframeIo.prototype.errorHandled_;
-goog.net.IframeIo.prototype.ignoreResponse_ = false;
-goog.net.IframeIo.prototype.errorChecker_;
-goog.net.IframeIo.prototype.lastCustomError_;
-goog.net.IframeIo.prototype.lastContentHtml_;
-goog.net.IframeIo.prototype.send = function(uri, opt_method, opt_noCache, opt_data) {
-  if (this.active_) {
-    throw Error("[goog.net.IframeIo] Unable to send, already active.");
-  }
-  var uriObj = new goog.Uri(uri);
-  this.lastUri_ = uriObj;
-  var method = opt_method ? opt_method.toUpperCase() : "GET";
-  if (opt_noCache) {
-    uriObj.makeUnique();
-  }
-  goog.log.info(this.logger_, "Sending iframe request: " + uriObj + " [" + method + "]");
-  this.form_ = goog.net.IframeIo.getForm_();
-  if (method == "GET") {
-    goog.net.IframeIo.addFormInputs_(this.form_, uriObj.getQueryData());
-  }
-  if (opt_data) {
-    goog.net.IframeIo.addFormInputs_(this.form_, opt_data);
-  }
-  this.form_.action = uriObj.toString();
-  this.form_.method = method;
-  this.sendFormInternal_();
-  this.clearForm_();
-};
-goog.net.IframeIo.prototype.sendFromForm = function(form, opt_uri, opt_noCache) {
-  if (this.active_) {
-    throw Error("[goog.net.IframeIo] Unable to send, already active.");
-  }
-  var uri = new goog.Uri(opt_uri || form.action);
-  if (opt_noCache) {
-    uri.makeUnique();
-  }
-  goog.log.info(this.logger_, "Sending iframe request from form: " + uri);
-  this.lastUri_ = uri;
-  this.form_ = form;
-  this.form_.action = uri.toString();
-  this.sendFormInternal_();
-};
-goog.net.IframeIo.prototype.abort = function(opt_failureCode) {
-  if (this.active_) {
-    goog.log.info(this.logger_, "Request aborted");
-    var requestIframe = this.getRequestIframe();
-    goog.asserts.assert(requestIframe);
-    goog.events.removeAll(requestIframe);
-    this.complete_ = false;
-    this.active_ = false;
-    this.success_ = false;
-    this.lastErrorCode_ = opt_failureCode || goog.net.ErrorCode.ABORT;
-    this.dispatchEvent(goog.net.EventType.ABORT);
-    this.makeReady_();
-  }
-};
-goog.net.IframeIo.prototype.disposeInternal = function() {
-  goog.log.fine(this.logger_, "Disposing iframeIo instance");
-  if (this.active_) {
-    goog.log.fine(this.logger_, "Aborting active request");
-    this.abort();
-  }
-  goog.net.IframeIo.superClass_.disposeInternal.call(this);
-  if (this.iframe_) {
-    this.scheduleIframeDisposal_();
-  }
-  this.disposeForm_();
-  delete this.errorChecker_;
-  this.form_ = null;
-  this.lastCustomError_ = this.lastContent_ = this.lastContentHtml_ = null;
-  this.lastUri_ = null;
-  this.lastErrorCode_ = goog.net.ErrorCode.NO_ERROR;
-  delete goog.net.IframeIo.instances_[this.name_];
-};
-goog.net.IframeIo.prototype.isComplete = function() {
-  return this.complete_;
-};
-goog.net.IframeIo.prototype.isSuccess = function() {
-  return this.success_;
-};
-goog.net.IframeIo.prototype.isActive = function() {
-  return this.active_;
-};
-goog.net.IframeIo.prototype.getResponseText = function() {
-  return this.lastContent_;
-};
-goog.net.IframeIo.prototype.getResponseHtml = function() {
-  return this.lastContentHtml_;
-};
-goog.net.IframeIo.prototype.getResponseJson = function() {
-  return goog.json.parse(this.lastContent_);
-};
-goog.net.IframeIo.prototype.getResponseXml = function() {
-  if (!this.iframe_) {
-    return null;
-  }
-  return this.getContentDocument_();
-};
-goog.net.IframeIo.prototype.getLastUri = function() {
-  return this.lastUri_;
-};
-goog.net.IframeIo.prototype.getLastErrorCode = function() {
-  return this.lastErrorCode_;
-};
-goog.net.IframeIo.prototype.getLastError = function() {
-  return goog.net.ErrorCode.getDebugMessage(this.lastErrorCode_);
-};
-goog.net.IframeIo.prototype.getLastCustomError = function() {
-  return this.lastCustomError_;
-};
-goog.net.IframeIo.prototype.setErrorChecker = function(fn) {
-  this.errorChecker_ = fn;
-};
-goog.net.IframeIo.prototype.getErrorChecker = function() {
-  return this.errorChecker_;
-};
-goog.net.IframeIo.prototype.isIgnoringResponse = function() {
-  return this.ignoreResponse_;
-};
-goog.net.IframeIo.prototype.setIgnoreResponse = function(ignore) {
-  this.ignoreResponse_ = ignore;
-};
-goog.net.IframeIo.prototype.sendFormInternal_ = function() {
-  this.active_ = true;
-  this.complete_ = false;
-  this.lastErrorCode_ = goog.net.ErrorCode.NO_ERROR;
-  this.createIframe_();
-  if (goog.net.IframeIo.useIeReadyStateCodePath_()) {
-    this.form_.target = this.iframeName_ || "";
-    this.appendIframe_();
-    if (!this.ignoreResponse_) {
-      goog.events.listen(this.iframe_, goog.events.EventType.READYSTATECHANGE, this.onIeReadyStateChange_, false, this);
-    }
-    try {
-      this.errorHandled_ = false;
-      this.form_.submit();
-    } catch (e) {
-      if (!this.ignoreResponse_) {
-        goog.events.unlisten(this.iframe_, goog.events.EventType.READYSTATECHANGE, this.onIeReadyStateChange_, false, this);
-      }
-      this.handleError_(goog.net.ErrorCode.ACCESS_DENIED);
-    }
-  } else {
-    goog.log.fine(this.logger_, "Setting up iframes and cloning form");
-    this.appendIframe_();
-    var innerFrameName = this.iframeName_ + goog.net.IframeIo.INNER_FRAME_SUFFIX;
-    var doc = goog.dom.getFrameContentDocument(this.iframe_);
-    var html;
-    if (document.baseURI) {
-      html = goog.net.IframeIo.createIframeHtmlWithBaseUri_(innerFrameName);
-    } else {
-      html = goog.net.IframeIo.createIframeHtml_(innerFrameName);
-    }
-    if (goog.userAgent.OPERA && !goog.userAgent.WEBKIT) {
-      goog.dom.safe.setInnerHtml(doc.documentElement, html);
-    } else {
-      goog.dom.safe.documentWrite(doc, html);
-    }
-    if (!this.ignoreResponse_) {
-      goog.events.listen(doc.getElementById(innerFrameName), goog.events.EventType.LOAD, this.onIframeLoaded_, false, this);
-    }
-    var textareas = goog.dom.getElementsByTagName(goog.dom.TagName.TEXTAREA, goog.asserts.assert(this.form_));
-    for (var i = 0, n = textareas.length;i < n;i++) {
-      var value = textareas[i].value;
-      if (goog.dom.getRawTextContent(textareas[i]) != value) {
-        goog.dom.setTextContent(textareas[i], value);
-        textareas[i].value = value;
-      }
-    }
-    var clone = doc.importNode(this.form_, true);
-    clone.target = innerFrameName;
-    clone.action = this.form_.action;
-    doc.body.appendChild(clone);
-    var selects = goog.dom.getElementsByTagName(goog.dom.TagName.SELECT, goog.asserts.assert(this.form_));
-    var clones = goog.dom.getElementsByTagName(goog.dom.TagName.SELECT, (clone));
-    for (var i = 0, n = selects.length;i < n;i++) {
-      var selectsOptions = goog.dom.getElementsByTagName(goog.dom.TagName.OPTION, selects[i]);
-      var clonesOptions = goog.dom.getElementsByTagName(goog.dom.TagName.OPTION, clones[i]);
-      for (var j = 0, m = selectsOptions.length;j < m;j++) {
-        clonesOptions[j].selected = selectsOptions[j].selected;
-      }
-    }
-    var inputs = goog.dom.getElementsByTagName(goog.dom.TagName.INPUT, goog.asserts.assert(this.form_));
-    var inputClones = goog.dom.getElementsByTagName(goog.dom.TagName.INPUT, (clone));
-    for (var i = 0, n = inputs.length;i < n;i++) {
-      if (inputs[i].type == goog.dom.InputType.FILE) {
-        if (inputs[i].value != inputClones[i].value) {
-          goog.log.fine(this.logger_, "File input value not cloned properly.  Will " + "submit using original form.");
-          this.form_.target = innerFrameName;
-          clone = this.form_;
-          break;
-        }
-      }
-    }
-    goog.log.fine(this.logger_, "Submitting form");
-    try {
-      this.errorHandled_ = false;
-      clone.submit();
-      doc.close();
-      if (goog.userAgent.GECKO) {
-        this.firefoxSilentErrorTimeout_ = goog.Timer.callOnce(this.testForFirefoxSilentError_, 250, this);
-      }
-    } catch (e) {
-      goog.log.error(this.logger_, "Error when submitting form: " + goog.debug.exposeException(e));
-      if (!this.ignoreResponse_) {
-        goog.events.unlisten(doc.getElementById(innerFrameName), goog.events.EventType.LOAD, this.onIframeLoaded_, false, this);
-      }
-      doc.close();
-      this.handleError_(goog.net.ErrorCode.FILE_NOT_FOUND);
-    }
-  }
-};
-goog.net.IframeIo.createIframeHtml_ = function(innerFrameName) {
-  var innerFrameNameEscaped = goog.string.htmlEscape(innerFrameName);
-  return goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(goog.string.Const.from("Short HTML snippet, input escaped, for performance"), '<body><iframe id="' + innerFrameNameEscaped + '" name="' + innerFrameNameEscaped + '"></iframe>');
-};
-goog.net.IframeIo.createIframeHtmlWithBaseUri_ = function(innerFrameName) {
-  var innerFrameNameEscaped = goog.string.htmlEscape(innerFrameName);
-  return goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(goog.string.Const.from("Short HTML snippet, input escaped, safe URL, for performance"), '<head><base href="' + goog.string.htmlEscape((document.baseURI)) + '"></head>' + '<body><iframe id="' + innerFrameNameEscaped + '" name="' + innerFrameNameEscaped + '"></iframe>');
-};
-goog.net.IframeIo.prototype.onIeReadyStateChange_ = function(e) {
-  if (this.iframe_.readyState == "complete") {
-    goog.events.unlisten(this.iframe_, goog.events.EventType.READYSTATECHANGE, this.onIeReadyStateChange_, false, this);
-    var doc;
-    try {
-      doc = goog.dom.getFrameContentDocument(this.iframe_);
-      if (goog.userAgent.IE && doc.location == "about:blank" && !navigator.onLine) {
-        this.handleError_(goog.net.ErrorCode.OFFLINE);
-        return;
-      }
-    } catch (ex) {
-      this.handleError_(goog.net.ErrorCode.ACCESS_DENIED);
-      return;
-    }
-    this.handleLoad_((doc));
-  }
-};
-goog.net.IframeIo.prototype.onIframeLoaded_ = function(e) {
-  if (goog.userAgent.OPERA && !goog.userAgent.WEBKIT && this.getContentDocument_().location == "about:blank") {
-    return;
-  }
-  goog.events.unlisten(this.getRequestIframe(), goog.events.EventType.LOAD, this.onIframeLoaded_, false, this);
-  try {
-    this.handleLoad_(this.getContentDocument_());
-  } catch (ex) {
-    this.handleError_(goog.net.ErrorCode.ACCESS_DENIED);
-  }
-};
-goog.net.IframeIo.prototype.handleLoad_ = function(contentDocument) {
-  goog.log.fine(this.logger_, "Iframe loaded");
-  this.complete_ = true;
-  this.active_ = false;
-  var errorCode;
-  try {
-    var body = contentDocument.body;
-    this.lastContent_ = body.textContent || body.innerText;
-    this.lastContentHtml_ = body.innerHTML;
-  } catch (ex) {
-    errorCode = goog.net.ErrorCode.ACCESS_DENIED;
-  }
-  var customError;
-  if (!errorCode && typeof this.errorChecker_ == "function") {
-    customError = this.errorChecker_(contentDocument);
-    if (customError) {
-      errorCode = goog.net.ErrorCode.CUSTOM_ERROR;
-    }
-  }
-  goog.log.log(this.logger_, goog.log.Level.FINER, "Last content: " + this.lastContent_);
-  goog.log.log(this.logger_, goog.log.Level.FINER, "Last uri: " + this.lastUri_);
-  if (errorCode) {
-    goog.log.fine(this.logger_, "Load event occurred but failed");
-    this.handleError_(errorCode, customError);
-  } else {
-    goog.log.fine(this.logger_, "Load succeeded");
-    this.success_ = true;
-    this.lastErrorCode_ = goog.net.ErrorCode.NO_ERROR;
-    this.dispatchEvent(goog.net.EventType.COMPLETE);
-    this.dispatchEvent(goog.net.EventType.SUCCESS);
-    this.makeReady_();
-  }
-};
-goog.net.IframeIo.prototype.handleError_ = function(errorCode, opt_customError) {
-  if (!this.errorHandled_) {
-    this.success_ = false;
-    this.active_ = false;
-    this.complete_ = true;
-    this.lastErrorCode_ = errorCode;
-    if (errorCode == goog.net.ErrorCode.CUSTOM_ERROR) {
-      goog.asserts.assert(goog.isDef(opt_customError));
-      this.lastCustomError_ = opt_customError;
-    }
-    this.dispatchEvent(goog.net.EventType.COMPLETE);
-    this.dispatchEvent(goog.net.EventType.ERROR);
-    this.makeReady_();
-    this.errorHandled_ = true;
-  }
-};
-goog.net.IframeIo.prototype.handleIncrementalData_ = function(data) {
-  this.dispatchEvent(new goog.net.IframeIo.IncrementalDataEvent(data));
-};
-goog.net.IframeIo.prototype.makeReady_ = function() {
-  goog.log.info(this.logger_, "Ready for new requests");
-  this.scheduleIframeDisposal_();
-  this.disposeForm_();
-  this.dispatchEvent(goog.net.EventType.READY);
-};
-goog.net.IframeIo.prototype.createIframe_ = function() {
-  goog.log.fine(this.logger_, "Creating iframe");
-  this.iframeName_ = this.name_ + "_" + (this.nextIframeId_++).toString(36);
-  var iframeAttributes = {"name":this.iframeName_, "id":this.iframeName_};
-  if (goog.userAgent.IE && Number(goog.userAgent.VERSION) < 7) {
-    iframeAttributes.src = 'javascript:""';
-  }
-  this.iframe_ = goog.dom.getDomHelper(this.form_).createDom(goog.dom.TagName.IFRAME, iframeAttributes);
-  var s = this.iframe_.style;
-  s.visibility = "hidden";
-  s.width = s.height = "10px";
-  s.display = "none";
-  if (!goog.userAgent.WEBKIT) {
-    s.position = "absolute";
-    s.top = s.left = "-10px";
-  } else {
-    s.marginTop = s.marginLeft = "-10px";
-  }
-};
-goog.net.IframeIo.prototype.appendIframe_ = function() {
-  goog.dom.getDomHelper(this.form_).getDocument().body.appendChild(this.iframe_);
-};
-goog.net.IframeIo.prototype.scheduleIframeDisposal_ = function() {
-  var iframe = this.iframe_;
-  if (iframe) {
-    iframe.onreadystatechange = null;
-    iframe.onload = null;
-    iframe.onerror = null;
-    this.iframesForDisposal_.push(iframe);
-  }
-  if (this.iframeDisposalTimer_) {
-    goog.Timer.clear(this.iframeDisposalTimer_);
-    this.iframeDisposalTimer_ = null;
-  }
-  if (goog.userAgent.GECKO || goog.userAgent.OPERA && !goog.userAgent.WEBKIT) {
-    this.iframeDisposalTimer_ = goog.Timer.callOnce(this.disposeIframes_, goog.net.IframeIo.IFRAME_DISPOSE_DELAY_MS, this);
-  } else {
-    this.disposeIframes_();
-  }
-  this.iframe_ = null;
-  this.iframeName_ = null;
-};
-goog.net.IframeIo.prototype.disposeIframes_ = function() {
-  if (this.iframeDisposalTimer_) {
-    goog.Timer.clear(this.iframeDisposalTimer_);
-    this.iframeDisposalTimer_ = null;
-  }
-  while (this.iframesForDisposal_.length != 0) {
-    var iframe = this.iframesForDisposal_.pop();
-    goog.log.info(this.logger_, "Disposing iframe");
-    goog.dom.removeNode(iframe);
-  }
-};
-goog.net.IframeIo.prototype.clearForm_ = function() {
-  if (this.form_ && this.form_ == goog.net.IframeIo.form_) {
-    goog.dom.removeChildren(this.form_);
-  }
-};
-goog.net.IframeIo.prototype.disposeForm_ = function() {
-  this.clearForm_();
-  this.form_ = null;
-};
-goog.net.IframeIo.prototype.getContentDocument_ = function() {
-  if (this.iframe_) {
-    return (goog.dom.getFrameContentDocument(this.getRequestIframe()));
-  }
-  return null;
-};
-goog.net.IframeIo.prototype.getRequestIframe = function() {
-  if (this.iframe_) {
-    return (goog.net.IframeIo.useIeReadyStateCodePath_() ? this.iframe_ : goog.dom.getFrameContentDocument(this.iframe_).getElementById(this.iframeName_ + goog.net.IframeIo.INNER_FRAME_SUFFIX));
-  }
-  return null;
-};
-goog.net.IframeIo.prototype.testForFirefoxSilentError_ = function() {
-  if (this.active_) {
-    var doc = this.getContentDocument_();
-    if (doc && !goog.reflect.canAccessProperty(doc, "documentUri")) {
-      if (!this.ignoreResponse_) {
-        goog.events.unlisten(this.getRequestIframe(), goog.events.EventType.LOAD, this.onIframeLoaded_, false, this);
-      }
-      if (navigator.onLine) {
-        goog.log.warning(this.logger_, "Silent Firefox error detected");
-        this.handleError_(goog.net.ErrorCode.FF_SILENT_ERROR);
-      } else {
-        goog.log.warning(this.logger_, "Firefox is offline so report offline error " + "instead of silent error");
-        this.handleError_(goog.net.ErrorCode.OFFLINE);
-      }
-      return;
-    }
-    this.firefoxSilentErrorTimeout_ = goog.Timer.callOnce(this.testForFirefoxSilentError_, 250, this);
-  }
-};
-goog.net.IframeIo.IncrementalDataEvent = function(data) {
-  goog.events.Event.call(this, goog.net.EventType.INCREMENTAL_DATA);
-  this.data = data;
-};
-goog.inherits(goog.net.IframeIo.IncrementalDataEvent, goog.events.Event);
-goog.provide("acgraph");
-goog.require("acgraph.compatibility");
-goog.require("acgraph.vector");
-goog.require("acgraph.vector.Circle");
-goog.require("acgraph.vector.Clip");
-goog.require("acgraph.vector.Ellipse");
-goog.require("acgraph.vector.HatchFill");
-goog.require("acgraph.vector.Image");
-goog.require("acgraph.vector.Layer");
-goog.require("acgraph.vector.Path");
-goog.require("acgraph.vector.PatternFill");
-goog.require("acgraph.vector.Rect");
-goog.require("acgraph.vector.Renderer");
-goog.require("acgraph.vector.Text");
-goog.require("acgraph.vector.UnmanagedLayer");
-goog.require("acgraph.vector.primitives");
-goog.require("acgraph.vector.svg");
+goog.exportSymbol("acgraph.vml.getRenderer", function() {
+  return acgraph.vector.vml.Renderer.getInstance();
+});
+goog.provide("acgraphentry");
+goog.require("acgraph");
+goog.require("acgraph.exporting");
 goog.require("acgraph.vector.vml");
-goog.require("goog.dom");
-goog.require("goog.net.IframeIo");
-goog.require("goog.userAgent");
-acgraph.WRAPPER_ID_PROP_NAME_ = "data-ac-wrapper-id";
-acgraph.wrappers_ = {};
-acgraph.register = function(wrapper) {
-  var node = wrapper.domElement();
-  if (node) {
-    var id = String(goog.getUid(wrapper));
-    acgraph.wrappers_[id] = wrapper;
-    node.setAttribute(acgraph.WRAPPER_ID_PROP_NAME_, id);
-  }
-};
-acgraph.unregister = function(wrapper) {
-  delete acgraph.wrappers_[String(goog.getUid(wrapper))];
-  var node = wrapper.domElement();
-  if (node) {
-    node.removeAttribute(acgraph.WRAPPER_ID_PROP_NAME_);
-  }
-};
-acgraph.getWrapperForDOM = function(node, stage) {
-  var uid;
-  var domRoot = stage.domElement().parentNode;
-  while (node && node != domRoot) {
-    uid = node.getAttribute && node.getAttribute(acgraph.WRAPPER_ID_PROP_NAME_) || null;
-    if (goog.isDefAndNotNull(uid)) {
-      break;
-    }
-    node = (node.parentNode);
-  }
-  var res = acgraph.wrappers_[uid || ""] || null;
-  return res && res.domElement() == node ? res : null;
-};
-acgraph.StageType = {SVG:"svg", VML:"vml"};
-acgraph.type_ = null;
-if (goog.userAgent.IE && !goog.userAgent.isVersionOrHigher("9")) {
-  acgraph.type_ = acgraph.StageType.VML;
-} else {
-  acgraph.type_ = acgraph.StageType.SVG;
-}
-acgraph.type = function() {
-  return (acgraph.type_);
-};
-acgraph.renderer_ = acgraph.type_ == acgraph.StageType.VML ? acgraph.vector.vml.Renderer.getInstance() : acgraph.vector.svg.Renderer.getInstance();
-acgraph.getRenderer = function() {
-  return acgraph.renderer_;
-};
-acgraph.create = function(opt_container, opt_width, opt_height) {
-  return acgraph.type_ == acgraph.StageType.VML ? new acgraph.vector.vml.Stage(opt_container, opt_width, opt_height) : new acgraph.vector.svg.Stage(opt_container, opt_width, opt_height);
-};
-acgraph.exportServer = "//export.anychart.com";
-acgraph.server = function(opt_address) {
-  if (goog.isDef(opt_address)) {
-    acgraph.exportServer = opt_address;
-  }
-  return acgraph.exportServer;
-};
-acgraph.sendRequestToExportServer = function(url, opt_arguments) {
-  goog.net.IframeIo.send(url, undefined, "POST", false, opt_arguments);
-};
-acgraph.embedCss = function(css, opt_doc) {
-  var styleElement = null;
-  if (css) {
-    styleElement = goog.dom.createDom(goog.dom.TagName.STYLE);
-    styleElement.type = "text/css";
-    if (styleElement.styleSheet) {
-      styleElement["styleSheet"]["cssText"] = css;
-    } else {
-      goog.dom.appendChild(styleElement, goog.dom.createTextNode(css));
-    }
-    goog.dom.insertChildAt(goog.dom.getElementsByTagNameAndClass("head", undefined, opt_doc)[0], styleElement, 0);
-  }
-  return styleElement;
-};
-goog.global["acgraph"] = goog.global["acgraph"] || {};
-goog.global["acgraph"]["fontSize"] = "10px";
-goog.global["acgraph"]["fontColor"] = "#000";
-goog.global["acgraph"]["textDirection"] = acgraph.vector.Text.Direction.LTR;
-goog.global["acgraph"]["fontFamily"] = "Verdana";
-acgraph.rect = function(opt_x, opt_y, opt_width, opt_height) {
-  return new acgraph.vector.Rect(opt_x, opt_y, opt_width, opt_height);
-};
-acgraph.circle = function(opt_cx, opt_cy, opt_radius) {
-  return new acgraph.vector.Circle(opt_cx, opt_cy, opt_radius);
-};
-acgraph.layer = function() {
-  return new acgraph.vector.Layer;
-};
-acgraph.ellipse = function(opt_cx, opt_cy, opt_rx, opt_ry) {
-  return new acgraph.vector.Ellipse(opt_cx, opt_cy, opt_rx, opt_ry);
-};
-acgraph.path = function() {
-  return new acgraph.vector.Path;
-};
-acgraph.image = function(opt_src, opt_x, opt_y, opt_width, opt_height) {
-  return new acgraph.vector.Image(opt_src, opt_x, opt_y, opt_width, opt_height);
-};
-acgraph.text = function(opt_x, opt_y, opt_text, opt_style) {
-  var text = acgraph.type_ == acgraph.StageType.VML ? new acgraph.vector.vml.Text(opt_x, opt_y) : new acgraph.vector.Text(opt_x, opt_y);
-  if (opt_style) {
-    text.style(opt_style);
-  }
-  if (opt_text) {
-    text.text(opt_text);
-  }
-  return text;
-};
-acgraph.hatchFill = function(opt_type, opt_color, opt_thickness, opt_size) {
-  return new acgraph.vector.HatchFill(opt_type, opt_color, opt_thickness, opt_size);
-};
-acgraph.patternFill = function(bounds) {
-  return new acgraph.vector.PatternFill(bounds);
-};
-acgraph.clip = function(opt_leftOrShape, opt_top, opt_width, opt_height) {
-  return acgraph.type_ == acgraph.StageType.VML ? new acgraph.vector.vml.Clip(null, opt_leftOrShape, opt_top, opt_width, opt_height) : new acgraph.vector.Clip(null, opt_leftOrShape, opt_top, opt_width, opt_height);
-};
-acgraph.unmanagedLayer = function(opt_content) {
-  return new acgraph.vector.UnmanagedLayer(opt_content);
-};
-acgraph.useAbsoluteReferences = function(opt_value) {
-  if (goog.isDef(opt_value)) {
-    acgraph.compatibility.USE_ABSOLUTE_REFERENCES = opt_value;
-  } else {
-    return !!acgraph.getReference();
-  }
-};
-acgraph.getReferenceValue_ = undefined;
-acgraph.getReference = function() {
-  if (goog.isDef(acgraph.getReferenceValue_)) {
-    return acgraph.getReferenceValue_;
-  }
-  if (goog.userAgent.IE && goog.userAgent.isVersionOrHigher("9") && !goog.userAgent.isVersionOrHigher("10")) {
-    return acgraph.getReferenceValue_ = "";
-  }
-  return acgraph.getReferenceValue_ = acgraph.compatibility.USE_ABSOLUTE_REFERENCES || goog.isNull(acgraph.compatibility.USE_ABSOLUTE_REFERENCES) && goog.dom.getElementsByTagNameAndClass("base").length ? window.location.origin + window.location.pathname + window.location.search : "";
-};
-acgraph.updateReferences = function() {
-  var oldReference = acgraph.getReferenceValue_;
-  acgraph.getReferenceValue_ = undefined;
-  if (!goog.isDef(oldReference) || acgraph.getReference() == oldReference) {
-    return;
-  }
-  var wrapper;
-  var renderer = acgraph.getRenderer();
-  for (var id in acgraph.wrappers_) {
-    if (!acgraph.wrappers_.hasOwnProperty(id)) {
-      continue;
-    }
-    wrapper = acgraph.wrappers_[id];
-    var wrapperStage = wrapper.getStage();
-    if (!wrapperStage) {
-      continue;
-    }
-    if (wrapper instanceof acgraph.vector.Element) {
-      if (wrapperStage.isSuspended()) {
-        wrapper.setDirtyState(acgraph.vector.Element.DirtyState.CLIP);
-      } else {
-        if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.CLIP)) {
-          renderer.setClip(wrapper);
-        }
-      }
-    }
-    if (wrapper instanceof acgraph.vector.Shape) {
-      if (wrapperStage.isSuspended()) {
-        wrapper.setDirtyState(acgraph.vector.Element.DirtyState.FILL | acgraph.vector.Element.DirtyState.STROKE);
-      } else {
-        if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.FILL)) {
-          renderer.applyFill(wrapper);
-        }
-        if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE)) {
-          renderer.applyStroke(wrapper);
-        }
-      }
-    }
-  }
-};
-(function() {
-  goog.exportSymbol("acgraph.create", acgraph.create);
-  goog.exportSymbol("acgraph.type", acgraph.type);
-  goog.exportSymbol("acgraph.server", acgraph.server);
-  goog.exportSymbol("acgraph.StageType.SVG", acgraph.StageType.SVG);
-  goog.exportSymbol("acgraph.StageType.VML", acgraph.StageType.VML);
-  goog.exportSymbol("acgraph.rect", acgraph.rect);
-  goog.exportSymbol("acgraph.circle", acgraph.circle);
-  goog.exportSymbol("acgraph.ellipse", acgraph.ellipse);
-  goog.exportSymbol("acgraph.path", acgraph.path);
-  goog.exportSymbol("acgraph.text", acgraph.text);
-  goog.exportSymbol("acgraph.layer", acgraph.layer);
-  goog.exportSymbol("acgraph.image", acgraph.image);
-  goog.exportSymbol("acgraph.hatchFill", acgraph.hatchFill);
-  goog.exportSymbol("acgraph.patternFill", acgraph.patternFill);
-  goog.exportSymbol("acgraph.clip", acgraph.clip);
-  goog.exportSymbol("acgraph.useAbsoluteReferences", acgraph.useAbsoluteReferences);
-  goog.exportSymbol("acgraph.updateReferences", acgraph.updateReferences);
-})();
 
