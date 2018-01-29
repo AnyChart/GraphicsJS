@@ -45,7 +45,7 @@ To get started with GraphicsJS create simple HTML document and copy paste the fo
 <html lang="en">
 <head>
 	<meta charset="utf-8" />
-	<script src="https://cdn.anychart.com/releases/js/v8/graphics.min.js"></script>
+	<script src="https://cdn.anychart.com/releases/v8/js/graphics.min.js"></script>
 </head>
 <body>
 	<div id="stage-container" style="width: 400px; height: 375px;"></div>
