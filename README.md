@@ -45,7 +45,7 @@ To get started with GraphicsJS create simple HTML document and copy paste the fo
 <html lang="en">
 <head>
 	<meta charset="utf-8" />
-	<script src="https://cdn.anychart.com/js/latest/graphics.min.js"></script>
+	<script src="https://cdn.anychart.com/releases/js/v8/graphics.min.js"></script>
 </head>
 <body>
 	<div id="stage-container" style="width: 400px; height: 375px;"></div>
@@ -74,7 +74,7 @@ Launch the page in your browser and here you are: you have created your first dr
 
 # Articles
 - [Introducing GraphicsJS, a Powerful Lightweight Graphics Library](https://www.sitepoint.com/introducing-graphicsjs-a-powerful-lightweight-graphics-library/) by [@RomanLubushkin](https://github.com/RomanLubushkin)
-- [GraphicsJS Overview](https://docs.anychart.com/Graphics/Overview) by [AnyChart](http://www.anychart.com/)
+- [GraphicsJS Overview](https://docs.anychart.com/Graphics/Overview) by [AnyChart](https://www.anychart.com/)
 
 # Building
 
@@ -98,4 +98,4 @@ To contribute to AnyChart project please:
 - [GraphicsJS API](https://api.anychart.com/latest/anychart.graphics)
 - [GraphicsJS at GitHub](https://github.com/anychart/graphicsjs)
 - [Report a bug or an issue](https://github.com/anychart/graphicsjs/issues)
-
+[![Analytics](https://ga-beacon.appspot.com/UA-228820-4/GraphicsJS?pixel&useReferer)](https://github.com/igrigorik/ga-beacon)

@@ -1603,7 +1603,7 @@ acgraph.vector.Text.prototype.finalizeTextLine = function() {
     }
 
     if (this.path()) {
-      this.currentLine_[0].dx = this.align == 'start' ? 0 : this.align == 'middle' ?
+      firstSegment.dx = this.align == 'start' ? 0 : this.align == 'middle' ?
           this.path().getLength() / 2 - this.currentLineWidth_ / 2 : this.path().getLength() - this.currentLineWidth_;
     }
 
