@@ -93,10 +93,10 @@ acgraph.vector.RadialGradient.serialize = function(keys, cx, cy, fx, fy, opt_opa
   /** @type {Array.<string>} */
   var gradientKeys = [];
   goog.array.forEach(keys, function(el) {
-    gradientKeys.push('' + el['offset'] + el['color'] + (el['opacity'] ? el['opacity'] : 1));
+    gradientKeys.push(String(el['offset']) + el['color'] + (el['opacity'] ? el['opacity'] : 1));
   });
   /** @type {string} */
-  var boundsToString = opt_mode ? '' + opt_mode.left + opt_mode.top + opt_mode.width + opt_mode.height : '';
+  var boundsToString = opt_mode ? String(opt_mode.left) + opt_mode.top + opt_mode.width + opt_mode.height : '';
   var transformationToString = opt_transform ? opt_transform.toString() : '';
 
   return gradientKeys.join('') + opacity + cx + cy + fx + fy + boundsToString + transformationToString;

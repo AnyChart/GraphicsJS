@@ -60,7 +60,7 @@ acgraph.vector.vml.Defs.prototype.clear = function() {
  */
 acgraph.vector.vml.Defs.prototype.getShapeType = function(fill, stroke) {
   /** @type {!string} */
-  var shapeTypeId = '' + this.serializeFill(fill) + this.serializeStroke(stroke);
+  var shapeTypeId = this.serializeFill(fill) + this.serializeStroke(stroke);
   if (goog.object.containsKey(this.shapeTypes_, shapeTypeId)) return this.shapeTypes_[shapeTypeId];
   /** @type {!acgraph.vector.vml.ShapeType} */
   var shapeType = new acgraph.vector.vml.ShapeType(fill, stroke);
@@ -174,7 +174,7 @@ acgraph.vector.vml.Defs.prototype.serializeStroke = function(value) {
     strokeColor = value['color'];
     strokeColor += 'opacity' in value ? value['opacity'] : 1;
   }
-  return '' + value['thickness'] + strokeColor + value['lineJoin'] + value['lineCap'] + value['dash'];
+  return String(value['thickness']) + strokeColor + value['lineJoin'] + value['lineCap'] + value['dash'];
 };
 
 
