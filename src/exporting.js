@@ -89,6 +89,8 @@ acgraph.vector.Stage.prototype.normalizeImageSize_ = function(opt_width, opt_hei
  * @param {function(string)} onSuccess Function that will be called on success.
  * @param {function(string)=} opt_onError Function that will be called on error.
  * @private
+ * @suppress {deprecated}
+ * @todo (Anton Saukh): refactor this deprecation.
  */
 acgraph.vector.Stage.prototype.shareUrl_ = function(type, data, asBase64, saveAndShare, onSuccess, opt_onError) {
   if (asBase64)

@@ -15,7 +15,8 @@ import datetime
 # =======================================================================================================================
 #           Project paths
 # =======================================================================================================================
-COMPILER_VERSION = '20161024'
+# COMPILER_VERSION = '20161024'
+COMPILER_VERSION = '20180204'
 PROJECT_PATH = os.path.abspath(os.path.dirname(__file__))
 CONTRIB_PATH = os.path.join(PROJECT_PATH, 'contrib')
 COMPILER_PATH = os.path.join(CONTRIB_PATH, 'compiler', 'closure-compiler-v%s.jar' % COMPILER_VERSION)

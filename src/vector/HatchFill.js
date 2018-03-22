@@ -33,7 +33,7 @@ acgraph.vector.HatchFill = function(opt_type, opt_color, opt_thickness, opt_size
    * Hatch fill color.
    * @type {string}
    */
-  this.color = '' + (goog.isDefAndNotNull(opt_color) ? opt_color : 'black 0.5');
+  this.color = String(goog.isDefAndNotNull(opt_color) ? opt_color : 'black 0.5');
   /**
    * Hatch fill stroke thickness.
    * @type {number}
