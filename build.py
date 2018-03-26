@@ -168,21 +168,28 @@ def __getOptimizedCompilerArgs():
     compilerArgs = [
         '--charset UTF-8',
         '--compilation_level ADVANCED_OPTIMIZATIONS',
+
         '--process_closure_primitives',
+
         '--language_in ECMASCRIPT3',
         '--language_out ECMASCRIPT3',
+
+        '--hide_warnings_for "contrib/closure-library"',
         '--assume_function_wrapper',
         '--use_types_for_optimization true',
+
         '--output_wrapper "' + __get_file_overview() + '(function(){%output%})();"',
         '--env BROWSER',
+
         '--extra_annotation_name "includeDoc"',
         '--extra_annotation_name "illustration"',
         '--extra_annotation_name "illustrationDesc"',
         '--extra_annotation_name "ignoreDoc"',
         '--extra_annotation_name "propertyDoc"',
         '--extra_annotation_name "shortDescription"',
+
         '--warning_level VERBOSE',
-        '--hide_warnings_for "libs/closure-library"',
+
         '--jscomp_warning accessControls',
         '--jscomp_warning ambiguousFunctionDecl',
         '--jscomp_warning checkDebuggerStatement',
@@ -191,7 +198,6 @@ def __getOptimizedCompilerArgs():
         '--jscomp_warning checkTypes',
         '--jscomp_warning checkVars',
         '--jscomp_warning closureDepMethodUsageChecks',
-        '--jscomp_warning commonJsModuleLoad',
         '--jscomp_warning conformanceViolations',
         '--jscomp_warning const',
         '--jscomp_warning constantProperty',
@@ -206,7 +212,6 @@ def __getOptimizedCompilerArgs():
         '--jscomp_warning fileoverviewTags',
         '--jscomp_warning functionParams',
         '--jscomp_warning globalThis',
-        '--jscomp_warning inferredConstCheck',
         '--jscomp_warning internetExplorerChecks',
         '--jscomp_warning invalidCasts',
         '--jscomp_warning misplacedTypeAnnotation',
@@ -244,7 +249,7 @@ def __getDefaultCompilerArgs(outputFile):
         'java -jar',
         COMPILER_PATH,
         '--js="%s"' % os.path.join(SRC_PATH, '**.js'),
-        '--js="%s"' % os.path.join(CLOSURE_LIBRARY_PATH, '**.js'),
+        '--js="%s"' % os.path.join(CLOSURE_SOURCE_PATH, '**.js'),
         '--define "goog.DEBUG=false"',
         '--js_output_file ' + outputFile,
         '--dependency_mode=STRICT',
