@@ -117,12 +117,12 @@ acgraph.vector.LinearGradient.serialize = function(keys, opt_opacity, opt_angle,
   /** @type {Array.<string>} */
   var gradientKeys = [];
   goog.array.forEach(keys, function(el) {
-    gradientKeys.push('' + el['offset'] + el['color'] + (el['opacity'] ? el['opacity'] : null)
+    gradientKeys.push(String(el['offset']) + el['color'] + (el['opacity'] ? el['opacity'] : null)
     );
   });
   /** @type {string} */
   var boundsToString = bounds ?
-      '' + bounds.left + bounds.top + bounds.width + bounds.height :
+      String(bounds.left) + bounds.top + bounds.width + bounds.height :
       '';
   var transformationToString = opt_transform ? opt_transform.toString() : '';
 

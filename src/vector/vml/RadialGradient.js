@@ -59,11 +59,11 @@ acgraph.vector.vml.RadialGradient.serialize = function(keys, cx, cy, size_x, siz
   /** @type {Array.<string>} */
   var gradientKeys = [];
   goog.array.forEach(keys, function(el) {
-    gradientKeys.push('' + el.offset + el.color + (el.opacity ? el.opacity : null)
+    gradientKeys.push(String(el.offset) + el.color + (el.opacity ? el.opacity : null)
     );
   });
   /** @type {string} */
-  var boundsToString = opt_mode ? '' + opt_mode.left + opt_mode.top + opt_mode.width + opt_mode.height : '';
+  var boundsToString = opt_mode ? String(opt_mode.left) + opt_mode.top + opt_mode.width + opt_mode.height : '';
 
   return gradientKeys.join('') + opacity + cx + cy + size_x + size_y + boundsToString;
 };
