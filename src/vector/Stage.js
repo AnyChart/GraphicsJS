@@ -17,18 +17,16 @@ goog.require('acgraph.vector.PatternFill');
 goog.require('acgraph.vector.Rect');
 goog.require('acgraph.vector.Text');
 goog.require('acgraph.vector.UnmanagedLayer');
-goog.require('goog.Uri.QueryData');
 goog.require('goog.array');
 goog.require('goog.dom');
 goog.require('goog.dom.classlist');
+goog.require('goog.dom.fullscreen');
 goog.require('goog.events.EventHandler');
 goog.require('goog.events.EventTarget');
 goog.require('goog.events.Listenable');
 goog.require('goog.math.Coordinate');
 goog.require('goog.math.Rect');
 goog.require('goog.math.Size');
-goog.require('goog.net.XhrIo');
-goog.require('goog.structs.Map');
 goog.require('goog.style');
 
 
@@ -63,6 +61,15 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
 
   this.renderAsync_ = goog.bind(this.renderAsync_, this);
   this.checkSize = goog.bind(this.checkSize, this);
+  var doc = goog.global['document'];
+
+  if (!goog.global['acgraph'].stages)
+    goog.global['acgraph'].stages = {};
+
+  var id = acgraph.utils.IdGenerator.getInstance().identify(this, acgraph.utils.IdGenerator.ElementTypePrefix.STAGE);
+  goog.global['acgraph'].stages[id] = this;
+
+  this.charts = {};
 
   /**
    * Event handler of the stage.
@@ -76,7 +83,9 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
    * @type {!Element}
    * @private
    */
-  this.internalContainer_ = goog.dom.createDom(goog.dom.TagName.DIV, {style: 'position:relative;left:0;top:0;overflow:hidden;'});
+  // this.internalContainer_ = goog.dom.createDom(goog.dom.TagName.DIV, {style: 'position:relative;left:0;top:0;overflow:hidden;'});
+  this.internalContainer_ = doc.createElement(goog.dom.TagName.DIV);
+  goog.style.setStyle(this.internalContainer_, {'position': 'relative', 'left': 0, 'top': 0, 'overflow': 'hidden'});
 
   /**
    * Root DOM element of stage object.
@@ -93,6 +102,8 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
   // Add class for check anychart-ui.css attached. (DVF-1619)
   goog.dom.classlist.add(this.domElement_, 'anychart-ui-support');
   goog.dom.appendChild(this.internalContainer_, this.domElement_);
+  this.domElement_.setAttribute('ac-id', id);
+
 
   /**
    * Array of clips that should be rendered when stage is rendering.
@@ -109,8 +120,7 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
    * @private
    */
   this.defs_ = this.createDefs();
-  this.defs_.createDom();
-  acgraph.getRenderer().appendChild(this.domElement_, this.defs_.domElement());
+  this.defs_.render();
 
   /**
    * Root layer for Stage. All layer and elements added to stage go in this layer.
@@ -120,7 +130,7 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
    */
   this.rootLayer_ = new acgraph.vector.Layer();
   this.rootLayer_.setParent(this).render();
-  acgraph.getRenderer().appendChild(this.domElement_, this.rootLayer_.domElement());
+  goog.dom.appendChild(this.domElement_, this.rootLayer_.domElement());
   acgraph.getRenderer().createMeasurement();
 
   this.eventHandler_.listen(this.domElement(), [
@@ -141,7 +151,8 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
 
   this.setWidth_(opt_width || '100%');
   this.setHeight_(opt_height || '100%');
-  this.container_ = goog.dom.getElement(opt_container || null);
+  this.container_ = goog.isString(opt_container) ?
+      doc.getElementById(opt_container) : opt_container;
   if (this.container_)
     this.updateContainer_();
   this.checkSize(true, true);
@@ -157,17 +168,6 @@ goog.inherits(acgraph.vector.Stage, goog.events.EventTarget);
 //  Enums and consts
 //
 //----------------------------------------------------------------------------------------------------------------------
-/**
- * Errors.
- * @enum {string}
- */
-acgraph.vector.Stage.Error = {
-  CONTAINER_SHOULD_BE_DEFINED: 'Container to render stage should be defined',
-  STAGE_SHOULD_HAVE_DOM_ELEMENT: 'Stage should have dom element',
-  IN_RENDERING_PROCESS: 'Stage already in rendering process'
-};
-
-
 /**
  * DOM changes. Used for to assign quotas.
  * @enum {number}
@@ -421,9 +421,9 @@ acgraph.vector.Stage.prototype.isRendering_ = false;
 acgraph.vector.Stage.prototype.id = function(opt_value) {
   if (goog.isDef(opt_value)) {
     var id = opt_value || '';
-    if (this.id_ !== id) {
+    if (this.id_ != id) {
       this.id_ = id;
-      acgraph.getRenderer().setId(this, this.id_);
+      acgraph.getRenderer().setIdInternal(this.domElement_, this.id_);
     }
     return this;
   }
@@ -780,6 +780,47 @@ acgraph.vector.Stage.prototype.clip = function(opt_value) {
 };
 
 
+/**
+ * Returns anychart charts for this stage.
+ * @return {Object}
+ */
+acgraph.vector.Stage.prototype.getCharts = function() {
+  return this.charts;
+};
+
+
+/**
+ * Getter/setter for full screen status of the stage.
+ * @param {boolean=} opt_value
+ * @return {acgraph.vector.Stage|boolean}
+ */
+acgraph.vector.Stage.prototype.fullScreen = function(opt_value) {
+  var container = /** @type {Element} */(this.getDomWrapper());
+  if (goog.isDef(opt_value)) {
+    if (container && this.isFullScreenAvailable()) {
+      opt_value = !!opt_value;
+      if (this.fullScreen() != opt_value) {
+        if (opt_value)
+          goog.dom.fullscreen.requestFullScreenWithKeys(container);
+        else
+          goog.dom.fullscreen.exitFullScreen();
+      }
+    }
+    return this;
+  }
+  return !!(container && (goog.dom.fullscreen.getFullScreenElement() == container));
+};
+
+
+/**
+ * Tester for the full screen support.
+ * @return {boolean}
+ */
+acgraph.vector.Stage.prototype.isFullScreenAvailable = function() {
+  return goog.dom.fullscreen.isSupported();
+};
+
+
 //endregion
 //region --- Internal methods
 //------------------------------------------------------------------------------
@@ -835,7 +876,11 @@ acgraph.vector.Stage.prototype.checkSize = function(opt_directCall, opt_silent) 
   var isDynamicSize = isDynamicWidth || isDynamicHeight;
   var detachedOrHidden;
   if (isDynamicSize) {
-    var size = this.container_ ? goog.style.getContentBoxSize(this.container_) : new goog.math.Size(NaN, NaN);
+    var size;
+    if (this.fullScreen())
+      size = goog.style.getContentBoxSize(this.internalContainer_);
+    else
+      size = this.container_ ? goog.style.getContentBoxSize(this.container_) : new goog.math.Size(NaN, NaN);
     size.width = Math.max(size.width || 0, 0);
     size.height = Math.max(size.height || 0, 0);
     detachedOrHidden = !size.width && !size.height;
@@ -852,7 +897,7 @@ acgraph.vector.Stage.prototype.checkSize = function(opt_directCall, opt_silent) 
     if (!opt_silent)
       this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RESIZE);
   }
-  if (this.container_ && isDynamicSize) {
+  if (this.container_ && isDynamicSize && !goog.global['acgraph']['isNodeJS']) {
     this.checkSizeTimer_ = setTimeout(this.checkSize, this.maxResizeDelay_);
   }
 };
@@ -1162,12 +1207,14 @@ acgraph.vector.Stage.prototype.finishRendering_ = function() {
   var imageLoader = acgraph.getRenderer().getImageLoader();
   var isImageLoading = acgraph.getRenderer().isImageLoading();
   if (imageLoader && isImageLoading) {
-    if (!this.imageLoadingListener_)
-      this.imageLoadingListener_ = goog.events.listenOnce(imageLoader, goog.net.EventType.COMPLETE, function(e) {
-        this.imageLoadingListener_ = null;
+    if (!this.imageLoadingListener_) {
+      this.imageLoadingListener_ = true;
+      goog.events.listenOnce(imageLoader, goog.net.EventType.COMPLETE, function(e) {
+        this.imageLoadingListener_ = false;
         if (!this.isRendering_)
           this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RENDERED);
       }, false, this);
+    }
   } else {
     this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RENDERED);
   }
@@ -1199,463 +1246,6 @@ acgraph.vector.Stage.prototype.isDirty = function() {
  */
 acgraph.vector.Stage.prototype.hasDirtyState = function(state) {
   return this.rootLayer_.hasDirtyState(state);
-};
-
-
-//endregion
-//region --- Sharing and export
-//------------------------------------------------------------------------------
-//
-//  Sharing and export
-//
-//------------------------------------------------------------------------------
-/**
- * Shares url.
- * @param {acgraph.vector.Stage.ExportType} type Type.
- * @param {Object} data Data to send.
- * @param {boolean} asBase64 Whether to share as base64.
- * @param {boolean} saveAndShare Whether to save file and share link, or return base64 string.
- * @param {function(string)} onSuccess Function that will be called on success.
- * @param {function(string)=} opt_onError Function that will be called on error.
- * @private
- */
-acgraph.vector.Stage.prototype.shareUrl_ = function(type, data, asBase64, saveAndShare, onSuccess, opt_onError) {
-  if (asBase64)
-    data['responseType'] = 'base64';
-  if (saveAndShare)
-    data['save'] = true;
-  var onError = opt_onError || goog.nullFunction;
-  /** @param {goog.events.Event} event */
-  var property = saveAndShare ? 'url' : 'result';
-  var callback = function(event) {
-    var xhr = /** @type {goog.net.XhrIo} */ (event.target);
-    if (xhr.isSuccess()) {
-      onSuccess(/** @type {string} */ (xhr.getResponseJson()[property]));
-    } else {
-      onError(xhr.getLastError());
-    }
-  };
-
-  data = goog.Uri.QueryData.createFromMap(new goog.structs.Map(data));
-  goog.net.XhrIo.send(acgraph.exportServer + '/' + type, callback, 'POST', data.toString());
-};
-
-
-/**
- * @param {Object} data Object with data.
- * @param {number=} opt_width Image width.
- * @param {number=} opt_height Image height.
- * @param {number=} opt_quality Image quality in ratio 0-1.
- * @param {string=} opt_filename file name to save.
- * @private
- */
-acgraph.vector.Stage.prototype.addPngData_ = function(data, opt_width, opt_height, opt_quality, opt_filename) {
-  data['data'] = this.toSvg(opt_width, opt_height);
-  data['dataType'] = 'svg';
-  data['responseType'] = 'file';
-  if (goog.isDef(opt_width)) data['width'] = opt_width;
-  if (goog.isDef(opt_height)) data['height'] = opt_height;
-  if (goog.isDef(opt_quality)) data['quality'] = opt_quality;
-  if (goog.isDef(opt_filename)) data['file-name'] = opt_filename;
-};
-
-
-/**
- * Share current stage as png and return link to shared image.
- * @param {function(string)} onSuccess Function that will be called when sharing will complete.
- * @param {function(string)=} opt_onError Function that will be called when sharing will complete.
- * @param {boolean=} opt_asBase64 Share as base64 file.
- * @param {number=} opt_width Image width.
- * @param {number=} opt_height Image height.
- * @param {number=} opt_quality Image quality in ratio 0-1.
- * @param {string=} opt_filename file name to save.
- */
-acgraph.vector.Stage.prototype.shareAsPng = function(onSuccess, opt_onError, opt_asBase64, opt_width, opt_height, opt_quality, opt_filename) {
-  var type = acgraph.type();
-  if (type == acgraph.StageType.SVG) {
-    var data = {};
-    this.addPngData_(data, opt_width, opt_height, opt_quality, opt_filename);
-    this.shareUrl_(acgraph.vector.Stage.ExportType.PNG, data, !!opt_asBase64, true, onSuccess, opt_onError);
-  } else {
-    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
-  }
-};
-
-
-/**
- * @param {Object} data Object with data.
- * @param {number=} opt_width Image width.
- * @param {number=} opt_height Image height.
- * @param {number=} opt_quality Image quality in ratio 0-1.
- * @param {boolean=} opt_forceTransparentWhite Define, should we force transparent to white background.
- * @param {string=} opt_filename file name to save.
- * @private
- */
-acgraph.vector.Stage.prototype.addJpgData_ = function(data, opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename) {
-  data['data'] = this.toSvg(opt_width, opt_height);
-  data['dataType'] = 'svg';
-  data['responseType'] = 'file';
-  if (goog.isDef(opt_width)) data['width'] = opt_width;
-  if (goog.isDef(opt_height)) data['height'] = opt_height;
-  if (goog.isDef(opt_quality)) data['quality'] = opt_quality;
-  if (goog.isDef(opt_forceTransparentWhite)) data['force-transparent-white'] = opt_forceTransparentWhite;
-  if (goog.isDef(opt_filename)) data['file-name'] = opt_filename;
-};
-
-
-/**
- * Share current stage as jpg and return link to shared image.
- * @param {function(string)} onSuccess Function that will be called when sharing will complete.
- * @param {function(string)=} opt_onError Function that will be called when sharing will complete.
- * @param {boolean=} opt_asBase64 Share as base64 file.
- * @param {number=} opt_width Image width.
- * @param {number=} opt_height Image height.
- * @param {number=} opt_quality Image quality in ratio 0-1.
- * @param {boolean=} opt_forceTransparentWhite Define, should we force transparent to white background.
- * @param {string=} opt_filename file name to save.
- */
-acgraph.vector.Stage.prototype.shareAsJpg = function(onSuccess, opt_onError, opt_asBase64, opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename) {
-  var type = acgraph.type();
-  if (type == acgraph.StageType.SVG) {
-    var data = {};
-    this.addJpgData_(data, opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename);
-    this.shareUrl_(acgraph.vector.Stage.ExportType.JPG, data, !!opt_asBase64, true, onSuccess, opt_onError);
-  } else {
-    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
-  }
-};
-
-
-/**
- * @param {Object} data Object with data.
- * @param {(string|number)=} opt_paperSizeOrWidth Paper Size or width.
- * @param {(boolean|string)=} opt_landscapeOrHeight Landscape or height.
- * @param {string=} opt_filename file name to save.
- * @private
- */
-acgraph.vector.Stage.prototype.addSvgData_ = function(data, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename) {
-  data['data'] = this.toSvg(opt_paperSizeOrWidth, opt_landscapeOrHeight);
-  data['dataType'] = 'svg';
-  data['responseType'] = 'file';
-  if (goog.isDef(opt_filename)) data['file-name'] = opt_filename;
-};
-
-
-/**
- * Share current stage as svg and return link to shared image.
- * @param {function(string)} onSuccess Function that will be called when sharing will complete.
- * @param {function(string)=} opt_onError Function that will be called when sharing will complete.
- * @param {boolean=} opt_asBase64 Share as base64 file.
- * @param {(string|number)=} opt_paperSizeOrWidth Paper Size or width.
- * @param {(boolean|string)=} opt_landscapeOrHeight Landscape or height.
- * @param {string=} opt_filename file name to save.
- */
-acgraph.vector.Stage.prototype.shareAsSvg = function(onSuccess, opt_onError, opt_asBase64, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename) {
-  var type = acgraph.type();
-  if (type == acgraph.StageType.SVG) {
-    var data = {};
-    this.addSvgData_(data, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename);
-    this.shareUrl_(acgraph.vector.Stage.ExportType.SVG, data, !!opt_asBase64, true, onSuccess, opt_onError);
-  } else {
-    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
-  }
-};
-
-
-/**
- * @param {Object} data Object with data.
- * @param {(number|string)=} opt_paperSizeOrWidth Any paper format like 'a0', 'tabloid', 'b4', etc.
- * @param {(number|boolean)=} opt_landscapeOrHeight Landscape or height.
- * @param {number=} opt_x Offset X.
- * @param {number=} opt_y Offset Y.
- * @param {string=} opt_filename file name to save.
- * @private
- */
-acgraph.vector.Stage.prototype.addPdfData_ = function(data, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename) {
-  var formatSize = null;
-  var svgStr;
-
-  if (goog.isDef(opt_paperSizeOrWidth)) {
-    if (goog.isNumber(opt_paperSizeOrWidth)) {
-      data['pdf-width'] = opt_paperSizeOrWidth;
-      data['pdf-height'] = goog.isNumber(opt_landscapeOrHeight) ? opt_landscapeOrHeight : this.height();
-    } else if (goog.isString(opt_paperSizeOrWidth)) {
-      data['pdf-size'] = opt_paperSizeOrWidth || acgraph.vector.PaperSize.A4;
-      data['landscape'] = !!opt_landscapeOrHeight;
-      formatSize = acgraph.utils.exporting.PdfPaperSize[data['pdf-size']];
-      if (data['landscape'])
-        formatSize = {
-          width: formatSize.height,
-          height: formatSize.width
-        };
-    } else {
-      data['pdf-width'] = this.width();
-      data['pdf-height'] = this.height();
-    }
-  } else {
-    data['pdf-width'] = this.width();
-    data['pdf-height'] = this.height();
-  }
-
-  if (goog.isDef(opt_x)) data['pdf-x'] = opt_x;
-  if (goog.isDef(opt_y)) data['pdf-y'] = opt_y;
-  if (goog.isDef(opt_filename)) data['file-name'] = opt_filename;
-
-  if (formatSize) {
-    var proportionalSize = acgraph.math.fitWithProportion(formatSize.width, formatSize.height, /** @type {number} */(this.width()), /** @type {number} */(this.height()));
-    proportionalSize[0] -= opt_x || 0;
-    proportionalSize[1] -= opt_y || 0;
-    svgStr = this.toSvg(proportionalSize[0], proportionalSize[1]);
-  } else {
-    svgStr = this.toSvg(data['pdf-width'], data['pdf-height']);
-  }
-
-  data['data'] = svgStr;
-  data['dataType'] = 'svg';
-  data['responseType'] = 'file';
-};
-
-
-/**
- * Share current stage as pdf and return link to shared image.
- * @param {function(string)} onSuccess Function that will be called when sharing will complete.
- * @param {function(string)=} opt_onError Function that will be called when sharing will complete.
- * @param {boolean=} opt_asBase64 Share as base64 file.
- * @param {(number|string)=} opt_paperSizeOrWidth Any paper format like 'a0', 'tabloid', 'b4', etc.
- * @param {(number|boolean)=} opt_landscapeOrHeight Landscape or height.
- * @param {number=} opt_x Offset X.
- * @param {number=} opt_y Offset Y.
- * @param {string=} opt_filename file name to save.
- */
-acgraph.vector.Stage.prototype.shareAsPdf = function(onSuccess, opt_onError, opt_asBase64, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename) {
-  var type = acgraph.type();
-  if (type == acgraph.StageType.SVG) {
-    var data = {};
-    this.addPdfData_(data, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename);
-    this.shareUrl_(acgraph.vector.Stage.ExportType.PDF, data, !!opt_asBase64, true, onSuccess, opt_onError);
-  } else {
-    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
-  }
-};
-
-
-/**
- * Returns base64 string for png.
- * @param {function(string)} onSuccess Function that will be called when sharing will complete.
- * @param {function(string)=} opt_onError Function that will be called when sharing will complete.
- * @param {number=} opt_width Image width.
- * @param {number=} opt_height Image height.
- * @param {number=} opt_quality Image quality in ratio 0-1.
- */
-acgraph.vector.Stage.prototype.getPngBase64String = function(onSuccess, opt_onError, opt_width, opt_height, opt_quality) {
-  var type = acgraph.type();
-  if (type == acgraph.StageType.SVG) {
-    var data = {};
-    this.addPngData_(data, opt_width, opt_height, opt_quality);
-    this.shareUrl_(acgraph.vector.Stage.ExportType.PNG, data, true, false, onSuccess, opt_onError);
-  } else {
-    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
-  }
-};
-
-
-/**
- * Returns base64 string for jpg.
- * @param {function(string)} onSuccess Function that will be called when sharing will complete.
- * @param {function(string)=} opt_onError Function that will be called when sharing will complete.
- * @param {number=} opt_width Image width.
- * @param {number=} opt_height Image height.
- * @param {number=} opt_quality Image quality in ratio 0-1.
- * @param {boolean=} opt_forceTransparentWhite Define, should we force transparent to white background.
- */
-acgraph.vector.Stage.prototype.getJpgBase64String = function(onSuccess, opt_onError, opt_width, opt_height, opt_quality, opt_forceTransparentWhite) {
-  var type = acgraph.type();
-  if (type == acgraph.StageType.SVG) {
-    var data = {};
-    this.addJpgData_(data, opt_width, opt_height, opt_quality, opt_forceTransparentWhite);
-    this.shareUrl_(acgraph.vector.Stage.ExportType.JPG, data, true, false, onSuccess, opt_onError);
-  } else {
-    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
-  }
-};
-
-
-/**
- * Returns base64 string for svg.
- * @param {function(string)} onSuccess Function that will be called when sharing will complete.
- * @param {function(string)=} opt_onError Function that will be called when sharing will complete.
- * @param {(string|number)=} opt_paperSizeOrWidth Paper Size or width.
- * @param {(boolean|string)=} opt_landscapeOrHeight Landscape or height.
- */
-acgraph.vector.Stage.prototype.getSvgBase64String = function(onSuccess, opt_onError, opt_paperSizeOrWidth, opt_landscapeOrHeight) {
-  var type = acgraph.type();
-  if (type == acgraph.StageType.SVG) {
-    var data = {};
-    this.addSvgData_(data, opt_paperSizeOrWidth, opt_landscapeOrHeight);
-    this.shareUrl_(acgraph.vector.Stage.ExportType.SVG, data, true, false, onSuccess, opt_onError);
-  } else {
-    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
-  }
-};
-
-
-/**
- * Returns base64 string for pdf.
- * @param {function(string)} onSuccess Function that will be called when sharing will complete.
- * @param {function(string)=} opt_onError Function that will be called when sharing will complete.
- * @param {(number|string)=} opt_paperSizeOrWidth Any paper format like 'a0', 'tabloid', 'b4', etc.
- * @param {(number|boolean)=} opt_landscapeOrHeight Landscape or height.
- * @param {number=} opt_x Offset X.
- * @param {number=} opt_y Offset Y.
- */
-acgraph.vector.Stage.prototype.getPdfBase64String = function(onSuccess, opt_onError, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y) {
-  var type = acgraph.type();
-  if (type == acgraph.StageType.SVG) {
-    var data = {};
-    this.addPdfData_(data, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y);
-    this.shareUrl_(acgraph.vector.Stage.ExportType.PDF, data, true, false, onSuccess, opt_onError);
-  } else {
-    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
-  }
-};
-
-
-/**
- * Save current stage as PNG Image.
- * @param {number=} opt_width Image width.
- * @param {number=} opt_height Image height.
- * @param {number=} opt_quality Image quality in ratio 0-1.
- * @param {string=} opt_filename file name to save.
- */
-acgraph.vector.Stage.prototype.saveAsPng = function(opt_width, opt_height, opt_quality, opt_filename) {
-  var type = acgraph.type();
-  if (type == acgraph.StageType.SVG) {
-    var options = {};
-    this.addPngData_(options, opt_width, opt_height, opt_quality, opt_filename);
-    acgraph.sendRequestToExportServer(acgraph.exportServer + '/png', options);
-  } else {
-    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
-  }
-};
-
-
-/**
- * Save current stage as PNG Image.
- * @param {number=} opt_width Image width.
- * @param {number=} opt_height Image height.
- * @param {number=} opt_quality Image quality in ratio 0-1.
- * @param {boolean=} opt_forceTransparentWhite Define, should we force transparent to white background.
- * @param {string=} opt_filename file name to save.
- */
-acgraph.vector.Stage.prototype.saveAsJpg = function(opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename) {
-  var type = acgraph.type();
-  if (type == acgraph.StageType.SVG) {
-    var options = {};
-    this.addJpgData_(options, opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename);
-    acgraph.sendRequestToExportServer(acgraph.exportServer + '/jpg', options);
-  } else {
-    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
-  }
-};
-
-
-/**
- * Save current stage as PDF Document.
- * @param {(number|string)=} opt_paperSizeOrWidth Any paper format like 'a0', 'tabloid', 'b4', etc.
- * @param {(number|boolean)=} opt_landscapeOrHeight Landscape or height.
- * @param {number=} opt_x Offset X.
- * @param {number=} opt_y Offset Y.
- * @param {string=} opt_filename file name to save.
- */
-acgraph.vector.Stage.prototype.saveAsPdf = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename) {
-  var type = acgraph.type();
-  if (type == acgraph.StageType.SVG) {
-    var options = {};
-    this.addPdfData_(options, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename);
-    acgraph.sendRequestToExportServer(acgraph.exportServer + '/pdf', options);
-  } else {
-    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
-  }
-};
-
-
-/**
- * Save stage as SVG Image.
- * @param {(string|number)=} opt_paperSizeOrWidth Paper Size or width.
- * @param {(boolean|string)=} opt_landscapeOrHeight Landscape or height.
- * @param {string=} opt_filename file name to save.
- */
-acgraph.vector.Stage.prototype.saveAsSvg = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename) {
-  var type = acgraph.type();
-  if (type == acgraph.StageType.SVG) {
-    var options = {};
-    this.addSvgData_(options, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename);
-    acgraph.sendRequestToExportServer(acgraph.exportServer + '/svg', options);
-  } else {
-    alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
-  }
-};
-
-
-/**
- * Print stage.
- * @param {(string|number)=} opt_paperSizeOrWidth Paper Size or width.
- * @param {(boolean|string)=} opt_landscapeOrHeight Landscape or height.
- */
-acgraph.vector.Stage.prototype.print = function(opt_paperSizeOrWidth, opt_landscapeOrHeight) {
-  acgraph.utils.exporting.print(this, opt_paperSizeOrWidth, opt_landscapeOrHeight);
-};
-
-
-/**
- * Returns SVG string if type of content SVG otherwise returns empty string.
- * @param {(string|number)=} opt_paperSizeOrWidth Paper Size or width.
- * @param {(boolean|string|number)=} opt_landscapeOrHeight Landscape or height.
- * @return {string}
- */
-acgraph.vector.Stage.prototype.toSvg = function(opt_paperSizeOrWidth, opt_landscapeOrHeight) {
-  var type = acgraph.type();
-  if (type != acgraph.StageType.SVG) return '';
-
-  var result = '';
-
-  if (goog.isDef(opt_paperSizeOrWidth) || goog.isDef(opt_landscapeOrHeight)) {
-    var size = acgraph.vector.normalizePageSize(opt_paperSizeOrWidth, opt_landscapeOrHeight);
-    var sourceDiv = goog.dom.getParentElement(this.domElement());
-    var sourceWidth = goog.style.getStyle(sourceDiv, 'width');
-    var sourceHeight = goog.style.getStyle(sourceDiv, 'height');
-
-    this.resize(size.width, size.height);
-
-    result = this.serializeToString_(this.domElement());
-
-    this.resize(sourceWidth, sourceHeight);
-  } else {
-    acgraph.getRenderer().setStageSize(this.domElement(),
-        /** @type {number|string} */(this.width()),
-        /** @type {number|string} */(this.height()));
-    result = this.serializeToString_(this.domElement());
-    acgraph.getRenderer().setStageSize(this.domElement(), '100%', '100%');
-  }
-
-  return '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + result;
-};
-
-
-/**
- * @param {Element} node
- * @return {string}
- * @private
- */
-acgraph.vector.Stage.prototype.serializeToString_ = function(node) {
-  var result = '';
-
-  if (node) {
-    var serializer = new XMLSerializer();
-    result = serializer.serializeToString(node);
-  }
-
-  return result;
 };
 
 
@@ -2523,13 +2113,13 @@ acgraph.vector.Stage.prototype.removeAllListeners = function(opt_type) {
  */
 acgraph.vector.Stage.prototype.handleMouseEvent_ = function(e) {
   var event = new acgraph.events.BrowserEvent(e, this);
-  if (event['target'] instanceof acgraph.vector.Element) {
+  if (acgraph.utils.instanceOf(event['target'], acgraph.vector.Element)) {
     var el = /** @type {acgraph.vector.Element} */(event['target']);
     el.dispatchEvent(event);
     var type = event['type'];
     if (event.defaultPrevented) e.preventDefault();
     // we do the binding and unbinding of event only if relatedTarget doesn't belong to the same stage
-    if (!(event['relatedTarget'] instanceof acgraph.vector.Element) ||
+    if (!(acgraph.utils.instanceOf(event['relatedTarget'], acgraph.vector.Element)) ||
         (/** @type {acgraph.vector.Element} */(event['relatedTarget'])).getStage() != this) {
       if (type == acgraph.events.EventType.MOUSEOVER) {
         this.eventHandler_.listen(goog.dom.getDocument(), acgraph.events.EventType.MOUSEMOVE, this.handleMouseEvent_, false);
@@ -2580,15 +2170,25 @@ acgraph.vector.Stage.prototype.dispose = function() {
 acgraph.vector.Stage.prototype.disposeInternal = function() {
   acgraph.vector.Stage.base(this, 'disposeInternal');
 
+  goog.object.forEach(this.charts, function(value, key, arr) {
+    value.remove();
+    delete arr[value];
+  });
+
   goog.dispose(this.eventHandler_);
   this.eventHandler_ = null;
 
-  goog.dispose(this.rootLayer_);
-  this.renderInternal();
-  delete this.rootLayer_;
-
   goog.dispose(this.defs_);
   delete this.defs_;
+
+  goog.dispose(this.rootLayer_);
+  this.renderInternal();
+
+  this.rootLayer_.finalizeDisposing();
+  delete this.rootLayer_;
+
+  var id = acgraph.utils.IdGenerator.getInstance().identify(this, acgraph.utils.IdGenerator.ElementTypePrefix.STAGE);
+  delete goog.global['acgraph'].stages[id];
 
   acgraph.unregister(this);
 
@@ -2596,6 +2196,8 @@ acgraph.vector.Stage.prototype.disposeInternal = function() {
   this.container_ = null;
   delete this.internalContainer_;
   this.domElement_ = null;
+
+  acgraph.getRenderer().disposeMeasurement();
 
   if (this.credits_) {
     this.credits_.dispose();
@@ -2646,24 +2248,6 @@ acgraph.vector.Stage.prototype.disposeInternal = function() {
   proto['html'] = proto.html;
   proto['image'] = proto.image;
   proto['data'] = proto.data;
-  proto['saveAsPNG'] = proto.saveAsPng;
-  proto['saveAsJPG'] = proto.saveAsJpg;
-  proto['saveAsPDF'] = proto.saveAsPdf;
-  proto['saveAsSVG'] = proto.saveAsSvg;
-  proto['saveAsPng'] = proto.saveAsPng;
-  proto['saveAsJpg'] = proto.saveAsJpg;
-  proto['saveAsPdf'] = proto.saveAsPdf;
-  proto['saveAsSvg'] = proto.saveAsSvg;
-  proto['shareAsPng'] = proto.shareAsPng;
-  proto['shareAsJpg'] = proto.shareAsJpg;
-  proto['shareAsPdf'] = proto.shareAsPdf;
-  proto['shareAsSvg'] = proto.shareAsSvg;
-  proto['getPngBase64String'] = proto.getPngBase64String;
-  proto['getJpgBase64String'] = proto.getJpgBase64String;
-  proto['getSvgBase64String'] = proto.getSvgBase64String;
-  proto['getPdfBase64String'] = proto.getPdfBase64String;
-  proto['print'] = proto.print;
-  proto['toSvg'] = proto.toSvg;
   proto['pattern'] = proto.pattern;
   proto['hatchFill'] = proto.hatchFill;
   proto['clearDefs'] = proto.clearDefs;
@@ -2716,9 +2300,8 @@ acgraph.vector.Stage.prototype.disposeInternal = function() {
   proto['removeAllListeners'] = proto.removeAllListeners;
   proto['title'] = proto.title;
   proto['desc'] = proto.desc;
-  goog.exportSymbol('acgraph.events.EventType.RENDER_START', acgraph.vector.Stage.EventType.RENDER_START);
-  goog.exportSymbol('acgraph.events.EventType.RENDER_FINISH', acgraph.vector.Stage.EventType.RENDER_FINISH);
-  goog.exportSymbol('acgraph.vector.Stage.EventType.STAGE_RESIZE', acgraph.vector.Stage.EventType.STAGE_RESIZE);
-  goog.exportSymbol('acgraph.vector.Stage.EventType.STAGE_RENDERED', acgraph.vector.Stage.EventType.STAGE_RENDERED);
+  proto['getCharts'] = proto.getCharts;
+  proto['fullScreen'] = proto.fullScreen;
+  proto['isFullScreenAvailable'] = proto.isFullScreenAvailable;
 })();
 //endregion

@@ -1,5 +1,6 @@
 goog.provide('acgraph.vector.svg.Renderer');
 goog.require('acgraph.utils.IdGenerator');
+goog.require('acgraph.vector.PathBase');
 goog.require('acgraph.vector.Renderer');
 goog.require('goog.dom');
 goog.require('goog.math.Line');
@@ -16,10 +17,9 @@ goog.require('goog.userAgent');
  * @extends {acgraph.vector.Renderer}
  */
 acgraph.vector.svg.Renderer = function() {
-  goog.base(this);
+  acgraph.vector.svg.Renderer.base(this, 'constructor');
 };
-goog.inherits(acgraph.vector.svg.Renderer,
-    acgraph.vector.Renderer);
+goog.inherits(acgraph.vector.svg.Renderer, acgraph.vector.Renderer);
 goog.addSingletonGetter(acgraph.vector.svg.Renderer);
 
 
@@ -101,57 +101,10 @@ acgraph.vector.svg.Renderer.prototype.imageLoader_ = null;
  * @private
  */
 acgraph.vector.svg.Renderer.prototype.createSVGElement_ = function(tag) {
-  return goog.dom.getDocument().createElementNS(
+  return goog.global['document'].createElementNS(
       acgraph.vector.svg.Renderer.SVG_NS_,
       tag
   );
-};
-
-
-/**
- * Sets a given attribute with a given value for a given element.
- * @param {Element} el The element.
- * @param {string} key The name of the attribute.
- * @param {(string|number)} value The value of the attribute.
- * @private
- */
-acgraph.vector.svg.Renderer.prototype.setAttribute_ = function(el, key, value) {
-  el.setAttribute(key, value);
-};
-
-
-/**
- * Removes an attribute with a given name from a given element.
- * @param {Element} el The element.
- * @param {string} key The name of the attribute.
- * @private
- */
-acgraph.vector.svg.Renderer.prototype.removeAttribute_ = function(el, key) {
-  el.removeAttribute(key);
-};
-
-
-/**
- * Sets attributes to a given element. They are set as  a hash array, where each key is a name of a particular attribute.
- * @param {Element} el The element.
- * @param {Object} attrs The hash array of attributes.
- * @private
- */
-acgraph.vector.svg.Renderer.prototype.setAttributes_ = function(el, attrs) {
-  goog.object.forEach(attrs, function(val, key) {
-    this.setAttribute_(el, key, val);
-  }, this);
-};
-
-
-/**
- * @param {Element} el Target element.
- * @param {string} key Attribute key.
- * @return {*} Attribute value.
- * @private
- */
-acgraph.vector.svg.Renderer.prototype.getAttribute_ = function(el, key) {
-  return el.getAttribute(key);
 };
 
 
@@ -167,19 +120,41 @@ acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
   this.measurement_ = this.createSVGElement_('svg');
   this.measurementText_ = this.createTextElement();
   this.measurementTextNode_ = this.createTextNode('');
+  this.mesurmentDef_ = this.createDefsElement();
 
   goog.dom.appendChild(this.measurementText_, this.measurementTextNode_);
   goog.dom.appendChild(this.measurement_, this.measurementText_);
-  goog.dom.appendChild(goog.dom.getDocument().body, this.measurement_);
+  goog.dom.appendChild(this.measurement_, this.mesurmentDef_);
+  goog.dom.appendChild(goog.global['document'].body, this.measurement_);
 
   this.measurementLayerForBBox_ = this.createLayerElement();
   goog.dom.appendChild(this.measurement_, this.measurementLayerForBBox_);
 
   //We need set 'display: block' for <svg> element to prevent scrollbar on 100% height of parent container (see DVF-620)
-  this.setAttributes_(this.measurement_, {'display': 'block', 'width': 0, 'height': 0});
+  this.setAttrs(this.measurement_, {'display': 'block', 'width': 0, 'height': 0});
 
   this.measurementGroupNode_ = this.createLayerElement();
   goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
+};
+
+
+/**
+ * Measurements disposing.
+ */
+acgraph.vector.svg.Renderer.prototype.disposeMeasurement = function() {
+  goog.dom.removeNode(this.measurementText_);
+  goog.dom.removeNode(this.measurementTextNode_);
+  goog.dom.removeNode(this.mesurmentDef_);
+  goog.dom.removeNode(this.measurementLayerForBBox_);
+  goog.dom.removeNode(this.measurementGroupNode_);
+  goog.dom.removeNode(this.measurement_);
+
+  this.measurementText_ = null;
+  this.measurementTextNode_ = null;
+  this.mesurmentDef_ = null;
+  this.measurementLayerForBBox_ = null;
+  this.measurementGroupNode_ = null;
+  this.measurement_ = null;
 };
 
 
@@ -210,32 +185,32 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
   }
 
   style['fontStyle'] ?
-      this.setAttribute_(this.measurementText_, 'font-style', style['fontStyle']) :
-      this.removeAttribute_(this.measurementText_, 'font-style');
+      this.setAttr(this.measurementText_, 'font-style', style['fontStyle']) :
+      this.removeAttr(this.measurementText_, 'font-style');
 
   style['fontVariant'] ?
-      this.setAttribute_(this.measurementText_, 'font-variant', style['fontVariant']) :
-      this.removeAttribute_(this.measurementText_, 'font-variant');
+      this.setAttr(this.measurementText_, 'font-variant', style['fontVariant']) :
+      this.removeAttr(this.measurementText_, 'font-variant');
 
   style['fontFamily'] ?
-      this.setAttribute_(this.measurementText_, 'font-family', style['fontFamily']) :
-      this.removeAttribute_(this.measurementText_, 'font-family');
+      this.setAttr(this.measurementText_, 'font-family', style['fontFamily']) :
+      this.removeAttr(this.measurementText_, 'font-family');
 
   style['fontSize'] ?
-      this.setAttribute_(this.measurementText_, 'font-size', style['fontSize']) :
-      this.removeAttribute_(this.measurementText_, 'font-size');
+      this.setAttr(this.measurementText_, 'font-size', style['fontSize']) :
+      this.removeAttr(this.measurementText_, 'font-size');
 
   style['fontWeight'] ?
-      this.setAttribute_(this.measurementText_, 'font-weight', style['fontWeight']) :
-      this.removeAttribute_(this.measurementText_, 'font-weight');
+      this.setAttr(this.measurementText_, 'font-weight', style['fontWeight']) :
+      this.removeAttr(this.measurementText_, 'font-weight');
 
   style['letterSpacing'] ?
-      this.setAttribute_(this.measurementText_, 'letter-spacing', style['letterSpacing']) :
-      this.removeAttribute_(this.measurementText_, 'letter-spacing');
+      this.setAttr(this.measurementText_, 'letter-spacing', style['letterSpacing']) :
+      this.removeAttr(this.measurementText_, 'letter-spacing');
 
   style['decoration'] ?
-      this.setAttribute_(this.measurementText_, 'text-decoration', style['decoration']) :
-      this.removeAttribute_(this.measurementText_, 'text-decoration');
+      this.setAttr(this.measurementText_, 'text-decoration', style['decoration']) :
+      this.removeAttr(this.measurementText_, 'text-decoration');
 
   this.measurementTextNode_.nodeValue = text;
   var bbox = this.measurementText_['getBBox']();
@@ -250,8 +225,67 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
 };
 
 
+/**
+ * Measure text element in dom.
+ * @param {acgraph.vector.Text} element .
+ * @return {goog.math.Rect}
+ */
+acgraph.vector.svg.Renderer.prototype.measureTextDom = function(element) {
+  if (!this.measurement_)
+    this.createMeasurement();
+  if (!element.defragmented)
+    element.textDefragmentation();
+
+  var parent, id;
+  var path = /** @type {acgraph.vector.Path} */(element.path());
+
+  if (!path.domElement()) {
+    path.createDom(true);
+  }
+  this.setPathProperties(path);
+
+
+  parent = path.domElement().parentNode;
+  goog.dom.appendChild(this.mesurmentDef_, path.domElement());
+
+  if (!parent) {
+    id = acgraph.utils.IdGenerator.getInstance().identify(path.domElement(), acgraph.utils.IdGenerator.ElementTypePrefix.PATH);
+    this.setIdInternal(path.domElement(), id);
+  }
+
+  if (!element.domElement()) {
+    element.createDom(true);
+  }
+
+  element.renderTextPath();
+  element.renderData();
+  element.renderStyle();
+  element.renderPosition();
+  element.renderTransformation();
+
+  id = acgraph.utils.IdGenerator.getInstance().identify(path.domElement(), acgraph.utils.IdGenerator.ElementTypePrefix.PATH);
+  var pathPrefix = acgraph.getReference();
+  element.textPath.setAttributeNS(acgraph.vector.svg.Renderer.XLINK_NS_, 'href', pathPrefix + '#' + id);
+
+  var domElement = element.domElement();
+
+  parent = domElement.parentNode;
+  goog.dom.appendChild(this.measurement_, domElement);
+
+  var bbox = element.domElement()['getBBox']();
+
+  if (parent) {
+    goog.dom.appendChild(parent, domElement);
+  }
+
+  return new goog.math.Rect(bbox.x, bbox.y, bbox.width, bbox.height);
+};
+
+
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.getBBox = function(element, text, style) {
+  if (!this.measurement_) this.createMeasurement();
+
   var boundsCache = this.textBoundsCache;
   var styleHash = this.getStyleHash(style);
   var styleCache = boundsCache[styleHash];
@@ -368,43 +402,17 @@ acgraph.vector.svg.Renderer.prototype.isImageLoading = function() {
 //
 //----------------------------------------------------------------------------------------------------------------------
 /**
- * Serializes a given Path and converts its data to a String which can be used in SVG.
- * @param {acgraph.vector.PathBase} path The Path to serialize.
- * @return {?string} A representation which can be used in SVG.
- * @private
+ * @const {Object<acgraph.vector.PathBase.Segment, string>}
  */
-acgraph.vector.svg.Renderer.prototype.getSvgPath_ = function(path) {
-  if (path.isEmpty()) return null;
-  /** @type {!Array.<string|number>} */
-  var list = [];
-  path.forEachSegment(function(segment, args) {
-    switch (segment) {
-      case acgraph.vector.PathBase.Segment.MOVETO:
-        list.push('M');
-        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, args, list);
-        break;
-      case acgraph.vector.PathBase.Segment.LINETO:
-        list.push('L');
-        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, args, list);
-        break;
-      case acgraph.vector.PathBase.Segment.CURVETO:
-        list.push('C');
-        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, args, list);
-        break;
-      case acgraph.vector.PathBase.Segment.ARCTO:
-        /** @type {number} */
-        var extent = args[3];
-        list.push('A', args[0], args[1],
-            0, Math.abs(extent) > 180 ? 1 : 0, extent > 0 ? 1 : 0,
-            args[4], args[5]);
-        break;
-      case acgraph.vector.PathBase.Segment.CLOSE:
-        list.push('Z');
-        break;
-    }
-  });
-  return list.join(' ');
-};
+acgraph.vector.svg.Renderer.prototype.pathSegmentNamesMap = (function() {
+  var map = {};
+  map[acgraph.vector.PathBase.Segment.MOVETO] = 'M';
+  map[acgraph.vector.PathBase.Segment.LINETO] = 'L';
+  map[acgraph.vector.PathBase.Segment.CURVETO] = 'C';
+  map[acgraph.vector.PathBase.Segment.ARCTO] = 'A';
+  map[acgraph.vector.PathBase.Segment.CLOSE] = 'Z';
+  return map;
+})();
 
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -525,8 +533,8 @@ acgraph.vector.svg.Renderer.prototype.createStageElement = function() {
   /** @type {Element} */
   var element = this.createSVGElement_('svg');
   if (!goog.userAgent.IE)
-    this.setAttribute_(element, 'xmlns', acgraph.vector.svg.Renderer.SVG_NS_);
-  this.setAttribute_(element, 'border', '0');
+    this.setAttr(element, 'xmlns', acgraph.vector.svg.Renderer.SVG_NS_);
+  this.setAttr(element, 'border', '0');
   return element;
 };
 
@@ -571,12 +579,6 @@ acgraph.vector.svg.Renderer.prototype.createLayerElement = function() {
 
 
 /** @inheritDoc */
-acgraph.vector.svg.Renderer.prototype.createRectElement = function() {
-  return this.createSVGElement_('rect');
-};
-
-
-/** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.createCircleElement = function() {
   return this.createSVGElement_('circle');
 };
@@ -607,6 +609,12 @@ acgraph.vector.svg.Renderer.prototype.createTextElement = function() {
 
 
 /** @inheritDoc */
+acgraph.vector.svg.Renderer.prototype.createTextPathElement = function() {
+  return this.createSVGElement_('textPath');
+};
+
+
+/** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.createTextSegmentElement = function() {
   return this.createSVGElement_('tspan');
 };
@@ -621,13 +629,57 @@ acgraph.vector.svg.Renderer.prototype.createTextNode = function(text) {
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setFillPatternProperties = function(element) {
   var bounds = element.getBoundsWithoutTransform();
-  this.setAttributes_(element.domElement(), {
+  this.setAttrs(element.domElement(), {
     'x': bounds.left,
     'y': bounds.top,
     'width': bounds.width,
     'height': bounds.height,
     'patternUnits': 'userSpaceOnUse'
   });
+};
+
+
+/**
+ * Creates and returns normalized preserveAspectRatio.
+ * @param {!acgraph.vector.Image} element
+ * @return {string}
+ */
+acgraph.vector.svg.Renderer.prototype.getPreserveAspectRatio = function(element) {
+  var align;
+  switch (element.align()) {
+    case 'x-min-y-min':
+      align = 'xMinYMin';
+      break;
+    case 'x-mid-y-min':
+      align = 'xMidYMin';
+      break;
+    case 'x-max-y-min':
+      align = 'xMaxYMin';
+      break;
+    case 'x-min-y-mid':
+      align = 'xMinYMid';
+      break;
+    case 'x-mid-y-mid':
+      align = 'xMidYMid';
+      break;
+    case 'x-max-y-mid':
+      align = 'xMaxYMid';
+      break;
+    case 'x-min-y-max':
+      align = 'xMinYMax';
+      break;
+    case 'x-mid-y-max':
+      align = 'xMidYMax';
+      break;
+    case 'x-max-y-max':
+      align = 'xMaxYMax';
+      break;
+    case 'none':
+    default:
+      align = 'none';
+  }
+
+  return align + ' ' + element.fittingMode();
 };
 
 
@@ -642,13 +694,13 @@ acgraph.vector.svg.Renderer.prototype.setImageProperties = function(element) {
   //changes in the image, for example, its size does not change.
   var src = /** @type {string} */(element.src() || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
   var domElement = element.domElement();
-  this.setAttributes_(domElement, {
+  this.setAttrs(domElement, {
     'x': bounds.left,
     'y': bounds.top,
     'width': bounds.width,
     'height': bounds.height,
     'image-rendering': 'optimizeQuality',
-    'preserveAspectRatio': element.align() + ' ' + element.fittingMode(),
+    'preserveAspectRatio': this.getPreserveAspectRatio(element),
     'opacity': element.opacity()
   });
 
@@ -667,8 +719,8 @@ acgraph.vector.svg.Renderer.prototype.setCursorProperties = function(element, cu
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setTextPosition = function(element) {
   var domElement = element.domElement();
-  this.setAttribute_(domElement, 'x', element.calcX);
-  this.setAttribute_(domElement, 'y', element.calcY);
+  this.setAttr(domElement, 'x', element.calcX);
+  this.setAttr(domElement, 'y', element.calcY);
 };
 
 
@@ -689,7 +741,25 @@ acgraph.vector.svg.Renderer.prototype.setTextData = function(element) {
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setTextProperties = function(element) {
   var style = element.style();
+  var path = /** @type {acgraph.vector.Path} */(element.path());
   var domElement = element.domElement();
+
+  if (path && element.getStage()) {
+    var defs = /** @type {!acgraph.vector.svg.Defs} */(element.getStage().getDefs());
+
+    path.parent(defs);
+    path.render();
+    path.clearDirtyState(acgraph.vector.Element.DirtyState.ALL);
+    var pathElement = path.domElement();
+    goog.dom.appendChild(defs.domElement(), pathElement);
+
+    var id = acgraph.utils.IdGenerator.getInstance().identify(pathElement, acgraph.utils.IdGenerator.ElementTypePrefix.PATH);
+    this.setIdInternal(pathElement, id);
+
+    var pathPrefix = acgraph.getReference();
+    element.textPath.setAttributeNS(acgraph.vector.svg.Renderer.XLINK_NS_, 'href', pathPrefix + '#' + id);
+  }
+
 
   if (!element.selectable()) {
     domElement.style['-webkit-touch-callout'] = 'none';
@@ -701,8 +771,8 @@ acgraph.vector.svg.Renderer.prototype.setTextProperties = function(element) {
     domElement.style['user-select'] = 'none';
 
     if ((goog.userAgent.IE && goog.userAgent.DOCUMENT_MODE == 9) || goog.userAgent.OPERA) {
-      this.setAttribute_(domElement, 'unselectable', 'on');
-      this.setAttribute_(domElement, 'onselectstart', 'return false;');
+      this.setAttr(domElement, 'unselectable', 'on');
+      this.setAttr(domElement, 'onselectstart', 'return false;');
     }
   } else {
     domElement.style['-webkit-touch-callout'] = '';
@@ -714,79 +784,79 @@ acgraph.vector.svg.Renderer.prototype.setTextProperties = function(element) {
     domElement.style['user-select'] = '';
 
     if ((goog.userAgent.IE && goog.userAgent.DOCUMENT_MODE == 9) || goog.userAgent.OPERA) {
-      this.removeAttribute_(domElement, 'unselectable');
-      this.removeAttribute_(domElement, 'onselectstart');
+      this.removeAttr(domElement, 'unselectable');
+      this.removeAttr(domElement, 'onselectstart');
     }
   }
 
   //Improves font display in Opera.
-  //if (goog.userAgent.OPERA) this.setAttribute_(domElement, 'text-rendering', 'geometricPrecision');
+  //if (goog.userAgent.OPERA) this.setAttr(domElement, 'text-rendering', 'geometricPrecision');
 
   //like segment style
   if (style['fontStyle'])
-    this.setAttribute_(domElement, 'font-style', style['fontStyle']);
+    this.setAttr(domElement, 'font-style', style['fontStyle']);
   else
-    this.removeAttribute_(domElement, 'font-style');
+    this.removeAttr(domElement, 'font-style');
 
   if (style.fontVariant) {
     if (goog.userAgent.GECKO) {
       domElement.style['font-variant'] = style['fontVariant'];
     } else {
-      this.setAttribute_(domElement, 'font-variant', style['fontVariant']);
+      this.setAttr(domElement, 'font-variant', style['fontVariant']);
     }
   } else {
     if (goog.userAgent.GECKO) {
       domElement.style['font-variant'] = '';
     } else {
-      this.removeAttribute_(domElement, 'font-variant');
+      this.removeAttr(domElement, 'font-variant');
     }
   }
 
   if (style['fontFamily'])
-    this.setAttribute_(domElement, 'font-family', style['fontFamily']);
+    this.setAttr(domElement, 'font-family', style['fontFamily']);
   else
-    this.removeAttribute_(domElement, 'font-family');
+    this.removeAttr(domElement, 'font-family');
 
   if (style['fontSize'])
-    this.setAttribute_(domElement, 'font-size', style['fontSize']);
+    this.setAttr(domElement, 'font-size', style['fontSize']);
   else
-    this.removeAttribute_(domElement, 'font-size');
+    this.removeAttr(domElement, 'font-size');
 
   if (style['fontWeight'])
-    this.setAttribute_(domElement, 'font-weight', style['fontWeight']);
+    this.setAttr(domElement, 'font-weight', style['fontWeight']);
   else
-    this.removeAttribute_(domElement, 'font-weight');
+    this.removeAttr(domElement, 'font-weight');
 
   if (style['color'])
-    this.setAttribute_(domElement, 'fill', style['color']);
+    this.setAttr(domElement, 'fill', style['color']);
   else
-    this.removeAttribute_(domElement, 'fill');
+    this.removeAttr(domElement, 'fill');
 
   if (style['letterSpacing'])
-    this.setAttribute_(domElement, 'letter-spacing', style['letterSpacing']);
+    this.setAttr(domElement, 'letter-spacing', style['letterSpacing']);
   else
-    this.removeAttribute_(domElement, 'letter-spacing');
+    this.removeAttr(domElement, 'letter-spacing');
 
   if (style['decoration']) {
     if (goog.userAgent.GECKO) {
       //Text-decoration does not work in Mozilla – there is a bug report about it in their bugtracker:
       //https://bugzilla.mozilla.org/show_bug.cgi?id=317196
       //domElement.style['text-decoration'] = style.decoration;  //does not work either.
-      this.setAttribute_(domElement, 'text-decoration', style['decoration']);
+      this.setAttr(domElement, 'text-decoration', style['decoration']);
 
     } else {
-      this.setAttribute_(domElement, 'text-decoration', style['decoration']);
+      this.setAttr(domElement, 'text-decoration', style['decoration']);
     }
   } else
-    this.removeAttribute_(domElement, 'text-decoration');
+    this.removeAttr(domElement, 'text-decoration');
 
   //text style
   if (style['direction'])
-    this.setAttribute_(domElement, 'direction', style['direction']);
+    this.setAttr(domElement, 'direction', style['direction']);
   else
-    this.removeAttribute_(domElement, 'direction');
+    this.removeAttr(domElement, 'direction');
 
-  if (style['hAlign']) {
+  if (style['hAlign'] && !path) {
     var align;
 
     if (style['direction'] == 'rtl') {
@@ -810,9 +880,9 @@ acgraph.vector.svg.Renderer.prototype.setTextProperties = function(element) {
               acgraph.vector.Text.HAlign.START :
               'middle';
     }
-    this.setAttribute_(domElement, 'text-anchor', /** @type {string} */ (align));
+    this.setAttr(domElement, 'text-anchor', /** @type {string} */ (align));
   } else
-    this.removeAttribute_(domElement, 'text-anchor');
+    this.removeAttr(domElement, 'text-anchor');
 
   if (style['opacity'])
     domElement.style['opacity'] = style['opacity'];
@@ -826,8 +896,10 @@ acgraph.vector.svg.Renderer.prototype.setTextSegmentPosition = function(element)
   var domElement = element.domElement();
   var text = element.parent();
 
-  if (element.firstInLine || element.dx) this.setAttribute_(domElement, 'x', text.calcX + element.dx);
-  this.setAttribute_(domElement, 'dy', element.dy);
+  if (element.firstInLine || element.dx)
+    this.setAttr(domElement, 'x', text.path() ? element.dx : text.calcX + element.dx);
+
+  this.setAttr(domElement, 'dy', element.dy);
 };
 
 
@@ -842,38 +914,41 @@ acgraph.vector.svg.Renderer.prototype.setTextSegmentProperties = function(elemen
 
   if ((goog.userAgent.IE && goog.userAgent.DOCUMENT_MODE == 9) || goog.userAgent.OPERA) {
     if (!text.selectable()) {
-      this.setAttribute_(domElement, 'onselectstart', 'return false;');
-      this.setAttribute_(domElement, 'unselectable', 'on');
+      this.setAttr(domElement, 'onselectstart', 'return false;');
+      this.setAttr(domElement, 'unselectable', 'on');
     } else {
-      this.removeAttribute_(domElement, 'onselectstart');
-      this.removeAttribute_(domElement, 'unselectable');
+      this.removeAttr(domElement, 'onselectstart');
+      this.removeAttr(domElement, 'unselectable');
     }
   }
 
   //segment style
   if (style.fontStyle)
-    this.setAttribute_(domElement, 'font-style', style.fontStyle);
+    this.setAttr(domElement, 'font-style', style.fontStyle);
 
   if (style.fontVariant)
-    this.setAttribute_(domElement, 'font-variant', style.fontVariant);
+    this.setAttr(domElement, 'font-variant', style.fontVariant);
 
   if (style.fontFamily)
-    this.setAttribute_(domElement, 'font-family', style.fontFamily);
+    this.setAttr(domElement, 'font-family', style.fontFamily);
 
   if (style.fontSize)
-    this.setAttribute_(domElement, 'font-size', style.fontSize);
+    this.setAttr(domElement, 'font-size', style.fontSize);
 
   if (style.fontWeight)
-    this.setAttribute_(domElement, 'font-weight', style.fontWeight);
+    this.setAttr(domElement, 'font-weight', style.fontWeight);
 
   if (style.color)
-    this.setAttribute_(domElement, 'fill', style.color);
+    this.setAttr(domElement, 'fill', style.color);
 
   if (style.letterSpacing)
-    this.setAttribute_(domElement, 'letter-spacing', style.letterSpacing);
+    this.setAttr(domElement, 'letter-spacing', style.letterSpacing);
 
   if (style.decoration)
-    this.setAttribute_(domElement, 'text-decoration', style.decoration);
+    this.setAttr(domElement, 'text-decoration', style.decoration);
+
+  var targetDomElement = element.parent().path() ? element.parent().textPath : element.parent().domElement();
+  goog.dom.appendChild(targetDomElement, domElement);
 };
 
 
@@ -899,22 +974,22 @@ acgraph.vector.svg.Renderer.prototype.renderRadialGradient = function(fill, defs
   if (!gradient.rendered) {
     var fillDomElement = this.createRadialGradientElement();
     this.setIdInternal(fillDomElement, gradient.id());
-    this.appendChild(defs.domElement(), fillDomElement);
+    goog.dom.appendChild(defs.domElement(), fillDomElement);
     gradient.defs = defs;
     gradient.rendered = true;
 
     goog.array.forEach(gradient.keys, function(key) {
       var keyDomElement = this.createGradientKey();
-      this.setAttributes_(keyDomElement, {
+      this.setAttrs(keyDomElement, {
         'offset': key['offset'],
         'style': 'stop-color:' + key['color'] + ';stop-opacity:' + (isNaN(key['opacity']) ? gradient.opacity : key['opacity'])
       });
 
-      this.appendChild(fillDomElement, keyDomElement);
+      goog.dom.appendChild(fillDomElement, keyDomElement);
     }, this);
 
     if (gradient.bounds) {
-      this.setAttributes_(fillDomElement, {
+      this.setAttrs(fillDomElement, {
         'cx': gradient.cx * gradient.bounds.width + gradient.bounds.left,
         'cy': gradient.cy * gradient.bounds.height + gradient.bounds.top,
         'fx': gradient.fx * gradient.bounds.width + gradient.bounds.left,
@@ -924,7 +999,7 @@ acgraph.vector.svg.Renderer.prototype.renderRadialGradient = function(fill, defs
         'gradientUnits': 'userSpaceOnUse'
       });
     } else {
-      this.setAttributes_(fillDomElement, {
+      this.setAttrs(fillDomElement, {
         'cx': gradient.cx,
         'cy': gradient.cy,
         'fx': gradient.fx,
@@ -933,7 +1008,7 @@ acgraph.vector.svg.Renderer.prototype.renderRadialGradient = function(fill, defs
       });
     }
     if (gradient.transform) {
-      this.setAttribute_(fillDomElement, 'gradientTransform', gradient.transform.toString());
+      this.setAttr(fillDomElement, 'gradientTransform', gradient.transform.toString());
     }
   }
 
@@ -956,24 +1031,24 @@ acgraph.vector.svg.Renderer.prototype.renderLinearGradient = function(fill, defs
   if (!gradient.rendered) {
     var fillDomElement = this.createLinearGradientElement();
     this.setIdInternal(fillDomElement, gradient.id());
-    this.appendChild(defs.domElement(), fillDomElement);
+    goog.dom.appendChild(defs.domElement(), fillDomElement);
     gradient.defs = defs;
     gradient.rendered = true;
 
     goog.array.forEach(gradient.keys, function(key) {
       var keyDomElement = this.createGradientKey();
-      this.setAttributes_(keyDomElement, {
+      this.setAttrs(keyDomElement, {
         'offset': key['offset'],
         'style': 'stop-color:' + key['color'] + ';stop-opacity:' + (isNaN(key['opacity']) ? gradient.opacity : key['opacity'])
       });
-      this.appendChild(fillDomElement, keyDomElement);
+      goog.dom.appendChild(fillDomElement, keyDomElement);
     }, this);
     /** @type {!goog.math.Line} */
     var vector;
 
     if (gradient.bounds) {
       vector = this.getUserSpaceOnUseGradientVector_(gradient.angle, gradient.bounds);
-      this.setAttributes_(fillDomElement, {
+      this.setAttrs(fillDomElement, {
         'x1': vector.x0,
         'y1': vector.y0,
         'x2': vector.x1,
@@ -983,7 +1058,7 @@ acgraph.vector.svg.Renderer.prototype.renderLinearGradient = function(fill, defs
       });
     } else {
       vector = this.getObjectBoundingBoxGradientVector_(gradient.angle);
-      this.setAttributes_(fillDomElement, {
+      this.setAttrs(fillDomElement, {
         'x1': vector.x0,
         'y1': vector.y0,
         'x2': vector.x1,
@@ -992,7 +1067,7 @@ acgraph.vector.svg.Renderer.prototype.renderLinearGradient = function(fill, defs
       });
     }
     if (gradient.transform) {
-      this.setAttribute_(fillDomElement, 'gradientTransform', gradient.transform.toString());
+      this.setAttr(fillDomElement, 'gradientTransform', gradient.transform.toString());
     }
   }
   return gradient.id();
@@ -1008,17 +1083,17 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
   var pathPrefix = 'url(' + acgraph.getReference() + '#';
 
   if (goog.isString(fill)) {
-    this.setAttribute_(element.domElement(), 'fill', /** @type {string} */(fill));
-    this.removeAttribute_(element.domElement(), 'fill-opacity');
+    this.setAttr(element.domElement(), 'fill', /** @type {string} */(fill));
+    this.removeAttr(element.domElement(), 'fill-opacity');
   } else if (goog.isArray(fill['keys']) && fill['cx'] && fill['cy']) {
-    this.setAttribute_(element.domElement(), 'fill', pathPrefix +
+    this.setAttr(element.domElement(), 'fill', pathPrefix +
         this.renderRadialGradient(/** @type {acgraph.vector.RadialGradientFill} */(fill), defs) + ')');
-    this.removeAttribute_(element.domElement(), 'fill-opacity');
+    this.removeAttr(element.domElement(), 'fill-opacity');
   } else if (goog.isArray(fill['keys'])) {
     if (!element.getBounds()) return;
-    this.setAttribute_(element.domElement(), 'fill',
+    this.setAttr(element.domElement(), 'fill',
         pathPrefix + this.renderLinearGradient(/** @type {acgraph.vector.LinearGradientFill} */(fill), defs, element.getBounds()) + ')');
-    this.removeAttribute_(element.domElement(), 'fill-opacity');
+    this.removeAttr(element.domElement(), 'fill-opacity');
   } else if (fill['src']) {
     var b = element.getBoundsWithoutTransform();
     if (b) {
@@ -1034,35 +1109,35 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
       var callback = function(imageFill) {
         imageFill.id(); // if the identifier of the fill is still empty, it will be generated
         imageFill.parent(element.getStage()).render();
-        acgraph.getRenderer().setAttribute_(element.domElement(), 'fill', pathPrefix + imageFill.id() + ')');
+        acgraph.getRenderer().setAttr(element.domElement(), 'fill', pathPrefix + imageFill.id() + ')');
       };
       defs.getImageFill(fill['src'], b, fill['mode'], fill['opacity'], callback);
     } else {
       var imageFill = defs.getImageFill(fill['src'], b, fill['mode'], fill['opacity']);
       imageFill.id(); // if the identifier of the fill is still empty, it will be generated
       imageFill.parent(element.getStage()).render();
-      this.setAttribute_(element.domElement(), 'fill', pathPrefix + imageFill.id() + ')');
-      this.setAttribute_(element.domElement(), 'fill-opacity', goog.isDef(fill['opacity']) ? fill['opacity'] : 1);
+      this.setAttr(element.domElement(), 'fill', pathPrefix + imageFill.id() + ')');
+      this.setAttr(element.domElement(), 'fill-opacity', goog.isDef(fill['opacity']) ? fill['opacity'] : 1);
     }
-  } else if (fill instanceof acgraph.vector.HatchFill) {
+  } else if (acgraph.utils.instanceOf(fill, acgraph.vector.HatchFill)) {
     var hatch = /** @type {acgraph.vector.HatchFill} */(fill);
     hatch = defs.getHatchFill(hatch.type, hatch.color, hatch.thickness, hatch.size);
     hatch.id(); // if the identifier of the fill is still empty, it will be generated
     hatch.parent(element.getStage()).render();
-    this.setAttribute_(element.domElement(), 'fill', pathPrefix + hatch.id() + ')');
-  } else if (fill instanceof acgraph.vector.PatternFill) {
+    this.setAttr(element.domElement(), 'fill', pathPrefix + hatch.id() + ')');
+  } else if (acgraph.utils.instanceOf(fill, acgraph.vector.PatternFill)) {
     /** @type {acgraph.vector.PatternFill} */
     var pattern = /** @type {acgraph.vector.PatternFill} */(fill);
     pattern.id(); // if the identifier of the fill is still empty, it will be generated
     pattern.parent(element.getStage()).render();
-    this.setAttribute_(element.domElement(), 'fill', pathPrefix + pattern.id() + ')');
+    this.setAttr(element.domElement(), 'fill', pathPrefix + pattern.id() + ')');
   } else {
     // DVF-1729 fix
     // because internet explorer converts fill-opacity "0.00001" to "1e-5" that is not css-compatible
     // and export server can't generate proper image.
     if (fill['opacity'] <= 0.0001 && goog.userAgent.IE && goog.userAgent.isVersionOrHigher('9'))
       fill['opacity'] = 0.0001;
-    this.setAttributes_(element.domElement(), {
+    this.setAttrs(element.domElement(), {
       'fill': (/** @type {acgraph.vector.SolidFill} */(fill))['color'],
       'fill-opacity': (/** @type {acgraph.vector.SolidFill} */(fill))['opacity']
     });
@@ -1079,38 +1154,38 @@ acgraph.vector.svg.Renderer.prototype.applyStroke = function(element) {
   var pathPrefix = 'url(' + acgraph.getReference() + '#';
 
   if (goog.isString(stroke)) {
-    this.setAttribute_(domElement, 'stroke', /** @type {string} */(stroke));
+    this.setAttr(domElement, 'stroke', /** @type {string} */(stroke));
   } else if (goog.isArray(stroke['keys']) && stroke['cx'] && stroke['cy']) {
-    this.setAttribute_(domElement, 'stroke', pathPrefix +
+    this.setAttr(domElement, 'stroke', pathPrefix +
         this.renderRadialGradient(/** @type {acgraph.vector.RadialGradientFill} */(stroke), defs) + ')');
   } else if (goog.isArray(stroke['keys'])) {
     if (!element.getBounds()) return;
-    this.setAttribute_(domElement, 'stroke',
+    this.setAttr(domElement, 'stroke',
         pathPrefix + this.renderLinearGradient(/** @type {acgraph.vector.LinearGradientFill} */(stroke), defs, element.getBounds()) + ')');
   } else {
-    this.setAttribute_(domElement, 'stroke', stroke['color']);
+    this.setAttr(domElement, 'stroke', stroke['color']);
   }
 
   if (stroke['lineJoin'])
-    this.setAttribute_(domElement, 'stroke-linejoin', stroke['lineJoin']);
+    this.setAttr(domElement, 'stroke-linejoin', stroke['lineJoin']);
   else
-    this.removeAttribute_(domElement, 'stroke-linejoin');
+    this.removeAttr(domElement, 'stroke-linejoin');
   if (stroke['lineCap'])
-    this.setAttribute_(domElement, 'stroke-linecap', stroke['lineCap']);
+    this.setAttr(domElement, 'stroke-linecap', stroke['lineCap']);
   else
-    this.removeAttribute_(domElement, 'stroke-linecap');
+    this.removeAttr(domElement, 'stroke-linecap');
   if (stroke['opacity'])
-    this.setAttribute_(domElement, 'stroke-opacity', stroke['opacity']);
+    this.setAttr(domElement, 'stroke-opacity', stroke['opacity']);
   else
-    this.removeAttribute_(domElement, 'stroke-opacity');
+    this.removeAttr(domElement, 'stroke-opacity');
   if (stroke['thickness'])
-    this.setAttribute_(domElement, 'stroke-width', stroke['thickness']);
+    this.setAttr(domElement, 'stroke-width', stroke['thickness']);
   else
-    this.removeAttribute_(domElement, 'stroke-width');
+    this.removeAttr(domElement, 'stroke-width');
   if (stroke['dash'])
-    this.setAttribute_(domElement, 'stroke-dasharray', stroke['dash']);
+    this.setAttr(domElement, 'stroke-dasharray', stroke['dash']);
   else
-    this.removeAttribute_(domElement, 'stroke-dasharray');
+    this.removeAttr(domElement, 'stroke-dasharray');
 };
 
 
@@ -1129,9 +1204,9 @@ acgraph.vector.svg.Renderer.prototype.applyFillAndStroke = function(element) {
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setVisible = function(element) {
   if (element.visible()) {
-    this.removeAttribute_(element.domElement(), 'visibility');
+    this.removeAttr(element.domElement(), 'visibility');
   } else {
-    this.setAttribute_(element.domElement(), 'visibility', 'hidden');
+    this.setAttr(element.domElement(), 'visibility', 'hidden');
   }
 };
 
@@ -1141,9 +1216,9 @@ acgraph.vector.svg.Renderer.prototype.setTransformation = function(element) {
   /** @type {goog.math.AffineTransform} */
   var transformation = element.getSelfTransformation();
   if (transformation && !transformation.isIdentity()) {
-    this.setAttribute_(element.domElement(), 'transform', transformation.toString());
+    this.setAttr(element.domElement(), 'transform', transformation.toString());
   } else {
-    this.removeAttribute_(element.domElement(), 'transform');
+    this.removeAttr(element.domElement(), 'transform');
   }
 };
 
@@ -1153,9 +1228,9 @@ acgraph.vector.svg.Renderer.prototype.setPatternTransformation = function(elemen
   /** @type {goog.math.AffineTransform} */
   var transformation = element.getSelfTransformation();
   if (transformation && !transformation.isIdentity()) {
-    this.setAttribute_(element.domElement(), 'patternTransform', transformation.toString());
+    this.setAttr(element.domElement(), 'patternTransform', transformation.toString());
   } else {
-    this.removeAttribute_(element.domElement(), 'patternTransform');
+    this.removeAttr(element.domElement(), 'patternTransform');
   }
 };
 
@@ -1177,40 +1252,15 @@ acgraph.vector.svg.Renderer.prototype.setTextTransformation = acgraph.vector.svg
 
 
 /** @inheritDoc */
-acgraph.vector.svg.Renderer.prototype.setRectTransformation = acgraph.vector.svg.Renderer.prototype.setTransformation;
-
-
-/** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setEllipseTransformation = acgraph.vector.svg.Renderer.prototype.setTransformation;
 
 
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setStageSize = function(el, width, height) {
-  this.setAttributes_(el, {
+  this.setAttrs(el, {
     'width': width,
     'height': height
   });
-};
-
-
-/** @inheritDoc */
-acgraph.vector.svg.Renderer.prototype.setId = function(element, id) {
-  this.setIdInternal(element.domElement(), id);
-};
-
-
-/**
- * Sets id to element.
- * @param {?Element} element - Element.
- * @param {string} id - ID to be set.
- */
-acgraph.vector.svg.Renderer.prototype.setIdInternal = function(element, id) {
-  if (element) {
-    if (id)
-      this.setAttribute_(element, 'id', id);
-    else
-      this.removeAttribute_(element, 'id');
-  }
 };
 
 
@@ -1221,7 +1271,7 @@ acgraph.vector.svg.Renderer.prototype.setTitle = function(element, title) {
     if (goog.isDefAndNotNull(title)) { //Set new value
       if (!element.titleElement) {
         element.titleElement = this.createSVGElement_('title');
-        this.setAttribute_(element.titleElement, 'aria-label', '');
+        this.setAttr(element.titleElement, 'aria-label', '');
       }
       if (!goog.dom.getParentElement(element.titleElement))
         goog.dom.insertChildAt(domElement, element.titleElement, 0);
@@ -1240,7 +1290,7 @@ acgraph.vector.svg.Renderer.prototype.setDesc = function(element, desc) {
     if (goog.isDefAndNotNull(desc)) { //Set new value
       if (!element.descElement) {
         element.descElement = this.createSVGElement_('desc');
-        this.setAttribute_(element.descElement, 'aria-label', '');
+        this.setAttr(element.descElement, 'aria-label', '');
       }
       if (!goog.dom.getParentElement(element.descElement))
         goog.dom.insertChildAt(domElement, element.descElement, 0);
@@ -1253,35 +1303,13 @@ acgraph.vector.svg.Renderer.prototype.setDesc = function(element, desc) {
 
 
 /** @inheritDoc */
-acgraph.vector.svg.Renderer.prototype.setAttributes = function(element, attrs) {
-  var domElement = element.domElement();
-  if (domElement && goog.isObject(attrs)) {
-    for (var key in attrs) {
-      var value = attrs[key];
-      if (goog.isNull(value)) {
-        this.removeAttribute_(domElement, key);
-      } else {
-        this.setAttribute_(domElement, key, /** @type {(string|number)} */ (value));
-      }
-    }
-  }
-};
-
-
-/** @inheritDoc */
-acgraph.vector.svg.Renderer.prototype.getAttribute = function(element, key) {
-  return element ? element.getAttribute(key) : void 0;
-};
-
-
-/** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setDisableStrokeScaling = function(element, isDisabled) {
   var domElement = element.domElement();
   if (domElement) {
     if (isDisabled)
-      this.setAttribute_(domElement, 'vector-effect', 'non-scaling-stroke');
+      this.setAttr(domElement, 'vector-effect', 'non-scaling-stroke');
     else
-      this.removeAttribute_(domElement, 'vector-effect');
+      this.removeAttr(domElement, 'vector-effect');
   }
 };
 
@@ -1291,20 +1319,8 @@ acgraph.vector.svg.Renderer.prototype.setLayerSize = goog.nullFunction;
 
 
 /** @inheritDoc */
-acgraph.vector.svg.Renderer.prototype.setRectProperties = function(rect) {
-  var boundsWithoutTransform = rect.getBoundsWithoutTransform();
-  this.setAttributes_(rect.domElement(), {
-    'x': boundsWithoutTransform.left,
-    'y': boundsWithoutTransform.top,
-    'width': boundsWithoutTransform.width,
-    'height': boundsWithoutTransform.height
-  });
-};
-
-
-/** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setCircleProperties = function(circle) {
-  this.setAttributes_(circle.domElement(), {
+  this.setAttrs(circle.domElement(), {
     'cx': circle.centerX(),
     'cy': circle.centerY(),
     'r': circle.radius()
@@ -1314,7 +1330,7 @@ acgraph.vector.svg.Renderer.prototype.setCircleProperties = function(circle) {
 
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setEllipseProperties = function(ellipse) {
-  this.setAttributes_(ellipse.domElement(), {
+  this.setAttrs(ellipse.domElement(), {
     'cx': ellipse.centerX(),
     'cy': ellipse.centerY(),
     'rx': ellipse.radiusX(),
@@ -1325,11 +1341,11 @@ acgraph.vector.svg.Renderer.prototype.setEllipseProperties = function(ellipse) {
 
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setPathProperties = function(path) {
-  var pathData = this.getSvgPath_(path);
+  var pathData = this.getPathString(path, false);
   if (pathData)
-    this.setAttribute_(path.domElement(), 'd', pathData);
+    this.setAttr(path.domElement(), 'd', pathData);
   else
-    this.setAttribute_(path.domElement(), 'd', 'M 0,0');
+    this.setAttr(path.domElement(), 'd', 'M 0,0');
 };
 
 
@@ -1341,15 +1357,17 @@ acgraph.vector.svg.Renderer.prototype.setPathProperties = function(path) {
  * @private
  */
 acgraph.vector.svg.Renderer.prototype.createClip_ = function(element, clipElement) {
+  var stage = element.getStage();
+  // stage.registerDisposable(clipElement);
   /** @type {!acgraph.vector.svg.Defs} */
-  var defs = /** @type {!acgraph.vector.svg.Defs} */ (element.getStage().getDefs());
+  var defs = /** @type {!acgraph.vector.svg.Defs} */ (stage.getDefs());
   /** @type {Element} */
   var clipDomElement = defs.getClipPathElement(clipElement);
   var id = acgraph.utils.IdGenerator.getInstance().identify(clipDomElement, acgraph.utils.IdGenerator.ElementTypePrefix.CLIP);
 
   var clipShapeElement;
   if (goog.dom.getParentElement(clipDomElement) != defs.domElement()) {
-    this.setAttribute_(clipDomElement, 'clip-rule', 'nonzero');
+    this.setAttr(clipDomElement, 'clip-rule', 'nonzero');
     this.setIdInternal(clipDomElement, id);
   }
 
@@ -1361,8 +1379,8 @@ acgraph.vector.svg.Renderer.prototype.createClip_ = function(element, clipElemen
   clipShapeElement = clipShape.domElement();
 
   if (clipShapeElement) {
-    this.appendChild(clipDomElement, clipShapeElement);
-    this.appendChild(defs.domElement(), clipDomElement);
+    goog.dom.appendChild(clipDomElement, clipShapeElement);
+    goog.dom.appendChild(defs.domElement(), clipDomElement);
   }
 
   return id;
@@ -1386,8 +1404,8 @@ acgraph.vector.svg.Renderer.prototype.disposeClip = function(clip) {
   var clipPath = goog.dom.getElement(clipId);
   if (clipPath) {
     var clipPathElement = goog.dom.getFirstElementChild(clipPath);
-    this.removeNode(clipPathElement);
-    this.removeNode(clipPath);
+    goog.dom.removeNode(clipPathElement);
+    goog.dom.removeNode(clipPath);
   }
 };
 
@@ -1400,7 +1418,7 @@ acgraph.vector.svg.Renderer.prototype.disposeClip = function(clip) {
  */
 acgraph.vector.svg.Renderer.prototype.addClip_ = function(element, clipId) {
   var pathPrefix = acgraph.getReference();
-  this.setAttributes_(element.domElement(), {
+  this.setAttrs(element.domElement(), {
     'clip-path': 'url(' + pathPrefix + '#' + clipId + ')',
     'clipPathUnits': 'userSpaceOnUse'
   });
@@ -1413,8 +1431,8 @@ acgraph.vector.svg.Renderer.prototype.addClip_ = function(element, clipId) {
  * @private
  */
 acgraph.vector.svg.Renderer.prototype.removeClip_ = function(element) {
-  this.removeAttribute_(element.domElement(), 'clip-path');
-  this.removeAttribute_(element.domElement(), 'clipPathUnits');
+  this.removeAttr(element.domElement(), 'clip-path');
+  this.removeAttr(element.domElement(), 'clipPathUnits');
 };
 
 
@@ -1432,7 +1450,7 @@ acgraph.vector.svg.Renderer.prototype.updateClip = function(clipElement) {
     var clipDomElement = defs.getClipPathElement(clipElement);
     clipShape.render();
     var clipShapeElement = clipShape.domElement();
-    this.appendChild(clipDomElement, clipShapeElement);
+    goog.dom.appendChild(clipDomElement, clipShapeElement);
   } else {
     clipElement.shape().render();
   }
@@ -1445,7 +1463,7 @@ acgraph.vector.svg.Renderer.prototype.setClip = function(element) {
   var clipelement = /** @type {acgraph.vector.Clip} */ (element.clip());
   if (clipelement) {
     var clipId;
-    if (clipelement instanceof acgraph.vector.Clip)
+    if (acgraph.utils.instanceOf(clipelement, acgraph.vector.Clip))
       clipId = /** @type {string} */ (clipelement.id());
     if (!clipId)
       clipId = this.createClip_(element, clipelement);
@@ -1459,9 +1477,9 @@ acgraph.vector.svg.Renderer.prototype.setClip = function(element) {
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.setPointerEvents = function(element) {
   if (element.disablePointerEvents())
-    this.setAttribute_(element.domElement(), 'pointer-events', 'none');
+    this.setAttr(element.domElement(), 'pointer-events', 'none');
   else
-    this.removeAttribute_(element.domElement(), 'pointer-events');
+    this.removeAttr(element.domElement(), 'pointer-events');
 };
 
 
@@ -1496,9 +1514,9 @@ acgraph.vector.svg.Renderer.prototype.getPathStringFromRect_ = function(rect) {
  * @param {acgraph.vector.Stage} stage
  */
 acgraph.vector.svg.Renderer.prototype.setPrintAttributes = function(element, stage) {
-  this.setAttribute_(element, 'width', '100%');
-  this.setAttribute_(element, 'height', '100%');
-  this.setAttribute_(element, 'viewBox', '0 0 ' + stage.width() + ' ' + stage.height());
+  this.setAttr(element, 'width', '100%');
+  this.setAttr(element, 'height', '100%');
+  this.setAttr(element, 'viewBox', '0 0 ' + stage.width() + ' ' + stage.height());
   goog.style.setStyle(element, 'width', '100%');
   goog.style.setStyle(element, 'height', '');
   goog.style.setStyle(element, 'max-height', '100%');

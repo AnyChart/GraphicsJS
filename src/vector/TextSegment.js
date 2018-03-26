@@ -181,7 +181,6 @@ acgraph.vector.TextSegment.prototype.renderData = function() {
   if (this.text == '') return;
   this.domElement_ = acgraph.getRenderer().createTextSegmentElement();
   this.setTextSegmentProperties();
-  goog.dom.appendChild(this.parent_.domElement(), this.domElement_);
 };
 
 
@@ -192,7 +191,7 @@ acgraph.vector.TextSegment.prototype.renderData = function() {
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.TextSegment.prototype.disposeInternal = function() {
-  acgraph.getRenderer().removeNode(this.domElement_);
+  goog.dom.removeNode(this.domElement_);
   this.domElement_ = null;
 
   goog.base(this, 'disposeInternal');

@@ -195,9 +195,10 @@ acgraph.vector.Renderer.prototype.saveGradientAngle = function(sourceAngle, boun
 /**
  * Sets ID to DOM element.
  * @param {(!acgraph.vector.Element|!acgraph.vector.Stage)} element - Element.
- * @param {string} id - ID.
  */
-acgraph.vector.Renderer.prototype.setId = goog.abstractMethod;
+acgraph.vector.Renderer.prototype.setId = function(element) {
+  this.setIdInternal(element.domElement(), /** @type {string} */(element.id()));
+};
 
 
 /**
@@ -205,7 +206,7 @@ acgraph.vector.Renderer.prototype.setId = goog.abstractMethod;
  * @param {!acgraph.vector.Element} element - Element.
  * @param {boolean} disabled - isDisabled.
  */
-acgraph.vector.Renderer.prototype.setDisableStrokeScaling = goog.abstractMethod;
+acgraph.vector.Renderer.prototype.setDisableStrokeScaling = goog.nullFunction;
 
 
 /**
@@ -220,7 +221,7 @@ acgraph.vector.Renderer.prototype.setVisible = goog.abstractMethod;
  * @param {(!acgraph.vector.Element|!acgraph.vector.Stage)} element - Element.
  * @param {?string} title - Title value.
  */
-acgraph.vector.Renderer.prototype.setTitle = goog.abstractMethod;
+acgraph.vector.Renderer.prototype.setTitle = goog.nullFunction;
 
 
 /**
@@ -228,28 +229,41 @@ acgraph.vector.Renderer.prototype.setTitle = goog.abstractMethod;
  * @param {(!acgraph.vector.Element|!acgraph.vector.Stage)} element - Element.
  * @param {?string} title - Title value.
  */
-acgraph.vector.Renderer.prototype.setDesc = goog.abstractMethod;
+acgraph.vector.Renderer.prototype.setDesc = goog.nullFunction;
 
 
 /**
  * Sets attr to DOM element.
  * @param {!acgraph.vector.Element} element - Element.
- * @param {Object} value - Attributes key-value map. If value is null, attribute will be removed.
+ * @param {Object} attrs - Attributes key-value map. If value is null, attribute will be removed.
  */
-acgraph.vector.Renderer.prototype.setAttributes = goog.abstractMethod;
+acgraph.vector.Renderer.prototype.setAttributes = function(element, attrs) {
+  var domElement = element.domElement();
+  if (domElement && goog.isObject(attrs)) {
+    for (var key in attrs) {
+      var value = attrs[key];
+      if (goog.isNull(value)) {
+        this.removeAttr(domElement, key);
+      } else {
+        this.setAttr(domElement, key, /** @type {string} */ (value));
+      }
+    }
+  }
+};
 
 
 /**
  * Gets attr from DOM element.
  * @param {?Element} element - Element or null. If null, must return undefined.
  * @param {string} key - Name of attribute.
+ * @return {*}
  */
-acgraph.vector.Renderer.prototype.getAttribute = goog.abstractMethod;
+acgraph.vector.Renderer.prototype.getAttribute = function(element, key) {
+  return element ? element.getAttribute(key) : void 0;
+};
 
 
 //endregion
-
-
 //----------------------------------------------------------------------------------------------------------------------
 //
 //  Root DOM element for vector stage.
@@ -297,53 +311,106 @@ acgraph.vector.Renderer.prototype.createLinearGradientElement = goog.abstractMet
 acgraph.vector.Renderer.prototype.createRadialGradientElement = goog.abstractMethod;
 
 
-//region --- Section Working with children ---
-//----------------------------------------------------------------------------------------------------------------------
-//
-//  Working with children
-//
-//----------------------------------------------------------------------------------------------------------------------
 /**
- * Adds a child to a parent.
- * @param {Element} parent Parent.
- * @param {Element} child Child.
+ * Sets attributes to a given element. They are set as  a hash array, where each key is a name of a particular attribute.
+ * @param {Element} el The element.
+ * @param {Object} attrs The hash array of attributes.
+ * @protected
  */
-acgraph.vector.Renderer.prototype.appendChild = function(parent, child) {
-  goog.dom.appendChild(parent, child);
+acgraph.vector.Renderer.prototype.setAttrs = function(el, attrs) {
+  for (var key in attrs)
+    this.setAttr(el, key, attrs[key]);
 };
 
 
 /**
- * Adds a child to a parent by index.
- * @param {Element} parent Parent.
- * @param {Element} child Child.
- * @param {number} index Index.
+ * Sets a given attribute with a given value for a given element.
+ * @param {Element} el The element.
+ * @param {string} key The name of the attribute.
+ * @param {(string|number)} value The value of the attribute.
+ * @protected
  */
-acgraph.vector.Renderer.prototype.insertChildAt = function(parent, child, index) {
-  goog.dom.insertChildAt(parent, child, index);
+acgraph.vector.Renderer.prototype.setAttr = function(el, key, value) {
+  el.setAttribute(key, value);
 };
 
 
 /**
- * Gets parent.
- * @param {Element} node Element.
- * @return {Element} Parent.
+ * Removes an attribute with a given name from a given element.
+ * @param {Element} el The element.
+ * @param {string} key The name of the attribute.
+ * @protected
  */
-acgraph.vector.Renderer.prototype.getParent = function(node) {
-  return goog.dom.getParentElement(node);
+acgraph.vector.Renderer.prototype.removeAttr = function(el, key) {
+  el.removeAttribute(key);
 };
 
 
 /**
- * Removes a child from a parent.
- * @param {Element} element Element.
+ * Sets id to element.
+ * @param {?Element} element - Element.
+ * @param {string} id - ID to be set.
  */
-acgraph.vector.Renderer.prototype.removeNode = function(element) {
-  goog.dom.removeNode(element);
+acgraph.vector.Renderer.prototype.setIdInternal = function(element, id) {
+  if (element) {
+    if (id)
+      this.setAttr(element, 'id', id);
+    else
+      this.removeAttr(element, 'id');
+  }
 };
-//endregion
 
 
+/**
+ * Serializes a given Path and converts its data to a String which can be used in SVG.
+ * @param {acgraph.vector.PathBase} path The Path to serialize.
+ * @param {boolean=} opt_transformed Use transformed instead of original.
+ * @return {?string} A representation which can be used in SVG.
+ * @protected
+ */
+acgraph.vector.Renderer.prototype.getPathString = function(path, opt_transformed) {
+  if (path.isEmpty()) return null;
+  /** @type {!Array.<string|number>} */
+  var list = [];
+  var segmentNamesMap = this.pathSegmentNamesMap;
+  var func = opt_transformed ? path.forEachTransformedSegment : path.forEachSegment;
+  func.call(path, function(segment, args) {
+    var name = segmentNamesMap[segment];
+    if (name) {
+      list.push(name);
+      if (segment == acgraph.vector.PathBase.Segment.ARCTO) {
+        this.pushArcToPathString(list, args);
+      } else if (segment != acgraph.vector.PathBase.Segment.CLOSE) {
+        this.pushToArgs(list, args);
+      }
+    }
+  }, this);
+  return list.join(' ');
+};
+
+
+/**
+ * @param {Array.<string|number>} list
+ * @param {Array.<number>} args
+ * @protected
+ */
+acgraph.vector.Renderer.prototype.pushArcToPathString = function(list, args) {
+  /** @type {number} */
+  var extent = args[3];
+  list.push(args[0], args[1],
+      0, Math.abs(extent) > 180 ? 1 : 0, extent > 0 ? 1 : 0,
+      args[4], args[5]);
+};
+
+
+/**
+ * @param {Array.<string|number>} list
+ * @param {Array.<number>} args
+ * @protected
+ */
+acgraph.vector.Renderer.prototype.pushToArgs = function(list, args) {
+  acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, args, list);
+};
 //----------------------------------------------------------------------------------------------------------------------
 //
 //  DOM elements for primitives.
@@ -367,23 +434,6 @@ acgraph.vector.Renderer.prototype.createLayerElement = goog.abstractMethod;
  * @param {!acgraph.vector.Layer} layer Layer.
  */
 acgraph.vector.Renderer.prototype.setLayerSize = goog.abstractMethod;
-
-
-//----------------------------------------------------------------------------------------------------------------------
-//  Rect.
-//----------------------------------------------------------------------------------------------------------------------
-/**
- * Creates and returns DOM rectangle.
- * @return {Element} DOM rectangle.
- */
-acgraph.vector.Renderer.prototype.createRectElement = goog.abstractMethod;
-
-
-/**
- * Sets DOM rectangle parameters.
- * @param {!acgraph.vector.Rect} rect Rectangle.
- */
-acgraph.vector.Renderer.prototype.setRectProperties = goog.abstractMethod;
 
 
 //----------------------------------------------------------------------------------------------------------------------could
@@ -443,6 +493,13 @@ acgraph.vector.Renderer.prototype.createTextElement = goog.abstractMethod;
  * @return {Element} Test Segment DOM Element.
  */
 acgraph.vector.Renderer.prototype.createTextSegmentElement = goog.abstractMethod;
+
+
+/**
+ * Creates and returns DOM element for Text Path Element.
+ * @return {Element} .
+ */
+acgraph.vector.Renderer.prototype.createTextPathElement = function() { return null; };
 
 
 /**
@@ -571,9 +628,18 @@ acgraph.vector.Renderer.prototype.isImageLoading = function() {
  * @return {goog.net.ImageLoader} .
  */
 acgraph.vector.Renderer.prototype.getImageLoader = function() {
-  if (!this.imageLoader_)
+  if (!this.imageLoader_ || this.imageLoader_.isDisposed())
     this.imageLoader_ = new goog.net.ImageLoader(/** @type {Element} */(goog.global['document']['body']));
   return this.imageLoader_;
+};
+
+
+/**
+ * Whether is image loader.
+ * @return {boolean}
+ */
+acgraph.vector.Renderer.prototype.isImageLoader = function() {
+  return !!(this.imageLoader_ && !this.imageLoader_.isDisposed());
 };
 
 
@@ -602,13 +668,6 @@ acgraph.vector.Renderer.prototype.setPathTransformation = goog.abstractMethod;
  * @param {!acgraph.vector.Image} element Element.
  */
 acgraph.vector.Renderer.prototype.setImageTransformation = goog.abstractMethod;
-
-
-/**
- * Sets transformation to DOM Rect.
- * @param {!acgraph.vector.Rect} element Element.
- */
-acgraph.vector.Renderer.prototype.setRectTransformation = goog.abstractMethod;
 
 
 /**
@@ -674,13 +733,6 @@ acgraph.vector.Renderer.prototype.setPointerEvents = goog.abstractMethod;
  * @param {!acgraph.vector.Element} element Element.
  */
 acgraph.vector.Renderer.prototype.setClip = goog.abstractMethod;
-
-
-/**
- * Sets layer clipping.
- * @param {!acgraph.vector.Element} element Element.
- */
-acgraph.vector.Renderer.prototype.setLayerClip = goog.abstractMethod;
 
 
 /**

@@ -20,31 +20,31 @@ goog.require('goog.math.Rect');
  */
 acgraph.vector.Anchor = {
   /** The left-top anchor of the element. */
-  LEFT_TOP: 'leftTop',
+  LEFT_TOP: 'left-top',
 
   /** The left-center anchor of the element. */
-  LEFT_CENTER: 'leftCenter',
+  LEFT_CENTER: 'left-center',
 
   /** The left-bottom anchor of the element. */
-  LEFT_BOTTOM: 'leftBottom',
+  LEFT_BOTTOM: 'left-bottom',
 
   /** The center-top anchor of the element. */
-  CENTER_TOP: 'centerTop',
+  CENTER_TOP: 'center-top',
 
   /** The center anchor of the element. */
   CENTER: 'center',
 
   /** The center-bottom anchor of the element. */
-  CENTER_BOTTOM: 'centerBottom',
+  CENTER_BOTTOM: 'center-bottom',
 
   /** The right-top anchor of the element. */
-  RIGHT_TOP: 'rightTop',
+  RIGHT_TOP: 'right-top',
 
   /** The right-center anchor of the element.*/
-  RIGHT_CENTER: 'rightCenter',
+  RIGHT_CENTER: 'right-center',
 
   /** The right-bottom anchor of the element. */
-  RIGHT_BOTTOM: 'rightBottom'
+  RIGHT_BOTTOM: 'right-bottom'
 };
 
 
@@ -124,67 +124,33 @@ acgraph.vector.getCoordinateByAnchor = function(bounds, anchor) {
   var y = bounds.top;
   anchor = anchor.toLowerCase();
   switch (anchor) {
-    case 'lefttop':
-    case 'topleft':
-    case 'lt':
-    case 'tl':
+    case acgraph.vector.Anchor.LEFT_TOP:
       break;
-    case 'leftcenter':
-    case 'centerleft':
-    case 'left':
-    case 'lc':
-    case 'cl':
-    case 'l':
+    case acgraph.vector.Anchor.LEFT_CENTER:
       y += bounds.height / 2;
       break;
-    case 'leftbottom':
-    case 'bottomleft':
-    case 'lb':
-    case 'bl':
+    case acgraph.vector.Anchor.LEFT_BOTTOM:
       y += bounds.height;
       break;
-    case 'centertop':
-    case 'topcenter':
-    case 'top':
-    case 'ct':
-    case 'tc':
-    case 't':
+    case acgraph.vector.Anchor.CENTER_TOP:
       x += bounds.width / 2;
       break;
-    case 'centercenter':
-    case 'center':
-    case 'c':
+    case acgraph.vector.Anchor.CENTER:
       x += bounds.width / 2;
       y += bounds.height / 2;
       break;
-    case 'centerbottom':
-    case 'bottomcenter':
-    case 'bottom':
-    case 'cb':
-    case 'bc':
-    case 'b':
+    case acgraph.vector.Anchor.CENTER_BOTTOM:
       x += bounds.width / 2;
       y += bounds.height;
       break;
-    case 'righttop':
-    case 'topright':
-    case 'tr':
-    case 'rt':
+    case acgraph.vector.Anchor.RIGHT_TOP:
       x += bounds.width;
       break;
-    case 'rightcenter':
-    case 'centerright':
-    case 'right':
-    case 'rc':
-    case 'cr':
-    case 'r':
+    case acgraph.vector.Anchor.RIGHT_CENTER:
       x += bounds.width;
       y += bounds.height / 2;
       break;
-    case 'rightbottom':
-    case 'bottomright':
-    case 'rb':
-    case 'br':
+    case acgraph.vector.Anchor.RIGHT_BOTTOM:
       x += bounds.width;
       y += bounds.height;
       break;
@@ -399,7 +365,8 @@ acgraph.vector.AnyColor;
     hAlign: (acgraph.vector.Text.HAlign|string|undefined),
     width: (number|string|undefined),
     height: (number|string|undefined),
-    textWrap: (acgraph.vector.Text.TextWrap|undefined),
+    wordWrap: (string|undefined),
+    wordBreak: (string|undefined),
     textOverflow: (acgraph.vector.Text.TextOverflow|string|undefined),
     selectable: (boolean|undefined)
  }}
@@ -460,7 +427,7 @@ acgraph.vector.ImageFillMode = {
   /**
    * Fit by greater side.
    */
-  FIT_MAX: 'fitMax',
+  FIT_MAX: 'fit-max',
   /**
    * Fit by lesser side.
    */
@@ -480,7 +447,7 @@ acgraph.vector.PaperSize = {
   /**
    * It measures 8.5 by 11 inches (215.9 mm x 279.4 mm). US Letter size is a recognized standard adopted by the American National Standards Institute (ANSI) whereas the A4 is the International Standard (ISO) used in most countries.
    */
-  US_LETTER: 'usletter',
+  US_LETTER: 'us-letter',
 
   /**
    * The base A0 size of paper is defined as having an area of 1 m2. Rounded to the nearest millimetre, the A0 paper size is 841 by 1,189 millimetres (33.1 in × 46.8 in). Successive paper sizes in the series A1, A2, A3, and so forth, are defined by halving the preceding paper size across the larger dimension.
@@ -668,7 +635,7 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
       };
     }
   } else if (goog.isObject(opt_fillOrColorOrKeys)) { // fill as an object
-    if (opt_fillOrColorOrKeys instanceof acgraph.vector.PatternFill) {
+    if (acgraph.utils.instanceOf(opt_fillOrColorOrKeys, acgraph.vector.PatternFill)) {
       newFill = opt_fillOrColorOrKeys;
     } else if (opt_fillOrColorOrKeys['type'] == 'pattern') {
       delete opt_fillOrColorOrKeys['id'];
@@ -753,7 +720,7 @@ acgraph.vector.normalizeFill = function(opt_fillOrColorOrKeys, opt_opacityOrAngl
       }
       var transform = opt_fillOrColorOrKeys['transform'];
       if (goog.isDefAndNotNull(transform)) {
-        if (transform instanceof goog.math.AffineTransform) {
+        if (acgraph.utils.instanceOf(transform, goog.math.AffineTransform)) {
           newFill['transform'] = transform;
         } else if (goog.isObject(transform)) {
           newFill['transform'] = new goog.math.AffineTransform();
@@ -839,7 +806,7 @@ acgraph.vector.normalizeStroke = function(opt_strokeOrFill, opt_thickness, opt_d
     // No pattern fill for stroke, unfortunately :D
     // Double typecast should be here, via ColoredFill,
     // but that's too much metadata, so let's go with this.
-    newStroke = (tmp instanceof acgraph.vector.PatternFill) ? 'black' : /** @type {acgraph.vector.Stroke} */(tmp);
+    newStroke = (acgraph.utils.instanceOf(tmp, acgraph.vector.PatternFill)) ? 'black' : /** @type {acgraph.vector.Stroke} */(tmp);
 
     // If nothing else we can use normalized fill as a stroke,
     // ot is compatible. Otherwise we need to add properties.
@@ -891,7 +858,7 @@ acgraph.vector.normalizeHatchFill = function(opt_patternFillOrType, opt_color, o
         opt_color,
         goog.isDef(opt_thickness) ? parseFloat(opt_thickness) : undefined,
         goog.isDef(opt_size) ? parseFloat(opt_size) : undefined);
-  } else if (opt_patternFillOrType instanceof acgraph.vector.PatternFill) {
+  } else if (acgraph.utils.instanceOf(opt_patternFillOrType, acgraph.vector.PatternFill)) {
     newFill = opt_patternFillOrType;
   } else if (goog.isObject(opt_patternFillOrType)) {
     if (opt_patternFillOrType['type'] == 'pattern') {
@@ -909,7 +876,7 @@ acgraph.vector.normalizeHatchFill = function(opt_patternFillOrType, opt_color, o
     }
   } else
     newFill = null;
-  return newFill;
+  return /** @type {acgraph.vector.PatternFill|acgraph.vector.HatchFill} */(newFill);
 };
 
 
@@ -967,8 +934,8 @@ acgraph.vector.normalizePageSize = function(opt_paperSizeOrWidth, opt_landscapeO
  */
 acgraph.vector.normalizeGradientMode = function(mode) {
   if (goog.isDefAndNotNull(mode)) { // mode is set
-    if (mode instanceof goog.math.Rect)
-      return mode;
+    if (acgraph.utils.instanceOf(mode, goog.math.Rect))
+      return /** @type {goog.math.Rect} */(mode);
     else if (goog.isObject(mode) && !isNaN(mode['left']) && !isNaN(mode['top']) && !isNaN(mode['width']) && !isNaN(mode['height']))
       return new goog.math.Rect(mode['left'], mode['top'], mode['width'], mode['height']);
   }
@@ -1041,48 +1008,6 @@ acgraph.vector.getThickness = function(stroke) {
 
 //exports
 (function() {
-  goog.exportSymbol('acgraph.vector.Anchor.CENTER', acgraph.vector.Anchor.CENTER);
-  goog.exportSymbol('acgraph.vector.Anchor.CENTER_BOTTOM', acgraph.vector.Anchor.CENTER_BOTTOM);
-  goog.exportSymbol('acgraph.vector.Anchor.CENTER_TOP', acgraph.vector.Anchor.CENTER_TOP);
-  goog.exportSymbol('acgraph.vector.Anchor.LEFT_BOTTOM', acgraph.vector.Anchor.LEFT_BOTTOM);
-  goog.exportSymbol('acgraph.vector.Anchor.LEFT_CENTER', acgraph.vector.Anchor.LEFT_CENTER);
-  goog.exportSymbol('acgraph.vector.Anchor.LEFT_TOP', acgraph.vector.Anchor.LEFT_TOP);
-  goog.exportSymbol('acgraph.vector.Anchor.RIGHT_BOTTOM', acgraph.vector.Anchor.RIGHT_BOTTOM);
-  goog.exportSymbol('acgraph.vector.Anchor.RIGHT_CENTER', acgraph.vector.Anchor.RIGHT_CENTER);
-  goog.exportSymbol('acgraph.vector.Anchor.RIGHT_TOP', acgraph.vector.Anchor.RIGHT_TOP);
-  goog.exportSymbol('acgraph.vector.Cursor.DEFAULT', acgraph.vector.Cursor.DEFAULT);
-  goog.exportSymbol('acgraph.vector.Cursor.CROSSHAIR', acgraph.vector.Cursor.CROSSHAIR);
-  goog.exportSymbol('acgraph.vector.Cursor.POINTER', acgraph.vector.Cursor.POINTER);
-  goog.exportSymbol('acgraph.vector.Cursor.MOVE', acgraph.vector.Cursor.MOVE);
-  goog.exportSymbol('acgraph.vector.Cursor.TEXT', acgraph.vector.Cursor.TEXT);
-  goog.exportSymbol('acgraph.vector.Cursor.WAIT', acgraph.vector.Cursor.WAIT);
-  goog.exportSymbol('acgraph.vector.Cursor.HELP', acgraph.vector.Cursor.HELP);
-  goog.exportSymbol('acgraph.vector.Cursor.N_RESIZE', acgraph.vector.Cursor.N_RESIZE);
-  goog.exportSymbol('acgraph.vector.Cursor.NE_RESIZE', acgraph.vector.Cursor.NE_RESIZE);
-  goog.exportSymbol('acgraph.vector.Cursor.E_RESIZE', acgraph.vector.Cursor.E_RESIZE);
-  goog.exportSymbol('acgraph.vector.Cursor.SE_RESIZE', acgraph.vector.Cursor.SE_RESIZE);
-  goog.exportSymbol('acgraph.vector.Cursor.S_RESIZE', acgraph.vector.Cursor.S_RESIZE);
-  goog.exportSymbol('acgraph.vector.Cursor.SW_RESIZE', acgraph.vector.Cursor.SW_RESIZE);
-  goog.exportSymbol('acgraph.vector.Cursor.W_RESIZE', acgraph.vector.Cursor.W_RESIZE);
-  goog.exportSymbol('acgraph.vector.Cursor.NW_RESIZE', acgraph.vector.Cursor.NW_RESIZE);
-  goog.exportSymbol('acgraph.vector.ImageFillMode.FIT', acgraph.vector.ImageFillMode.FIT);
-  goog.exportSymbol('acgraph.vector.ImageFillMode.FIT_MAX', acgraph.vector.ImageFillMode.FIT_MAX);
-  goog.exportSymbol('acgraph.vector.ImageFillMode.STRETCH', acgraph.vector.ImageFillMode.STRETCH);
-  goog.exportSymbol('acgraph.vector.ImageFillMode.TILE', acgraph.vector.ImageFillMode.TILE);
-  goog.exportSymbol('acgraph.vector.PaperSize.US_LETTER', acgraph.vector.PaperSize.US_LETTER);
-  goog.exportSymbol('acgraph.vector.PaperSize.A0', acgraph.vector.PaperSize.A0);
-  goog.exportSymbol('acgraph.vector.PaperSize.A1', acgraph.vector.PaperSize.A1);
-  goog.exportSymbol('acgraph.vector.PaperSize.A2', acgraph.vector.PaperSize.A2);
-  goog.exportSymbol('acgraph.vector.PaperSize.A3', acgraph.vector.PaperSize.A3);
-  goog.exportSymbol('acgraph.vector.PaperSize.A4', acgraph.vector.PaperSize.A4);
-  goog.exportSymbol('acgraph.vector.PaperSize.A5', acgraph.vector.PaperSize.A5);
-  goog.exportSymbol('acgraph.vector.PaperSize.A6', acgraph.vector.PaperSize.A6);
-  goog.exportSymbol('acgraph.vector.StrokeLineJoin.MITER', acgraph.vector.StrokeLineJoin.MITER);
-  goog.exportSymbol('acgraph.vector.StrokeLineJoin.ROUND', acgraph.vector.StrokeLineJoin.ROUND);
-  goog.exportSymbol('acgraph.vector.StrokeLineJoin.BEVEL', acgraph.vector.StrokeLineJoin.BEVEL);
-  goog.exportSymbol('acgraph.vector.StrokeLineCap.BUTT', acgraph.vector.StrokeLineCap.BUTT);
-  goog.exportSymbol('acgraph.vector.StrokeLineCap.ROUND', acgraph.vector.StrokeLineCap.ROUND);
-  goog.exportSymbol('acgraph.vector.StrokeLineCap.SQUARE', acgraph.vector.StrokeLineCap.SQUARE);
   goog.exportSymbol('acgraph.vector.normalizeFill', acgraph.vector.normalizeFill);
   goog.exportSymbol('acgraph.vector.normalizeStroke', acgraph.vector.normalizeStroke);
   goog.exportSymbol('acgraph.vector.normalizeHatchFill', acgraph.vector.normalizeHatchFill);

@@ -30,7 +30,7 @@ GraphicsJS supports z-index. Typically, if you ever decided to change the overla
 
 GraphicsJS provides a convenient [Transformations](https://docs.anychart.com/Graphics/Transformations) API that allows to move, scale, rotate and shear both elements and groups of elements. Transformations, in good hands, when used along with [flexible Event Model](https://docs.anychart.com/Graphics/Events) and [Virtual DOM](https://docs.anychart.com/Graphics/Virtual_DOM), is a very powerfull tool.
 
-GraphicsJS [supports legacy browsers including IE6+](https://docs.anychart.com/Graphics/Browser_Support). 
+GraphicsJS [supports legacy browsers including IE6+](https://docs.anychart.com/Graphics/Browser_Support).
 
 GraphicsJS API is very convenient to use. [GraphicsJS API](https://api.anychart.com/latest/anychart.graphics) is very concise and provides chaining support, which makes it possible to use a dozen lines of code where other libraries require a hundred.
 
@@ -45,7 +45,7 @@ To get started with GraphicsJS create simple HTML document and copy paste the fo
 <html lang="en">
 <head>
 	<meta charset="utf-8" />
-	<script src="https://cdn.anychart.com/js/latest/graphics.min.js"></script>
+	<script src="https://cdn.anychart.com/releases/v8/js/graphics.min.js"></script>
 </head>
 <body>
 	<div id="stage-container" style="width: 400px; height: 375px;"></div>
@@ -74,7 +74,7 @@ Launch the page in your browser and here you are: you have created your first dr
 
 # Articles
 - [Introducing GraphicsJS, a Powerful Lightweight Graphics Library](https://www.sitepoint.com/introducing-graphicsjs-a-powerful-lightweight-graphics-library/) by [@RomanLubushkin](https://github.com/RomanLubushkin)
-- [GraphicsJS Overview](https://docs.anychart.com/Graphics/Overview) by [AnyChart](http://www.anychart.com/)
+- [GraphicsJS Overview](https://docs.anychart.com/Graphics/Overview) by [AnyChart](https://www.anychart.com/)
 
 # Building
 
@@ -89,7 +89,7 @@ To contribute to AnyChart project please:
 * Make any changes you want to contribute.
 * Create a pull request against the `develop` branch.
 
-[GitHub documentation: Forking repositories](https://help.github.com/articles/fork-a-repo/).  
+[GitHub documentation: Forking repositories](https://help.github.com/articles/fork-a-repo/).
 [GitHub documentation: Collaborating using pull requests](https://help.github.com/categories/collaborating-with-issues-and-pull-requests/).
 
 # Links
@@ -98,4 +98,4 @@ To contribute to AnyChart project please:
 - [GraphicsJS API](https://api.anychart.com/latest/anychart.graphics)
 - [GraphicsJS at GitHub](https://github.com/anychart/graphicsjs)
 - [Report a bug or an issue](https://github.com/anychart/graphicsjs/issues)
-
+[![Analytics](https://ga-beacon.appspot.com/UA-228820-4/GraphicsJS?pixel&useReferer)](https://github.com/igrigorik/ga-beacon)

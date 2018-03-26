@@ -142,7 +142,7 @@ acgraph.vector.vml.Text.prototype.isComplex = function() {
 /** @inheritDoc */
 acgraph.vector.vml.Text.prototype.getBoundsWithTransform = function(transform) {
   this.isComplex_ = this.isComplex();
-  return goog.base(this, 'getBoundsWithTransform', transform);
+  return acgraph.vector.vml.Text.base(this, 'getBoundsWithTransform', transform);
 };
 
 
@@ -154,9 +154,13 @@ acgraph.vector.vml.Text.prototype.render = function() {
 };
 
 
-/**
- * Applies text properties to its DOM element
- */
+/** @inheritDoc */
+acgraph.vector.vml.Text.prototype.renderTextPath = function() {
+  this.clearDirtyState(acgraph.vector.Element.DirtyState.CHILDREN);
+};
+
+
+/** @inheritDoc */
 acgraph.vector.vml.Text.prototype.renderPosition = function() {
   if (this.isComplex_) {
     goog.base(this, 'renderPosition');
@@ -200,7 +204,7 @@ acgraph.vector.vml.Text.prototype.getTextBounds = function(text, segmentStyle) {
     var bounds = acgraph.getRenderer().measuringSimpleText(text, segmentStyle, this.style());
     bounds.left = this.x();
     bounds.top = this.y();
-    this.realHeigth = bounds.height;
+    this.realHeight = bounds.height;
     if (this.height()) bounds.height = this.height();
     return bounds;
   }
@@ -313,4 +317,5 @@ acgraph.vector.vml.Text.prototype.disposeInternal = function() {
   proto['color'] = proto.color;
   proto['opacity'] = proto.opacity;
   proto['textOverflow'] = proto.textOverflow;
+  goog.exportSymbol('acgraph.vml.Text', acgraph.vector.vml.Text);
 })();

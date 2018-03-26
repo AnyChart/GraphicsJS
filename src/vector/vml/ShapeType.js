@@ -64,7 +64,7 @@ acgraph.vector.vml.ShapeType.prototype.setFill = function(value) {
  */
 acgraph.vector.vml.ShapeType.prototype.removeFill = function() {
   delete this.fill_;
-  acgraph.vector.vml.Renderer.getInstance().removeNode(this.fillDomElement);
+  goog.dom.removeNode(this.fillDomElement);
   this.fillDomElement = null;
 };
 
@@ -111,9 +111,9 @@ acgraph.vector.vml.ShapeType.prototype.disposeInternal = function() {
   delete this.fill_;
   delete this.stroke_;
 
-  acgraph.vector.vml.Renderer.getInstance().removeNode(this.fillDomElement);
+  goog.dom.removeNode(this.fillDomElement);
   this.fillDomElement = null;
 
-  acgraph.vector.vml.Renderer.getInstance().removeNode(this.strokeDomElement);
+  goog.dom.removeNode(this.strokeDomElement);
   this.strokeDomElement = null;
 };

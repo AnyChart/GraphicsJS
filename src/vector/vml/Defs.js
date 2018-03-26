@@ -79,11 +79,11 @@ acgraph.vector.vml.Defs.prototype.serializeFill = function(fill) {
   var stringParam = '';
   if (goog.isString(fill)) {
     stringParam += fill + '1';
-  } else if (fill instanceof acgraph.vector.RadialGradient) {
+  } else if (acgraph.utils.instanceOf(fill, acgraph.vector.RadialGradient)) {
     /** @type {acgraph.vector.vml.RadialGradient} */
     var rg = /** @type {acgraph.vector.vml.RadialGradient} */(fill);
     stringParam = acgraph.vector.vml.RadialGradient.serialize(rg.keys, rg.cx, rg.cy, rg.size_x, rg.size_y, rg.opacity, rg.bounds);
-  } else if (fill instanceof acgraph.vector.LinearGradient) {
+  } else if (acgraph.utils.instanceOf(fill, acgraph.vector.LinearGradient)) {
     /** @type {acgraph.vector.LinearGradient} */
     var lg = /** @type {acgraph.vector.LinearGradient} */(fill);
     stringParam = acgraph.vector.LinearGradient.serialize(lg.keys, lg.opacity, lg.angle, lg.mode);

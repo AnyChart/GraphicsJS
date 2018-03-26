@@ -1,5 +1,6 @@
 goog.provide('acgraph.vector.Defs');
 goog.require('acgraph.vector.HatchFill');
+goog.require('acgraph.vector.ILayer');
 goog.require('acgraph.vector.LinearGradient');
 goog.require('acgraph.vector.PatternFill');
 goog.require('acgraph.vector.RadialGradient');
@@ -14,6 +15,7 @@ goog.require('goog.math.Rect');
  * @constructor
  * @param {!acgraph.vector.Stage} stage Renderer.
  * @extends {goog.Disposable}
+ * @implements {acgraph.vector.ILayer}
  */
 acgraph.vector.Defs = function(stage) {
   goog.base(this);
@@ -293,6 +295,72 @@ acgraph.vector.Defs.prototype.removeRadialGradient = function(element) {
 };
 
 
+/**
+ * Render.
+ */
+acgraph.vector.Defs.prototype.render = function() {
+  this.createDom();
+  goog.dom.appendChild(this.stage.domElement(), this.domElement());
+};
+
+
+//----------------------------------------------------------------------------------------------------------------------
+//
+//  ILayer members
+//
+//----------------------------------------------------------------------------------------------------------------------
+/**
+ * @param {!acgraph.vector.Element} child .
+ * @return {!acgraph.vector.ILayer} .
+ */
+acgraph.vector.Defs.prototype.addChild = function(child) {
+  child.remove();
+  child.setParent(this);
+  return this;
+};
+
+
+/**
+ * @param {acgraph.vector.Element} element Element to be removed.
+ * @return {acgraph.vector.Element} Removed element or null.
+ */
+acgraph.vector.Defs.prototype.removeChild = function(element) {
+  element.setParent(null);
+  goog.dom.removeNode(element.domElement());
+  return element;
+};
+
+
+/**
+ * Returns full transformation (self and parent transformations combined).
+ * @return {goog.math.AffineTransform} Full transformation.
+ */
+acgraph.vector.Defs.prototype.getFullTransformation = function() {
+  return null;
+};
+
+
+/**
+ * @param {acgraph.vector.Element} child .
+ */
+acgraph.vector.Defs.prototype.notifyRemoved = goog.nullFunction;
+
+
+/**
+ * @return {acgraph.vector.Stage} Stage (may be null).
+ */
+acgraph.vector.Defs.prototype.getStage = function() {
+  return /** @type {acgraph.vector.Stage} */(this.stage);
+};
+
+
+/**
+ * Sets dirty state.
+ * @param {number} value States to be set.
+ */
+acgraph.vector.Defs.prototype.setDirtyState = goog.nullFunction;
+
+
 //----------------------------------------------------------------------------------------------------------------------
 //
 //  Disposing
@@ -300,13 +368,26 @@ acgraph.vector.Defs.prototype.removeRadialGradient = function(element) {
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.Defs.prototype.disposeInternal = function() {
-  acgraph.getRenderer().removeNode(this.domElement_);
+  goog.dom.removeNode(this.domElement_);
   this.domElement_ = null;
 
-  goog.disposeAll(this.linearGradients_);
-  goog.disposeAll(this.radialGradients_);
-  goog.disposeAll(this.imageFills_);
-  // goog.disposeAll(this.hatchFills_);
+  goog.object.forEach(this.linearGradients_, function(v) {
+    goog.dispose(v);
+  });
+  goog.object.forEach(this.radialGradients_, function(v) {
+    goog.dispose(v);
+  });
+  goog.object.forEach(this.imageFills_, function(v) {
+    goog.dispose(v);
+  });
+  goog.object.forEach(this.hatchFills_, function(v) {
+    goog.dispose(v);
+  });
+
+  this.linearGradients_ = null;
+  this.radialGradients_ = null;
+  this.imageFills_ = null;
+  this.hatchFills_ = null;
 
   delete this.stage;
 };

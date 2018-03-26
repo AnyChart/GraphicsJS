@@ -1,6 +1,7 @@
 goog.provide('acgraph.vector.vml.Renderer');
 goog.require('acgraph.utils.IdGenerator');
 goog.require('acgraph.vector.LinearGradient');
+goog.require('acgraph.vector.PathBase');
 goog.require('acgraph.vector.Renderer');
 goog.require('acgraph.vector.vml.RadialGradient');
 goog.require('goog.array');
@@ -17,45 +18,11 @@ goog.require('goog.object');
 /**
  * Renderer for VML.
  * Works with VML, creates VML elements and sets attributes to them.
- * <h2>VML Renderer features:</h2>
- * <ul>
- *   <li>
- *     <h3>Creating root DOM element and environement intitialization</h3>
- *     <ul>
- *       <li><a href="#createStageElement">createStageElement</a></li>
- *       <li><a href="#setStageSize">setStageSize</a></li>
- *     </ul>
- *   </li>
- *
- *   <li>
- *     <h3>Creating VML elements and setting attributes to them</h3>
- *     <ul>
- *       <li><a href="#createLayerElement">createLayerElement</a></li>
- *       <li><a href="#setLayerProperties">setLayerProperties</a></li>
- *       <li><a href="#createRectElement">createRectElement</a></li>
- *       <li><a href="#setRectProperties">setRectProperties</a></li>
- *     </ul>
- *   </li>
- *
- *   <li>
- *     <h3>Utilities</h3>
- *     <ul>
- *       <li><a href="#createVMLElement_">createVMLElement_</a></li>
- *       <li><a href="#setAttribute_">setAttribute_</a></li>
- *       <li><a href="#setAttributes_">setAttributes_</a></li>
- *       <li><a href="#toCssSize_">toCssSize_</a></li>
- *       <li><a href="#toPosPx_">toPosPx_</a></li>
- *       <li><a href="#toPosCoord_">toPosCoord_</a></li>
- *       <li><a href="#toSizeCoord_">toSizeCoord_</a></li>
- *       <li><a href="#toSizePx_">toSizePx_</a></li>
- *     </ul>
- *   </li>
- * </ul>
  * @constructor
  * @extends {acgraph.vector.Renderer}
  */
 acgraph.vector.vml.Renderer = function() {
-  goog.base(this);
+  acgraph.vector.vml.Renderer.base(this, 'constructor');
   var doc = goog.dom.getDocument();
   // Adding your own class to VML styles table, it will be applied to all VML
   // elements. Class tells browser that element is a VML element.
@@ -89,9 +56,11 @@ acgraph.vector.vml.Renderer = function() {
       );
     };
   }
+
+  if (acgraph.vector.vml.Renderer.IE8_MODE)
+    this.setAttr = this.setAttrIE8_;
 };
-goog.inherits(acgraph.vector.vml.Renderer,
-    acgraph.vector.Renderer);
+goog.inherits(acgraph.vector.vml.Renderer, acgraph.vector.Renderer);
 goog.addSingletonGetter(acgraph.vector.vml.Renderer);
 //endregion
 
@@ -127,14 +96,6 @@ acgraph.vector.vml.Renderer.VML_CLASS_ = 'any_vml';
 
 
 /**
- * The VML behavior URL.
- * @type {string}
- * @private
- */
-acgraph.vector.vml.Renderer.VML_IMPORT_ = '#default#VML';
-
-
-/**
  * IE8 mode indicator. IE8 treats VML differently, so we need to know if we are there.
  * @type {boolean}
  */
@@ -155,6 +116,32 @@ acgraph.vector.vml.Renderer.COORD_MULTIPLIER_ = 100;
  * @private
  */
 acgraph.vector.vml.Renderer.SHIFT_ = 0;
+
+
+/**
+ * Transform size to CSS size. If passed in percents - returned as is,
+ * and in pixels otherwise.
+ *
+ * @param {number|string} size Size.
+ * @return {string} Position with regard to <a href='#COORD_MULTIPLIER'>COORD_MULTIPLIER</a>.
+ * @private
+ */
+acgraph.vector.vml.Renderer.toCssSize_ = function(size) {
+  return goog.isString(size) && goog.string.endsWith(size, '%') ?
+      parseFloat(size) + '%' : parseFloat(String(size)) + 'px';
+};
+
+
+/**
+ * Transforming size with COORD_MULTIPLIER to support
+ * fractional values.
+ * @param {number} number Size.
+ * @return {number} Size transformed with COORD_MULTIPLIER.
+ * @private
+ */
+acgraph.vector.vml.Renderer.toSizeCoord_ = function(number) {
+  return Math.round(number) * acgraph.vector.vml.Renderer.COORD_MULTIPLIER_;
+};
 //endregion ---
 
 
@@ -225,6 +212,27 @@ acgraph.vector.vml.Renderer.prototype.measurementImage_ = null;
 //  Utils
 //
 //----------------------------------------------------------------------------------------------------------------------
+/**
+ * Sets a given attribute with a given value for a given element in IE8.
+ * @param {Element} el The element.
+ * @param {string} key The name of the attribute.
+ * @param {(string|number)} value The value of the attribute.
+ * @private
+ */
+acgraph.vector.vml.Renderer.prototype.setAttrIE8_ = function(el, key, value) {
+  el[key] = value;
+};
+
+
+/**
+ * @return {Element}
+ * @private
+ */
+acgraph.vector.vml.Renderer.prototype.createDiv_ = function() {
+  return goog.dom.createElement('div');
+};
+
+
 //----------------------------------------------------------------------------------------------------------------------
 //
 //  Measurement
@@ -240,7 +248,7 @@ acgraph.vector.vml.Renderer.prototype.createMeasurement = function() {
   this.measurementVMLShape_ = this.createTextSegmentElement();
   this.setPositionAndSize_(this.measurementVMLShape_, 0, 0, 1, 1);
   this.measurementVMLShape_.style['display'] = 'none';
-  this.setAttributes_(this.measurementVMLShape_,
+  this.setAttrs(this.measurementVMLShape_,
       {
         'filled': 'true',
         'fillcolor': 'black',
@@ -293,51 +301,8 @@ acgraph.vector.vml.Renderer.prototype.createMeasurement = function() {
  */
 acgraph.vector.vml.Renderer.prototype.measuringImage = function(src) {
   if (!this.measurement_) this.createMeasurement();
-  this.setAttribute_(this.measurementImage_, 'src', src);
+  this.setAttr(this.measurementImage_, 'src', src);
   return goog.style.getBounds(this.measurementImage_);
-};
-
-
-/**
- * Measure simple text.
- * @param {string} text Text to measure.
- * @param {acgraph.vector.TextSegmentStyle} segmentStyle Segment style.
- * @param {acgraph.vector.TextStyle} textStyle Text style.
- * @return {goog.math.Rect} Text bounds.
- */
-acgraph.vector.vml.Renderer.prototype.measuringSimpleText = function(text, segmentStyle, textStyle) {
-  if (!this.measurement_) this.createMeasurement();
-
-  this.measurementSimpleText_.style.cssText = '';
-
-  if (textStyle['fontStyle']) goog.style.setStyle(this.measurementSimpleText_, 'font-style', textStyle['fontStyle']);
-  if (textStyle['fontVariant']) goog.style.setStyle(this.measurementSimpleText_, 'font-variant', textStyle['fontVariant']);
-  if (textStyle['fontFamily']) goog.style.setStyle(this.measurementSimpleText_, 'font-family', textStyle['fontFamily']);
-  if (textStyle['fontSize']) goog.style.setStyle(this.measurementSimpleText_, 'font-size', textStyle['fontSize']);
-  if (textStyle['fontWeight']) goog.style.setStyle(this.measurementSimpleText_, 'font-weight', textStyle['fontWeight']);
-  if (textStyle['letterSpacing']) goog.style.setStyle(this.measurementSimpleText_, 'letter-spacing', textStyle['letterSpacing']);
-  if (textStyle['decoration']) goog.style.setStyle(this.measurementSimpleText_, 'text-decoration', textStyle['decoration']);
-  if (textStyle['textIndent']) goog.style.setStyle(this.measurementSimpleText_, 'text-indent', textStyle['textIndent']);
-  if (textStyle['textWrap'] && textStyle['width'] && textStyle['textWrap'] == acgraph.vector.Text.TextWrap.BY_LETTER) {
-    goog.style.setStyle(this.measurementSimpleText_, 'word-break', 'break-all');
-  } else {
-    goog.style.setStyle(this.measurementSimpleText_, 'white-space', 'nowrap');
-  }
-  if (textStyle['width']) goog.style.setStyle(this.measurementSimpleText_, 'width', textStyle['width']);
-
-  goog.style.setStyle(this.measurement_, {'left': 0, 'top': 0, 'width': '1px', height: '1px'});
-  goog.style.setStyle(this.measurementSimpleText_, {
-    'border': '0 solid',
-    'position': 'absolute',
-    'left': 0,
-    'top': 0
-  });
-
-  this.measurementSimpleText_.innerHTML = text;
-  var boundsTargetText = goog.style.getBounds(this.measurementSimpleText_);
-  this.measurementSimpleText_.innerHTML = '';
-
-  return boundsTargetText;
 };
 
 
@@ -411,7 +376,7 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
 
   goog.style.setStyle(this.measurementText_, 'border', '0 solid');
 
-  this.setAttribute_(this.measurementVMLTextPath_, 'string', text);
+  this.setAttr(this.measurementVMLTextPath_, 'string', text);
   var width = goog.style.getBounds(this.measurementVMLShape_).width;
 
   goog.style.setStyle(this.measurement_, {'left': 0, 'top': 0, 'width': 'auto', 'height': 'auto'});
@@ -425,6 +390,55 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
   boundsTargetText.left = boundsTargetText.left - 1;
 
   this.measurementText_.innerHTML = '';
+
+  return boundsTargetText;
+};
+
+
+/**
+ * Measure simple text.
+ * @param {string} text Text to measure.
+ * @param {acgraph.vector.TextSegmentStyle} segmentStyle Segment style.
+ * @param {acgraph.vector.TextStyle} textStyle Text style.
+ * @return {goog.math.Rect} Text bounds.
+ */
+acgraph.vector.vml.Renderer.prototype.measuringSimpleText = function(text, segmentStyle, textStyle) {
+  if (!this.measurement_) this.createMeasurement();
+
+  this.measurementSimpleText_.style.cssText = '';
+
+  if (textStyle['fontStyle']) goog.style.setStyle(this.measurementSimpleText_, 'font-style', textStyle['fontStyle']);
+  if (textStyle['fontVariant']) goog.style.setStyle(this.measurementSimpleText_, 'font-variant', textStyle['fontVariant']);
+  if (textStyle['fontFamily']) goog.style.setStyle(this.measurementSimpleText_, 'font-family', textStyle['fontFamily']);
+  if (textStyle['fontSize']) goog.style.setStyle(this.measurementSimpleText_, 'font-size', textStyle['fontSize']);
+  if (textStyle['fontWeight']) goog.style.setStyle(this.measurementSimpleText_, 'font-weight', textStyle['fontWeight']);
+  if (textStyle['letterSpacing']) goog.style.setStyle(this.measurementSimpleText_, 'letter-spacing', textStyle['letterSpacing']);
+  if (textStyle['decoration']) goog.style.setStyle(this.measurementSimpleText_, 'text-decoration', textStyle['decoration']);
+  if (textStyle['textIndent']) goog.style.setStyle(this.measurementSimpleText_, 'text-indent', textStyle['textIndent']);
+  goog.style.setStyle(this.measurementSimpleText_, 'word-break', textStyle['wordBreak']);
+  goog.style.setStyle(this.measurementSimpleText_, 'word-wrap', textStyle['wordWrap']);
+  if (!goog.isDefAndNotNull(textStyle['width']))
+    goog.style.setStyle(this.measurementSimpleText_, 'white-space', 'nowrap');
+
+  //old behaviour
+  // if (textStyle['wordWrap'] && textStyle['width'] && textStyle['wordWrap'] == 'byLetter') {
+  //   goog.style.setStyle(this.measurementSimpleText_, 'word-break', 'break-all');
+  // } else {
+  //   goog.style.setStyle(this.measurementSimpleText_, 'white-space', 'nowrap');
+  // }
+  if (textStyle['width']) goog.style.setStyle(this.measurementSimpleText_, 'width', textStyle['width']);
+
+  goog.style.setStyle(this.measurement_, {'left': 0, 'top': 0, 'width': '1px', height: '1px'});
+  goog.style.setStyle(this.measurementSimpleText_, {
+    'border': '0 solid',
+    'position': 'absolute',
+    'left': 0,
+    'top': 0
+  });
+
+  this.measurementSimpleText_.innerHTML = text;
+  var boundsTargetText = goog.style.getBounds(this.measurementSimpleText_);
+  this.measurementSimpleText_.innerHTML = '';
 
   return boundsTargetText;
 };
@@ -456,35 +470,6 @@ acgraph.vector.vml.Renderer.prototype.measureElement = function(element) {
 //
 //----------------------------------------------------------------------------------------------------------------------
 /**
- * Applies attribute to VML element, way of setting depends on IE version.
- * @param {Element|HTMLElement|Node|CSSStyleDeclaration} element VML element to set attribute to.
- * @param {string} key Attribute name.
- * @param {string} value Attribute value.
- * @private
- */
-acgraph.vector.vml.Renderer.prototype.setAttribute_ = function(element, key, value) {
-  if (acgraph.vector.vml.Renderer.IE8_MODE) {
-    element[key] = value;
-  } else {
-    element.setAttribute(key, value);
-  }
-};
-
-
-/**
- * Applies attribute to VML element.
- * @param {Element|Node|CSSStyleDeclaration} element VML element.
- * @param {Object} attrs Attributes.
- * @private
- */
-acgraph.vector.vml.Renderer.prototype.setAttributes_ = function(element, attrs) {
-  goog.object.forEach(attrs, function(val, key) {
-    this.setAttribute_(element, key, val);
-  }, this);
-};
-
-
-/**
  * Removes attribute from VML element, the way depends on IE version.
  * @param {CSSStyleDeclaration} style VML style.
  * @param {string} key Attribute name.
@@ -493,43 +478,6 @@ acgraph.vector.vml.Renderer.prototype.setAttributes_ = function(element, attrs) 
 acgraph.vector.vml.Renderer.prototype.removeStyle_ = function(style, key) {
   if (!style[key]) return;
   style['cssText'] = style['cssText'].replace(new RegExp('(^|; )(' + key + ': [^;]*)(;|$)', 'ig'), ';');
-};
-
-
-/**
- * Removes attribute from VML element.
- * @param {Element|Node} element VML element.
- * @param {string} key Attribute name.
- * @private
- */
-acgraph.vector.vml.Renderer.prototype.removeAttribute_ = function(element, key) {
-  element.removeAttribute(key);
-};
-
-
-/**
- * Transform size to CSS size. If passed in percents - returned as is,
- * and in pixels otherwise.
- *
- * @param {number|string} size Size.
- * @return {string} Position with regard to <a href='#COORD_MULTIPLIER'>COORD_MULTIPLIER</a>.
- * @private
- */
-acgraph.vector.vml.Renderer.prototype.toCssSize_ = function(size) {
-  return goog.isString(size) && goog.string.endsWith(size, '%') ?
-      parseFloat(size) + '%' : parseFloat(String(size)) + 'px';
-};
-
-
-/**
- * Transforming size with COORD_MULTIPLIER to support
- * fractional values.
- * @param {number} number Size.
- * @return {number} Size transformed with COORD_MULTIPLIER.
- * @private
- */
-acgraph.vector.vml.Renderer.prototype.toSizeCoord_ = function(number) {
-  return Math.round(number) * acgraph.vector.vml.Renderer.COORD_MULTIPLIER_;
 };
 
 
@@ -544,59 +492,48 @@ acgraph.vector.vml.Renderer.prototype.toSizeCoord_ = function(number) {
  */
 acgraph.vector.vml.Renderer.prototype.setPositionAndSize_ = function(element, x, y, width, height) {
   this.setCoordSize(element);
-  this.setAttributes_(element['style'], {
+  this.setAttrs(element['style'], {
     'position': 'absolute',
-    'left': this.toCssSize_(x),
-    'top': this.toCssSize_(y),
-    'width': this.toCssSize_(width),
-    'height': this.toCssSize_(height)
+    'left': acgraph.vector.vml.Renderer.toCssSize_(x),
+    'top': acgraph.vector.vml.Renderer.toCssSize_(y),
+    'width': acgraph.vector.vml.Renderer.toCssSize_(width),
+    'height': acgraph.vector.vml.Renderer.toCssSize_(height)
   });
 };
 
 
 /**
- * Serializes Path and converts it into string that can be used in VML.
- * @param {acgraph.vector.PathBase} path Path.
- * @param {boolean=} opt_transformed Use transformed instead of original.
- * @return {?string} VML acceptable path.
- * @private
+ * @const {Object<acgraph.vector.PathBase.Segment, string>}
  */
-acgraph.vector.vml.Renderer.prototype.getVmlPath_ = function(path, opt_transformed) {
-  if (path.isEmpty()) return null;
-  var list = [];
-  var func = opt_transformed ? path.forEachTransformedSegment : path.forEachSegment;
-  func.call(path, function(segment, args) {
-    switch (segment) {
-      case acgraph.vector.PathBase.Segment.MOVETO:
-        list.push('m');
-        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(args, this.toSizeCoord_), list);
-        break;
-      case acgraph.vector.PathBase.Segment.LINETO:
-        list.push('l');
-        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(args, this.toSizeCoord_), list);
-        break;
-      case acgraph.vector.PathBase.Segment.CURVETO:
-        list.push('c');
-        acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(args, this.toSizeCoord_), list);
-        break;
-      case acgraph.vector.PathBase.Segment.CLOSE:
-        list.push('x');
-        break;
-      case acgraph.vector.PathBase.Segment.ARCTO:
-        var toAngle = args[2] + args[3];
-        var cx = this.toSizeCoord_(args[4] - goog.math.angleDx(toAngle, args[0]));
-        var cy = this.toSizeCoord_(args[5] - goog.math.angleDy(toAngle, args[1]));
-        var rx = this.toSizeCoord_(args[0]);
-        var ry = this.toSizeCoord_(args[1]);
-        // VML angle in fd (see http://www.w3.org/TR/NOTE-VML)
-        // Positive angles go counterclockwise.
-        var fromAngle = Math.round(args[2] * -65536);
-        var extent = Math.round(args[3] * -65536);
-        list.push('ae', cx, cy, rx, ry, fromAngle, extent);
-        break;
-    }
-  }, this);
-  return list.join(' ');
+acgraph.vector.vml.Renderer.prototype.pathSegmentNamesMap = (function() {
+  var map = {};
+  map[acgraph.vector.PathBase.Segment.MOVETO] = 'm';
+  map[acgraph.vector.PathBase.Segment.LINETO] = 'l';
+  map[acgraph.vector.PathBase.Segment.CURVETO] = 'c';
+  map[acgraph.vector.PathBase.Segment.ARCTO] = 'ae';
+  map[acgraph.vector.PathBase.Segment.CLOSE] = 'x';
+  return map;
+})();
+
+
+/** @inheritDoc */
+acgraph.vector.vml.Renderer.prototype.pushArcToPathString = function(list, args) {
+  var toAngle = args[2] + args[3];
+  var cx = acgraph.vector.vml.Renderer.toSizeCoord_(args[4] - goog.math.angleDx(toAngle, args[0]));
+  var cy = acgraph.vector.vml.Renderer.toSizeCoord_(args[5] - goog.math.angleDy(toAngle, args[1]));
+  var rx = acgraph.vector.vml.Renderer.toSizeCoord_(args[0]);
+  var ry = acgraph.vector.vml.Renderer.toSizeCoord_(args[1]);
+  // VML angle in fd (see http://www.w3.org/TR/NOTE-VML)
+  // Positive angles go counterclockwise.
+  var fromAngle = Math.round(args[2] * -65536);
+  var extent = Math.round(args[3] * -65536);
+  list.push(cx, cy, rx, ry, fromAngle, extent);
+};
+
+
+/** @inheritDoc */
+acgraph.vector.vml.Renderer.prototype.pushToArgs = function(list, args) {
+  acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(args, acgraph.vector.vml.Renderer.toSizeCoord_), list);
 };
 
 
@@ -617,57 +554,6 @@ acgraph.vector.vml.Renderer.prototype.isVMLClassDefined = function() {
   return !!goog.array.find(goog.cssom.getAllCssStyleRules(), function(cssRule) {
     return cssRule.selectorText === '.' + acgraph.vector.vml.Renderer.VML_CLASS_;
   });
-};
-
-
-/** @inheritDoc **/
-acgraph.vector.vml.Renderer.prototype.setId = function(element, id) {
-  this.setIdInternal(element.domElement(), id);
-};
-
-
-/**
- * Sets id to element.
- * @param {?Element} element - Element.
- * @param {string} id - ID to be set.
- */
-acgraph.vector.vml.Renderer.prototype.setIdInternal = function(element, id) {
-  if (element) {
-    if (id)
-      this.setAttribute_(element, 'id', id);
-    else
-      this.removeAttribute_(element, 'id');
-  }
-};
-
-
-/** @inheritDoc */
-acgraph.vector.vml.Renderer.prototype.setTitle = goog.nullFunction;
-
-
-/** @inheritDoc */
-acgraph.vector.vml.Renderer.prototype.setDesc = goog.nullFunction;
-
-
-/** @inheritDoc */
-acgraph.vector.vml.Renderer.prototype.setAttributes = function(element, attrs) {
-  var domElement = element.domElement();
-  if (domElement && goog.isObject(attrs)) {
-    for (var key in attrs) {
-      var value = attrs[key];
-      if (goog.isNull(value)) {
-        this.removeAttribute_(domElement, key);
-      } else {
-        this.setAttribute_(domElement, key, /** @type {string} */ (value));
-      }
-    }
-  }
-};
-
-
-/** @inheritDoc */
-acgraph.vector.vml.Renderer.prototype.getAttribute = function(element, key) {
-  return element ? element.getAttribute(key) : void 0;
 };
 
 
@@ -1008,17 +894,15 @@ acgraph.vector.vml.Renderer.prototype.createStageElement = function() {
 
 /** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.setStageSize = function(el, width, height) {
-  this.setAttributes_(el['style'], {
-    'width': this.toCssSize_(width),
-    'height': this.toCssSize_(height)
+  this.setAttrs(el['style'], {
+    'width': acgraph.vector.vml.Renderer.toCssSize_(width),
+    'height': acgraph.vector.vml.Renderer.toCssSize_(height)
   });
 };
 
 
 /** @inheritDoc */
-acgraph.vector.vml.Renderer.prototype.createDefsElement = function() {
-  return goog.dom.createElement('div');
-};
+acgraph.vector.vml.Renderer.prototype.createDefsElement = acgraph.vector.vml.Renderer.prototype.createDiv_;
 
 
 //endregion
@@ -1029,20 +913,12 @@ acgraph.vector.vml.Renderer.prototype.createDefsElement = function() {
 //
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
-acgraph.vector.vml.Renderer.prototype.createLayerElement = function() {
-  return goog.dom.createElement('div');
-};
+acgraph.vector.vml.Renderer.prototype.createLayerElement = acgraph.vector.vml.Renderer.prototype.createDiv_;
 
 
 /** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.createImageElement = function() {
   return this.createVMLElement_('image');
-};
-
-
-/** @inheritDoc */
-acgraph.vector.vml.Renderer.prototype.createRectElement = function() {
-  return this.createVMLElement_('shape');
 };
 
 
@@ -1098,9 +974,7 @@ acgraph.vector.vml.Renderer.prototype.createStrokeElement = function() {
 
 
 /** @inheritDoc */
-acgraph.vector.vml.Renderer.prototype.createFillPatternElement = function() {
-  return goog.dom.createElement('div');
-};
+acgraph.vector.vml.Renderer.prototype.createFillPatternElement = acgraph.vector.vml.Renderer.prototype.createDiv_;
 
 
 /** @inheritDoc */
@@ -1113,12 +987,12 @@ acgraph.vector.vml.Renderer.prototype.setPatternTransformation = goog.nullFuncti
 
 /** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.setLayerSize = function(layer) {
-  this.setAttributes_(layer.domElement()['style'], {
+  this.setAttrs(layer.domElement()['style'], {
     'position': 'absolute',
-    'left': this.toCssSize_(0),
-    'top': this.toCssSize_(0),
-    'width': this.toCssSize_(1),
-    'height': this.toCssSize_(1)
+    'left': acgraph.vector.vml.Renderer.toCssSize_(0),
+    'top': acgraph.vector.vml.Renderer.toCssSize_(0),
+    'width': acgraph.vector.vml.Renderer.toCssSize_(1),
+    'height': acgraph.vector.vml.Renderer.toCssSize_(1)
   });
 };
 
@@ -1128,7 +1002,7 @@ acgraph.vector.vml.Renderer.prototype.setLayerSize = function(layer) {
  * @param {Element} element Element.
  */
 acgraph.vector.vml.Renderer.prototype.setCoordSize = function(element) {
-  this.setAttribute_(element, 'coordsize', this.toSizeCoord_(1) + ' ' + this.toSizeCoord_(1));
+  this.setAttr(element, 'coordsize', acgraph.vector.vml.Renderer.toSizeCoord_(1) + ' ' + acgraph.vector.vml.Renderer.toSizeCoord_(1));
 };
 
 
@@ -1218,16 +1092,16 @@ acgraph.vector.vml.Renderer.prototype.setImageProperties = function(element) {
     }
   }
 
-  this.setAttributes_(domElement['style'], {
+  this.setAttrs(domElement['style'], {
     'position': 'absolute',
-    'left': this.toCssSize_(calcX),
-    'top': this.toCssSize_(calcY),
-    'width': this.toCssSize_(calcWidth),
-    'height': this.toCssSize_(calcHeight)
+    'left': acgraph.vector.vml.Renderer.toCssSize_(calcX),
+    'top': acgraph.vector.vml.Renderer.toCssSize_(calcY),
+    'width': acgraph.vector.vml.Renderer.toCssSize_(calcWidth),
+    'height': acgraph.vector.vml.Renderer.toCssSize_(calcHeight)
   });
 
   // set image src in DOM element.
-  this.setAttribute_(domElement, 'src', src);
+  this.setAttr(domElement, 'src', src);
 
   element.clip(bounds);
 };
@@ -1255,14 +1129,14 @@ acgraph.vector.vml.Renderer.prototype.setEllipseProperties = function(ellipse) {
     var curves = acgraph.math.arcToBezier(cx, cy, rx, ry, 0, 360, false);
     var len = curves.length;
     transform.transform(curves, 0, curves, 0, len / 2);
-    list = ['m', this.toSizeCoord_(curves[len - 2]), this.toSizeCoord_(curves[len - 1]), 'c'];
-    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(curves, this.toSizeCoord_), list);
+    list = ['m', acgraph.vector.vml.Renderer.toSizeCoord_(curves[len - 2]), acgraph.vector.vml.Renderer.toSizeCoord_(curves[len - 1]), 'c'];
+    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(curves, acgraph.vector.vml.Renderer.toSizeCoord_), list);
   } else {
     list = ['ae',
-      this.toSizeCoord_(cx),
-      this.toSizeCoord_(cy),
-      this.toSizeCoord_(rx),
-      this.toSizeCoord_(ry),
+      acgraph.vector.vml.Renderer.toSizeCoord_(cx),
+      acgraph.vector.vml.Renderer.toSizeCoord_(cy),
+      acgraph.vector.vml.Renderer.toSizeCoord_(rx),
+      acgraph.vector.vml.Renderer.toSizeCoord_(ry),
       0,
       Math.round(360 * -65536)];
   }
@@ -1271,7 +1145,7 @@ acgraph.vector.vml.Renderer.prototype.setEllipseProperties = function(ellipse) {
   ellipse.clearDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
   ellipse.clearDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION);
 
-  this.setAttribute_(domElement, 'path', list.join(' '));
+  this.setAttr(domElement, 'path', list.join(' '));
 };
 
 
@@ -1281,12 +1155,12 @@ acgraph.vector.vml.Renderer.prototype.setPathProperties = function(path) {
 
   this.setPositionAndSize_(element, 0, 0, 1, 1);
 
-  var pathData = this.getVmlPath_(path, true);
+  var pathData = this.getPathString(path, true);
   if (pathData)
-    this.setAttribute_(element, 'path', pathData);
+    this.setAttr(element, 'path', pathData);
   else {
-    this.setAttribute_(element, 'path', 'M 0,0');
-    this.removeAttribute_(element, 'path');
+    this.setAttr(element, 'path', 'M 0,0');
+    this.removeAttr(element, 'path');
   }
 
   path.clearDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
@@ -1335,30 +1209,33 @@ acgraph.vector.vml.Renderer.prototype.setTextPosition = function(element) {
 
   var x, y;
   if (element.isComplex()) {
-    y = element.calcY;
-    if (element.getSegments().length)
-      y -= element.getSegments()[0].baseLine;
-    x = element.calcX;
-    this.setAttributes_(domElementStyle, {
-      'position': 'absolute',
-      'overflow': 'visible',
-      'left': this.toCssSize_(x),
-      'top': this.toCssSize_(y)
-    });
+    if (!element.path()) {
+      y = element.calcY;
+      if (element.getSegments().length)
+        y -= element.getSegments()[0].baseLine;
+      x = element.calcX;
+
+      this.setAttrs(domElementStyle, {
+        'position': 'absolute',
+        'overflow': 'visible',
+        'left': acgraph.vector.vml.Renderer.toCssSize_(x),
+        'top': acgraph.vector.vml.Renderer.toCssSize_(y)
+      });
+    }
   } else {
     x = /** @type {number} */ (element.x());
     y = /** @type {number} */ (element.y());
 
-    if (element.vAlign() && element.height() && element.height() > element.realHeigth) {
-      if (element.vAlign() == acgraph.vector.Text.VAlign.MIDDLE) y += element.height() / 2 - element.realHeigth / 2;
-      if (element.vAlign() == acgraph.vector.Text.VAlign.BOTTOM) y += element.height() - element.realHeigth;
+    if (element.vAlign() && element.height() && element.height() > element.realHeight) {
+      if (element.vAlign() == acgraph.vector.Text.VAlign.MIDDLE) y += element.height() / 2 - element.realHeight / 2;
+      if (element.vAlign() == acgraph.vector.Text.VAlign.BOTTOM) y += element.height() - element.realHeight;
     }
 
-    this.setAttributes_(domElementStyle, {
+    this.setAttrs(domElementStyle, {
       'position': 'absolute',
       'overflow': 'hidden',
-      'left': this.toCssSize_(x),
-      'top': this.toCssSize_(y)
+      'left': acgraph.vector.vml.Renderer.toCssSize_(x),
+      'top': acgraph.vector.vml.Renderer.toCssSize_(y)
     });
   }
 };
@@ -1370,10 +1247,12 @@ acgraph.vector.vml.Renderer.prototype.setTextProperties = function(element) {
   var domElementStyle = domElement['style'];
   domElement.style.cssText = '';
   if (element.isComplex()) {
-    this.setAttributes_(domElementStyle, {
-      'width': this.toCssSize_(1),
-      'height': this.toCssSize_(1)
-    });
+    if (!element.path()) {
+      this.setAttrs(domElementStyle, {
+        'width': acgraph.vector.vml.Renderer.toCssSize_(1),
+        'height': acgraph.vector.vml.Renderer.toCssSize_(1)
+      });
+    }
     domElement.innerHTML = '';
   } else {
     var text = element.getSimpleText();
@@ -1394,13 +1273,24 @@ acgraph.vector.vml.Renderer.prototype.setTextProperties = function(element) {
     if (element.textOverflow() == '') goog.style.setStyle(domElement, 'text-overflow', 'clip');
     if (element.direction()) goog.style.setStyle(domElement, 'direction', /** @type {string} */ (element.direction()));
 
-    if (element.textWrap() == acgraph.vector.Text.TextWrap.BY_LETTER && element.width()) {
-      goog.style.setStyle(domElement, 'word-break', 'break-all');
-      goog.style.setStyle(domElement, 'white-space', 'normal');
-    } else {
-      goog.style.setStyle(domElement, 'word-break', 'normal');
-      goog.style.setStyle(domElement, 'white-space', 'nowrap');
-    }
+    // console.log(element.wordBreak(), element.wordWrap());
+
+    goog.style.setStyle(domElement, 'word-break', /** @type {string} */ (element.wordBreak()));
+    goog.style.setStyle(domElement, 'word-wrap', /** @type {string} */ (element.wordWrap()));
+    if (!goog.isDefAndNotNull(element.width()))
+      goog.style.setStyle(this.measurementSimpleText_, 'white-space', 'nowrap');
+    else
+      goog.style.setStyle(this.measurementSimpleText_, 'white-space', 'normal');
+
+    //old behaviour
+    // if (element.wordWrap() == 'byLetter' && element.width()) {
+    //   goog.style.setStyle(domElement, 'word-break', 'break-all');
+    //   goog.style.setStyle(domElement, 'white-space', 'normal');
+    // } else {
+    //   goog.style.setStyle(domElement, 'word-break', 'normal');
+    //   goog.style.setStyle(domElement, 'white-space', 'nowrap');
+    // }
+
     if (element.hAlign()) {
       if (element.rtl)
         domElement.style['text-align'] =
@@ -1420,8 +1310,8 @@ acgraph.vector.vml.Renderer.prototype.setTextProperties = function(element) {
 
     goog.style.setUnselectable(domElement, !element.selectable());
     domElement.innerHTML = element.getSimpleText();
-    this.setAttribute_(domElementStyle, 'width', String(element.width() ? this.toCssSize_(/** @type {string|number} */ (element.width())) : element.getBounds().width));
-    this.setAttribute_(domElementStyle, 'height', String(element.height() ? this.toCssSize_(/** @type {string|number} */ (element.height())) : element.getBounds().height));
+    this.setAttr(domElementStyle, 'width', String(element.width() ? acgraph.vector.vml.Renderer.toCssSize_(/** @type {string|number} */ (element.width())) : element.getBounds().width));
+    this.setAttr(domElementStyle, 'height', String(element.height() ? acgraph.vector.vml.Renderer.toCssSize_(/** @type {string|number} */ (element.height())) : element.getBounds().height));
   }
 };
 
@@ -1429,14 +1319,22 @@ acgraph.vector.vml.Renderer.prototype.setTextProperties = function(element) {
 /** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.setTextSegmentPosition = function(element) {
   var domElement = element.domElement();
-  var path =
-      'm ' +
-          this.toSizeCoord_(element.x) + ',' +
-          this.toSizeCoord_(element.y) + ' l ' +
-          (this.toSizeCoord_(element.x) + 1) + ',' +
-          this.toSizeCoord_(element.y) + ' e';
+  var originalPath = element.parent().path();
+  if (originalPath) {
+    var textPath = /** @type {acgraph.vector.Path} */(acgraph.path());
+    textPath.deserialize(originalPath.serializePathArgs());
+    if (element.firstInLine)
+      textPath.translate(element.dx, element.dy);
 
-  domElement.setAttribute('path', path);
+    var path = originalPath ?
+        this.getPathString(textPath, true) :
+        'm ' +
+        acgraph.vector.vml.Renderer.toSizeCoord_(element.x) + ',' +
+        acgraph.vector.vml.Renderer.toSizeCoord_(element.y) + ' l ' +
+        (acgraph.vector.vml.Renderer.toSizeCoord_(element.x) + 1) + ',' +
+        acgraph.vector.vml.Renderer.toSizeCoord_(element.y) + ' e';
+    domElement.setAttribute('path', /** @type {string} */(path));
+  }
 };
 
 
@@ -1478,12 +1376,12 @@ acgraph.vector.vml.Renderer.prototype.setTextSegmentProperties = function(elemen
 
   if (style['opacity']) {
     var fill = this.createFillElement();
-    this.setAttribute_(fill, 'opacity', style['opacity']);
+    this.setAttr(fill, 'opacity', style['opacity']);
     goog.dom.appendChild(domElement, fill);
   }
 
   goog.dom.appendChild(domElement, textNode);
-  if (!textEntry.selectable()) this.setAttribute_(domElement, 'unselectable', 'on');
+  if (!textEntry.selectable()) this.setAttr(domElement, 'unselectable', 'on');
   else domElement.removeAttribute('unselectable');
 
   this.setPositionAndSize_(domElement, 0, 0, 1, 1);
@@ -1491,6 +1389,8 @@ acgraph.vector.vml.Renderer.prototype.setTextSegmentProperties = function(elemen
   domElement.setAttribute('filled', 't');
   domElement.setAttribute('fillcolor', style['color']);
   domElement.setAttribute('stroked', 'f');
+
+  goog.dom.appendChild(textEntry.domElement(), domElement);
 };
 
 
@@ -1524,7 +1424,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
    * so for now we just do not fill in VML,
    * probably we will add fully custom pattern fill later.
    */
-  if (fill instanceof acgraph.vector.PatternFill) {
+  if (acgraph.utils.instanceOf(fill, acgraph.vector.PatternFill)) {
     fill = 'black';
   }
   /**
@@ -1594,7 +1494,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
   var firstKey, lastKey, userSpaceOnUse, angle, keys;
 
   if (!requireShapeType) {
-    this.setAttributes_(element.domElement(), {
+    this.setAttrs(element.domElement(), {
       'type': '',
       'filled': filled,
       'fillcolor': fill['color'] || fill,
@@ -1607,7 +1507,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
     var defs = stage.getDefs();
     /** @type {!goog.math.Rect} */
     var elBounds;
-    if (element instanceof acgraph.vector.Path && (/** @type {acgraph.vector.Path} */(element)).isEmpty())
+    if (acgraph.utils.instanceOf(element, acgraph.vector.Path) && (/** @type {acgraph.vector.Path} */(element)).isEmpty())
       elBounds = new goog.math.Rect(0, 0, 1, 1);
     else
       elBounds = element.getBounds();
@@ -1617,7 +1517,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
 
     // Transform gradient for userSpaceOnUse and saveAngle modes.
     if (isLinearGradient) {
-      userSpaceOnUse = fill['mode'] instanceof goog.math.Rect;
+      userSpaceOnUse = acgraph.utils.instanceOf(fill['mode'], goog.math.Rect);
       keys = goog.array.slice(fill['keys'], 0);
       // we need lasr and first key (with 0 and 1 offset);
       if (keys[0]['offset'] != 0)
@@ -1672,7 +1572,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
     if (!shapeType.rendered) {
       shapeTypeDomElement = this.createShapeTypeElement();
       this.setIdInternal(shapeTypeDomElement, acgraph.utils.IdGenerator.getInstance().identify(shapeType));
-      this.appendChild(defs.domElement(), shapeTypeDomElement);
+      goog.dom.appendChild(defs.domElement(), shapeTypeDomElement);
       shapeType.rendered = true;
 
       // Render fill
@@ -1707,7 +1607,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
         var opacity = userSpaceOnUse ? lg.opacity : (isNaN(firstKey['opacity']) ? lg.opacity : firstKey['opacity']);
         var opacity2 = userSpaceOnUse ? lg.opacity : (isNaN(lastKey['opacity']) ? lg.opacity : lastKey['opacity']);
 
-        this.setAttributes_(fillDomElement, {
+        this.setAttrs(fillDomElement, {
           'type': 'gradient',
           'method': 'none',
           'colors': colors.join(','),
@@ -1718,7 +1618,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
           'o:opacity2': opacity
         });
 
-        this.appendChild(shapeTypeDomElement, fillDomElement);
+        goog.dom.appendChild(shapeTypeDomElement, fillDomElement);
         lg.defs = defs;
         lg.rendered = true;
 
@@ -1735,7 +1635,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
         firstKey = keys[keys.length - 1];
         lastKey = keys[0];
 
-        this.setAttributes_(fillDomElement, {
+        this.setAttrs(fillDomElement, {
           'src': stage['pathToRadialGradientImage'],
           'size': rg.size_x + ',' + rg.size_y,
           'origin': '.5, .5',
@@ -1749,7 +1649,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
           'o:opacity2': isNaN(lastKey['opacity']) ? rg.opacity : lastKey['opacity']
         });
 
-        this.appendChild(shapeTypeDomElement, fillDomElement);
+        goog.dom.appendChild(shapeTypeDomElement, fillDomElement);
         rg.defs = defs;
         rg.rendered = true;
       } else if (isFill) {
@@ -1758,22 +1658,22 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
             shapeType.fillDomElement = this.createFillElement();
 
         if (goog.isString(fill)) {
-          this.setAttributes_(element.domElement(), {
+          this.setAttrs(element.domElement(), {
             'fillcolor': fill,
             'filled': fill != 'none'
           });
-          this.setAttributes_(fillDomElement, {
+          this.setAttrs(fillDomElement, {
             'type': 'solid',
             'on': fill != 'none',
             'color': fill,
             'opacity': 1
           });
         } else {
-          this.setAttributes_(element.domElement(), {
+          this.setAttrs(element.domElement(), {
             'fillcolor': fill['color'],
             'filled': fill['color'] != 'none'
           });
-          this.setAttributes_(fillDomElement, {
+          this.setAttrs(fillDomElement, {
             'type': 'solid',
             'on': fill['color'] != 'none',
             'color': fill['color'],
@@ -1781,7 +1681,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
           });
         }
       }
-      this.appendChild(shapeTypeDomElement, fillDomElement);
+      goog.dom.appendChild(shapeTypeDomElement, fillDomElement);
 
       var strokeDomElement = shapeType.strokeDomElement ?
           shapeType.strokeDomElement :
@@ -1790,7 +1690,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
       var thickness = stroke['thickness'] ? stroke['thickness'] : 1;
       var dash = this.vmlizeDash(stroke['dash'], thickness);
       var cap = dash ? 'flat' : stroke['lineCap'];
-      this.setAttributes_(strokeDomElement, {
+      this.setAttrs(strokeDomElement, {
         // we do this in such perverted way beacaus if linejoin is MITER - dash doesn't work in VML.
         'joinstyle': stroke['lineJoin'] || acgraph.vector.StrokeLineJoin.MITER,
         'endcap': cap == acgraph.vector.StrokeLineCap.BUTT ? 'flat' : cap,
@@ -1800,19 +1700,19 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
         'opacity': (goog.isObject(stroke) && ('opacity' in stroke)) ? stroke['opacity'] : 1,
         'weight': thickness + 'px'
       });
-      this.appendChild(shapeTypeDomElement, strokeDomElement);
+      goog.dom.appendChild(shapeTypeDomElement, strokeDomElement);
     }
 
 
     if (isRadialGradient || isLinearGradient) {
       firstKey = normalizedFill.keys[normalizedFill.keys.length - 1];
-      this.setAttributes_(element.domElement(), {
+      this.setAttrs(element.domElement(), {
         'fillcolor': firstKey['color'],
         'filled': firstKey['color'] != 'none'
       });
     }
 
-    this.setAttributes_(element.domElement(), {
+    this.setAttrs(element.domElement(), {
       'filled': filled,
       'fillcolor': fill['color'] || fill,
       'stroked': stroked,
@@ -1820,7 +1720,7 @@ acgraph.vector.vml.Renderer.prototype.applyFillAndStroke = function(element) {
       'strokeweight': stroke['thickness'] ? stroke['thickness'] + 'px' : '1px'
     });
 
-    this.setAttributes_(element.domElement(), {'type': '#' + acgraph.utils.IdGenerator.getInstance().identify(shapeType)});
+    this.setAttrs(element.domElement(), {'type': '#' + acgraph.utils.IdGenerator.getInstance().identify(shapeType)});
   }
 };
 
@@ -1853,37 +1753,13 @@ acgraph.vector.vml.Renderer.prototype.vmlizeDash = function(dash, lineThickness)
 /** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.setVisible = function(element) {
   var style = element.domElement()['style'];
-  this.setAttribute_(style, 'visibility', element.visible() ? '' : 'hidden');
+  this.setAttr(style, 'visibility', element.visible() ? '' : 'hidden');
 };
 
 
 /** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.setTransformation = function(element) {
   this.setTransform_(element, element.getBoundsWithoutTransform());
-};
-
-
-/** @inheritDoc */
-acgraph.vector.vml.Renderer.prototype.setRectTransformation = function(element) {
-  var bounds = element.getBoundsWithoutTransform();
-  var domElement = element.domElement();
-
-  var left = bounds.left;
-  var top = bounds.top;
-  var right = left + bounds.width;
-  var bottom = top + bounds.height;
-  var points = [right, top, right, bottom, left, bottom, left, top];
-
-  var transform = element.getFullTransformation();
-  if (transform && !transform.isIdentity())
-    transform.transform(points, 0, points, 0, points.length / 2);
-
-  points = goog.array.map(points, this.toSizeCoord_);
-  var pathData = ['m', points[6], points[7], 'l'];
-  acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, points, pathData);
-  pathData.push('x');
-
-  this.setAttribute_(domElement, 'path', pathData.join(' '));
 };
 
 
@@ -1902,20 +1778,20 @@ acgraph.vector.vml.Renderer.prototype.setEllipseTransformation = function(elemen
     var curves = acgraph.math.arcToBezier(cx, cy, rx, ry, 0, 360, false);
     var len = curves.length;
     transform.transform(curves, 0, curves, 0, len / 2);
-    list = ['m', this.toSizeCoord_(curves[len - 2]), this.toSizeCoord_(curves[len - 1]), 'c'];
-    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(curves, this.toSizeCoord_), list);
+    list = ['m', acgraph.vector.vml.Renderer.toSizeCoord_(curves[len - 2]), acgraph.vector.vml.Renderer.toSizeCoord_(curves[len - 1]), 'c'];
+    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, goog.array.map(curves, acgraph.vector.vml.Renderer.toSizeCoord_), list);
   } else {
     list = ['ae',
-      this.toSizeCoord_(cx),
-      this.toSizeCoord_(cy),
-      this.toSizeCoord_(rx),
-      this.toSizeCoord_(ry),
+      acgraph.vector.vml.Renderer.toSizeCoord_(cx),
+      acgraph.vector.vml.Renderer.toSizeCoord_(cy),
+      acgraph.vector.vml.Renderer.toSizeCoord_(rx),
+      acgraph.vector.vml.Renderer.toSizeCoord_(ry),
       0,
       Math.round(360 * -65536)];
   }
   list.push('x');
 
-  this.setAttribute_(domElement, 'path', list.join(' '));
+  this.setAttr(domElement, 'path', list.join(' '));
 };
 
 
@@ -1928,13 +1804,7 @@ acgraph.vector.vml.Renderer.prototype.setImageTransformation = function(element)
   if (!tx) return;
 
   var angle = acgraph.math.getRotationAngle(tx);
-  this.setAttribute_(style, 'rotation', String(angle));
-
-  // Leave it here for a while
-  /*this.setAttributes_(element.domElement()['style'], {
-    'left': this.toCssSize_(bounds.left + tx.getTranslateX()),
-    'top': this.toCssSize_(bounds.top + tx.getTranslateY())
-  });*/
+  this.setAttr(style, 'rotation', String(angle));
 };
 
 
@@ -1942,11 +1812,11 @@ acgraph.vector.vml.Renderer.prototype.setImageTransformation = function(element)
 acgraph.vector.vml.Renderer.prototype.setPathTransformation = function(path) {
   var element = path.domElement();
 
-  var pathData = this.getVmlPath_(path, true);
+  var pathData = this.getPathString(path, true);
   if (pathData)
-    this.setAttribute_(element, 'path', pathData);
+    this.setAttr(element, 'path', pathData);
   else
-    this.removeAttribute_(element, 'path');
+    this.removeAttr(element, 'path');
   // Alternative way to transform path. Do not remove.
   //this.setTransform_(path, path.getStage().getBounds());
 };
@@ -1969,17 +1839,19 @@ acgraph.vector.vml.Renderer.prototype.setTextTransformation = function(element) 
 
   var x, y;
   if (element.isComplex()) {
-    y = element.calcY;
-    if (element.getSegments().length)
-      y -= element.getSegments()[0].baseLine;
-    x = element.calcX;
+    if (!element.path()) {
+      y = element.calcY;
+      if (element.getSegments().length)
+        y -= element.getSegments()[0].baseLine;
+      x = element.calcX;
 
-    this.setAttributes_(domElementStyle, {
-      'position': 'absolute',
-      'overflow': 'visible',
-      'left': this.toCssSize_(x + tx.getTranslateX()),
-      'top': this.toCssSize_(y + tx.getTranslateY())
-    });
+      this.setAttrs(domElementStyle, {
+        'position': 'absolute',
+        'overflow': 'visible',
+        'left': acgraph.vector.vml.Renderer.toCssSize_(x + tx.getTranslateX()),
+        'top': acgraph.vector.vml.Renderer.toCssSize_(y + tx.getTranslateY())
+      });
+    }
 
     var changed = element.isScaleOrShearChanged();
     if (changed) {
@@ -1989,7 +1861,7 @@ acgraph.vector.vml.Renderer.prototype.setTextTransformation = function(element) 
         var skew;
         if (segment.skew) {
           skew = segment.skew;
-          this.setAttributes_(skew, {
+          this.setAttrs(skew, {
             'origin': [-0.5 - x, -0.5 - y].join(','),
             'matrix': [
               acgraph.math.round(tx.getScaleX(), 6),
@@ -2004,14 +1876,14 @@ acgraph.vector.vml.Renderer.prototype.setTextTransformation = function(element) 
         }
 
         if (!segment.skewAttached && segment.domElement()) {
-          this.appendChild(segment.domElement(), skew);
+          goog.dom.appendChild(segment.domElement(), skew);
           segment.skewAttached = true;
         }
 
         /** @type {string} */
         var origin = [-0.5 - x, -0.5 - y].join(',');
         if (segment.domElement()) segment.domElement()['rotation'] = 0;
-        this.setAttributes_(skew, {
+        this.setAttrs(skew, {
           'on': 'true',
           'origin': origin,
           'matrix': [
@@ -2028,16 +1900,16 @@ acgraph.vector.vml.Renderer.prototype.setTextTransformation = function(element) 
     x = element.x();
     y = element.y();
 
-    if (element.vAlign() && element.height() && element.height() > element.realHeigth) {
-      if (element.vAlign() == 'middle') y += element.height() / 2 - element.realHeigth / 2;
-      if (element.vAlign() == 'bottom') y += element.height() - element.realHeigth;
+    if (element.vAlign() && element.height() && element.height() > element.realHeight) {
+      if (element.vAlign() == 'middle') y += element.height() / 2 - element.realHeight / 2;
+      if (element.vAlign() == 'bottom') y += element.height() - element.realHeight;
     }
 
-    this.setAttributes_(domElementStyle, {
+    this.setAttrs(domElementStyle, {
       'position': 'absolute',
       'overflow': 'hidden',
-      'left': this.toCssSize_(x + tx.getTranslateX()),
-      'top': this.toCssSize_(y + tx.getTranslateY())
+      'left': acgraph.vector.vml.Renderer.toCssSize_(x + tx.getTranslateX()),
+      'top': acgraph.vector.vml.Renderer.toCssSize_(y + tx.getTranslateY())
     });
   }
 };
@@ -2062,7 +1934,7 @@ acgraph.vector.vml.Renderer.prototype.setTransform_ = function(element, bounds) 
     // if there is a skew node attaches to element
     if (element.skewAttached) {
       // remove it
-      this.removeNode(element.skew);
+      goog.dom.removeNode(element.skew);
       // and tell element it is not there anymore
       element.skewAttached = false;
     }
@@ -2078,12 +1950,12 @@ acgraph.vector.vml.Renderer.prototype.setTransform_ = function(element, bounds) 
   }
   if (!element.skewAttached)
   {
-    this.appendChild(element.domElement(), skew);
+    goog.dom.appendChild(element.domElement(), skew);
     element.skewAttached = true;
   }
   /** @type {string} */
   var origin = [-0.5 - bounds.left / bounds.width, -0.5 - bounds.top / bounds.height].join(',');
-  this.setAttributes_(skew, {
+  this.setAttrs(skew, {
     'on': 'true',
     'origin': origin,
     'matrix': [
@@ -2095,9 +1967,9 @@ acgraph.vector.vml.Renderer.prototype.setTransform_ = function(element, bounds) 
     ].join(',')
   });
 
-  this.setAttributes_(element.domElement()['style'], {
-    'left': this.toCssSize_(bounds.left + tx.getTranslateX()),
-    'top': this.toCssSize_(bounds.top + tx.getTranslateY())
+  this.setAttrs(element.domElement()['style'], {
+    'left': acgraph.vector.vml.Renderer.toCssSize_(bounds.left + tx.getTranslateX()),
+    'top': acgraph.vector.vml.Renderer.toCssSize_(bounds.top + tx.getTranslateY())
   });
 };
 
@@ -2110,10 +1982,6 @@ acgraph.vector.vml.Renderer.prototype.setPointerEvents = goog.nullFunction;
  * Does nothing in case of vml.
  */
 acgraph.vector.vml.Renderer.prototype.disposeClip = goog.nullFunction;
-
-
-/** @inheritDoc */
-acgraph.vector.vml.Renderer.prototype.setDisableStrokeScaling = goog.nullFunction;
 
 
 /**
@@ -2133,7 +2001,7 @@ acgraph.vector.vml.Renderer.prototype.addClip_ = function(element, clipRect, isL
     clipRect = acgraph.math.getBoundsOfRectWithTransform(clipRect, tx);
   } else {
     // element clip
-    if (!(element instanceof acgraph.vector.vml.Text && !element.isComplex())) {
+    if (!(acgraph.utils.instanceOf(element, acgraph.vector.vml.Text) && !element.isComplex())) {
       clipRect.left -= element.getX() || 0;
       clipRect.top -= element.getY() || 0;
     }
@@ -2152,7 +2020,7 @@ acgraph.vector.vml.Renderer.prototype.addClip_ = function(element, clipRect, isL
     left + 'px',
     ')'
   ].join(' ');
-  this.setAttribute_(style, 'clip', clipVal);
+  this.setAttr(style, 'clip', clipVal);
 };
 
 
@@ -2169,7 +2037,7 @@ acgraph.vector.vml.Renderer.prototype.removeClip_ = function(element) {
 
 /** @inheritDoc */
 acgraph.vector.vml.Renderer.prototype.setClip = function(element) {
-  var isLayer = element instanceof acgraph.vector.Layer;
+  var isLayer = acgraph.utils.instanceOf(element, acgraph.vector.Layer);
   /** @type {acgraph.vector.vml.Clip} */
   var clipElement = /** @type {acgraph.vector.vml.Clip} */(element.clip());
   if (clipElement) {

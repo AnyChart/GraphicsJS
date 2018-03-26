@@ -844,53 +844,30 @@ acgraph.vector.PathBase.prototype.closeInternal = function() {
 //
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
-acgraph.vector.PathBase.prototype.getBoundsWithTransform = function(transform) {
-  return this.calcBounds_(transform, acgraph.vector.PathBase.boundsCalculationMap_, true);
-};
-
-
-/**
- * Calculates path bounds with transformation.
- * @param {goog.math.AffineTransform} transform Transformation.
- * @param {!Array.<Function>} calcMap Hash-map of functions to calculate bounds of segment.
- * @param {boolean} allowCache Allows to cache result if transformation coincide with own or absolute.
- * @return {!goog.math.Rect} Bounds.
- * @private
- */
-acgraph.vector.PathBase.prototype.calcBounds_ = function(transform, calcMap, allowCache) {
-  var isSelfTransform = transform == this.getSelfTransformation();
-  var isFullTransform = transform == this.getFullTransformation();
-  if (this.boundsCache && isSelfTransform)
-    return this.boundsCache.clone();
-  else if (this.absoluteBoundsCache && isFullTransform)
-    return this.absoluteBoundsCache.clone();
-  else {
-    /** @type {goog.math.Rect} */
-    var rect;
-
-    if (this.currentPoint_) {
-      if (transform && !transform.isIdentity()) {
-        var arr = [this.currentPoint_[0], this.currentPoint_[1]];
-        transform.transform(arr, 0, arr, 0, 1);
-        rect = new goog.math.Rect(arr[0], arr[1], 0, 0);
-        this.simplify();
-      } else
-        rect = new goog.math.Rect(this.currentPoint_[0], this.currentPoint_[1], 0, 0);
-      this.forEachSegment(
-          function(segment, args) {
-            acgraph.utils.partialApplyingArgsToFunction(calcMap[segment], args, this);
-          },
-          {rect: rect, transform: transform}, true
-      );
-    } else {
-      rect = new goog.math.Rect(NaN, NaN, NaN, NaN);
-    }
-    if (isSelfTransform && allowCache)
-      this.boundsCache = rect.clone();
-    if (isFullTransform && allowCache)
-      this.absoluteBoundsCache = rect.clone();
-    return rect;
+acgraph.vector.PathBase.prototype.calcBoundsWithTransform = function(transform) {
+  /** @type {goog.math.Rect} */
+  var rect;
+  if (this.currentPoint_) {
+    if (transform && !transform.isIdentity()) {
+      var arr = [this.currentPoint_[0], this.currentPoint_[1]];
+      transform.transform(arr, 0, arr, 0, 1);
+      rect = new goog.math.Rect(arr[0], arr[1], 0, 0);
+      this.simplify();
+    } else
+      rect = new goog.math.Rect(this.currentPoint_[0], this.currentPoint_[1], 0, 0);
+    this.forEachSegment(
+        function(segment, args) {
+          acgraph.utils.partialApplyingArgsToFunction(acgraph.vector.PathBase.boundsCalculationMap_[segment], args, this);
+        },
+        {
+          rect: rect,
+          transform: transform
+        }, true
+    );
+  } else {
+    rect = new goog.math.Rect(NaN, NaN, NaN, NaN);
   }
+  return rect;
 };
 //endregion
 
@@ -1024,6 +1001,43 @@ acgraph.vector.PathBase.boundsCalculationMap_ = (function() {
 })();
 
 
+/**
+ * Path lenght.
+ * @return {number} .
+ */
+acgraph.vector.PathBase.prototype.getLength = function() {
+  var length = 0;
+  if (this.isEmpty()) return length;
+  /** @type {!Array.<string|number>} */
+  var list = [];
+  this.forEachSegment(function(segment, args) {
+    if (segment != acgraph.vector.PathBase.Segment.MOVETO) {
+      var step;
+      var params = goog.array.slice(list, list.length - 2);
+      if (segment == acgraph.vector.PathBase.Segment.ARCTO) {
+        step = 6;
+        var cx = params[0] - goog.math.angleDx(args[2], args[0]);
+        var cy = params[1] - goog.math.angleDy(args[2], args[1]);
+        args = acgraph.math.arcToBezier(cx, cy, args[0], args[1], args[2], args[3]);
+      } else if (segment == acgraph.vector.PathBase.Segment.LINETO) {
+        step = 2;
+      } else if (segment == acgraph.vector.PathBase.Segment.CURVETO) {
+        step = 6;
+      }
+
+      for (var i = 0, len = args.length - (step - 1); i < len; i += step) {
+        Array.prototype.push.apply(params, goog.array.slice(args, i, i + step));
+        length += acgraph.math.bezierCurveLength(params);
+        params = goog.array.slice(params, params.length - 2);
+      }
+    }
+    acgraph.utils.partialApplyingArgsToFunction(Array.prototype.push, args, list);
+  });
+
+  return length;
+};
+
+
 // /**
 //  * Types of segment and functions to calculate bounds.
 //  * @type {!Array.<Function>}
@@ -1118,3 +1132,4 @@ acgraph.vector.PathBase.prototype.clearInternal_ = function() {
   delete this.simple_;
   return this;
 };
+

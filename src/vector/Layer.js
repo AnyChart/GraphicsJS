@@ -4,6 +4,7 @@ goog.require('acgraph.error');
 goog.require('acgraph.utils.IdGenerator');
 goog.require('acgraph.vector.Element');
 goog.require('acgraph.vector.ILayer');
+goog.require('goog.dom');
 goog.require('goog.math.Rect');
 
 
@@ -74,11 +75,21 @@ acgraph.vector.Layer.prototype.SUPPORTED_DIRTY_STATES =
 //  Overrides
 //
 //----------------------------------------------------------------------------------------------------------------------
+/**
+ * Propagates dirty state recursively to children.
+ * @protected
+ */
+acgraph.vector.Layer.prototype.propagateVisualStatesToChildren = function() {
+  for (var i = 0; i < this.children.length; i++) {
+    this.children[i].propagateVisualStatesToChildren();
+  }
+  acgraph.vector.Layer.base(this, 'propagateVisualStatesToChildren');
+};
 
 
 /** @inheritDoc */
 acgraph.vector.Layer.prototype.setDirtyState = function(value) {
-  goog.base(this, 'setDirtyState', value);
+  acgraph.vector.Layer.base(this, 'setDirtyState', value);
   if (!!(value & (acgraph.vector.Element.DirtyState.CHILDREN |
       acgraph.vector.Element.DirtyState.CHILDREN_SET))) {
     this.dropBoundsCache();
@@ -142,9 +153,10 @@ acgraph.vector.Layer.prototype.addChildAt = function(element, index) {
   this.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET);
 
   element.parentTransformationChanged();
-  if (this.cursor() || this.parentCursor) {
-    element.parentCursorChanged();
-    element.parentCursor = /** @type {?acgraph.vector.Cursor} */ (this.cursor() || this.parentCursor);
+  var cursor = /** @type {acgraph.vector.Cursor} */(this.cursor() || this.parentCursor);
+  if (element.parentCursor != cursor) {
+    element.parentCursor = cursor;
+    element.cursorChanged();
   }
 
   return this;
@@ -862,25 +874,19 @@ acgraph.vector.Layer.prototype.renderInternal = function() {
 
 /** @inheritDoc */
 acgraph.vector.Layer.prototype.cursorChanged = function() {
-  goog.base(this, 'cursorChanged');
-  this.propagateCursor();
-};
-
-
-/** @inheritDoc */
-acgraph.vector.Layer.prototype.parentCursorChanged = function() {
-  goog.base(this, 'parentCursorChanged');
-  this.propagateCursor();
+  acgraph.vector.Layer.base(this, 'cursorChanged');
+  this.propagateCursor_();
 };
 
 
 /**
  * Propagates cursor to its children.
+ * @private
  */
-acgraph.vector.Layer.prototype.propagateCursor = function() {
+acgraph.vector.Layer.prototype.propagateCursor_ = function() {
   for (var i = this.children.length; i--;) {
-    this.children[i].parentCursorChanged();
     this.children[i].parentCursor = /** @type {?acgraph.vector.Cursor} */ (this.cursor() || this.parentCursor);
+    this.children[i].cursorChanged();
   }
 };
 
@@ -943,14 +949,12 @@ acgraph.vector.Layer.prototype.renderChildrenDom = function(maxChanges) {
   var addings = [];
   // array of removed children. contains indices from this.domChildren which were removed.
   var removings = [];
-  // renderer for add() and remove() functions closure
-  var renderer = acgraph.getRenderer();
   // closed function add(), it adds a child to DOM, if it is possible and sets flagSuccess in case of failure
   // returns boolean - adding success or failure.
   var add = function(child) {
     var childDom = child.domElement();
     if (childDom) {
-      renderer.appendChild(domElement, childDom);
+      goog.dom.appendChild(domElement, childDom);
       changesMade++;
       addings.push(i);
       child.notifyPrevParent(true);
@@ -965,7 +969,7 @@ acgraph.vector.Layer.prototype.renderChildrenDom = function(maxChanges) {
     // in theory we don't need this check, cause an element without DOM can't appear in this.domChildren,
     // but we still check, just in case something nasty happened...
     if (childDom) {
-      renderer.removeNode(childDom);
+      goog.dom.removeNode(childDom);
       changesMade++;
     }
     child.notifyPrevParent(false);
@@ -1096,36 +1100,24 @@ acgraph.vector.Layer.prototype.renderTransformation = function() {
 //
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
-acgraph.vector.Layer.prototype.getBoundsWithTransform = function(transform) {
-  var isSelfTransform = transform == this.getSelfTransformation();
-  var isFullTransform = transform == this.getFullTransformation();
-  if (this.boundsCache && isSelfTransform)
-    return this.boundsCache.clone();
-  else if (this.absoluteBoundsCache && isFullTransform)
-    return this.absoluteBoundsCache.clone();
-  else {
-    /** @type {goog.math.Rect} */
-    var bounds = null;
-    for (var i = 0, len = this.children.length; i < len; i++) {
-      /** @type {acgraph.vector.Element} */
-      var child = this.children[i];
-      /** @type {!goog.math.Rect} */
-      var childBounds = child.getBoundsWithTransform(acgraph.math.concatMatrixes(transform,
-          child.getSelfTransformation()));
-      if (!isNaN(childBounds.left) && !isNaN(childBounds.top) && !isNaN(childBounds.width) && !isNaN(childBounds.height))
-        if (bounds)
-          bounds.boundingRect(childBounds);
-        else
-          bounds = childBounds;
-    }
-    if (!bounds)
-      bounds = acgraph.math.getBoundsOfRectWithTransform(new goog.math.Rect(0, 0, 0, 0), transform);
-    if (isSelfTransform)
-      this.boundsCache = bounds.clone();
-    if (isFullTransform)
-      this.absoluteBoundsCache = bounds.clone();
-    return bounds;
+acgraph.vector.Layer.prototype.calcBoundsWithTransform = function(transform) {
+  /** @type {goog.math.Rect} */
+  var bounds = null;
+  for (var i = 0, len = this.children.length; i < len; i++) {
+    /** @type {acgraph.vector.Element} */
+    var child = this.children[i];
+    /** @type {!goog.math.Rect} */
+    var childBounds = child.getBoundsWithTransform(acgraph.math.concatMatrixes(transform,
+        child.getSelfTransformation()));
+    if (!isNaN(childBounds.left) && !isNaN(childBounds.top) && !isNaN(childBounds.width) && !isNaN(childBounds.height))
+      if (bounds)
+        bounds.boundingRect(childBounds);
+      else
+        bounds = childBounds;
   }
+  if (!bounds)
+    bounds = acgraph.math.getBoundsOfRectWithTransform(new goog.math.Rect(0, 0, 0, 0), transform);
+  return bounds;
 };
 
 

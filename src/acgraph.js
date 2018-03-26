@@ -21,9 +21,8 @@ goog.require('acgraph.vector.Text');
 goog.require('acgraph.vector.UnmanagedLayer');
 goog.require('acgraph.vector.primitives');
 goog.require('acgraph.vector.svg');
-goog.require('acgraph.vector.vml');
+goog.require('goog.cssom');
 goog.require('goog.dom');
-goog.require('goog.net.IframeIo');
 goog.require('goog.userAgent');
 
 
@@ -155,9 +154,7 @@ acgraph.type = function() {
  * @type {!acgraph.vector.Renderer}
  * @private
  */
-acgraph.renderer_ = (acgraph.type_ == acgraph.StageType.VML) ?
-    acgraph.vector.vml.Renderer.getInstance() :
-    acgraph.vector.svg.Renderer.getInstance();
+acgraph.renderer_;
 
 
 /**
@@ -165,6 +162,18 @@ acgraph.renderer_ = (acgraph.type_ == acgraph.StageType.VML) ?
  * @return {!acgraph.vector.Renderer} Renderer.
  */
 acgraph.getRenderer = function() {
+  if (!acgraph.renderer_) {
+    if (acgraph.type_ == acgraph.StageType.VML) {
+      var vml = goog.global['acgraph']['vml'];
+      if (vml) {
+        acgraph.renderer_ = vml['getRenderer']();
+      } else {
+        throw Error('VML module should be included to render AnyChart in IE8-');
+      }
+    } else {
+      acgraph.renderer_ = acgraph.vector.svg.Renderer.getInstance();
+    }
+  }
   return acgraph.renderer_;
 };
 
@@ -181,49 +190,29 @@ acgraph.getRenderer = function() {
  * all supported technologies.
  */
 acgraph.create = function(opt_container, opt_width, opt_height) {
-  return (acgraph.type_ == acgraph.StageType.VML) ?
-      new acgraph.vector.vml.Stage(opt_container, opt_width, opt_height) :
-      new acgraph.vector.svg.Stage(opt_container, opt_width, opt_height);
-};
-
-
-//----------------------------------------------------------------------------------------------------------------------
-//
-//                  Export server.
-//
-//----------------------------------------------------------------------------------------------------------------------
-/**
- * Export server address including port.
- * @type {string}
- */
-acgraph.exportServer = '//export.anychart.com';
-
-
-/**
- Sets and returns an address export server script, which is used to export to an image
- or PDF.
- @see acgraph.vector.Stage#saveAsPdf
- @see acgraph.vector.Stage#saveAsPng
- @see acgraph.vector.Stage#saveAsJpg
- @see acgraph.vector.Stage#saveAsSvg
- @param {string=} opt_address Export server script URL.
- @return {string} Export server script URL.
- */
-acgraph.server = function(opt_address) {
-  if (goog.isDef(opt_address)) {
-    acgraph.exportServer = opt_address;
+  var stage;
+  if (acgraph.type_ == acgraph.StageType.VML) {
+    var vml = goog.global['acgraph']['vml'];
+    if (vml) {
+      stage = new vml['Stage'](opt_container, opt_width, opt_height);
+    } else {
+      throw Error('VML module should be included to render AnyChart in IE8-');
+    }
+  } else {
+    stage = new acgraph.vector.svg.Stage(opt_container, opt_width, opt_height);
   }
-  return acgraph.exportServer;
+
+  return stage;
 };
 
 
 /**
- * Send form POST request on passed url with passed request params.
- * @param {string} url .
- * @param {Object.<string, *>=} opt_arguments .
+ * Retruns stage by id.
+ * @param {string} id .
+ * @return {acgraph.vector.Stage}
  */
-acgraph.sendRequestToExportServer = function(url, opt_arguments) {
-  goog.net.IframeIo.send(url, undefined, 'POST', false, opt_arguments);
+acgraph.getStage = function(id) {
+  return goog.global['acgraph'].stages[id];
 };
 
 
@@ -393,9 +382,17 @@ acgraph.image = function(opt_src, opt_x, opt_y, opt_width, opt_height) {
  @return {!acgraph.vector.Text} An instance of the {@link acgraph.vector.Text} or the {@link acgraph.vector.vml.Text} class.
  */
 acgraph.text = function(opt_x, opt_y, opt_text, opt_style) {
-  var text = (acgraph.type_ == acgraph.StageType.VML) ?
-      new acgraph.vector.vml.Text(opt_x, opt_y) :
-      new acgraph.vector.Text(opt_x, opt_y);
+  var text;
+  if (acgraph.type_ == acgraph.StageType.VML) {
+    var vml = goog.global['acgraph']['vml'];
+    if (vml) {
+      text = new vml['Text'](opt_x, opt_y);
+    } else {
+      throw Error('VML module should be included to render AnyChart in IE8-');
+    }
+  } else {
+    text = new acgraph.vector.Text(opt_x, opt_y);
+  }
   if (opt_style) text.style(opt_style);
   if (opt_text) text.text(opt_text);
   return text;
@@ -452,9 +449,16 @@ acgraph.patternFill = function(bounds) {
  @return {!acgraph.vector.Clip} The instance of the {@link acgraph.vector.Clip} class.
  */
 acgraph.clip = function(opt_leftOrShape, opt_top, opt_width, opt_height) {
-  return (acgraph.type_ == acgraph.StageType.VML) ?
-      new acgraph.vector.vml.Clip(null, opt_leftOrShape, opt_top, opt_width, opt_height) :
-      new acgraph.vector.Clip(null, opt_leftOrShape, opt_top, opt_width, opt_height);
+  if (acgraph.type_ == acgraph.StageType.VML) {
+    var vml = goog.global['acgraph']['vml'];
+    if (vml) {
+      return new vml['Clip'](null, opt_leftOrShape, opt_top, opt_width, opt_height);
+    } else {
+      throw Error('VML module should be included to render AnyChart in IE8-');
+    }
+  } else {
+    return new acgraph.vector.Clip(null, opt_leftOrShape, opt_top, opt_width, opt_height);
+  }
 };
 
 
@@ -512,7 +516,7 @@ acgraph.getReference = function() {
 
   return acgraph.getReferenceValue_ = acgraph.compatibility.USE_ABSOLUTE_REFERENCES ||
       (goog.isNull(acgraph.compatibility.USE_ABSOLUTE_REFERENCES) && goog.dom.getElementsByTagNameAndClass('base').length) ?
-          window.location.origin + window.location.pathname + window.location.search :
+          goog.global.location.origin + goog.global.location.pathname + goog.global.location.search :
           '';
 };
 
@@ -536,21 +540,21 @@ acgraph.updateReferences = function() {
     if (!wrapperStage) continue;
 
     // clip-path
-    if (wrapper instanceof acgraph.vector.Element) {
+    if (acgraph.utils.instanceOf(wrapper, acgraph.vector.Element)) {
       if (wrapperStage.isSuspended()) {
         wrapper.setDirtyState(acgraph.vector.Element.DirtyState.CLIP);
       } else if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.CLIP)) {
-        renderer.setClip(wrapper);
+        renderer.setClip(/** @type {!acgraph.vector.Element} */(wrapper));
       }
     }
 
     // fill, stroke
-    if (wrapper instanceof acgraph.vector.Shape) {
+    if (acgraph.utils.instanceOf(wrapper, acgraph.vector.Shape)) {
       if (wrapperStage.isSuspended()) {
         wrapper.setDirtyState(acgraph.vector.Element.DirtyState.FILL | acgraph.vector.Element.DirtyState.STROKE);
       } else {
-        if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.FILL)) renderer.applyFill(wrapper);
-        if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE)) renderer.applyStroke(wrapper);
+        if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.FILL)) renderer.applyFill(/** @type {!acgraph.vector.Shape} */(wrapper));
+        if (!wrapper.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE)) renderer.applyStroke(/** @type {!acgraph.vector.Shape} */(wrapper));
       }
     }
   }
@@ -559,10 +563,8 @@ acgraph.updateReferences = function() {
 //exports
 (function() {
   goog.exportSymbol('acgraph.create', acgraph.create);
+  goog.exportSymbol('acgraph.getStage', acgraph.getStage);
   goog.exportSymbol('acgraph.type', acgraph.type);
-  goog.exportSymbol('acgraph.server', acgraph.server);
-  goog.exportSymbol('acgraph.StageType.SVG', acgraph.StageType.SVG);
-  goog.exportSymbol('acgraph.StageType.VML', acgraph.StageType.VML);
   goog.exportSymbol('acgraph.rect', acgraph.rect);
   goog.exportSymbol('acgraph.circle', acgraph.circle);
   goog.exportSymbol('acgraph.ellipse', acgraph.ellipse);

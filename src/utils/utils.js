@@ -67,3 +67,23 @@ acgraph.utils.partialApplyingArgsToFunction = function(func, args, opt_obj) {
 };
 
 
+/**
+ * Define whether value is set in percent.
+ * @param {*} value Value to define.
+ * @return {boolean} Is value set in percent.
+ */
+acgraph.utils.isPercent = function(value) {
+  return goog.isString(value) && goog.string.endsWith(value, '%') && !isNaN(parseFloat(value));
+};
+
+
+/**
+ * Safe instanceof.
+ * @param {*} object
+ * @param {*} constructor
+ * @return {boolean}
+ */
+acgraph.utils.instanceOf = function(object, constructor) {
+  //Needs check object is defined for old IE lower 8.
+  return !!object && object instanceof /** @type {Object} */(constructor);
+};

@@ -92,25 +92,8 @@ acgraph.vector.UnmanagedLayer.prototype.renderInternal = function() {
 
 
 /** @inheritDoc */
-acgraph.vector.UnmanagedLayer.prototype.getBoundsWithTransform = function(transform) {
-  var isSelfTransform = transform == this.getSelfTransformation();
-  var isFullTransform = transform == this.getFullTransformation();
-  if (this.boundsCache && isSelfTransform)
-    return this.boundsCache.clone();
-  else if (this.absoluteBoundsCache && isFullTransform)
-    return this.absoluteBoundsCache.clone();
-  else {
-    var bounds = acgraph.getRenderer().measureElement(this.content_);
-
-    if (transform)
-      bounds = acgraph.math.getBoundsOfRectWithTransform(bounds, transform);
-
-    if (isSelfTransform)
-      this.boundsCache = bounds.clone();
-    if (isFullTransform)
-      this.absoluteBoundsCache = bounds.clone();
-    return bounds;
-  }
+acgraph.vector.UnmanagedLayer.prototype.getBoundsWithoutTransform = function() {
+  return acgraph.getRenderer().measureElement(this.content_);
 };
 
 
