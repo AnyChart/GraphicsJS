@@ -1050,7 +1050,7 @@ acgraph.vector.Layer.prototype.renderChildrenDom = function(maxChanges) {
   if (flagSuccess) {
     this.domChildren = goog.array.slice(children, 0);
     this.expectedChidrenHash_ = null;
-    this.clearDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET);
+    // this.clearDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET);
   } else {
     for (i = removings.length; i--;)
       goog.array.splice(this.domChildren, removings[i], 1);
