@@ -677,7 +677,7 @@ acgraph.vector.Element.prototype.parentTransformationChanged = function() {
   this.fullTransform_ = null;
   this.dropBoundsCache();
   if (acgraph.getRenderer().needsReRenderOnParentTransformationChange())
-    // this.setDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION);
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION);
     acgraph.getRenderer().setTransformation(this);
   this.reclip_();
 };
@@ -1065,7 +1065,8 @@ acgraph.vector.Element.prototype.render = function() {
 /**
  * Before render internal hook.
  */
-acgraph.vector.Element.prototype.beforeRenderInternal = function() {};
+acgraph.vector.Element.prototype.beforeRenderInternal = function() {
+};
 
 
 /**
@@ -1360,8 +1361,17 @@ acgraph.vector.Element.prototype.zIndex = function(opt_value) {
     var val = +opt_value || 0;
     if (this.zIndex_ != val) {
       this.zIndex_ = val;
-      if (this.parent_) // element can't change its own zIndex - parent children set changes.
+      if (this.parent_) {
         this.parent_.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET);
+        // Try to pre-grab DOM changes from the required share for changes in children
+        var allowedChangesCount = this.getStage().acquireDomChanges(this.parent_.children.length + this.parent_.domChildren.length + 1);
+        // Try to correct this
+        var changesMade = this.parent_.renderChildrenDom(allowedChangesCount);
+        // If we did less changes than we wanted
+        if (changesMade < allowedChangesCount)
+        // Free changes we didn't do
+          this.getStage().releaseDomChanges(allowedChangesCount, changesMade);
+      }
     }
     return this;
   }
