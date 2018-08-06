@@ -1362,7 +1362,7 @@ acgraph.vector.Element.prototype.zIndex = function(opt_value) {
     if (this.zIndex_ != val) {
       this.zIndex_ = val;
       if (this.parent_) {
-        this.parent_.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET);
+        // this.parent_.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET);
         // Try to pre-grab DOM changes from the required share for changes in children
         var allowedChangesCount = this.getStage().acquireDomChanges(this.parent_.children.length + this.parent_.domChildren.length + 1);
         // Try to correct this
