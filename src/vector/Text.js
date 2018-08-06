@@ -1272,7 +1272,6 @@ acgraph.vector.Text.prototype.cutTextSegment_ = function(text, style, a, b, segm
  */
 acgraph.vector.Text.prototype.createSegment_ = function(text, style, bounds, opt_shift) {
   // create segment object
-  debugger;
   var segment = new acgraph.vector.TextSegment(text, style);
   segment.baseLine = -bounds.top;
   segment.height = bounds.height;
@@ -1454,7 +1453,6 @@ acgraph.vector.Text.prototype.addBreak = function() {
 acgraph.vector.Text.prototype.addSegment = function(text, opt_style, opt_break) {
   // if "stop adding" segments flags is set - do nothing
   // this can happen if text has height, width and textOverflow set and and doesn't fit.
-  debugger;
   if (this.stopAddSegments_) return;
 
   var style = opt_style || {};
@@ -1601,7 +1599,6 @@ acgraph.vector.Text.prototype.finalizeTextLine = function() {
       }
     }
 
-    debugger;
     if (this.isWidthSet && this.style_['wordWrap'] == acgraph.vector.Text.WordWrap.NORMAL &&
         this.currentLineWidth_ > this.textWidthLimit) {
       if (this.currentLine_.length > 1 && !this.currentLine_[0].text.length) {
@@ -1724,7 +1721,6 @@ acgraph.vector.Text.prototype.textDefragmentation = function() {
 
       segment = new acgraph.vector.TextSegment(this.text_, {});
       this.currentLine_.push(segment);
-      debugger;
       this.segments_.push(segment);
       segment.parent(this);
 
@@ -1849,7 +1845,6 @@ acgraph.vector.Text.prototype.renderTextPath = function() {
  * Apply text properties to his DOM element
  */
 acgraph.vector.Text.prototype.renderPosition = function() {
-  debugger;
   for (var i = 0, len = this.segments_.length; i < len; i++) {
     this.segments_[i].setTextSegmentPosition();
   }
