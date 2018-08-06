@@ -328,7 +328,6 @@ acgraph.vector.Renderer.prototype.setAttrs = function(el, attrs) {
  * @param {Element} el The element.
  * @param {string} key The name of the attribute.
  * @param {(string|number)} value The value of the attribute.
- * @protected
  */
 acgraph.vector.Renderer.prototype.setAttr = function(el, key, value) {
   el.setAttribute(key, value);
@@ -339,7 +338,6 @@ acgraph.vector.Renderer.prototype.setAttr = function(el, key, value) {
  * Removes an attribute with a given name from a given element.
  * @param {Element} el The element.
  * @param {string} key The name of the attribute.
- * @protected
  */
 acgraph.vector.Renderer.prototype.removeAttr = function(el, key) {
   el.removeAttribute(key);

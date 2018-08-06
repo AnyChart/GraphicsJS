@@ -25,16 +25,17 @@ goog.require('goog.math.Rect');
  */
 acgraph.vector.Element = function() {
   acgraph.vector.Element.base(this, 'constructor');
+  this.createDom();
 
-  /**
-   * Attributes list to be set.
-   * @type {Object.<string, *>}
-   * @private
-   */
-  this.attributes_ = {};
+  // /**
+  //  * Attributes list to be set.
+  //  * @type {Object.<string, *>}
+  //  * @private
+  //  */
+  // this.attributes_ = {};
 
   // Set all supported sync flags in the beginning.
-  this.setDirtyState(acgraph.vector.Element.DirtyState.ALL);
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.ALL);
 };
 goog.inherits(acgraph.vector.Element, goog.events.EventTarget);
 
@@ -44,93 +45,93 @@ goog.inherits(acgraph.vector.Element, goog.events.EventTarget);
 //  Enums
 //
 //----------------------------------------------------------------------------------------------------------------------
-/**
- * Sync state list. It is supposed that each state unsync
- * can be resolved by the element itself using render() method.
- * @enum {number}
- */
-acgraph.vector.Element.DirtyState = {
-  /**
-   * DOM is not created, need to create it.
-   */
-  DOM_MISSING: 1 << 0,
-  /**
-   * Visibility settings has changed.
-   */
-  VISIBILITY: 1 << 1,
-  /**
-   * Transformation state has changed.
-   */
-  TRANSFORMATION: 1 << 2,
-  /**
-   * Fill must be refreshed.
-   */
-  FILL: 1 << 3,
-  /**
-   * Stroke must be refreshed.
-   */
-  STROKE: 1 << 4,
-  /**
-   * Element data has changed (i.e. X, Y or size).
-   */
-  DATA: 1 << 5,
-  /**
-   * Child elements have changed, need to refresh them.
-   */
-  CHILDREN: 1 << 6,
-  /**
-   * Child set has changed (added, removed, moved).
-   */
-  CHILDREN_SET: 1 << 7,
-  /**
-   * Parent transformation state has changed.
-   */
-  PARENT_TRANSFORMATION: 1 << 8,
-  /**
-   * Clipping rectangle state has changed.
-   */
-  CLIP: 1 << 9,
-  /**
-   * Need to update style.
-   */
-  STYLE: 1 << 10,
-  /**
-   * Need to update id.
-   */
-  ID: 1 << 11,
-  /**
-   * Need to update cursor.
-   */
-  CURSOR: 1 << 12,
-  /**
-   * Need to update pointer events property.
-   */
-  POINTER_EVENTS: 1 << 13,
-  /**
-   * Need to update position.
-   */
-  POSITION: 1 << 14,
-  /**
-   * Need to update position.
-   */
-  STROKE_SCALING: 1 << 15,
-  /**
-   * Needs to update the title.
-   */
-  TITLE: 1 << 16,
-  /**
-   * Needs to update the desc.
-   */
-  DESC: 1 << 17,
-  /**
-   * Needs to update attribute.
-   */
-  ATTRIBUTE: 1 << 18,
-  /**
-   * Need to update everything.
-   */
-  ALL: 0xFFFFFFFF
-};
+// /**
+//  * Sync state list. It is supposed that each state unsync
+//  * can be resolved by the element itself using render() method.
+//  * @enum {number}
+//  */
+// acgraph.vector.Element.DirtyState = {
+//   /**
+//    * DOM is not created, need to create it.
+//    */
+//   DOM_MISSING: 1 << 0,
+//   /**
+//    * Visibility settings has changed.
+//    */
+//   VISIBILITY: 1 << 1,
+//   /**
+//    * Transformation state has changed.
+//    */
+//   TRANSFORMATION: 1 << 2,
+//   /**
+//    * Fill must be refreshed.
+//    */
+//   FILL: 1 << 3,
+//   /**
+//    * Stroke must be refreshed.
+//    */
+//   STROKE: 1 << 4,
+//   /**
+//    * Element data has changed (i.e. X, Y or size).
+//    */
+//   DATA: 1 << 5,
+//   /**
+//    * Child elements have changed, need to refresh them.
+//    */
+//   CHILDREN: 1 << 6,
+//   /**
+//    * Child set has changed (added, removed, moved).
+//    */
+//   CHILDREN_SET: 1 << 7,
+//   /**
+//    * Parent transformation state has changed.
+//    */
+//   PARENT_TRANSFORMATION: 1 << 8,
+//   /**
+//    * Clipping rectangle state has changed.
+//    */
+//   CLIP: 1 << 9,
+//   /**
+//    * Need to update style.
+//    */
+//   STYLE: 1 << 10,
+//   /**
+//    * Need to update id.
+//    */
+//   ID: 1 << 11,
+//   /**
+//    * Need to update cursor.
+//    */
+//   CURSOR: 1 << 12,
+//   /**
+//    * Need to update pointer events property.
+//    */
+//   POINTER_EVENTS: 1 << 13,
+//   /**
+//    * Need to update position.
+//    */
+//   POSITION: 1 << 14,
+//   /**
+//    * Need to update position.
+//    */
+//   STROKE_SCALING: 1 << 15,
+//   /**
+//    * Needs to update the title.
+//    */
+//   TITLE: 1 << 16,
+//   /**
+//    * Needs to update the desc.
+//    */
+//   DESC: 1 << 17,
+//   /**
+//    * Needs to update attribute.
+//    */
+//   ATTRIBUTE: 1 << 18,
+//   /**
+//    * Need to update everything.
+//    */
+//   ALL: 0xFFFFFFFF
+// };
 
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -311,35 +312,35 @@ acgraph.vector.Element.prototype.tag;
 //----------------------------------------------------------------------------------------------------------------------
 //  States
 //----------------------------------------------------------------------------------------------------------------------
-/**
- * Supported states mask. Element can handle missing DOM element
- * and its visibility.
- * @type {number}
- */
-acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES =
-    acgraph.vector.Element.DirtyState.DOM_MISSING |
-    acgraph.vector.Element.DirtyState.VISIBILITY |
-    acgraph.vector.Element.DirtyState.CURSOR |
-    acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION |
-    acgraph.vector.Element.DirtyState.TRANSFORMATION |
-    acgraph.vector.Element.DirtyState.CLIP |
-    acgraph.vector.Element.DirtyState.ID |
-    acgraph.vector.Element.DirtyState.POINTER_EVENTS |
-    acgraph.vector.Element.DirtyState.STROKE_SCALING |
-    acgraph.vector.Element.DirtyState.TITLE |
-    acgraph.vector.Element.DirtyState.DESC |
-    acgraph.vector.Element.DirtyState.ATTRIBUTE;
+// /**
+//  * Supported states mask. Element can handle missing DOM element
+//  * and its visibility.
+//  * @type {number}
+//  */
+// acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES =
+//     acgraph.vector.Element.DirtyState.DOM_MISSING |
+//     acgraph.vector.Element.DirtyState.VISIBILITY |
+//     acgraph.vector.Element.DirtyState.CURSOR |
+//     acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION |
+//     acgraph.vector.Element.DirtyState.TRANSFORMATION |
+//     acgraph.vector.Element.DirtyState.CLIP |
+//     acgraph.vector.Element.DirtyState.ID |
+//     acgraph.vector.Element.DirtyState.POINTER_EVENTS |
+//     acgraph.vector.Element.DirtyState.STROKE_SCALING |
+//     acgraph.vector.Element.DirtyState.TITLE |
+//     acgraph.vector.Element.DirtyState.DESC |
+//     acgraph.vector.Element.DirtyState.ATTRIBUTE;
 
 
-/**
- * Comibination of {@link acgraph.vector.Element.DirtyState} flags that shows which part of an element
- * must be synced with a DOM representation. If flag is set then then element syns its DOM representation
- * on the next render() call. All flags are set initially.
- * Unsupported flag can't be set.
- * @type {number}
- * @private
- */
-acgraph.vector.Element.prototype.dirtyState_ = 0;
+// /**
+//  * Comibination of {@link acgraph.vector.Element.DirtyState} flags that shows which part of an element
+//  * must be synced with a DOM representation. If flag is set then then element syns its DOM representation
+//  * on the next render() call. All flags are set initially.
+//  * Unsupported flag can't be set.
+//  * @type {number}
+//  * @private
+//  */
+// acgraph.vector.Element.prototype.dirtyState_ = 0;
 
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -357,7 +358,8 @@ acgraph.vector.Element.prototype.id = function(opt_value) {
     var id = opt_value || '';
     if (this.id_ != id) {
       this.id_ = id;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.ID);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.ID);
+      acgraph.getRenderer().setId(this);
     }
     return this;
   }
@@ -412,11 +414,11 @@ acgraph.vector.Element.prototype.parent = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (opt_value) {
       if (opt_value != this.parent_) {
-        var stage = this.getStage();
-        var stageChanged = (stage && stage != opt_value.getStage());
+        // var stage = this.getStage();
+        // var stageChanged = (stage && stage != opt_value.getStage());
         (/** @type {acgraph.vector.ILayer} */(opt_value)).addChild(this);
-        if (stageChanged)
-          this.propagateVisualStatesToChildren();
+        // if (stageChanged)
+        //   this.propagateVisualStatesToChildren();
       }
     } else {
       this.remove();
@@ -432,6 +434,7 @@ acgraph.vector.Element.prototype.parent = function(opt_value) {
  * @protected
  */
 acgraph.vector.Element.prototype.propagateVisualStatesToChildren = function() {
+  //TODO (A.Kudryavtsev): Check if this is needed.
   var clip = this.clip();
   if (clip)
     clip.id(null);
@@ -471,7 +474,8 @@ acgraph.vector.Element.prototype.title = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (this.titleVal_ != opt_value) {
       this.titleVal_ = opt_value;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.TITLE);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.TITLE);
+      acgraph.getRenderer().setTitle(this, this.titleVal_);
     }
     return this;
   }
@@ -488,7 +492,8 @@ acgraph.vector.Element.prototype.desc = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (this.descVal_ != opt_value) {
       this.descVal_ = opt_value;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DESC);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.DESC);
+      acgraph.getRenderer().setDesc(this, this.descVal_);
     }
     return this;
   }
@@ -504,17 +509,15 @@ acgraph.vector.Element.prototype.desc = function(opt_value) {
  */
 acgraph.vector.Element.prototype.attr = function(key, opt_value) {
   if (goog.isDef(opt_value)) {
-    if (this.attributes_[key] !== opt_value) {
-      this.attributes_[key] = opt_value;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.ATTRIBUTE);
-    }
+    // if (this.attributes_[key] !== opt_value) {
+    //   this.attributes_[key] = opt_value;
+    //   this.setDirtyState(acgraph.vector.Element.DirtyState.ATTRIBUTE);
+    // }
+    acgraph.getRenderer().setAttr(this.domElement_, key, opt_value);
     return this;
   }
 
-  if (key in this.attributes_)
-    return this.attributes_[key];
-  else
-    return acgraph.getRenderer().getAttribute(this.domElement_, key);
+  return acgraph.getRenderer().getAttribute(this.domElement_, key);
 };
 
 
@@ -531,7 +534,8 @@ acgraph.vector.Element.prototype.attr = function(key, opt_value) {
 acgraph.vector.Element.prototype.cursor = function(opt_value) {
   if (goog.isDef(opt_value)) {
     this.cursor_ = opt_value;
-    this.cursorChanged();
+    // this.cursorChanged();
+    acgraph.getRenderer().setCursorProperties(this, this.cursor_ || this.parentCursor);
     return this;
   }
   return this.cursor_;
@@ -542,7 +546,7 @@ acgraph.vector.Element.prototype.cursor = function(opt_value) {
  * Notifies itself that its own cursor has been changed.
  */
 acgraph.vector.Element.prototype.cursorChanged = function() {
-  this.setDirtyState(acgraph.vector.Element.DirtyState.CURSOR);
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.CURSOR);
 };
 
 
@@ -577,15 +581,15 @@ acgraph.vector.Element.prototype.hasDirtyState = function(state) {
  * @param {number} value States to be set.
  */
 acgraph.vector.Element.prototype.setDirtyState = function(value) {
-  value &= this.SUPPORTED_DIRTY_STATES;
-  if (!!value/* && !!(this.dirtyState_ & value)*/) {
-    this.dirtyState_ |= value;
-    if (this.parent_)
-      this.parent_.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN);
-    var stage = this.getStage();
-    if (stage && !stage.isSuspended() && !stage.isRendering() && !this.isRendering())
-      this.render();
-  }
+  // value &= this.SUPPORTED_DIRTY_STATES;
+  // if (!!value/* && !!(this.dirtyState_ & value)*/) {
+  //   this.dirtyState_ |= value;
+  //   if (this.parent_)
+  //     this.parent_.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN);
+  //   var stage = this.getStage();
+  //   if (stage && !stage.isSuspended() && !stage.isRendering() && !this.isRendering())
+  //     this.render();
+  // }
 };
 
 
@@ -659,7 +663,8 @@ acgraph.vector.Element.prototype.transformationChanged = function() {
   this.fullTransform_ = null;
   this.inverseFullTransform_ = null;
   this.dropBoundsCache();
-  this.setDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
+  acgraph.getRenderer().setTransformation(this);
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
   this.reclip_();
 };
 
@@ -672,7 +677,8 @@ acgraph.vector.Element.prototype.parentTransformationChanged = function() {
   this.fullTransform_ = null;
   this.dropBoundsCache();
   if (acgraph.getRenderer().needsReRenderOnParentTransformationChange())
-    this.setDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION);
+    // this.setDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION);
+    acgraph.getRenderer().setTransformation(this);
   this.reclip_();
 };
 
@@ -981,12 +987,14 @@ acgraph.vector.Element.prototype.getTransformationMatrix = function() {
  * @param {boolean=} opt_force .
  */
 acgraph.vector.Element.prototype.createDom = function(opt_force) {
-  var stage = this.getStage();
-  if (stage && stage.acquireDomChange(acgraph.vector.Stage.DomChangeType.ELEMENT_CREATE) || opt_force) {
-    this.domElement_ = this.createDomInternal();
-    acgraph.register(this);
-    this.clearDirtyState(acgraph.vector.Element.DirtyState.DOM_MISSING);
-  }
+  // var stage = this.getStage();
+  // if (stage && stage.acquireDomChange(acgraph.vector.Stage.DomChangeType.ELEMENT_CREATE) || opt_force) {
+  //   this.domElement_ = this.createDomInternal();
+  //   acgraph.register(this);
+  //   this.clearDirtyState(acgraph.vector.Element.DirtyState.DOM_MISSING);
+  // }
+  this.domElement_ = this.createDomInternal();
+  acgraph.register(this);
 };
 
 
@@ -1030,16 +1038,19 @@ acgraph.vector.Element.prototype.render = function() {
   if (!stage)
     return this;
   // Check if the DOM element is created
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DOM_MISSING)) {
-    // try to create, if there is no element
-    this.createDom();
-    // if we can't do this - exit
-    if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DOM_MISSING))
-      return this;
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DOM_MISSING)) {
+  //   // try to create, if there is no element
+  //   this.createDom();
+  //   // if we can't do this - exit
+  //   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DOM_MISSING))
+  //     return this;
+  //
+  //   if (this.draggable_)
+  //     this.drag(this.draggable_);
+  // }
 
-    if (this.draggable_)
-      this.drag(this.draggable_);
-  }
+  if (this.draggable_)
+    this.drag(this.draggable_);
 
   this.beforeRenderInternal();
 
@@ -1062,40 +1073,40 @@ acgraph.vector.Element.prototype.beforeRenderInternal = function() {};
  * @protected
  */
 acgraph.vector.Element.prototype.renderInternal = function() {
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.ATTRIBUTE))
-    this.renderAttributes();
-
-  // We suppose that Stage already exists.
-  // If visibility has changed - update it
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.VISIBILITY))
-    this.renderVisibility();
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.CURSOR))
-    this.renderCursor();
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.POINTER_EVENTS))
-    this.renderPointerEvents();
-  // If transformation has changed - update it
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION) ||
-      this.hasDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION)) {
-    this.renderTransformation();
-  }
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.CLIP))
-    this.renderClip();
-
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE_SCALING)) {
-    acgraph.getRenderer().setDisableStrokeScaling(this, this.disableStrokeScaling_);
-    this.clearDirtyState(acgraph.vector.Element.DirtyState.STROKE_SCALING);
-  }
-
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.TITLE))
-    this.renderTitle();
-
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DESC))
-    this.renderDesc();
-
-  // Set element id
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.ID)) {
-    this.renderId();
-  }
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.ATTRIBUTE))
+  //   this.renderAttributes();
+  //
+  // // We suppose that Stage already exists.
+  // // If visibility has changed - update it
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.VISIBILITY))
+  //   this.renderVisibility();
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.CURSOR))
+  //   this.renderCursor();
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.POINTER_EVENTS))
+  //   this.renderPointerEvents();
+  // // If transformation has changed - update it
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION) ||
+  //     this.hasDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION)) {
+  //   this.renderTransformation();
+  // }
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.CLIP))
+  //   this.renderClip();
+  //
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE_SCALING)) {
+  //   acgraph.getRenderer().setDisableStrokeScaling(this, this.disableStrokeScaling_);
+  //   this.clearDirtyState(acgraph.vector.Element.DirtyState.STROKE_SCALING);
+  // }
+  //
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.TITLE))
+  //   this.renderTitle();
+  //
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DESC))
+  //   this.renderDesc();
+  //
+  // // Set element id
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.ID)) {
+  //   this.renderId();
+  // }
 };
 
 
@@ -1210,7 +1221,8 @@ acgraph.vector.Element.prototype.renderAttributes = function() {
 acgraph.vector.Element.prototype.disablePointerEvents = function(opt_value) {
   if (!goog.isDef(opt_value)) return this.disablePointerEvents_;
   this.disablePointerEvents_ = !!(opt_value);
-  this.setDirtyState(acgraph.vector.Element.DirtyState.POINTER_EVENTS);
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.POINTER_EVENTS);
+  acgraph.getRenderer().setPointerEvents(this);
   return this;
 };
 
@@ -1343,6 +1355,7 @@ acgraph.vector.Element.prototype.removeAllListeners = function(opt_type) {
  * @return {number|acgraph.vector.Element} Z index or itself for chaining.
  */
 acgraph.vector.Element.prototype.zIndex = function(opt_value) {
+  //TODO (A.Kudryavtsev): Decide what to do!
   if (goog.isDef(opt_value)) {
     var val = +opt_value || 0;
     if (this.zIndex_ != val) {
@@ -1371,7 +1384,8 @@ acgraph.vector.Element.prototype.visible = function(opt_value) {
     opt_value = !!opt_value;
     if (this.visible_ != opt_value) {
       this.visible_ = opt_value;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.VISIBILITY);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.VISIBILITY);
+      acgraph.getRenderer().setVisible(this);
     }
     return this;
   }
@@ -1389,7 +1403,8 @@ acgraph.vector.Element.prototype.disableStrokeScaling = function(opt_value) {
     opt_value = !!opt_value;
     if (this.disableStrokeScaling_ != opt_value) {
       this.disableStrokeScaling_ = goog.isDefAndNotNull(opt_value) ? opt_value : true;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.STROKE_SCALING);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.STROKE_SCALING);
+      acgraph.getRenderer().setDisableStrokeScaling(this, this.disableStrokeScaling_);
     }
     return this;
   }
@@ -1443,7 +1458,8 @@ acgraph.vector.Element.prototype.clip = function(opt_value) {
  */
 acgraph.vector.Element.prototype.clipChanged = function() {
   if (this.parent_) this.parent_.childClipChanged();
-  this.setDirtyState(acgraph.vector.Element.DirtyState.CLIP);
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.CLIP);
+  acgraph.getRenderer().setClip(this);
 };
 
 

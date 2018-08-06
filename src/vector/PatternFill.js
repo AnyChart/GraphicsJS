@@ -32,17 +32,17 @@ acgraph.vector.PatternFill = function(bounds) {
 goog.inherits(acgraph.vector.PatternFill, acgraph.vector.Layer);
 
 
-/**
- * Supported dirty states.
- * @type {number}
- */
-acgraph.vector.PatternFill.prototype.SUPPORTED_DIRTY_STATES =
-    acgraph.vector.Element.DirtyState.DOM_MISSING |
-        acgraph.vector.Element.DirtyState.TRANSFORMATION |
-        acgraph.vector.Element.DirtyState.ID |
-        acgraph.vector.Element.DirtyState.CHILDREN |
-        acgraph.vector.Element.DirtyState.CHILDREN_SET |
-        acgraph.vector.Element.DirtyState.DATA;
+// /**
+//  * Supported dirty states.
+//  * @type {number}
+//  */
+// acgraph.vector.PatternFill.prototype.SUPPORTED_DIRTY_STATES =
+//     acgraph.vector.Element.DirtyState.DOM_MISSING |
+//         acgraph.vector.Element.DirtyState.TRANSFORMATION |
+//         acgraph.vector.Element.DirtyState.ID |
+//         acgraph.vector.Element.DirtyState.CHILDREN |
+//         acgraph.vector.Element.DirtyState.CHILDREN_SET |
+//         acgraph.vector.Element.DirtyState.DATA;
 
 
 //----------------------------------------------------------------------------------------------------------------------

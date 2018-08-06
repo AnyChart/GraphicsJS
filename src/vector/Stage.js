@@ -122,6 +122,7 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
   this.defs_ = this.createDefs();
   this.defs_.render();
 
+  console.timeStamp('layer');
   /**
    * Root layer for Stage. All layer and elements added to stage go in this layer.
    * So all rendering and other stuff happens here.
@@ -133,21 +134,25 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
   goog.dom.appendChild(this.domElement_, this.rootLayer_.domElement());
   acgraph.getRenderer().createMeasurement();
 
-  this.eventHandler_.listen(this.domElement(), [
-    goog.events.EventType.MOUSEDOWN,
-    goog.events.EventType.MOUSEOVER,
-    goog.events.EventType.MOUSEOUT,
-    goog.events.EventType.CLICK,
-    goog.events.EventType.DBLCLICK,
-    goog.events.EventType.TOUCHSTART,
-    goog.events.EventType.TOUCHEND,
-    goog.events.EventType.TOUCHCANCEL,
-    goog.events.EventType.MSPOINTERDOWN,
-    goog.events.EventType.MSPOINTERUP,
-    goog.events.EventType.POINTERDOWN,
-    goog.events.EventType.POINTERUP,
-    goog.events.EventType.CONTEXTMENU
-  ], this.handleMouseEvent_, false);
+  var ths = this;
+  setTimeout(function() {
+    ths.eventHandler_.listen(ths.domElement(), [
+      goog.events.EventType.MOUSEDOWN,
+      goog.events.EventType.MOUSEOVER,
+      goog.events.EventType.MOUSEOUT,
+      goog.events.EventType.CLICK,
+      goog.events.EventType.DBLCLICK,
+      goog.events.EventType.TOUCHSTART,
+      goog.events.EventType.TOUCHEND,
+      goog.events.EventType.TOUCHCANCEL,
+      goog.events.EventType.MSPOINTERDOWN,
+      goog.events.EventType.MSPOINTERUP,
+      goog.events.EventType.POINTERDOWN,
+      goog.events.EventType.POINTERUP,
+      goog.events.EventType.CONTEXTMENU
+    ], ths.handleMouseEvent_, false);
+  }, 0);
+
 
   this.setWidth_(opt_width || '100%');
   this.setHeight_(opt_height || '100%');
@@ -1123,24 +1128,24 @@ acgraph.vector.Stage.prototype.releaseDomChanges = function(allowed, made) {
  * Renders the stage with selected method if it is not suspended.
  */
 acgraph.vector.Stage.prototype.render = function() {
-  if (!this.suspended_) {
-    if (this.container_ && !this.isRendering_) {
-      this.isRendering_ = true;
-      this.dispatchEvent(acgraph.vector.Stage.EventType.RENDER_START);
-      this.currentDomChangesCount = 0;
-      if (this.asyncMode_) {
-        this.acquireDomChanges = this.acquireDomChangesAsync_;
-        setTimeout(this.renderAsync_, 0);
-      } else {
-        this.acquireDomChanges = this.acquireDomChangesSync_;
-        this.renderInternal();
-        if (this.isDirty()) {
-          throw acgraph.error.getErrorMessage(acgraph.error.Code.DIRTY_AFTER_SYNC_RENDER);
-        }
-        this.finishRendering_();
-      }
-    }
-  }
+  // if (!this.suspended_) {
+  //   if (this.container_ && !this.isRendering_) {
+  //     this.isRendering_ = true;
+  //     this.dispatchEvent(acgraph.vector.Stage.EventType.RENDER_START);
+  //     this.currentDomChangesCount = 0;
+  //     if (this.asyncMode_) {
+  //       this.acquireDomChanges = this.acquireDomChangesAsync_;
+  //       setTimeout(this.renderAsync_, 0);
+  //     } else {
+  //       this.acquireDomChanges = this.acquireDomChangesSync_;
+  //       this.renderInternal();
+  //       if (this.isDirty()) {
+  //         throw acgraph.error.getErrorMessage(acgraph.error.Code.DIRTY_AFTER_SYNC_RENDER);
+  //       }
+  //       this.finishRendering_();
+  //     }
+  //   }
+  // }
 };
 
 

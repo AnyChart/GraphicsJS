@@ -55,13 +55,13 @@ goog.inherits(acgraph.vector.Ellipse, acgraph.vector.Shape);
 //  Properties
 //
 //----------------------------------------------------------------------------------------------------------------------
-/**
- * Sync states. Inherited from Shape.
- * @type {number}
- */
-acgraph.vector.Ellipse.prototype.SUPPORTED_DIRTY_STATES =
-    acgraph.vector.Shape.prototype.SUPPORTED_DIRTY_STATES |
-        acgraph.vector.Element.DirtyState.DATA;
+// /**
+//  * Sync states. Inherited from Shape.
+//  * @type {number}
+//  */
+// acgraph.vector.Ellipse.prototype.SUPPORTED_DIRTY_STATES =
+//     acgraph.vector.Shape.prototype.SUPPORTED_DIRTY_STATES |
+//         acgraph.vector.Element.DirtyState.DATA;
 
 
 /** @inheritDoc */

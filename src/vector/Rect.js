@@ -58,13 +58,13 @@ goog.inherits(acgraph.vector.Rect, acgraph.vector.PathBase);
 //  Properties
 //
 //----------------------------------------------------------------------------------------------------------------------
-/**
- * Supported states. Inherited from Shape and Rectangle data.
- * @type {number}
- */
-acgraph.vector.Rect.prototype.SUPPORTED_DIRTY_STATES =
-    acgraph.vector.Shape.prototype.SUPPORTED_DIRTY_STATES |
-        acgraph.vector.Element.DirtyState.DATA;
+// /**
+//  * Supported states. Inherited from Shape and Rectangle data.
+//  * @type {number}
+//  */
+// acgraph.vector.Rect.prototype.SUPPORTED_DIRTY_STATES =
+//     acgraph.vector.Shape.prototype.SUPPORTED_DIRTY_STATES |
+//         acgraph.vector.Element.DirtyState.DATA;
 
 
 /** @inheritDoc */

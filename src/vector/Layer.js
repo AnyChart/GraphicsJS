@@ -24,6 +24,7 @@ goog.require('goog.math.Rect');
  @implements {acgraph.vector.ILayer}
  */
 acgraph.vector.Layer = function() {
+  this.domElement_ =
   /**
    * Chidren list.
    * @type {!Array.<acgraph.vector.Element>}
@@ -56,16 +57,16 @@ acgraph.vector.Layer.prototype.getElementTypePrefix = function() {
 //  Properties and consts
 //
 //----------------------------------------------------------------------------------------------------------------------
-/**
- * Supported states.
- * Layer inherits element and can handle children states, parts of children and layer attributes.
- * @type {number}
- */
-acgraph.vector.Layer.prototype.SUPPORTED_DIRTY_STATES =
-    acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES |
-        acgraph.vector.Element.DirtyState.CHILDREN |
-        acgraph.vector.Element.DirtyState.CHILDREN_SET |
-        acgraph.vector.Element.DirtyState.DATA;
+// /**
+//  * Supported states.
+//  * Layer inherits element and can handle children states, parts of children and layer attributes.
+//  * @type {number}
+//  */
+// acgraph.vector.Layer.prototype.SUPPORTED_DIRTY_STATES =
+//     acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES |
+//         acgraph.vector.Element.DirtyState.CHILDREN |
+//         acgraph.vector.Element.DirtyState.CHILDREN_SET |
+//         acgraph.vector.Element.DirtyState.DATA;
 
 
 //endregion
@@ -89,11 +90,11 @@ acgraph.vector.Layer.prototype.propagateVisualStatesToChildren = function() {
 
 /** @inheritDoc */
 acgraph.vector.Layer.prototype.setDirtyState = function(value) {
-  acgraph.vector.Layer.base(this, 'setDirtyState', value);
-  if (!!(value & (acgraph.vector.Element.DirtyState.CHILDREN |
-      acgraph.vector.Element.DirtyState.CHILDREN_SET))) {
-    this.dropBoundsCache();
-  }
+  // acgraph.vector.Layer.base(this, 'setDirtyState', value);
+  // if (!!(value & (acgraph.vector.Element.DirtyState.CHILDREN |
+  //     acgraph.vector.Element.DirtyState.CHILDREN_SET))) {
+  //   this.dropBoundsCache();
+  // }
 };
 
 
@@ -145,19 +146,21 @@ acgraph.vector.Layer.prototype.addChildAt = function(element, index) {
   // Set element parent
   element.setParent(this);
 
+  goog.dom.insertChildAt(this.domElement_, element.domElement(), index);
+
   // Check if we need to rerender a child, if yes - set flag
-  if (element.isDirty())
-    this.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN);
+  // if (element.isDirty())
+  //   this.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN);
 
   // Set flag to a layer
-  this.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET);
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET);
 
-  element.parentTransformationChanged();
-  var cursor = /** @type {acgraph.vector.Cursor} */(this.cursor() || this.parentCursor);
-  if (element.parentCursor != cursor) {
-    element.parentCursor = cursor;
-    element.cursorChanged();
-  }
+  // element.parentTransformationChanged();
+  // var cursor = /** @type {acgraph.vector.Cursor} */(this.cursor() || this.parentCursor);
+  // if (element.parentCursor != cursor) {
+  //   element.parentCursor = cursor;
+  //   element.cursorChanged();
+  // }
 
   return this;
 };
@@ -550,7 +553,9 @@ acgraph.vector.Layer.prototype.ellipse = function(opt_cx, opt_cy, opt_rx, opt_ry
  @this {acgraph.vector.ILayer}
  */
 acgraph.vector.Layer.prototype.path = function() {
-  return /** @type {!acgraph.vector.Path} */((acgraph.path()).parent(this));
+  var p = /** @type {!acgraph.vector.Path} */((acgraph.path()).parent(this));
+  p.renderFillAndStroke();
+  return p;
 };
 
 
@@ -840,35 +845,35 @@ acgraph.vector.Layer.prototype.createDomInternal = function() {
 /** @inheritDoc */
 acgraph.vector.Layer.prototype.renderInternal = function() {
   // If layer DATA flag is not ok - just rerender attributes.
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA))
-    this.renderData();
-
-  // Get one third of all available changes for the subsequent element adding
-  var halfLimit = this.getStage().blockChangesForAdding();
-  // Try to render children, if something is wrong with them
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.CHILDREN))
-    this.renderChildren();
-  // Return changes.
-  this.getStage().releaseDomChanges(halfLimit, 0);
-
-  // If something is wrong with chldren set
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET)) {
-    // TODO (Anton Saukh): this grabbing algorithm should be refactored, it is not efficient
-    // Try to pre-grab DOM changes from the required share for changes in children
-    var allowedChangesCount = this.getStage().acquireDomChanges(this.children.length + this.domChildren.length + 1);
-    // Try to correct this
-    var changesMade = this.renderChildrenDom(allowedChangesCount);
-    // If we did less changes than we wanted
-    if (changesMade < allowedChangesCount)
-      // Free changes we didn't do
-      this.getStage().releaseDomChanges(allowedChangesCount, changesMade);
-  }
-
-  //  // try to render children if something is wrong with them
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.CHILDREN))
-    this.renderChildren();
-
-  goog.base(this, 'renderInternal');
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA))
+  //   this.renderData();
+  //
+  // // Get one third of all available changes for the subsequent element adding
+  // var halfLimit = this.getStage().blockChangesForAdding();
+  // // Try to render children, if something is wrong with them
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.CHILDREN))
+  //   this.renderChildren();
+  // // Return changes.
+  // this.getStage().releaseDomChanges(halfLimit, 0);
+  //
+  // // If something is wrong with chldren set
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET)) {
+  //   // TODO (Anton Saukh): this grabbing algorithm should be refactored, it is not efficient
+  //   // Try to pre-grab DOM changes from the required share for changes in children
+  //   var allowedChangesCount = this.getStage().acquireDomChanges(this.children.length + this.domChildren.length + 1);
+  //   // Try to correct this
+  //   var changesMade = this.renderChildrenDom(allowedChangesCount);
+  //   // If we did less changes than we wanted
+  //   if (changesMade < allowedChangesCount)
+  //     // Free changes we didn't do
+  //     this.getStage().releaseDomChanges(allowedChangesCount, changesMade);
+  // }
+  //
+  // //  // try to render children if something is wrong with them
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.CHILDREN))
+  //   this.renderChildren();
+  //
+  // goog.base(this, 'renderInternal');
 };
 
 

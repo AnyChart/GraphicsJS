@@ -152,13 +152,13 @@ acgraph.vector.Image.Align = {
 //  Properties
 //
 //----------------------------------------------------------------------------------------------------------------------
-/**
- * Supported dirty states.
- * @type {number}
- */
-acgraph.vector.Image.prototype.SUPPORTED_DIRTY_STATES =
-    acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES |
-        acgraph.vector.Element.DirtyState.DATA;
+// /**
+//  * Supported dirty states.
+//  * @type {number}
+//  */
+// acgraph.vector.Image.prototype.SUPPORTED_DIRTY_STATES =
+//     acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES |
+//         acgraph.vector.Element.DirtyState.DATA;
 
 
 /** @inheritDoc */

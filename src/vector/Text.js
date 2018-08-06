@@ -414,16 +414,16 @@ acgraph.vector.Text.Direction = {
 //----------------------------------------------------------------------------------------------------------------------
 
 
-/**
- * Supported states. Inherited from Element and text data added.
- * @type {number}
- */
-acgraph.vector.Text.prototype.SUPPORTED_DIRTY_STATES =
-    acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES |
-        acgraph.vector.Element.DirtyState.DATA |
-        acgraph.vector.Element.DirtyState.STYLE |
-        acgraph.vector.Element.DirtyState.POSITION |
-        acgraph.vector.Element.DirtyState.CHILDREN;
+// /**
+//  * Supported states. Inherited from Element and text data added.
+//  * @type {number}
+//  */
+// acgraph.vector.Text.prototype.SUPPORTED_DIRTY_STATES =
+//     acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES |
+//         acgraph.vector.Element.DirtyState.DATA |
+//         acgraph.vector.Element.DirtyState.STYLE |
+//         acgraph.vector.Element.DirtyState.POSITION |
+//         acgraph.vector.Element.DirtyState.CHILDREN;
 
 
 /**

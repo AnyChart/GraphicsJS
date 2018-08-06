@@ -40,13 +40,13 @@ goog.inherits(acgraph.vector.SimpleText, acgraph.vector.Element);
 acgraph.vector.SimpleText.prototype.text_ = null;
 
 
-/**
- * Supported states. Inherited from Element and text data added.
- * @type {number}
- */
-acgraph.vector.SimpleText.prototype.SUPPORTED_DIRTY_STATES =
-    acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES |
-    acgraph.vector.Element.DirtyState.DATA;
+// /**
+//  * Supported states. Inherited from Element and text data added.
+//  * @type {number}
+//  */
+// acgraph.vector.SimpleText.prototype.SUPPORTED_DIRTY_STATES =
+//     acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES |
+//     acgraph.vector.Element.DirtyState.DATA;
 
 
 /** @inheritDoc */

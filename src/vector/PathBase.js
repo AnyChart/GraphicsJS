@@ -370,13 +370,13 @@ acgraph.vector.PathBase.prototype.forEachTransformedSegment = function(callback,
 //  Properties
 //
 //----------------------------------------------------------------------------------------------------------------------
-/**
- * Supported states. Inherited from Shape and Path data added
- * @type {number}
- */
-acgraph.vector.PathBase.prototype.SUPPORTED_DIRTY_STATES =
-    acgraph.vector.Shape.prototype.SUPPORTED_DIRTY_STATES |
-        acgraph.vector.Element.DirtyState.DATA;
+// /**
+//  * Supported states. Inherited from Shape and Path data added
+//  * @type {number}
+//  */
+// acgraph.vector.PathBase.prototype.SUPPORTED_DIRTY_STATES =
+//     acgraph.vector.Shape.prototype.SUPPORTED_DIRTY_STATES |
+//         acgraph.vector.Element.DirtyState.DATA;
 
 
 /**
@@ -520,7 +520,8 @@ acgraph.vector.PathBase.prototype.moveToInternal = function(x, y) {
   this.transformedPathCache_ = null;
 
   // A flag is set, indicating that data is not synchronized
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  // acgraph.getRenderer().setPathProperties(this);
 
   return this;
 };
@@ -555,7 +556,8 @@ acgraph.vector.PathBase.prototype.lineToInternal = function(x, y, var_args) {
   this.transformedPathCache_ = null;
 
   // A flag is set, indicating that data is not synchronized
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  acgraph.getRenderer().setPathProperties(this);
 
   return this;
 };

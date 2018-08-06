@@ -45,15 +45,15 @@ goog.inherits(acgraph.vector.Shape, acgraph.vector.Element);
 //  Properties
 //
 //----------------------------------------------------------------------------------------------------------------------
-/**
- * Supported states mask. Inherited from base element
- * with fill and stroke added.
- * @type {number}
- */
-acgraph.vector.Shape.prototype.SUPPORTED_DIRTY_STATES =
-    acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES |
-        acgraph.vector.Element.DirtyState.FILL |
-        acgraph.vector.Element.DirtyState.STROKE;
+// /**
+//  * Supported states mask. Inherited from base element
+//  * with fill and stroke added.
+//  * @type {number}
+//  */
+// acgraph.vector.Shape.prototype.SUPPORTED_DIRTY_STATES =
+//     acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES |
+//         acgraph.vector.Element.DirtyState.FILL |
+//         acgraph.vector.Element.DirtyState.STROKE;
 
 
 /**
@@ -82,7 +82,8 @@ acgraph.vector.Shape.prototype.fill = function(opt_fillOrColorOrKeys, opt_opacit
   if (this.fill_ != newFill) {
     this.fill_ = newFill;
     this.boundsAffectedColors_ = (this.boundsAffectedColors_ & 2) | !!(newFill['mode'] || newFill['src']);
-    this.setDirtyState(acgraph.vector.Element.DirtyState.FILL);
+    // this.setDirtyState(acgraph.vector.Element.DirtyState.FILL);
+    this.renderFillAndStroke();
   }
   return this;
 };
@@ -107,7 +108,8 @@ acgraph.vector.Shape.prototype.stroke = function(opt_strokeOrFill, opt_thickness
   if (this.stroke_ != newStroke) {
     this.stroke_ = /** @type {acgraph.vector.Stroke} */(newStroke);
     this.boundsAffectedColors_ = (this.boundsAffectedColors_ & 1) | (newStroke['mode'] << 1);
-    this.setDirtyState(acgraph.vector.Element.DirtyState.STROKE);
+    // this.setDirtyState(acgraph.vector.Element.DirtyState.STROKE);
+    this.renderFillAndStroke();
   }
   return this;
 };
@@ -125,11 +127,12 @@ acgraph.vector.Shape.prototype.strokeThickness = function(opt_value) {
         'color': this.stroke_,
         'thickness': isNaN(opt_value) ? 1 : +opt_value
       });
-      this.setDirtyState(acgraph.vector.Element.DirtyState.STROKE);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.STROKE);
     } else {
       this.stroke_['thickness'] = isNaN(opt_value) ? 1 : +opt_value;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.STROKE);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.STROKE);
     }
+    this.renderFillAndStroke();
     return this;
   } else if (goog.isString(this.stroke_)) {
     return 1;
@@ -144,6 +147,7 @@ acgraph.vector.Shape.prototype.strokeThickness = function(opt_value) {
 //  Rendering
 //
 //----------------------------------------------------------------------------------------------------------------------
+
 /** @inheritDoc */
 acgraph.vector.Shape.prototype.beforeRenderInternal = function() {
   if (this.boundsAffectedColors_ && this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
@@ -168,13 +172,12 @@ acgraph.vector.Shape.prototype.renderInternal = function() {
 
 /**
  * Applies stroke and fill settings to the DOM element.
- * @protected
  * @return {undefined}
  */
 acgraph.vector.Shape.prototype.renderFillAndStroke = function() {
   acgraph.getRenderer().applyFillAndStroke(this);
-  this.clearDirtyState(acgraph.vector.Element.DirtyState.FILL);
-  this.clearDirtyState(acgraph.vector.Element.DirtyState.STROKE);
+  // this.clearDirtyState(acgraph.vector.Element.DirtyState.FILL);
+  // this.clearDirtyState(acgraph.vector.Element.DirtyState.STROKE);
 };
 //region --- Section Utility methods ---
 

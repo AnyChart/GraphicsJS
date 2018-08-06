@@ -30,14 +30,14 @@ acgraph.vector.UnmanagedLayer.prototype.getElementTypePrefix = function() {
 //----------------------------------------------------------------------------------------------------------------------
 //  States
 //----------------------------------------------------------------------------------------------------------------------
-/**
- * Supported states mask. Element can handle missing DOM element
- * and its visibility.
- * @type {number}
- */
-acgraph.vector.UnmanagedLayer.prototype.SUPPORTED_DIRTY_STATES =
-    acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES |
-    acgraph.vector.Element.DirtyState.DATA;
+// /**
+//  * Supported states mask. Element can handle missing DOM element
+//  * and its visibility.
+//  * @type {number}
+//  */
+// acgraph.vector.UnmanagedLayer.prototype.SUPPORTED_DIRTY_STATES =
+//     acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES |
+//     acgraph.vector.Element.DirtyState.DATA;
 
 
 /**
