@@ -953,8 +953,8 @@ acgraph.vector.PathBase.prototype.renderInternal = function() {
   goog.base(this, 'renderInternal');
   // If data is unsync  - recreate path data attribute
   // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
-    this.renderPath();
-  }
+  this.renderPath();
+  // }
 };
 
 
