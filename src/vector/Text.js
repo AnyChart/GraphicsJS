@@ -941,6 +941,7 @@ acgraph.vector.Text.prototype.text = function(opt_value) {
       // this.setDirtyState(acgraph.vector.Element.DirtyState.STYLE);
       // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
       // this.setDirtyState(acgraph.vector.Element.DirtyState.POSITION);
+      this.textDefragmentation();
       this.renderStyle();
       this.renderData();
       this.renderPosition();
@@ -1808,6 +1809,7 @@ acgraph.vector.Text.prototype.createDomInternal = function() {
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.Text.prototype.renderInternal = function() {
+  debugger;
   // if data is unsynced - update it
   if (!this.defragmented) this.textDefragmentation();
 
