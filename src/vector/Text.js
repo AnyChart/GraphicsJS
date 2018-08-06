@@ -1837,7 +1837,7 @@ acgraph.vector.Text.prototype.renderTextPath = function() {
     goog.dom.removeNode(this.textPath);
     this.textPath = null;
   }
-  this.clearDirtyState(acgraph.vector.Element.DirtyState.CHILDREN);
+  // this.clearDirtyState(acgraph.vector.Element.DirtyState.CHILDREN);
 };
 
 
@@ -1849,7 +1849,7 @@ acgraph.vector.Text.prototype.renderPosition = function() {
     this.segments_[i].setTextSegmentPosition();
   }
   acgraph.getRenderer().setTextPosition(this);
-  this.clearDirtyState(acgraph.vector.Element.DirtyState.POSITION);
+  // this.clearDirtyState(acgraph.vector.Element.DirtyState.POSITION);
 };
 
 
@@ -1860,7 +1860,7 @@ acgraph.vector.Text.prototype.renderStyle = function() {
   // Apply data to DOM element
   acgraph.getRenderer().setTextProperties(this);
   // Set unsync data flag
-  this.clearDirtyState(acgraph.vector.Element.DirtyState.STYLE);
+  // this.clearDirtyState(acgraph.vector.Element.DirtyState.STYLE);
 };
 
 
