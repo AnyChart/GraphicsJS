@@ -178,7 +178,6 @@ acgraph.vector.TextSegment.prototype.setTextSegmentProperties = function() {
  * Set text for text segment.
  */
 acgraph.vector.TextSegment.prototype.renderData = function() {
-  debugger;
   if (this.text == '') return;
   this.domElement_ = acgraph.getRenderer().createTextSegmentElement();
   this.setTextSegmentProperties();
