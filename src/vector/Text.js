@@ -504,6 +504,7 @@ acgraph.vector.Text.prototype.setStyleProperty = function(prop, opt_value) {
       // this.setDirtyState(acgraph.vector.Element.DirtyState.STYLE);
       // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
       // this.setDirtyState(acgraph.vector.Element.DirtyState.POSITION);
+      this.textDefragmentation();
       this.renderStyle();
       this.renderData();
       this.renderPosition();
@@ -824,6 +825,7 @@ acgraph.vector.Text.prototype.path = function(opt_value) {
     //     acgraph.vector.Element.DirtyState.DATA |
     //     acgraph.vector.Element.DirtyState.POSITION |
     //     acgraph.vector.Element.DirtyState.CHILDREN);
+    this.textDefragmentation();
     this.renderStyle();
     this.renderData();
     this.renderPosition();
@@ -913,6 +915,7 @@ acgraph.vector.Text.prototype.style = function(opt_value) {
     // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
     // this.setDirtyState(acgraph.vector.Element.DirtyState.POSITION);
     // this.setDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
+    this.textDefragmentation();
     this.renderStyle();
     this.renderData();
     this.renderPosition();
@@ -970,6 +973,7 @@ acgraph.vector.Text.prototype.htmlText = function(opt_value) {
       // this.setDirtyState(acgraph.vector.Element.DirtyState.STYLE);
       // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
       // this.setDirtyState(acgraph.vector.Element.DirtyState.POSITION);
+      this.textDefragmentation();
       this.renderStyle();
       this.renderData();
       this.renderPosition();
