@@ -161,12 +161,12 @@ acgraph.vector.Shape.prototype.beforeRenderInternal = function() {
 
 /** @inheritDoc */
 acgraph.vector.Shape.prototype.renderInternal = function() {
-  goog.base(this, 'renderInternal');
-
-  // Apply stroke and fill settings if they were changed
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.FILL) ||
-      this.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE))
-    this.renderFillAndStroke();
+  // goog.base(this, 'renderInternal');
+  //
+  // // Apply stroke and fill settings if they were changed
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.FILL) ||
+  //     this.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE))
+  //   this.renderFillAndStroke();
 };
 
 
