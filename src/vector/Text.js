@@ -1716,16 +1716,16 @@ acgraph.vector.Text.prototype.textDefragmentation = function() {
       if (!this.domElement()) {
         this.createDom(true);
       }
-      if (this.hasDirtyState(acgraph.vector.Element.DirtyState.STYLE))
-        this.renderStyle();
+      // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.STYLE))
+      this.renderStyle();
 
       segment = new acgraph.vector.TextSegment(this.text_, {});
       this.currentLine_.push(segment);
       this.segments_.push(segment);
       segment.parent(this);
 
-      if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA))
-        this.renderData();
+      // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA))
+      this.renderData();
 
       var bounds = acgraph.getRenderer().getBBox(this.domElement(), this.text_, this.style_);
 
