@@ -24,7 +24,8 @@ goog.require('goog.math.Rect');
  @implements {acgraph.vector.ILayer}
  */
 acgraph.vector.Layer = function() {
-  this.domElement_ =
+  this.domElement_ = this.createDomInternal();
+
   /**
    * Chidren list.
    * @type {!Array.<acgraph.vector.Element>}
@@ -521,6 +522,7 @@ acgraph.vector.Layer.prototype.truncatedRect = function(rect, var_args) {
 acgraph.vector.Layer.prototype.circle = function(opt_cx, opt_cy, opt_radius) {
   var circle = acgraph.circle(opt_cx, opt_cy, opt_radius);
   circle.parent(this);
+  circle.renderFillAndStroke();
   return circle;
 };
 
@@ -540,6 +542,7 @@ acgraph.vector.Layer.prototype.circle = function(opt_cx, opt_cy, opt_radius) {
 acgraph.vector.Layer.prototype.ellipse = function(opt_cx, opt_cy, opt_rx, opt_ry) {
   var ellipse = acgraph.ellipse(opt_cx, opt_cy, opt_rx, opt_ry);
   ellipse.parent(this);
+  ellipse.renderFillAndStroke();
   return ellipse;
 };
 

@@ -122,7 +122,6 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
   this.defs_ = this.createDefs();
   this.defs_.render();
 
-  console.timeStamp('layer');
   /**
    * Root layer for Stage. All layer and elements added to stage go in this layer.
    * So all rendering and other stuff happens here.

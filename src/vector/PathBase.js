@@ -475,7 +475,8 @@ acgraph.vector.PathBase.prototype.simplify = function() {
   );
 
   // Set unsync flag
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  acgraph.getRenderer().setPathProperties(this);
 
   // Do not reset bounds cache - this operation doesn't change them.
 
@@ -492,7 +493,8 @@ acgraph.vector.PathBase.prototype.clearInternal = function() {
     // Everything is cleared, including all chaches
     this.clearInternal_();
     // A flag is set, indicating that data is not synchronized
-    this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+    // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+    acgraph.getRenderer().setPathProperties(this);
   }
 
   return this;
@@ -598,7 +600,8 @@ acgraph.vector.PathBase.prototype.curveToInternal = function(control1X, control1
   this.transformedPathCache_ = null;
 
   // A flag is set, indicating that data is not synchronized
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  acgraph.getRenderer().setPathProperties(this);
 
   return this;
 };
@@ -780,7 +783,8 @@ acgraph.vector.PathBase.prototype.arcToInternal = function(rx, ry, fromAngle, ex
   this.transformedPathCache_ = null;
 
   // A flag is set, indicating that data is not synchronized
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  acgraph.getRenderer().setPathProperties(this);
 
   return this;
 };
@@ -810,7 +814,8 @@ acgraph.vector.PathBase.prototype.arcToAsCurvesInternal = function(rx, ry, fromA
   this.transformedPathCache_ = null;
 
   // A flag is set, indicating that data is not synchronized
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  acgraph.getRenderer().setPathProperties(this);
 
   return this;
 };
@@ -831,7 +836,8 @@ acgraph.vector.PathBase.prototype.closeInternal = function() {
     this.count_.push(1);
     this.currentPoint_ = this.closePoint_;
     // A flag is set, indicating that data is not synchronized
-    this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+    // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+    acgraph.getRenderer().setPathProperties(this);
   }
 
   return this;
@@ -1085,7 +1091,8 @@ acgraph.vector.PathBase.prototype.deserialize = function(data) {
   this.segments_ = data['segments'];
   this.count_ = data['count'];
   this.arguments_ = data['arguments'];
-  this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  acgraph.getRenderer().setPathProperties(this);
   goog.base(this, 'deserialize', data);
 };
 
