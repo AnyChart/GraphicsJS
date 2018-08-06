@@ -380,9 +380,9 @@ acgraph.vector.Layer.prototype.unmanagedLayer = function() {
 acgraph.vector.Layer.prototype.text = function(opt_x, opt_y, opt_text, opt_style) {
   /** @type {!acgraph.vector.Text} */
   var text = acgraph.text(opt_x, opt_y);
+  text.parent(this);
   if (opt_style) text.style(opt_style);
   if (opt_text) text.text(opt_text);
-  text.parent(this);
 
   return text;
 };
