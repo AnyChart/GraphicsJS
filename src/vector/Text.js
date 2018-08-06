@@ -916,7 +916,7 @@ acgraph.vector.Text.prototype.style = function(opt_value) {
     this.renderStyle();
     this.renderData();
     this.renderPosition();
-    this.renderTextPath();
+    this.renderTransformation();
     this.transformAfterChange();
     if (!stageSuspended) this.getStage().resume();
     return this;
