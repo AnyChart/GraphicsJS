@@ -247,8 +247,10 @@ acgraph.vector.Layer.prototype.removeChildren = function() {
   var result = this.children;
   if (!this.isDisposed())
     this.children = [];
+
+  goog.dom.removeChildren(this.domElement_);
   // Set flag to a layer that children list changed
-  this.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET);
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET);
   return result;
 };
 
