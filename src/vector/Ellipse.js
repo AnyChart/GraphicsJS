@@ -80,7 +80,8 @@ acgraph.vector.Ellipse.prototype.centerX = function(opt_value) {
     if (this.center_.x != opt_value) {
       this.center_.x = opt_value;
       this.dropBoundsCache();
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      this.renderData();
     }
     return this;
   }
@@ -98,7 +99,8 @@ acgraph.vector.Ellipse.prototype.centerY = function(opt_value) {
     if (this.center_.y != opt_value) {
       this.center_.y = opt_value;
       this.dropBoundsCache();
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      this.renderData();
     }
     return this;
   }
@@ -118,7 +120,8 @@ acgraph.vector.Ellipse.prototype.center = function(opt_value) {
       this.center_.x = opt_value.x;
       this.center_.y = opt_value.y;
       this.dropBoundsCache();
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      this.renderData();
     }
     return this;
   }
@@ -136,7 +139,8 @@ acgraph.vector.Ellipse.prototype.radiusX = function(opt_value) {
     if (this.radiusX_ != opt_value) {
       this.radiusX_ = opt_value;
       this.dropBoundsCache();
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      this.renderData();
     }
     return this;
   }
@@ -154,7 +158,8 @@ acgraph.vector.Ellipse.prototype.radiusY = function(opt_value) {
     if (this.radiusY_ != opt_value) {
       this.radiusY_ = opt_value;
       this.dropBoundsCache();
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      this.renderData();
     }
     return this;
   }
@@ -225,11 +230,16 @@ acgraph.vector.Ellipse.prototype.createDomInternal = function() {
 /** @inheritDoc */
 acgraph.vector.Ellipse.prototype.renderInternal = function() {
   // Reset data if it is not synced
-  if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
-    this.renderData();
-    if (this.fill() && this.fill()['src']) {
-      this.setDirtyState(acgraph.vector.Element.DirtyState.FILL);
-    }
+  // if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
+  //   this.renderData();
+  //   if (this.fill() && this.fill()['src']) {
+  //     this.setDirtyState(acgraph.vector.Element.DirtyState.FILL);
+  //   }
+  // }
+  this.renderData();
+  if (this.fill() && this.fill()['src']) {
+    // this.setDirtyState(acgraph.vector.Element.DirtyState.FILL);
+    acgraph.getRenderer().applyFill(this);
   }
 
   goog.base(this, 'renderInternal');
@@ -253,7 +263,7 @@ acgraph.vector.Ellipse.prototype.renderData = function() {
   // Apply data to the DOM element
   acgraph.getRenderer().setEllipseProperties(this);
   // Set flag
-  this.clearDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  // this.clearDirtyState(acgraph.vector.Element.DirtyState.DATA);
 };
 
 

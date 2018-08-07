@@ -72,7 +72,8 @@ acgraph.vector.SimpleText.prototype.text = function(opt_value) {
       this.text_ = String(opt_value);
       var stageSuspended = !this.getStage() || this.getStage().isSuspended();
       if (!stageSuspended) this.getStage().suspend();
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      acgraph.getRenderer().setTextData(this);
       if (!stageSuspended) this.getStage().resume();
     }
     return this;

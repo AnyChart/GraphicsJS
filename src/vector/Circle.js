@@ -66,7 +66,7 @@ acgraph.vector.Circle.prototype.renderData = function() {
   // Set circle parameters
   acgraph.getRenderer().setCircleProperties(this);
   // Reset flag
-  this.clearDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  // this.clearDirtyState(acgraph.vector.Element.DirtyState.DATA);
 };
 
 

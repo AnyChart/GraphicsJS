@@ -176,7 +176,8 @@ acgraph.vector.Image.prototype.fittingMode = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
     if (opt_value != this.fittingMode_) {
       this.fittingMode_ = opt_value;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      this.renderData();
     }
     return this;
   }
@@ -193,7 +194,7 @@ acgraph.vector.Image.prototype.align = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
     if (opt_value != this.align_) {
       this.align_ = opt_value;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      this.renderData();
     }
     return this;
   }
@@ -210,7 +211,8 @@ acgraph.vector.Image.prototype.x = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
     if (opt_value != this.bounds_.left) {
       this.bounds_.left = opt_value;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      this.renderData();
       this.dropBoundsCache();
     }
     return this;
@@ -228,8 +230,8 @@ acgraph.vector.Image.prototype.y = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
     if (opt_value != this.bounds_.top) {
       this.bounds_.top = opt_value;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
-      this.dropBoundsCache();
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      this.renderData();
     }
     return this;
   }
@@ -246,7 +248,8 @@ acgraph.vector.Image.prototype.width = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
     if (opt_value != this.bounds_.width) {
       this.bounds_.width = opt_value;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      this.renderData();
       this.dropBoundsCache();
     }
     return this;
@@ -264,7 +267,8 @@ acgraph.vector.Image.prototype.height = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
     if (opt_value != this.bounds_.height) {
       this.bounds_.height = opt_value;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      this.renderData();
       this.dropBoundsCache();
     }
     return this;
@@ -282,7 +286,8 @@ acgraph.vector.Image.prototype.src = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (opt_value != this.src_) {
       this.src_ = opt_value;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      this.renderData();
     }
     return this;
   }
@@ -299,7 +304,8 @@ acgraph.vector.Image.prototype.opacity = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (opt_value != this.opacity_) {
       this.opacity_ = opt_value;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      this.renderData();
     }
     return this;
   }
@@ -339,7 +345,8 @@ acgraph.vector.Image.prototype.renderInternal = function() {
   // If data unsynced - update
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
     if (acgraph.getRenderer().needsReRenderOnParentTransformationChange())
-      this.setDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
+      // this.setDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
+      this.renderTransformation();
     this.renderData();
   }
 
@@ -352,8 +359,8 @@ acgraph.vector.Image.prototype.renderTransformation = function() {
   // Resolve transformation state
   acgraph.getRenderer().setImageTransformation(this);
   // Set flag
-  this.clearDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
-  this.clearDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION);
+  // this.clearDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
+  // this.clearDirtyState(acgraph.vector.Element.DirtyState.PARENT_TRANSFORMATION);
 };
 
 
@@ -364,7 +371,7 @@ acgraph.vector.Image.prototype.renderData = function() {
   // Apply data to the DOM element
   acgraph.getRenderer().setImageProperties(this);
   // Set flag
-  this.clearDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  // this.clearDirtyState(acgraph.vector.Element.DirtyState.DATA);
 };
 
 
