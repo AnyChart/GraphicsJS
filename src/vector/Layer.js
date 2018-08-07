@@ -219,7 +219,7 @@ acgraph.vector.Layer.prototype.removeChildAt = function(index) {
     } else {
       // IF so - remove from children arreay and get a reference
       element = goog.array.splice(this.children, index, 1)[0];
-      goog.dom.removeChildAt(this.domElement_, element.domElement(), index);
+      this.domElement_.removeChild(element.domElement());
     }
 
     // Tell poor element he is an orphan now. He is Oliver Twist now.
