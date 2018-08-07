@@ -1,5 +1,5 @@
 goog.provide('acgraph.vector.Element');
-goog.provide('acgraph.vector.Element.DirtyState');
+// goog.provide('acgraph.vector.Element.DirtyState');
 
 goog.require('acgraph.error');
 goog.require('acgraph.events');
