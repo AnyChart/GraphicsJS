@@ -412,6 +412,25 @@ acgraph.vector.HatchFill.prototype.rLine_ = function(path, startX, startY, endX,
 };
 
 
+/**
+ * @inheritDoc
+ */
+acgraph.vector.HatchFill.prototype.parent = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    acgraph.vector.HatchFill.base(this, 'parent', opt_value);
+    var parent = acgraph.vector.HatchFill.base(this, 'parent');
+    if (parent && parent.getStage()) {
+      var initializer = acgraph.vector.HatchFill.creationMap_[this.type];
+      if (initializer)
+        initializer.call(this);
+    } else {
+      throw 'Hatch fill parent is not set';
+    }
+  }
+  return acgraph.vector.HatchFill.base(this, 'parent');
+};
+
+
 //----------------------------------------------------------------------------------------------------------------------
 //
 //  Type prefix
