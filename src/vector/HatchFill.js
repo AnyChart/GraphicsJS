@@ -47,9 +47,9 @@ acgraph.vector.HatchFill = function(opt_type, opt_color, opt_thickness, opt_size
 
   acgraph.vector.HatchFill.base(this, 'constructor', new goog.math.Rect(0, 0, this.size, this.size));
 
-  var initializer = acgraph.vector.HatchFill.creationMap_[this.type];
-  if (initializer)
-    initializer.call(this);
+  // var initializer = acgraph.vector.HatchFill.creationMap_[this.type];
+  // if (initializer)
+  //   initializer.call(this);
 };
 goog.inherits(acgraph.vector.HatchFill, acgraph.vector.PatternFill);
 
