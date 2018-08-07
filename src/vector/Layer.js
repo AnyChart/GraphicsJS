@@ -219,14 +219,14 @@ acgraph.vector.Layer.prototype.removeChildAt = function(index) {
     } else {
       // IF so - remove from children arreay and get a reference
       element = goog.array.splice(this.children, index, 1)[0];
-
+      goog.dom.removeChildAt(this.domElement_, element.domElement(), index);
     }
 
     // Tell poor element he is an orphan now. He is Oliver Twist now.
     element.setParent(null);
 
     // Set flag to a layer that children list changed
-    this.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET);
+    // this.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN_SET);
   }
   return element;
 };
