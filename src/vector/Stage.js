@@ -1145,6 +1145,7 @@ acgraph.vector.Stage.prototype.render = function() {
   //     }
   //   }
   // }
+  this.finishRendering_();
 };
 
 
