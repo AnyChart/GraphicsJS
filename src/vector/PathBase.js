@@ -534,7 +534,11 @@ acgraph.vector.PathBase.prototype.moveToInternal = function(x, y) {
   // // acgraph.getRenderer().setPathProperties(this);
   //
   // return this;
-  throw 'moveTo debug exception';
+
+  this.d_ += ' M ' + x + ' ' + y;
+  return this;
+  
+  // throw 'moveTo debug exception';
 };
 
 
@@ -572,7 +576,10 @@ acgraph.vector.PathBase.prototype.lineToInternal = function(x, y, var_args) {
   //
   // return this;
 
-  throw 'lineTo debug exception';
+  this.d_ += ' L ' + x + ' ' + y;
+  return this;
+
+  // throw 'lineTo debug exception';
 };
 
 
@@ -852,8 +859,11 @@ acgraph.vector.PathBase.prototype.closeInternal = function() {
   // }
   //
   // return this;
+  this.d_ += ' Z ';
+  this.applyD();
+  return this;
 
-  throw 'close path debug exception';
+  // throw 'close path debug exception';
 };
 //endregion
 
