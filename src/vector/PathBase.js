@@ -495,13 +495,13 @@ acgraph.vector.PathBase.prototype.simplify = function() {
  @return {!acgraph.vector.PathBase} An instance of the {@link acgraph.vector.PathBase} class for method chaining.
  */
 acgraph.vector.PathBase.prototype.clearInternal = function() {
-  // if (!this.isEmpty()) {
-  //   // Everything is cleared, including all chaches
-  //   this.clearInternal_();
-  //   // A flag is set, indicating that data is not synchronized
-  //   // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
-  //   acgraph.getRenderer().setPathProperties(this);
-  // }
+  if (!this.isEmpty()) {
+    // Everything is cleared, including all chaches
+    this.clearInternal_();
+    // A flag is set, indicating that data is not synchronized
+    // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+    // acgraph.getRenderer().setPathProperties(this);
+  }
   
   this.d_ = 'M 0 0';
 
@@ -517,27 +517,24 @@ acgraph.vector.PathBase.prototype.clearInternal = function() {
  @return {!acgraph.vector.PathBase} An instance of the {@link acgraph.vector.PathBase} class for method chaining.
  */
 acgraph.vector.PathBase.prototype.moveToInternal = function(x, y) {
-  // if (goog.array.peek(this.segments_) == acgraph.vector.PathBase.Segment.MOVETO) {
-  //   this.arguments_.length -= 2;
-  // } else {
-  //   this.segments_.push(acgraph.vector.PathBase.Segment.MOVETO);
-  //   this.count_.push(1);
-  // }
-  // this.arguments_.push(x, y);
-  // this.currentPoint_ = this.closePoint_ = [x, y];
-  //
-  // // Borders cache is not reset as there is no extension for the time being and borders do not change
-  // this.transformedPathCache_ = null;
-  //
-  // // A flag is set, indicating that data is not synchronized
-  // // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
-  // // acgraph.getRenderer().setPathProperties(this);
-  //
-  // return this;
+  if (goog.array.peek(this.segments_) == acgraph.vector.PathBase.Segment.MOVETO) {
+    this.arguments_.length -= 2;
+  } else {
+    this.segments_.push(acgraph.vector.PathBase.Segment.MOVETO);
+    this.count_.push(1);
+  }
+  this.arguments_.push(x, y);
+  this.currentPoint_ = this.closePoint_ = [x, y];
 
+  // Borders cache is not reset as there is no extension for the time being and borders do not change
+  this.transformedPathCache_ = null;
+
+  // A flag is set, indicating that data is not synchronized
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  // acgraph.getRenderer().setPathProperties(this);
   this.d_ += ' M ' + x + ' ' + y;
+
   return this;
-  
   // throw 'moveTo debug exception';
 };
 
@@ -550,36 +547,33 @@ acgraph.vector.PathBase.prototype.moveToInternal = function(x, y) {
  @return {!acgraph.vector.PathBase} An instance of the {@link acgraph.vector.PathBase} class for method chaining.
  */
 acgraph.vector.PathBase.prototype.lineToInternal = function(x, y, var_args) {
-  // var lastSegment = goog.array.peek(this.segments_);
-  // if (lastSegment == null) {
-  //   throw acgraph.error.getErrorMessage(acgraph.error.Code.EMPTY_PATH);
-  // }
-  // if (lastSegment != acgraph.vector.PathBase.Segment.LINETO) {
-  //   this.segments_.push(acgraph.vector.PathBase.Segment.LINETO);
-  //   this.count_.push(0);
-  // }
-  // for (var i = 0; i < arguments.length; i += 2) {
-  //   x = arguments[i];
-  //   y = arguments[i + 1];
-  //   this.arguments_.push(x, y);
-  // }
-  // this.count_[this.count_.length - 1] += i / 2;
-  // this.currentPoint_ = [x, y];
-  //
-  // // Caches are reset
-  // this.dropBoundsCache();
-  // this.transformedPathCache_ = null;
-  //
-  // // A flag is set, indicating that data is not synchronized
-  // // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+  var lastSegment = goog.array.peek(this.segments_);
+  if (lastSegment == null) {
+    throw acgraph.error.getErrorMessage(acgraph.error.Code.EMPTY_PATH);
+  }
+  if (lastSegment != acgraph.vector.PathBase.Segment.LINETO) {
+    this.segments_.push(acgraph.vector.PathBase.Segment.LINETO);
+    this.count_.push(0);
+  }
+  for (var i = 0; i < arguments.length; i += 2) {
+    x = arguments[i];
+    y = arguments[i + 1];
+    this.arguments_.push(x, y);
+  }
+  this.count_[this.count_.length - 1] += i / 2;
+  this.currentPoint_ = [x, y];
+
+  // Caches are reset
+  this.dropBoundsCache();
+  this.transformedPathCache_ = null;
+
+  // A flag is set, indicating that data is not synchronized
+  // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
   // acgraph.getRenderer().setPathProperties(this);
-  //
-  // return this;
-
   this.d_ += ' L ' + x + ' ' + y;
-  return this;
 
-  // throw 'lineTo debug exception';
+
+  return this;
 };
 
 
@@ -844,23 +838,22 @@ acgraph.vector.PathBase.prototype.arcToAsCurvesInternal = function(rx, ry, fromA
  @return {!acgraph.vector.PathBase} An instance of the {@link acgraph.vector.PathBase} class for method chaining.
  */
 acgraph.vector.PathBase.prototype.closeInternal = function() {
-  // var lastSegment = goog.array.peek(this.segments_);
-  // if (lastSegment == null) {
-  //   throw acgraph.error.getErrorMessage(acgraph.error.Code.EMPTY_PATH);
-  // }
-  // if (lastSegment != acgraph.vector.PathBase.Segment.CLOSE) {
-  //   this.arguments_.push(this.closePoint_[0], this.closePoint_[1]);
-  //   this.segments_.push(acgraph.vector.PathBase.Segment.CLOSE);
-  //   this.count_.push(1);
-  //   this.currentPoint_ = this.closePoint_;
-  //   // A flag is set, indicating that data is not synchronized
-  //   // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
-  //   acgraph.getRenderer().setPathProperties(this);
-  // }
-  //
-  // return this;
-  this.d_ += ' Z ';
-  this.applyD();
+  var lastSegment = goog.array.peek(this.segments_);
+  if (lastSegment == null) {
+    throw acgraph.error.getErrorMessage(acgraph.error.Code.EMPTY_PATH);
+  }
+  if (lastSegment != acgraph.vector.PathBase.Segment.CLOSE) {
+    this.arguments_.push(this.closePoint_[0], this.closePoint_[1]);
+    this.segments_.push(acgraph.vector.PathBase.Segment.CLOSE);
+    this.count_.push(1);
+    this.currentPoint_ = this.closePoint_;
+    // A flag is set, indicating that data is not synchronized
+    // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+    // acgraph.getRenderer().setPathProperties(this);
+    this.d_ += ' Z ';
+    this.applyD();
+  }
+
   return this;
 
   // throw 'close path debug exception';
