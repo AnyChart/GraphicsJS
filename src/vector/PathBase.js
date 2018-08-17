@@ -613,7 +613,8 @@ acgraph.vector.PathBase.prototype.curveToInternal = function(control1X, control1
 
   // A flag is set, indicating that data is not synchronized
   // this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
-  acgraph.getRenderer().setPathProperties(this);
+  // acgraph.getRenderer().setPathProperties(this);
+  this.d_ += ' C ' + control1X + ' ' + control1Y + ' ' + control2X + ' ' + control2Y + ' ' + endX + ' ' + endY;
 
   return this;
 };
