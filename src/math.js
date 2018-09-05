@@ -579,6 +579,7 @@ goog.math.Size.prototype.getHeight = function() {
   goog.exportSymbol('acgraph.math.Size', goog.math.Size);
   goog.exportSymbol('acgraph.math.coordinate', acgraph.math.coordinate);
   goog.exportSymbol('acgraph.math.rect', acgraph.math.rect);
+  goog.exportSymbol('acgraph.math.Rect', goog.math.Rect);
   var proto = goog.math.Coordinate.prototype;
   proto['getX'] = proto.getX;
   proto['getY'] = proto.getY;
