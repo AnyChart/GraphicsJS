@@ -768,8 +768,9 @@ acgraph.utils.HTMLParser.prototype.parseText = function(textElem) {
 
         var isNotLetterOrDigit = /(_|\W)/.test(symbol); //Whether current symbol is not letter and not digit.
         if (isNotLetterOrDigit) {
-          var nextState = (symbol == '<') ? s.READ_TAG : s.READ_TEXT;
-          this.finalizeEntity_(nextState, symbol);
+          var openTag = symbol == '<';
+          var nextState = openTag ? s.READ_TAG : s.READ_TEXT;
+          this.finalizeEntity_(nextState, openTag ? '' : symbol);
           break;
         }
 
