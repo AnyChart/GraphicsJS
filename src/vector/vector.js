@@ -995,7 +995,7 @@ acgraph.vector.parseKey = function(key) {
 
 /**
  * Retrieves thickness from the stroke object.
- * @param {acgraph.vector.Stroke} stroke Stroke.
+ * @param {?acgraph.vector.Stroke} stroke Stroke.
  * @return {number} Thickness of the stroke.
  */
 acgraph.vector.getThickness = function(stroke) {

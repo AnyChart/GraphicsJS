@@ -2197,7 +2197,8 @@ acgraph.vector.Stage.prototype.disposeInternal = function() {
   delete this.internalContainer_;
   this.domElement_ = null;
 
-  acgraph.getRenderer().disposeMeasurement();
+  if (goog.object.isEmpty(acgraph.wrappers))
+    acgraph.getRenderer().disposeMeasurement();
 
   if (this.credits_) {
     this.credits_.dispose();

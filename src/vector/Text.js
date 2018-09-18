@@ -3,7 +3,7 @@ goog.provide('acgraph.vector.Text.TextOverflow');
 
 goog.require('acgraph.utils.HTMLParser');
 goog.require('acgraph.utils.IdGenerator');
-goog.require('acgraph.vector.Element');
+goog.require('acgraph.vector.Shape');
 goog.require('acgraph.vector.TextSegment');
 goog.require('goog.math.Rect');
 
@@ -21,7 +21,7 @@ goog.require('goog.math.Rect');
  @param {number=} opt_x Coordinate X (Left) of left top corner of text bounds.
  @param {number=} opt_y Coordinate Y (Top) of left top corner of text bounds.
  @constructor
- @extends {acgraph.vector.Element}
+ @extends {acgraph.vector.Shape}
 */
 acgraph.vector.Text = function(opt_x, opt_y) {
 
@@ -218,8 +218,9 @@ acgraph.vector.Text = function(opt_x, opt_y) {
   this.textPath = null;
 
   goog.base(this);
+  this.setNullFillAndStroke();
 };
-goog.inherits(acgraph.vector.Text, acgraph.vector.Element);
+goog.inherits(acgraph.vector.Text, acgraph.vector.Shape);
 
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -419,7 +420,7 @@ acgraph.vector.Text.Direction = {
  * @type {number}
  */
 acgraph.vector.Text.prototype.SUPPORTED_DIRTY_STATES =
-    acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES |
+    acgraph.vector.Shape.prototype.SUPPORTED_DIRTY_STATES |
         acgraph.vector.Element.DirtyState.DATA |
         acgraph.vector.Element.DirtyState.STYLE |
         acgraph.vector.Element.DirtyState.POSITION |
