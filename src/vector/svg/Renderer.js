@@ -115,7 +115,7 @@ acgraph.vector.svg.Renderer.prototype.createSVGElement_ = function(tag) {
 //----------------------------------------------------------------------------------------------------------------------
 /**
  * Desc.
- * @return {Element} - Measurement SVG element.
+ * @return {!Element} Measurement SVG container.
  */
 acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
   if (!this.measurement_) {
@@ -127,17 +127,20 @@ acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
     goog.dom.appendChild(this.measurementText_, this.measurementTextNode_);
     goog.dom.appendChild(this.measurement_, this.measurementText_);
     goog.dom.appendChild(this.measurement_, this.mesurmentDef_);
-    goog.dom.appendChild(goog.global['document'].body, this.measurement_);
 
     this.measurementLayerForBBox_ = this.createLayerElement();
     goog.dom.appendChild(this.measurement_, this.measurementLayerForBBox_);
 
     //We need set 'display: block' for <svg> element to prevent scrollbar on 100% height of parent container (see DVF-620)
-    this.setAttrs(this.measurement_, {'display': 'block', 'width': 0, 'height': 0});
+    this.setAttrs(this.measurement_, {'width': 0, 'height': 0});
 
+    this.measurement_.style.cssText = 'position: absolute; left: -99999; top: -99999';
     this.measurementGroupNode_ = this.createLayerElement();
     goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
+
+    goog.dom.appendChild(goog.global['document'].body, this.measurement_);
   }
+
   return this.measurement_;
 };
 
@@ -169,7 +172,7 @@ acgraph.vector.svg.Renderer.prototype.disposeMeasurement = function() {
  * @return {goog.math.Rect} Text borders.
  */
 acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
-  //if (text == '') return new goog.math.Rect(0, 0, 0, 0);
+  // return new goog.math.Rect(0, 0, 0, 0);
   this.createMeasurement();
 
   var spaceWidth = null;
@@ -188,37 +191,40 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
       additionWidth += spaceWidth || this.getSpaceBounds(style).width;
   }
 
-  style['fontStyle'] ?
-      this.setAttr(this.measurementText_, 'font-style', style['fontStyle']) :
-      this.removeAttr(this.measurementText_, 'font-style');
+  var cssString = '';
+  if (style['fontStyle']) {
+    cssString += 'font-style: ' + style['fontStyle'] + ';';
+  }
 
-  style['fontVariant'] ?
-      this.setAttr(this.measurementText_, 'font-variant', style['fontVariant']) :
-      this.removeAttr(this.measurementText_, 'font-variant');
+  if (style['fontVariant']) {
+    cssString += 'font-variant: ' + style['fontVariant'] + ';';
+  }
 
-  style['fontFamily'] ?
-      this.setAttr(this.measurementText_, 'font-family', style['fontFamily']) :
-      this.removeAttr(this.measurementText_, 'font-family');
+  if (style['fontFamily']) {
+    cssString += 'font-family: ' + style['fontFamily'] + ';';
+  }
 
-  style['fontSize'] ?
-      this.setAttr(this.measurementText_, 'font-size', style['fontSize']) :
-      this.removeAttr(this.measurementText_, 'font-size');
+  if (style['fontSize']) {
+    cssString += 'font-size: ' + style['fontSize'] + ';';
+  }
 
-  style['fontWeight'] ?
-      this.setAttr(this.measurementText_, 'font-weight', style['fontWeight']) :
-      this.removeAttr(this.measurementText_, 'font-weight');
+  if (style['fontWeight']) {
+    cssString += 'font-weight: ' + style['fontWeight'] + ';';
+  }
 
-  style['letterSpacing'] ?
-      this.setAttr(this.measurementText_, 'letter-spacing', style['letterSpacing']) :
-      this.removeAttr(this.measurementText_, 'letter-spacing');
+  if (style['letterSpacing']) {
+    cssString += 'letter-spacing: ' + style['letterSpacing'] + ';';
+  }
 
-  style['decoration'] ?
-      this.setAttr(this.measurementText_, 'text-decoration', style['decoration']) :
-      this.removeAttr(this.measurementText_, 'text-decoration');
+  if (style['decoration']) {
+    cssString += 'text-decoration: ' + style['decoration'] + ';';
+  }
+
+  this.measurementText_.style.cssText = cssString;
 
   this.measurementTextNode_.nodeValue = text;
   var bbox = this.measurementText_['getBBox']();
-  this.measurementTextNode_.nodeValue = '';
+  // this.measurementTextNode_.nodeValue = '';
 
   if (style['fontVariant'] && goog.userAgent.OPERA) {
     this.measurementTextNode_.nodeValue = text.charAt(0).toUpperCase();
