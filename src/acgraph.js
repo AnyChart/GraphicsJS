@@ -35,11 +35,10 @@ acgraph.WRAPPER_ID_PROP_NAME_ = 'data-ac-wrapper-id';
 
 
 /**
- * Wrappers map.
+ * Public Wrappers map.
  * @type {Object.<string, acgraph.vector.Element|acgraph.vector.Stage>}
- * @private
  */
-acgraph.wrappers_ = {};
+acgraph.wrappers = {};
 
 
 /**
@@ -50,7 +49,7 @@ acgraph.register = function(wrapper) {
   var node = wrapper.domElement();
   if (node) {
     var id = String(goog.getUid(wrapper));
-    acgraph.wrappers_[id] = wrapper;
+    acgraph.wrappers[id] = wrapper;
     node.setAttribute(acgraph.WRAPPER_ID_PROP_NAME_, id);
   }
 };
@@ -61,7 +60,7 @@ acgraph.register = function(wrapper) {
  * @param {acgraph.vector.Element|acgraph.vector.Stage} wrapper
  */
 acgraph.unregister = function(wrapper) {
-  delete acgraph.wrappers_[String(goog.getUid(wrapper))];
+  delete acgraph.wrappers[String(goog.getUid(wrapper))];
   var node = wrapper.domElement();
   if (node)
     node.removeAttribute(acgraph.WRAPPER_ID_PROP_NAME_);
@@ -83,7 +82,7 @@ acgraph.getWrapperForDOM = function(node, stage) {
       break;
     node = /** @type {Element} */(node.parentNode);
   }
-  var res = acgraph.wrappers_[uid || ''] || null;
+  var res = acgraph.wrappers[uid || ''] || null;
   return (res && res.domElement() == node) ? res : null;
 };
 
@@ -533,9 +532,9 @@ acgraph.updateReferences = function() {
   var wrapper;
   var renderer = acgraph.getRenderer();
 
-  for (var id in acgraph.wrappers_) {
-    if (!acgraph.wrappers_.hasOwnProperty(id)) continue;
-    wrapper = acgraph.wrappers_[id];
+  for (var id in acgraph.wrappers) {
+    if (!acgraph.wrappers.hasOwnProperty(id)) continue;
+    wrapper = acgraph.wrappers[id];
     var wrapperStage = wrapper.getStage();
     if (!wrapperStage) continue;
 

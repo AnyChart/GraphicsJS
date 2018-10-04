@@ -15,14 +15,16 @@ goog.require('goog.math.Rect');
 acgraph.vector.Shape = function() {
   /**
    * Fill settings object.
-   * @type {acgraph.vector.Fill}
+   * Null value means that fill will not be rendered.
+   * @type {?acgraph.vector.Fill}
    * @private
    */
   this.fill_ = 'none';
 
   /**
    * Stroke settings object.
-   * @type {acgraph.vector.Stroke}
+   * Null value means that fill will not be rendered.
+   * @type {?acgraph.vector.Stroke}
    * @private
    */
   this.stroke_ = 'black';
@@ -65,7 +67,7 @@ acgraph.vector.Shape.prototype.SUPPORTED_DIRTY_STATES =
  @param {number=} opt_opacity .
  @param {number=} opt_fx .
  @param {number=} opt_fy .
- @return {!(acgraph.vector.Fill|acgraph.vector.Shape)} .
+ @return {(acgraph.vector.Fill|acgraph.vector.Shape|null)} .
  */
 acgraph.vector.Shape.prototype.fill = function(opt_fillOrColorOrKeys, opt_opacityOrAngleOrCx, opt_modeOrCy, opt_opacityOrMode,
     opt_opacity, opt_fx, opt_fy) {
@@ -95,7 +97,7 @@ acgraph.vector.Shape.prototype.fill = function(opt_fillOrColorOrKeys, opt_opacit
   @param {string=} opt_dashpattern .
   @param {acgraph.vector.StrokeLineJoin=} opt_lineJoin .
   @param {acgraph.vector.StrokeLineCap=} opt_lineCap .
-  @return {(!acgraph.vector.Shape|acgraph.vector.Stroke)} .
+  @return {(acgraph.vector.Shape|acgraph.vector.Stroke|null)} .
  */
 acgraph.vector.Shape.prototype.stroke = function(opt_strokeOrFill, opt_thickness, opt_dashpattern, opt_lineJoin, opt_lineCap) {
   if (!goog.isDef(opt_strokeOrFill))
@@ -110,6 +112,19 @@ acgraph.vector.Shape.prototype.stroke = function(opt_strokeOrFill, opt_thickness
     this.setDirtyState(acgraph.vector.Element.DirtyState.STROKE);
   }
   return this;
+};
+
+
+/**
+ * Adds possibility to nullify fill and stroke for alternative coloring
+ * like text color since text becomes the shape (DVF-3872).
+ * Null value prevents fill/stroke attribute rendering.
+ *
+ * DEV NOTE: Do not abuse this method because it sets no dirty state.
+ */
+acgraph.vector.Shape.prototype.setNullFillAndStroke = function() {
+  this.fill_ = null;
+  this.stroke_ = null;
 };
 
 

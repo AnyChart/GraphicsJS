@@ -436,9 +436,9 @@ acgraph.math.fitWithProportion = function(targetWidth, targetHeight, sourceWidth
 //
 //------------------------------------------------------------------------------
 /**
- Getter for the X-coordinate.
- @this {goog.math.Coordinate}
- @return {number} X-coordinate.
+ * Getter for the X-coordinate.
+ * @this {goog.math.Coordinate}
+ * @return {number} X-coordinate.
  */
 goog.math.Coordinate.prototype.getX = function() {
   return this.x;
@@ -446,12 +446,23 @@ goog.math.Coordinate.prototype.getX = function() {
 
 
 /**
- Getter for the Y-coordinate.
- @this {goog.math.Coordinate}
- @return {number} The Y-coordinate.
+ * Getter for the Y-coordinate.
+ * @this {goog.math.Coordinate}
+ * @return {number} The Y-coordinate.
  */
 goog.math.Coordinate.prototype.getY = function() {
   return this.y;
+};
+
+
+/**
+ * Coordinate constructor method.
+ * @param {number=} opt_x Left, defaults to 0.
+ * @param {number=} opt_y Top, defaults to 0.
+ * @return {goog.math.Coordinate}
+ */
+acgraph.math.coordinate = function(opt_x, opt_y) {
+  return new goog.math.Coordinate(opt_x, opt_y);
 };
 
 
@@ -522,6 +533,19 @@ goog.math.Rect.prototype.getBottom = function() {
 };
 
 
+/**
+ * Rect constructor method.
+ * @param {number} x Left.
+ * @param {number} y Top.
+ * @param {number} w Width.
+ * @param {number} h Height.
+ * @return {goog.math.Rect}
+ */
+acgraph.math.rect = function(x, y, w, h) {
+  return new goog.math.Rect(x, y, w, h);
+};
+
+
 //endregion
 //region --- Size
 //------------------------------------------------------------------------------
@@ -552,9 +576,10 @@ goog.math.Size.prototype.getHeight = function() {
 //endregion
 //exports
 (function() {
-  goog.exportSymbol('acgraph.math.Coordinate', goog.math.Coordinate);
-  goog.exportSymbol('acgraph.math.Rect', goog.math.Rect);
   goog.exportSymbol('acgraph.math.Size', goog.math.Size);
+  goog.exportSymbol('acgraph.math.coordinate', acgraph.math.coordinate);
+  goog.exportSymbol('acgraph.math.rect', acgraph.math.rect);
+  goog.exportSymbol('acgraph.math.Rect', goog.math.Rect);
   var proto = goog.math.Coordinate.prototype;
   proto['getX'] = proto.getX;
   proto['getY'] = proto.getY;

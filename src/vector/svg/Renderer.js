@@ -115,26 +115,33 @@ acgraph.vector.svg.Renderer.prototype.createSVGElement_ = function(tag) {
 //----------------------------------------------------------------------------------------------------------------------
 /**
  * Desc.
+ * @return {!Element} Measurement SVG container.
  */
 acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
-  this.measurement_ = this.createSVGElement_('svg');
-  this.measurementText_ = this.createTextElement();
-  this.measurementTextNode_ = this.createTextNode('');
-  this.mesurmentDef_ = this.createDefsElement();
+  if (!this.measurement_) {
+    this.measurement_ = this.createSVGElement_('svg');
+    this.measurementText_ = this.createTextElement();
+    this.measurementTextNode_ = this.createTextNode('');
+    this.mesurmentDef_ = this.createDefsElement();
 
-  goog.dom.appendChild(this.measurementText_, this.measurementTextNode_);
-  goog.dom.appendChild(this.measurement_, this.measurementText_);
-  goog.dom.appendChild(this.measurement_, this.mesurmentDef_);
-  goog.dom.appendChild(goog.global['document'].body, this.measurement_);
+    goog.dom.appendChild(this.measurementText_, this.measurementTextNode_);
+    goog.dom.appendChild(this.measurement_, this.measurementText_);
+    goog.dom.appendChild(this.measurement_, this.mesurmentDef_);
 
-  this.measurementLayerForBBox_ = this.createLayerElement();
-  goog.dom.appendChild(this.measurement_, this.measurementLayerForBBox_);
+    this.measurementLayerForBBox_ = this.createLayerElement();
+    goog.dom.appendChild(this.measurement_, this.measurementLayerForBBox_);
 
-  //We need set 'display: block' for <svg> element to prevent scrollbar on 100% height of parent container (see DVF-620)
-  this.setAttrs(this.measurement_, {'display': 'block', 'width': 0, 'height': 0});
+    //We need set 'display: block' for <svg> element to prevent scrollbar on 100% height of parent container (see DVF-620)
+    this.setAttrs(this.measurement_, {'width': 0, 'height': 0});
 
-  this.measurementGroupNode_ = this.createLayerElement();
-  goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
+    this.measurement_.style.cssText = 'position: absolute; left: -99999; top: -99999';
+    this.measurementGroupNode_ = this.createLayerElement();
+    goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
+
+    goog.dom.appendChild(goog.global['document'].body, this.measurement_);
+  }
+
+  return this.measurement_;
 };
 
 
@@ -165,8 +172,8 @@ acgraph.vector.svg.Renderer.prototype.disposeMeasurement = function() {
  * @return {goog.math.Rect} Text borders.
  */
 acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
-  //if (text == '') return new goog.math.Rect(0, 0, 0, 0);
-  if (!this.measurement_) this.createMeasurement();
+  // return new goog.math.Rect(0, 0, 0, 0);
+  this.createMeasurement();
 
   var spaceWidth = null;
   var additionWidth = 0;
@@ -184,37 +191,40 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
       additionWidth += spaceWidth || this.getSpaceBounds(style).width;
   }
 
-  style['fontStyle'] ?
-      this.setAttr(this.measurementText_, 'font-style', style['fontStyle']) :
-      this.removeAttr(this.measurementText_, 'font-style');
+  var cssString = '';
+  if (style['fontStyle']) {
+    cssString += 'font-style: ' + style['fontStyle'] + ';';
+  }
 
-  style['fontVariant'] ?
-      this.setAttr(this.measurementText_, 'font-variant', style['fontVariant']) :
-      this.removeAttr(this.measurementText_, 'font-variant');
+  if (style['fontVariant']) {
+    cssString += 'font-variant: ' + style['fontVariant'] + ';';
+  }
 
-  style['fontFamily'] ?
-      this.setAttr(this.measurementText_, 'font-family', style['fontFamily']) :
-      this.removeAttr(this.measurementText_, 'font-family');
+  if (style['fontFamily']) {
+    cssString += 'font-family: ' + style['fontFamily'] + ';';
+  }
 
-  style['fontSize'] ?
-      this.setAttr(this.measurementText_, 'font-size', style['fontSize']) :
-      this.removeAttr(this.measurementText_, 'font-size');
+  if (style['fontSize']) {
+    cssString += 'font-size: ' + style['fontSize'] + ';';
+  }
 
-  style['fontWeight'] ?
-      this.setAttr(this.measurementText_, 'font-weight', style['fontWeight']) :
-      this.removeAttr(this.measurementText_, 'font-weight');
+  if (style['fontWeight']) {
+    cssString += 'font-weight: ' + style['fontWeight'] + ';';
+  }
 
-  style['letterSpacing'] ?
-      this.setAttr(this.measurementText_, 'letter-spacing', style['letterSpacing']) :
-      this.removeAttr(this.measurementText_, 'letter-spacing');
+  if (style['letterSpacing']) {
+    cssString += 'letter-spacing: ' + style['letterSpacing'] + ';';
+  }
 
-  style['decoration'] ?
-      this.setAttr(this.measurementText_, 'text-decoration', style['decoration']) :
-      this.removeAttr(this.measurementText_, 'text-decoration');
+  if (style['decoration']) {
+    cssString += 'text-decoration: ' + style['decoration'] + ';';
+  }
+
+  this.measurementText_.style.cssText = cssString;
 
   this.measurementTextNode_.nodeValue = text;
   var bbox = this.measurementText_['getBBox']();
-  this.measurementTextNode_.nodeValue = '';
+  // this.measurementTextNode_.nodeValue = '';
 
   if (style['fontVariant'] && goog.userAgent.OPERA) {
     this.measurementTextNode_.nodeValue = text.charAt(0).toUpperCase();
@@ -231,8 +241,7 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
  * @return {goog.math.Rect}
  */
 acgraph.vector.svg.Renderer.prototype.measureTextDom = function(element) {
-  if (!this.measurement_)
-    this.createMeasurement();
+  this.createMeasurement();
   if (!element.defragmented)
     element.textDefragmentation();
 
@@ -284,7 +293,7 @@ acgraph.vector.svg.Renderer.prototype.measureTextDom = function(element) {
 
 /** @inheritDoc */
 acgraph.vector.svg.Renderer.prototype.getBBox = function(element, text, style) {
-  if (!this.measurement_) this.createMeasurement();
+  this.createMeasurement();
 
   var boundsCache = this.textBoundsCache;
   var styleHash = this.getStyleHash(style);
@@ -330,7 +339,7 @@ acgraph.vector.svg.Renderer.prototype.getBBox = function(element, text, style) {
  * @return {goog.math.Rect} .
  */
 acgraph.vector.svg.Renderer.prototype.measureElement = function(element) {
-  if (!this.measurement_) this.createMeasurement();
+  this.createMeasurement();
 
   if (goog.isString(element)) {
     this.measurementGroupNode_.innerHTML = element;
@@ -1078,70 +1087,72 @@ acgraph.vector.svg.Renderer.prototype.renderLinearGradient = function(fill, defs
 acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
   /** @type {acgraph.vector.Fill} */
   var fill = /** @type {acgraph.vector.Fill} */(element.fill());
-  /** @type {!acgraph.vector.Defs} */
-  var defs = element.getStage().getDefs();
-  var pathPrefix = 'url(' + acgraph.getReference() + '#';
+  if (fill) {
+    /** @type {!acgraph.vector.Defs} */
+    var defs = element.getStage().getDefs();
+    var pathPrefix = 'url(' + acgraph.getReference() + '#';
 
-  // DVF-1729 fix
-  // because internet explorer converts fill-opacity "0.00001" to "1e-5" that is not css-compatible
-  // and export server can't generate proper image.
-  if (fill && fill['opacity'] && fill['opacity'] <= 0.0001 && goog.userAgent.IE && goog.userAgent.isVersionOrHigher('9'))
-    fill['opacity'] = 0.0001;
+    // DVF-1729 fix
+    // because internet explorer converts fill-opacity "0.00001" to "1e-5" that is not css-compatible
+    // and export server can't generate proper image.
+    if (fill && fill['opacity'] && fill['opacity'] <= 0.0001 && goog.userAgent.IE && goog.userAgent.isVersionOrHigher('9'))
+      fill['opacity'] = 0.0001;
 
-  if (goog.isString(fill)) {
-    this.setAttr(element.domElement(), 'fill', /** @type {string} */(fill));
-    this.removeAttr(element.domElement(), 'fill-opacity');
-  } else if (goog.isArray(fill['keys']) && fill['cx'] && fill['cy']) {
-    this.setAttr(element.domElement(), 'fill', pathPrefix +
-        this.renderRadialGradient(/** @type {acgraph.vector.RadialGradientFill} */(fill), defs) + ')');
-    this.setAttr(element.domElement(), 'fill-opacity', goog.isDef(fill['opacity']) ? fill['opacity'] : 1);
-  } else if (goog.isArray(fill['keys'])) {
-    if (!element.getBounds()) return;
-    this.setAttr(element.domElement(), 'fill',
-        pathPrefix + this.renderLinearGradient(/** @type {acgraph.vector.LinearGradientFill} */(fill), defs, element.getBounds()) + ')');
-    this.setAttr(element.domElement(), 'fill-opacity', goog.isDef(fill['opacity']) ? fill['opacity'] : 1);
-  } else if (fill['src']) {
-    var b = element.getBoundsWithoutTransform();
-    if (b) {
-      b.width = b.width || 0;
-      b.height = b.height || 0;
-      b.left = b.left || 0;
-      b.top = b.top || 0;
-    } else {
-      b = new goog.math.Rect(0, 0, 0, 0);
-    }
+    if (goog.isString(fill)) {
+      this.setAttr(element.domElement(), 'fill', /** @type {string} */(fill));
+      this.removeAttr(element.domElement(), 'fill-opacity');
+    } else if (goog.isArray(fill['keys']) && fill['cx'] && fill['cy']) {
+      this.setAttr(element.domElement(), 'fill', pathPrefix +
+          this.renderRadialGradient(/** @type {acgraph.vector.RadialGradientFill} */(fill), defs) + ')');
+      this.setAttr(element.domElement(), 'fill-opacity', goog.isDef(fill['opacity']) ? fill['opacity'] : 1);
+    } else if (goog.isArray(fill['keys'])) {
+      if (!element.getBounds()) return;
+      this.setAttr(element.domElement(), 'fill',
+          pathPrefix + this.renderLinearGradient(/** @type {acgraph.vector.LinearGradientFill} */(fill), defs, element.getBounds()) + ')');
+      this.setAttr(element.domElement(), 'fill-opacity', goog.isDef(fill['opacity']) ? fill['opacity'] : 1);
+    } else if (fill['src']) {
+      var b = element.getBoundsWithoutTransform();
+      if (b) {
+        b.width = b.width || 0;
+        b.height = b.height || 0;
+        b.left = b.left || 0;
+        b.top = b.top || 0;
+      } else {
+        b = new goog.math.Rect(0, 0, 0, 0);
+      }
 
-    if (fill['mode'] == acgraph.vector.ImageFillMode.TILE) {
-      var callback = function(imageFill) {
+      if (fill['mode'] == acgraph.vector.ImageFillMode.TILE) {
+        var callback = function(imageFill) {
+          imageFill.id(); // if the identifier of the fill is still empty, it will be generated
+          imageFill.parent(element.getStage()).render();
+          acgraph.getRenderer().setAttr(element.domElement(), 'fill', pathPrefix + imageFill.id() + ')');
+        };
+        defs.getImageFill(fill['src'], b, fill['mode'], fill['opacity'], callback);
+      } else {
+        var imageFill = defs.getImageFill(fill['src'], b, fill['mode'], fill['opacity']);
         imageFill.id(); // if the identifier of the fill is still empty, it will be generated
         imageFill.parent(element.getStage()).render();
-        acgraph.getRenderer().setAttr(element.domElement(), 'fill', pathPrefix + imageFill.id() + ')');
-      };
-      defs.getImageFill(fill['src'], b, fill['mode'], fill['opacity'], callback);
+        this.setAttr(element.domElement(), 'fill', pathPrefix + imageFill.id() + ')');
+        this.setAttr(element.domElement(), 'fill-opacity', goog.isDef(fill['opacity']) ? fill['opacity'] : 1);
+      }
+    } else if (acgraph.utils.instanceOf(fill, acgraph.vector.HatchFill)) {
+      var hatch = /** @type {acgraph.vector.HatchFill} */(fill);
+      hatch = defs.getHatchFill(hatch.type, hatch.color, hatch.thickness, hatch.size);
+      hatch.id(); // if the identifier of the fill is still empty, it will be generated
+      hatch.parent(element.getStage()).render();
+      this.setAttr(element.domElement(), 'fill', pathPrefix + hatch.id() + ')');
+    } else if (acgraph.utils.instanceOf(fill, acgraph.vector.PatternFill)) {
+      /** @type {acgraph.vector.PatternFill} */
+      var pattern = /** @type {acgraph.vector.PatternFill} */(fill);
+      pattern.id(); // if the identifier of the fill is still empty, it will be generated
+      pattern.parent(element.getStage()).render();
+      this.setAttr(element.domElement(), 'fill', pathPrefix + pattern.id() + ')');
     } else {
-      var imageFill = defs.getImageFill(fill['src'], b, fill['mode'], fill['opacity']);
-      imageFill.id(); // if the identifier of the fill is still empty, it will be generated
-      imageFill.parent(element.getStage()).render();
-      this.setAttr(element.domElement(), 'fill', pathPrefix + imageFill.id() + ')');
-      this.setAttr(element.domElement(), 'fill-opacity', goog.isDef(fill['opacity']) ? fill['opacity'] : 1);
+      this.setAttrs(element.domElement(), {
+        'fill': (/** @type {acgraph.vector.SolidFill} */(fill))['color'],
+        'fill-opacity': (/** @type {acgraph.vector.SolidFill} */(fill))['opacity']
+      });
     }
-  } else if (acgraph.utils.instanceOf(fill, acgraph.vector.HatchFill)) {
-    var hatch = /** @type {acgraph.vector.HatchFill} */(fill);
-    hatch = defs.getHatchFill(hatch.type, hatch.color, hatch.thickness, hatch.size);
-    hatch.id(); // if the identifier of the fill is still empty, it will be generated
-    hatch.parent(element.getStage()).render();
-    this.setAttr(element.domElement(), 'fill', pathPrefix + hatch.id() + ')');
-  } else if (acgraph.utils.instanceOf(fill, acgraph.vector.PatternFill)) {
-    /** @type {acgraph.vector.PatternFill} */
-    var pattern = /** @type {acgraph.vector.PatternFill} */(fill);
-    pattern.id(); // if the identifier of the fill is still empty, it will be generated
-    pattern.parent(element.getStage()).render();
-    this.setAttr(element.domElement(), 'fill', pathPrefix + pattern.id() + ')');
-  } else {
-    this.setAttrs(element.domElement(), {
-      'fill': (/** @type {acgraph.vector.SolidFill} */(fill))['color'],
-      'fill-opacity': (/** @type {acgraph.vector.SolidFill} */(fill))['opacity']
-    });
   }
 };
 
@@ -1150,43 +1161,45 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
 acgraph.vector.svg.Renderer.prototype.applyStroke = function(element) {
   /** @type {acgraph.vector.Stroke} */
   var stroke = /** @type {acgraph.vector.Stroke} */(element.stroke());
-  var defs = element.getStage().getDefs();
-  var domElement = element.domElement();
-  var pathPrefix = 'url(' + acgraph.getReference() + '#';
+  if (stroke) {
+    var defs = element.getStage().getDefs();
+    var domElement = element.domElement();
+    var pathPrefix = 'url(' + acgraph.getReference() + '#';
 
-  if (goog.isString(stroke)) {
-    this.setAttr(domElement, 'stroke', /** @type {string} */(stroke));
-  } else if (goog.isArray(stroke['keys']) && stroke['cx'] && stroke['cy']) {
-    this.setAttr(domElement, 'stroke', pathPrefix +
-        this.renderRadialGradient(/** @type {acgraph.vector.RadialGradientFill} */(stroke), defs) + ')');
-  } else if (goog.isArray(stroke['keys'])) {
-    if (!element.getBounds()) return;
-    this.setAttr(domElement, 'stroke',
-        pathPrefix + this.renderLinearGradient(/** @type {acgraph.vector.LinearGradientFill} */(stroke), defs, element.getBounds()) + ')');
-  } else {
-    this.setAttr(domElement, 'stroke', stroke['color']);
+    if (goog.isString(stroke)) {
+      this.setAttr(domElement, 'stroke', /** @type {string} */(stroke));
+    } else if (goog.isArray(stroke['keys']) && stroke['cx'] && stroke['cy']) {
+      this.setAttr(domElement, 'stroke', pathPrefix +
+          this.renderRadialGradient(/** @type {acgraph.vector.RadialGradientFill} */(stroke), defs) + ')');
+    } else if (goog.isArray(stroke['keys'])) {
+      if (!element.getBounds()) return;
+      this.setAttr(domElement, 'stroke',
+          pathPrefix + this.renderLinearGradient(/** @type {acgraph.vector.LinearGradientFill} */(stroke), defs, element.getBounds()) + ')');
+    } else {
+      this.setAttr(domElement, 'stroke', stroke['color']);
+    }
+
+    if (stroke['lineJoin'])
+      this.setAttr(domElement, 'stroke-linejoin', stroke['lineJoin']);
+    else
+      this.removeAttr(domElement, 'stroke-linejoin');
+    if (stroke['lineCap'])
+      this.setAttr(domElement, 'stroke-linecap', stroke['lineCap']);
+    else
+      this.removeAttr(domElement, 'stroke-linecap');
+    if (stroke['opacity'])
+      this.setAttr(domElement, 'stroke-opacity', stroke['opacity']);
+    else
+      this.removeAttr(domElement, 'stroke-opacity');
+    if (stroke['thickness'])
+      this.setAttr(domElement, 'stroke-width', stroke['thickness']);
+    else
+      this.removeAttr(domElement, 'stroke-width');
+    if (stroke['dash'])
+      this.setAttr(domElement, 'stroke-dasharray', stroke['dash']);
+    else
+      this.removeAttr(domElement, 'stroke-dasharray');
   }
-
-  if (stroke['lineJoin'])
-    this.setAttr(domElement, 'stroke-linejoin', stroke['lineJoin']);
-  else
-    this.removeAttr(domElement, 'stroke-linejoin');
-  if (stroke['lineCap'])
-    this.setAttr(domElement, 'stroke-linecap', stroke['lineCap']);
-  else
-    this.removeAttr(domElement, 'stroke-linecap');
-  if (stroke['opacity'])
-    this.setAttr(domElement, 'stroke-opacity', stroke['opacity']);
-  else
-    this.removeAttr(domElement, 'stroke-opacity');
-  if (stroke['thickness'])
-    this.setAttr(domElement, 'stroke-width', stroke['thickness']);
-  else
-    this.removeAttr(domElement, 'stroke-width');
-  if (stroke['dash'])
-    this.setAttr(domElement, 'stroke-dasharray', stroke['dash']);
-  else
-    this.removeAttr(domElement, 'stroke-dasharray');
 };
 
 
