@@ -33,6 +33,20 @@ acgraph.vector.Element = function() {
    */
   this.attributes_ = {};
 
+  /**
+   * TODO (A.Kudryavtsev): Describe.
+   * @type {boolean}
+   * @private
+   */
+  this.isSuspended_ = false;
+
+  /**
+   * TODO (A.Kudryavtsev): Describe.
+   * @type {number}
+   * @private
+   */
+  this.suspendedState_ = 0;
+
   // Set all supported sync flags in the beginning.
   this.setDirtyState(acgraph.vector.Element.DirtyState.ALL);
 };
@@ -571,6 +585,24 @@ acgraph.vector.Element.prototype.hasDirtyState = function(state) {
 
 
 /**
+ * TODO (A.Kudryavtsev): Describe.
+ */
+acgraph.vector.Element.prototype.suspend = function() {
+  this.isSuspended_ = true;
+};
+
+
+/**
+ * TODO (A.Kudryavtsev): Describe.
+ */
+acgraph.vector.Element.prototype.resume = function() {
+  this.isSuspended_ = false;
+  this.setDirtyState(this.suspendedState_);
+  this.suspendedState_ = 0;
+};
+
+
+/**
  * Sets given combination of sync states to an element
  * {@link acgraph.vector.Element.DirtyState}. If element supports
  * at least one, it passes it to update all children.
@@ -578,13 +610,17 @@ acgraph.vector.Element.prototype.hasDirtyState = function(state) {
  */
 acgraph.vector.Element.prototype.setDirtyState = function(value) {
   value &= this.SUPPORTED_DIRTY_STATES;
-  if (!!value/* && !!(this.dirtyState_ & value)*/) {
-    this.dirtyState_ |= value;
-    if (this.parent_)
-      this.parent_.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN);
-    var stage = this.getStage();
-    if (stage && !stage.isSuspended() && !stage.isRendering() && !this.isRendering())
-      this.render();
+  if (value) {
+    if (this.isSuspended_) {
+      this.suspendedState_ |= value;
+    } else {
+      this.dirtyState_ |= value;
+      if (this.parent_)
+        this.parent_.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN);
+      var stage = this.getStage();
+      if (stage && !stage.isSuspended() && !stage.isRendering() && !this.isRendering())
+        this.render();
+    }
   }
 };
 

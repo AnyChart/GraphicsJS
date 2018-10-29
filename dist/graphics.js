@@ -2680,6 +2680,9 @@ goog.math.Coordinate.prototype.getX = function() {
 goog.math.Coordinate.prototype.getY = function() {
   return this.y;
 };
+acgraph.math.coordinate = function(opt_x, opt_y) {
+  return new goog.math.Coordinate(opt_x, opt_y);
+};
 goog.math.Rect.prototype.getLeft = function() {
   return this.left;
 };
@@ -2698,6 +2701,9 @@ goog.math.Rect.prototype.getRight = function() {
 goog.math.Rect.prototype.getBottom = function() {
   return this.top + this.height;
 };
+acgraph.math.rect = function(x, y, w, h) {
+  return new goog.math.Rect(x, y, w, h);
+};
 goog.math.Size.prototype.getWidth = function() {
   return this.width;
 };
@@ -2705,9 +2711,10 @@ goog.math.Size.prototype.getHeight = function() {
   return this.height;
 };
 (function() {
-  goog.exportSymbol("acgraph.math.Coordinate", goog.math.Coordinate);
-  goog.exportSymbol("acgraph.math.Rect", goog.math.Rect);
   goog.exportSymbol("acgraph.math.Size", goog.math.Size);
+  goog.exportSymbol("acgraph.math.coordinate", acgraph.math.coordinate);
+  goog.exportSymbol("acgraph.math.rect", acgraph.math.rect);
+  goog.exportSymbol("acgraph.math.Rect", goog.math.Rect);
   var proto = goog.math.Coordinate.prototype;
   proto["getX"] = proto.getX;
   proto["getY"] = proto.getY;
@@ -10121,6 +10128,8 @@ goog.require("goog.math.Rect");
 acgraph.vector.Element = function() {
   acgraph.vector.Element.base(this, "constructor");
   this.attributes_ = {};
+  this.isSuspended_ = false;
+  this.suspendedState_ = 0;
   this.setDirtyState(acgraph.vector.Element.DirtyState.ALL);
 };
 goog.inherits(acgraph.vector.Element, goog.events.EventTarget);
@@ -10256,16 +10265,28 @@ acgraph.vector.Element.prototype.isDirty = function() {
 acgraph.vector.Element.prototype.hasDirtyState = function(state) {
   return !!(this.dirtyState_ & state);
 };
+acgraph.vector.Element.prototype.suspend = function() {
+  this.isSuspended_ = true;
+};
+acgraph.vector.Element.prototype.resume = function() {
+  this.isSuspended_ = false;
+  this.setDirtyState(this.suspendedState_);
+  this.suspendedState_ = 0;
+};
 acgraph.vector.Element.prototype.setDirtyState = function(value) {
   value &= this.SUPPORTED_DIRTY_STATES;
-  if (!!value) {
-    this.dirtyState_ |= value;
-    if (this.parent_) {
-      this.parent_.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN);
-    }
-    var stage = this.getStage();
-    if (stage && !stage.isSuspended() && !stage.isRendering() && !this.isRendering()) {
-      this.render();
+  if (value) {
+    if (this.isSuspended_) {
+      this.suspendedState_ |= value;
+    } else {
+      this.dirtyState_ |= value;
+      if (this.parent_) {
+        this.parent_.setDirtyState(acgraph.vector.Element.DirtyState.CHILDREN);
+      }
+      var stage = this.getStage();
+      if (stage && !stage.isSuspended() && !stage.isRendering() && !this.isRendering()) {
+        this.render();
+      }
     }
   }
 };
@@ -10884,6 +10905,10 @@ acgraph.vector.Shape.prototype.stroke = function(opt_strokeOrFill, opt_thickness
     this.setDirtyState(acgraph.vector.Element.DirtyState.STROKE);
   }
   return this;
+};
+acgraph.vector.Shape.prototype.setNullFillAndStroke = function() {
+  this.fill_ = null;
+  this.stroke_ = null;
 };
 acgraph.vector.Shape.prototype.strokeThickness = function(opt_value) {
   if (goog.isDef(opt_value)) {
@@ -13732,8 +13757,9 @@ acgraph.utils.HTMLParser.prototype.parseText = function(textElem) {
         }
         var isNotLetterOrDigit = /(_|\W)/.test(symbol);
         if (isNotLetterOrDigit) {
-          var nextState = symbol == "<" ? s.READ_TAG : s.READ_TEXT;
-          this.finalizeEntity_(nextState, symbol);
+          var openTag = symbol == "<";
+          var nextState = openTag ? s.READ_TAG : s.READ_TEXT;
+          this.finalizeEntity_(nextState, openTag ? "" : symbol);
           break;
         }
         var isDigit = /\d/.test(symbol);
@@ -14052,7 +14078,7 @@ goog.provide("acgraph.vector.Text");
 goog.provide("acgraph.vector.Text.TextOverflow");
 goog.require("acgraph.utils.HTMLParser");
 goog.require("acgraph.utils.IdGenerator");
-goog.require("acgraph.vector.Element");
+goog.require("acgraph.vector.Shape");
 goog.require("acgraph.vector.TextSegment");
 goog.require("goog.math.Rect");
 acgraph.vector.Text = function(opt_x, opt_y) {
@@ -14085,8 +14111,9 @@ acgraph.vector.Text = function(opt_x, opt_y) {
   this.style_ = this.defaultStyle_;
   this.textPath = null;
   goog.base(this);
+  this.setNullFillAndStroke();
 };
-goog.inherits(acgraph.vector.Text, acgraph.vector.Element);
+goog.inherits(acgraph.vector.Text, acgraph.vector.Shape);
 acgraph.vector.Text.WordBreak = {NORMAL:"normal", KEEP_ALL:"keep-all", BREAK_ALL:"break-all"};
 acgraph.vector.Text.WordWrap = {NORMAL:"normal", BREAK_WORD:"break-word"};
 acgraph.vector.Text.TextOverflow = {CLIP:"", ELLIPSIS:"..."};
@@ -14096,7 +14123,7 @@ acgraph.vector.Text.Decoration = {BLINK:"blink", LINE_THROUGH:"line-through", OV
 acgraph.vector.Text.FontVariant = {NORMAL:"normal", SMALL_CAP:"small-caps"};
 acgraph.vector.Text.FontStyle = {NORMAL:"normal", ITALIC:"italic", OBLIQUE:"oblique"};
 acgraph.vector.Text.Direction = {LTR:"ltr", RTL:"rtl"};
-acgraph.vector.Text.prototype.SUPPORTED_DIRTY_STATES = acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES | acgraph.vector.Element.DirtyState.DATA | acgraph.vector.Element.DirtyState.STYLE | acgraph.vector.Element.DirtyState.POSITION | acgraph.vector.Element.DirtyState.CHILDREN;
+acgraph.vector.Text.prototype.SUPPORTED_DIRTY_STATES = acgraph.vector.Shape.prototype.SUPPORTED_DIRTY_STATES | acgraph.vector.Element.DirtyState.DATA | acgraph.vector.Element.DirtyState.STYLE | acgraph.vector.Element.DirtyState.POSITION | acgraph.vector.Element.DirtyState.CHILDREN;
 acgraph.vector.Text.prototype.style_ = null;
 acgraph.vector.Text.prototype.text_ = null;
 acgraph.vector.Text.prototype.x = function(opt_value) {
@@ -14959,42 +14986,14 @@ acgraph.vector.Text.prototype.textDefragmentation = function() {
     var q = /\n/g;
     this.text_ = goog.string.canonicalizeNewlines(goog.string.normalizeSpaces(this.text_));
     var textArr = this.text_.split(q);
-    if (textArr.length == 1 && !goog.isDef(this.style_["width"]) && !this.path()) {
-      if (!this.domElement()) {
-        this.createDom(true);
-      }
-      if (this.hasDirtyState(acgraph.vector.Element.DirtyState.STYLE)) {
-        this.renderStyle();
-      }
-      segment = new acgraph.vector.TextSegment(this.text_, {});
-      this.currentLine_.push(segment);
-      this.segments_.push(segment);
-      segment.parent(this);
-      if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
-        this.renderData();
-      }
-      var bounds = acgraph.getRenderer().getBBox(this.domElement(), this.text_, this.style_);
-      segment.baseLine = -bounds.top;
-      segment.height = bounds.height;
-      segment.width = bounds.width;
-      this.currentLineHeight_ = bounds.height;
-      this.currentLineWidth_ = bounds.width + this.textIndent_;
-      this.currentBaseLine_ = segment.baseLine;
-      this.currentLineEmpty_ = this.text_.length == 0;
-      this.finalizeTextLine();
-      this.currentNumberSeqBreaks_++;
-      var height = this.currentLine_[0] ? this.currentLine_[0].height : 0;
-      this.accumulatedHeight_ += goog.isString(this.lineHeight_) ? parseInt(this.lineHeight_, 0) + height : this.lineHeight_ * height;
-    } else {
-      for (i = 0; i < textArr.length; i++) {
-        text = goog.string.trimLeft(textArr[i]);
-        if (goog.isDefAndNotNull(text)) {
-          if (text == "") {
-            this.addBreak();
-          } else {
-            this.addSegment(text);
-            this.addBreak();
-          }
+    for (i = 0; i < textArr.length; i++) {
+      text = goog.string.trimLeft(textArr[i]);
+      if (goog.isDefAndNotNull(text)) {
+        if (text == "") {
+          this.addBreak();
+        } else {
+          this.addSegment(text);
+          this.addBreak();
         }
       }
     }
@@ -15561,19 +15560,23 @@ acgraph.vector.svg.Renderer.prototype.createSVGElement_ = function(tag) {
   return goog.global["document"].createElementNS(acgraph.vector.svg.Renderer.SVG_NS_, tag);
 };
 acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
-  this.measurement_ = this.createSVGElement_("svg");
-  this.measurementText_ = this.createTextElement();
-  this.measurementTextNode_ = this.createTextNode("");
-  this.mesurmentDef_ = this.createDefsElement();
-  goog.dom.appendChild(this.measurementText_, this.measurementTextNode_);
-  goog.dom.appendChild(this.measurement_, this.measurementText_);
-  goog.dom.appendChild(this.measurement_, this.mesurmentDef_);
-  goog.dom.appendChild(goog.global["document"].body, this.measurement_);
-  this.measurementLayerForBBox_ = this.createLayerElement();
-  goog.dom.appendChild(this.measurement_, this.measurementLayerForBBox_);
-  this.setAttrs(this.measurement_, {"display":"block", "width":0, "height":0});
-  this.measurementGroupNode_ = this.createLayerElement();
-  goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
+  if (!this.measurement_) {
+    this.measurement_ = this.createSVGElement_("svg");
+    this.measurementText_ = this.createTextElement();
+    this.measurementTextNode_ = this.createTextNode("");
+    this.mesurmentDef_ = this.createDefsElement();
+    goog.dom.appendChild(this.measurementText_, this.measurementTextNode_);
+    goog.dom.appendChild(this.measurement_, this.measurementText_);
+    goog.dom.appendChild(this.measurement_, this.mesurmentDef_);
+    this.measurementLayerForBBox_ = this.createLayerElement();
+    goog.dom.appendChild(this.measurement_, this.measurementLayerForBBox_);
+    this.setAttrs(this.measurement_, {"width":0, "height":0});
+    this.measurement_.style.cssText = "position: absolute; left: -99999px; top: -99999px";
+    this.measurementGroupNode_ = this.createLayerElement();
+    goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
+    goog.dom.appendChild(goog.global["document"].body, this.measurement_);
+  }
+  return this.measurement_;
 };
 acgraph.vector.svg.Renderer.prototype.disposeMeasurement = function() {
   goog.dom.removeNode(this.measurementText_);
@@ -15590,9 +15593,7 @@ acgraph.vector.svg.Renderer.prototype.disposeMeasurement = function() {
   this.measurement_ = null;
 };
 acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
-  if (!this.measurement_) {
-    this.createMeasurement();
-  }
+  this.createMeasurement();
   var spaceWidth = null;
   var additionWidth = 0;
   if (text.length == 0) {
@@ -15608,16 +15609,31 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
       additionWidth += spaceWidth || this.getSpaceBounds(style).width;
     }
   }
-  style["fontStyle"] ? this.setAttr(this.measurementText_, "font-style", style["fontStyle"]) : this.removeAttr(this.measurementText_, "font-style");
-  style["fontVariant"] ? this.setAttr(this.measurementText_, "font-variant", style["fontVariant"]) : this.removeAttr(this.measurementText_, "font-variant");
-  style["fontFamily"] ? this.setAttr(this.measurementText_, "font-family", style["fontFamily"]) : this.removeAttr(this.measurementText_, "font-family");
-  style["fontSize"] ? this.setAttr(this.measurementText_, "font-size", style["fontSize"]) : this.removeAttr(this.measurementText_, "font-size");
-  style["fontWeight"] ? this.setAttr(this.measurementText_, "font-weight", style["fontWeight"]) : this.removeAttr(this.measurementText_, "font-weight");
-  style["letterSpacing"] ? this.setAttr(this.measurementText_, "letter-spacing", style["letterSpacing"]) : this.removeAttr(this.measurementText_, "letter-spacing");
-  style["decoration"] ? this.setAttr(this.measurementText_, "text-decoration", style["decoration"]) : this.removeAttr(this.measurementText_, "text-decoration");
+  var cssString = "";
+  if (style["fontStyle"]) {
+    cssString += "font-style: " + style["fontStyle"] + ";";
+  }
+  if (style["fontVariant"]) {
+    cssString += "font-variant: " + style["fontVariant"] + ";";
+  }
+  if (style["fontFamily"]) {
+    cssString += "font-family: " + style["fontFamily"] + ";";
+  }
+  if (style["fontSize"]) {
+    cssString += "font-size: " + style["fontSize"] + ";";
+  }
+  if (style["fontWeight"]) {
+    cssString += "font-weight: " + style["fontWeight"] + ";";
+  }
+  if (style["letterSpacing"]) {
+    cssString += "letter-spacing: " + style["letterSpacing"] + ";";
+  }
+  if (style["decoration"]) {
+    cssString += "text-decoration: " + style["decoration"] + ";";
+  }
+  this.measurementText_.style.cssText = cssString;
   this.measurementTextNode_.nodeValue = text;
   var bbox = this.measurementText_["getBBox"]();
-  this.measurementTextNode_.nodeValue = "";
   if (style["fontVariant"] && goog.userAgent.OPERA) {
     this.measurementTextNode_.nodeValue = text.charAt(0).toUpperCase();
     bbox.height = this.measurementText_["getBBox"]().height;
@@ -15625,9 +15641,7 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
   return new goog.math.Rect(bbox.x, bbox.y, bbox.width + additionWidth, bbox.height);
 };
 acgraph.vector.svg.Renderer.prototype.measureTextDom = function(element) {
-  if (!this.measurement_) {
-    this.createMeasurement();
-  }
+  this.createMeasurement();
   if (!element.defragmented) {
     element.textDefragmentation();
   }
@@ -15664,9 +15678,7 @@ acgraph.vector.svg.Renderer.prototype.measureTextDom = function(element) {
   return new goog.math.Rect(bbox.x, bbox.y, bbox.width, bbox.height);
 };
 acgraph.vector.svg.Renderer.prototype.getBBox = function(element, text, style) {
-  if (!this.measurement_) {
-    this.createMeasurement();
-  }
+  this.createMeasurement();
   var boundsCache = this.textBoundsCache;
   var styleHash = this.getStyleHash(style);
   var styleCache = boundsCache[styleHash];
@@ -15704,9 +15716,7 @@ acgraph.vector.svg.Renderer.prototype.getBBox = function(element, text, style) {
   }
 };
 acgraph.vector.svg.Renderer.prototype.measureElement = function(element) {
-  if (!this.measurement_) {
-    this.createMeasurement();
-  }
+  this.createMeasurement();
   if (goog.isString(element)) {
     this.measurementGroupNode_.innerHTML = element;
   } else {
@@ -16134,65 +16144,67 @@ acgraph.vector.svg.Renderer.prototype.renderLinearGradient = function(fill, defs
 };
 acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
   var fill = element.fill();
-  var defs = element.getStage().getDefs();
-  var pathPrefix = "url(" + acgraph.getReference() + "#";
-  if (fill && fill["opacity"] && fill["opacity"] <= 0.0001 && goog.userAgent.IE && goog.userAgent.isVersionOrHigher("9")) {
-    fill["opacity"] = 0.0001;
-  }
-  if (goog.isString(fill)) {
-    this.setAttr(element.domElement(), "fill", fill);
-    this.removeAttr(element.domElement(), "fill-opacity");
-  } else {
-    if (goog.isArray(fill["keys"]) && fill["cx"] && fill["cy"]) {
-      this.setAttr(element.domElement(), "fill", pathPrefix + this.renderRadialGradient(fill, defs) + ")");
-      this.setAttr(element.domElement(), "fill-opacity", goog.isDef(fill["opacity"]) ? fill["opacity"] : 1);
+  if (fill) {
+    var defs = element.getStage().getDefs();
+    var pathPrefix = "url(" + acgraph.getReference() + "#";
+    if (fill && fill["opacity"] && fill["opacity"] <= 0.0001 && goog.userAgent.IE && goog.userAgent.isVersionOrHigher("9")) {
+      fill["opacity"] = 0.0001;
+    }
+    if (goog.isString(fill)) {
+      this.setAttr(element.domElement(), "fill", fill);
+      this.removeAttr(element.domElement(), "fill-opacity");
     } else {
-      if (goog.isArray(fill["keys"])) {
-        if (!element.getBounds()) {
-          return;
-        }
-        this.setAttr(element.domElement(), "fill", pathPrefix + this.renderLinearGradient(fill, defs, element.getBounds()) + ")");
+      if (goog.isArray(fill["keys"]) && fill["cx"] && fill["cy"]) {
+        this.setAttr(element.domElement(), "fill", pathPrefix + this.renderRadialGradient(fill, defs) + ")");
         this.setAttr(element.domElement(), "fill-opacity", goog.isDef(fill["opacity"]) ? fill["opacity"] : 1);
       } else {
-        if (fill["src"]) {
-          var b = element.getBoundsWithoutTransform();
-          if (b) {
-            b.width = b.width || 0;
-            b.height = b.height || 0;
-            b.left = b.left || 0;
-            b.top = b.top || 0;
-          } else {
-            b = new goog.math.Rect(0, 0, 0, 0);
+        if (goog.isArray(fill["keys"])) {
+          if (!element.getBounds()) {
+            return;
           }
-          if (fill["mode"] == acgraph.vector.ImageFillMode.TILE) {
-            var callback = function(imageFill) {
+          this.setAttr(element.domElement(), "fill", pathPrefix + this.renderLinearGradient(fill, defs, element.getBounds()) + ")");
+          this.setAttr(element.domElement(), "fill-opacity", goog.isDef(fill["opacity"]) ? fill["opacity"] : 1);
+        } else {
+          if (fill["src"]) {
+            var b = element.getBoundsWithoutTransform();
+            if (b) {
+              b.width = b.width || 0;
+              b.height = b.height || 0;
+              b.left = b.left || 0;
+              b.top = b.top || 0;
+            } else {
+              b = new goog.math.Rect(0, 0, 0, 0);
+            }
+            if (fill["mode"] == acgraph.vector.ImageFillMode.TILE) {
+              var callback = function(imageFill) {
+                imageFill.id();
+                imageFill.parent(element.getStage()).render();
+                acgraph.getRenderer().setAttr(element.domElement(), "fill", pathPrefix + imageFill.id() + ")");
+              };
+              defs.getImageFill(fill["src"], b, fill["mode"], fill["opacity"], callback);
+            } else {
+              var imageFill = defs.getImageFill(fill["src"], b, fill["mode"], fill["opacity"]);
               imageFill.id();
               imageFill.parent(element.getStage()).render();
-              acgraph.getRenderer().setAttr(element.domElement(), "fill", pathPrefix + imageFill.id() + ")");
-            };
-            defs.getImageFill(fill["src"], b, fill["mode"], fill["opacity"], callback);
+              this.setAttr(element.domElement(), "fill", pathPrefix + imageFill.id() + ")");
+              this.setAttr(element.domElement(), "fill-opacity", goog.isDef(fill["opacity"]) ? fill["opacity"] : 1);
+            }
           } else {
-            var imageFill = defs.getImageFill(fill["src"], b, fill["mode"], fill["opacity"]);
-            imageFill.id();
-            imageFill.parent(element.getStage()).render();
-            this.setAttr(element.domElement(), "fill", pathPrefix + imageFill.id() + ")");
-            this.setAttr(element.domElement(), "fill-opacity", goog.isDef(fill["opacity"]) ? fill["opacity"] : 1);
-          }
-        } else {
-          if (acgraph.utils.instanceOf(fill, acgraph.vector.HatchFill)) {
-            var hatch = fill;
-            hatch = defs.getHatchFill(hatch.type, hatch.color, hatch.thickness, hatch.size);
-            hatch.id();
-            hatch.parent(element.getStage()).render();
-            this.setAttr(element.domElement(), "fill", pathPrefix + hatch.id() + ")");
-          } else {
-            if (acgraph.utils.instanceOf(fill, acgraph.vector.PatternFill)) {
-              var pattern = fill;
-              pattern.id();
-              pattern.parent(element.getStage()).render();
-              this.setAttr(element.domElement(), "fill", pathPrefix + pattern.id() + ")");
+            if (acgraph.utils.instanceOf(fill, acgraph.vector.HatchFill)) {
+              var hatch = fill;
+              hatch = defs.getHatchFill(hatch.type, hatch.color, hatch.thickness, hatch.size);
+              hatch.id();
+              hatch.parent(element.getStage()).render();
+              this.setAttr(element.domElement(), "fill", pathPrefix + hatch.id() + ")");
             } else {
-              this.setAttrs(element.domElement(), {"fill":fill["color"], "fill-opacity":fill["opacity"]});
+              if (acgraph.utils.instanceOf(fill, acgraph.vector.PatternFill)) {
+                var pattern = fill;
+                pattern.id();
+                pattern.parent(element.getStage()).render();
+                this.setAttr(element.domElement(), "fill", pathPrefix + pattern.id() + ")");
+              } else {
+                this.setAttrs(element.domElement(), {"fill":fill["color"], "fill-opacity":fill["opacity"]});
+              }
             }
           }
         }
@@ -16202,49 +16214,51 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
 };
 acgraph.vector.svg.Renderer.prototype.applyStroke = function(element) {
   var stroke = element.stroke();
-  var defs = element.getStage().getDefs();
-  var domElement = element.domElement();
-  var pathPrefix = "url(" + acgraph.getReference() + "#";
-  if (goog.isString(stroke)) {
-    this.setAttr(domElement, "stroke", stroke);
-  } else {
-    if (goog.isArray(stroke["keys"]) && stroke["cx"] && stroke["cy"]) {
-      this.setAttr(domElement, "stroke", pathPrefix + this.renderRadialGradient(stroke, defs) + ")");
+  if (stroke) {
+    var defs = element.getStage().getDefs();
+    var domElement = element.domElement();
+    var pathPrefix = "url(" + acgraph.getReference() + "#";
+    if (goog.isString(stroke)) {
+      this.setAttr(domElement, "stroke", stroke);
     } else {
-      if (goog.isArray(stroke["keys"])) {
-        if (!element.getBounds()) {
-          return;
-        }
-        this.setAttr(domElement, "stroke", pathPrefix + this.renderLinearGradient(stroke, defs, element.getBounds()) + ")");
+      if (goog.isArray(stroke["keys"]) && stroke["cx"] && stroke["cy"]) {
+        this.setAttr(domElement, "stroke", pathPrefix + this.renderRadialGradient(stroke, defs) + ")");
       } else {
-        this.setAttr(domElement, "stroke", stroke["color"]);
+        if (goog.isArray(stroke["keys"])) {
+          if (!element.getBounds()) {
+            return;
+          }
+          this.setAttr(domElement, "stroke", pathPrefix + this.renderLinearGradient(stroke, defs, element.getBounds()) + ")");
+        } else {
+          this.setAttr(domElement, "stroke", stroke["color"]);
+        }
       }
     }
-  }
-  if (stroke["lineJoin"]) {
-    this.setAttr(domElement, "stroke-linejoin", stroke["lineJoin"]);
-  } else {
-    this.removeAttr(domElement, "stroke-linejoin");
-  }
-  if (stroke["lineCap"]) {
-    this.setAttr(domElement, "stroke-linecap", stroke["lineCap"]);
-  } else {
-    this.removeAttr(domElement, "stroke-linecap");
-  }
-  if (stroke["opacity"]) {
-    this.setAttr(domElement, "stroke-opacity", stroke["opacity"]);
-  } else {
-    this.removeAttr(domElement, "stroke-opacity");
-  }
-  if (stroke["thickness"]) {
-    this.setAttr(domElement, "stroke-width", stroke["thickness"]);
-  } else {
-    this.removeAttr(domElement, "stroke-width");
-  }
-  if (stroke["dash"]) {
-    this.setAttr(domElement, "stroke-dasharray", stroke["dash"]);
-  } else {
-    this.removeAttr(domElement, "stroke-dasharray");
+    if (stroke["lineJoin"]) {
+      this.setAttr(domElement, "stroke-linejoin", stroke["lineJoin"]);
+    } else {
+      this.removeAttr(domElement, "stroke-linejoin");
+    }
+    if (stroke["lineCap"]) {
+      this.setAttr(domElement, "stroke-linecap", stroke["lineCap"]);
+    } else {
+      this.removeAttr(domElement, "stroke-linecap");
+    }
+    if (stroke["opacity"]) {
+      this.setAttr(domElement, "stroke-opacity", stroke["opacity"]);
+    } else {
+      this.removeAttr(domElement, "stroke-opacity");
+    }
+    if (stroke["thickness"]) {
+      this.setAttr(domElement, "stroke-width", stroke["thickness"]);
+    } else {
+      this.removeAttr(domElement, "stroke-width");
+    }
+    if (stroke["dash"]) {
+      this.setAttr(domElement, "stroke-dasharray", stroke["dash"]);
+    } else {
+      this.removeAttr(domElement, "stroke-dasharray");
+    }
   }
 };
 acgraph.vector.svg.Renderer.prototype.applyFillAndStroke = function(element) {
@@ -18916,7 +18930,9 @@ acgraph.vector.Stage.prototype.disposeInternal = function() {
   this.container_ = null;
   delete this.internalContainer_;
   this.domElement_ = null;
-  acgraph.getRenderer().disposeMeasurement();
+  if (goog.object.isEmpty(acgraph.wrappers)) {
+    acgraph.getRenderer().disposeMeasurement();
+  }
   if (this.credits_) {
     this.credits_.dispose();
     this.credits_ = null;
@@ -19266,17 +19282,17 @@ goog.require("goog.cssom");
 goog.require("goog.dom");
 goog.require("goog.userAgent");
 acgraph.WRAPPER_ID_PROP_NAME_ = "data-ac-wrapper-id";
-acgraph.wrappers_ = {};
+acgraph.wrappers = {};
 acgraph.register = function(wrapper) {
   var node = wrapper.domElement();
   if (node) {
     var id = String(goog.getUid(wrapper));
-    acgraph.wrappers_[id] = wrapper;
+    acgraph.wrappers[id] = wrapper;
     node.setAttribute(acgraph.WRAPPER_ID_PROP_NAME_, id);
   }
 };
 acgraph.unregister = function(wrapper) {
-  delete acgraph.wrappers_[String(goog.getUid(wrapper))];
+  delete acgraph.wrappers[String(goog.getUid(wrapper))];
   var node = wrapper.domElement();
   if (node) {
     node.removeAttribute(acgraph.WRAPPER_ID_PROP_NAME_);
@@ -19292,7 +19308,7 @@ acgraph.getWrapperForDOM = function(node, stage) {
     }
     node = node.parentNode;
   }
-  var res = acgraph.wrappers_[uid || ""] || null;
+  var res = acgraph.wrappers[uid || ""] || null;
   return res && res.domElement() == node ? res : null;
 };
 acgraph.StageType = {SVG:"svg", VML:"vml"};
@@ -19448,11 +19464,11 @@ acgraph.updateReferences = function() {
   }
   var wrapper;
   var renderer = acgraph.getRenderer();
-  for (var id in acgraph.wrappers_) {
-    if (!acgraph.wrappers_.hasOwnProperty(id)) {
+  for (var id in acgraph.wrappers) {
+    if (!acgraph.wrappers.hasOwnProperty(id)) {
       continue;
     }
-    wrapper = acgraph.wrappers_[id];
+    wrapper = acgraph.wrappers[id];
     var wrapperStage = wrapper.getStage();
     if (!wrapperStage) {
       continue;
