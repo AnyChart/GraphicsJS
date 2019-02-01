@@ -191,36 +191,33 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
       additionWidth += spaceWidth || this.getSpaceBounds(style).width;
   }
 
-  var cssString = '';
-  if (style['fontStyle']) {
-    cssString += 'font-style: ' + style['fontStyle'] + ';';
-  }
+  style['fontStyle'] ?
+    this.setAttr(this.measurementText_, 'font-style', style['fontStyle']) :
+    this.removeAttr(this.measurementText_, 'font-style');
 
-  if (style['fontVariant']) {
-    cssString += 'font-variant: ' + style['fontVariant'] + ';';
-  }
+  style['fontVariant'] ?
+    this.setAttr(this.measurementText_, 'font-variant', style['fontVariant']) :
+    this.removeAttr(this.measurementText_, 'font-variant');
 
-  if (style['fontFamily']) {
-    cssString += 'font-family: ' + style['fontFamily'] + ';';
-  }
+  style['fontFamily'] ?
+    this.setAttr(this.measurementText_, 'font-family', style['fontFamily']) :
+    this.removeAttr(this.measurementText_, 'font-family');
 
-  if (style['fontSize']) {
-    cssString += 'font-size: ' + style['fontSize'] + ';';
-  }
+  style['fontSize'] ?
+    this.setAttr(this.measurementText_, 'font-size', style['fontSize']) :
+    this.removeAttr(this.measurementText_, 'font-size');
 
-  if (style['fontWeight']) {
-    cssString += 'font-weight: ' + style['fontWeight'] + ';';
-  }
+  style['fontWeight'] ?
+    this.setAttr(this.measurementText_, 'font-weight', style['fontWeight']) :
+    this.removeAttr(this.measurementText_, 'font-weight');
 
-  if (style['letterSpacing']) {
-    cssString += 'letter-spacing: ' + style['letterSpacing'] + ';';
-  }
+  style['letterSpacing'] ?
+    this.setAttr(this.measurementText_, 'letter-spacing', style['letterSpacing']) :
+    this.removeAttr(this.measurementText_, 'letter-spacing');
 
-  if (style['decoration']) {
-    cssString += 'text-decoration: ' + style['decoration'] + ';';
-  }
-
-  this.measurementText_.style.cssText = cssString;
+  style['decoration'] ?
+    this.setAttr(this.measurementText_, 'text-decoration', style['decoration']) :
+    this.removeAttr(this.measurementText_, 'text-decoration');
 
   this.measurementTextNode_.nodeValue = text;
   var bbox = this.measurementText_['getBBox']();
