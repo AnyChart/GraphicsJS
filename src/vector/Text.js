@@ -1252,6 +1252,7 @@ acgraph.vector.Text.prototype.cutTextSegment_ = function(text, style, a, b, segm
 acgraph.vector.Text.prototype.createSegment_ = function(text, style, bounds, opt_shift) {
   // create segment object
   var segment = new acgraph.vector.TextSegment(text, style);
+  this.registerDisposable(segment);
   segment.baseLine = -bounds.top;
   segment.height = bounds.height;
   segment.width = bounds.width;
@@ -1906,8 +1907,9 @@ acgraph.vector.Text.prototype.serialize = function() {
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.Text.prototype.disposeInternal = function() {
-  goog.disposeAll(this.segments_);
-  delete this.segments_;
+  goog.disposeAll(this.segments_, this.currentLine_);
+  this.segments_.length = 0;
+  this.currentLine_.length = 0;
   delete this.textLines_;
   delete this.bounds;
   goog.base(this, 'disposeInternal');

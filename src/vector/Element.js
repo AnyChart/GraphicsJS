@@ -1763,16 +1763,16 @@ acgraph.vector.Element.prototype.disposeInternal = function() {
  * operations with an element.
  */
 acgraph.vector.Element.prototype.finalizeDisposing = function() {
-  goog.dispose(this.handler_);
-
+  goog.disposeAll(this.handler_, this.clipElement_, this.dragger_);
   this.handler_ = null;
+  this.clipElement_ = null;
+  this.dragger_ = null;
 
   this.setParent(null);
 
   acgraph.unregister(this);
   this.domElement_ = null;
   this.skew = null;
-  this.clipElement_ = null;
 
   this.transformation = null;
 };
