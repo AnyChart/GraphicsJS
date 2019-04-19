@@ -3,6 +3,7 @@ goog.provide('acgraph.vector.Text.TextOverflow');
 
 goog.require('acgraph.utils.HTMLParser');
 goog.require('acgraph.utils.IdGenerator');
+goog.require('acgraph.vector.IHtmlText');
 goog.require('acgraph.vector.Shape');
 goog.require('acgraph.vector.TextSegment');
 goog.require('goog.math.Rect');
@@ -22,6 +23,7 @@ goog.require('goog.math.Rect');
  @param {number=} opt_y Coordinate Y (Top) of left top corner of text bounds.
  @constructor
  @extends {acgraph.vector.Shape}
+ @implements {acgraph.vector.IHtmlText}
 */
 acgraph.vector.Text = function(opt_x, opt_y) {
 
@@ -915,31 +917,6 @@ acgraph.vector.Text.prototype.style = function(opt_value) {
  @param {string=} opt_value .
  @return {string|acgraph.vector.Text} .
  */
-acgraph.vector.Text.prototype.text = function(opt_value) {
-  if (goog.isDef(opt_value)) {
-    if (opt_value != this.text_) {
-      this.text_ = String(opt_value);
-      this.htmlOn_ = false;
-      var stageSuspended = !this.getStage() || this.getStage().isSuspended();
-      if (!stageSuspended) this.getStage().suspend();
-      this.defragmented = false;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.STYLE);
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
-      this.setDirtyState(acgraph.vector.Element.DirtyState.POSITION);
-      this.transformAfterChange();
-      if (!stageSuspended) this.getStage().resume();
-    }
-    return this;
-  }
-  return this.text_;
-};
-
-
-/**
- Get current text.
- @param {string=} opt_value .
- @return {string|acgraph.vector.Text} .
- */
 acgraph.vector.Text.prototype.htmlText = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (opt_value != this.text_) {
@@ -1404,8 +1381,9 @@ acgraph.vector.Text.prototype.applyTextOverflow_ = function(opt_line) {
 };
 
 
+//region -- acgraph.vector.IHtmlText implementation.
 /**
- * Added break line.
+ * @inheritDoc
  */
 acgraph.vector.Text.prototype.addBreak = function() {
   // if (this.currentLineEmpty_) {
@@ -1425,10 +1403,7 @@ acgraph.vector.Text.prototype.addBreak = function() {
 
 
 /**
- * Adding text segment. Only here text wrapping is check.
- * @param {string} text Segment text without tags and EOLs.
- * @param {?acgraph.vector.TextSegmentStyle=} opt_style Segment style.
- * @param {boolean=} opt_break Whether is break.
+ * @inheritDoc
  */
 acgraph.vector.Text.prototype.addSegment = function(text, opt_style, opt_break) {
   // if "stop adding" segments flags is set - do nothing
@@ -1477,7 +1452,7 @@ acgraph.vector.Text.prototype.addSegment = function(text, opt_style, opt_break) 
 
 
 /**
- * Finalizes text line.
+ * @inheritDoc
  */
 acgraph.vector.Text.prototype.finalizeTextLine = function() {
   // if there is a flag to stop adding segements - stop it.
@@ -1633,6 +1608,32 @@ acgraph.vector.Text.prototype.finalizeTextLine = function() {
     this.currentLine_ = [];
   }
 };
+
+
+/**
+ * @inheritDoc
+ */
+acgraph.vector.Text.prototype.text = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (opt_value != this.text_) {
+      this.text_ = String(opt_value);
+      this.htmlOn_ = false;
+      var stageSuspended = !this.getStage() || this.getStage().isSuspended();
+      if (!stageSuspended) this.getStage().suspend();
+      this.defragmented = false;
+      this.setDirtyState(acgraph.vector.Element.DirtyState.STYLE);
+      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      this.setDirtyState(acgraph.vector.Element.DirtyState.POSITION);
+      this.transformAfterChange();
+      if (!stageSuspended) this.getStage().resume();
+    }
+    return this;
+  }
+  return this.text_;
+};
+
+
+//endregion
 
 
 /**
