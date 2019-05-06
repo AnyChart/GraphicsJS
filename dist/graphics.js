@@ -10813,13 +10813,14 @@ acgraph.vector.Element.prototype.disposeInternal = function() {
   acgraph.vector.Element.base(this, "disposeInternal");
 };
 acgraph.vector.Element.prototype.finalizeDisposing = function() {
-  goog.dispose(this.handler_);
+  goog.disposeAll(this.handler_, this.clipElement_, this.dragger_);
   this.handler_ = null;
+  this.clipElement_ = null;
+  this.dragger_ = null;
   this.setParent(null);
   acgraph.unregister(this);
   this.domElement_ = null;
   this.skew = null;
-  this.clipElement_ = null;
   this.transformation = null;
 };
 (function() {
@@ -14013,6 +14014,17 @@ acgraph.utils.HTMLParser.prototype.parseText = function(textElem) {
   this.doSegment_();
   this.textElement.finalizeTextLine();
 };
+goog.provide("acgraph.vector.IHtmlText");
+acgraph.vector.IHtmlText = function() {
+};
+acgraph.vector.IHtmlText.prototype.addSegment = function(text, opt_style, opt_break) {
+};
+acgraph.vector.IHtmlText.prototype.addBreak = function() {
+};
+acgraph.vector.IHtmlText.prototype.finalizeTextLine = function() {
+};
+acgraph.vector.IHtmlText.prototype.text = function(opt_value) {
+};
 goog.provide("acgraph.vector.TextSegment");
 goog.require("acgraph.utils.IdGenerator");
 goog.require("goog.Disposable");
@@ -14078,6 +14090,7 @@ goog.provide("acgraph.vector.Text");
 goog.provide("acgraph.vector.Text.TextOverflow");
 goog.require("acgraph.utils.HTMLParser");
 goog.require("acgraph.utils.IdGenerator");
+goog.require("acgraph.vector.IHtmlText");
 goog.require("acgraph.vector.Shape");
 goog.require("acgraph.vector.TextSegment");
 goog.require("goog.math.Rect");
@@ -14426,28 +14439,6 @@ acgraph.vector.Text.prototype.style = function(opt_value) {
   }
   return this.style_;
 };
-acgraph.vector.Text.prototype.text = function(opt_value) {
-  if (goog.isDef(opt_value)) {
-    if (opt_value != this.text_) {
-      this.text_ = String(opt_value);
-      this.htmlOn_ = false;
-      var stageSuspended = !this.getStage() || this.getStage().isSuspended();
-      if (!stageSuspended) {
-        this.getStage().suspend();
-      }
-      this.defragmented = false;
-      this.setDirtyState(acgraph.vector.Element.DirtyState.STYLE);
-      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
-      this.setDirtyState(acgraph.vector.Element.DirtyState.POSITION);
-      this.transformAfterChange();
-      if (!stageSuspended) {
-        this.getStage().resume();
-      }
-    }
-    return this;
-  }
-  return this.text_;
-};
 acgraph.vector.Text.prototype.htmlText = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (opt_value != this.text_) {
@@ -14646,6 +14637,7 @@ acgraph.vector.Text.prototype.cutTextSegment_ = function(text, style, a, b, segm
 };
 acgraph.vector.Text.prototype.createSegment_ = function(text, style, bounds, opt_shift) {
   var segment = new acgraph.vector.TextSegment(text, style);
+  this.registerDisposable(segment);
   segment.baseLine = -bounds.top;
   segment.height = bounds.height;
   segment.width = bounds.width;
@@ -14927,6 +14919,28 @@ acgraph.vector.Text.prototype.finalizeTextLine = function() {
     this.currentLine_ = [];
   }
 };
+acgraph.vector.Text.prototype.text = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    if (opt_value != this.text_) {
+      this.text_ = String(opt_value);
+      this.htmlOn_ = false;
+      var stageSuspended = !this.getStage() || this.getStage().isSuspended();
+      if (!stageSuspended) {
+        this.getStage().suspend();
+      }
+      this.defragmented = false;
+      this.setDirtyState(acgraph.vector.Element.DirtyState.STYLE);
+      this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
+      this.setDirtyState(acgraph.vector.Element.DirtyState.POSITION);
+      this.transformAfterChange();
+      if (!stageSuspended) {
+        this.getStage().resume();
+      }
+    }
+    return this;
+  }
+  return this.text_;
+};
 acgraph.vector.Text.prototype.calculateX = function() {
   this.calcX = this.x_;
   if (this.style_["hAlign"] == acgraph.vector.Text.HAlign.START) {
@@ -15099,8 +15113,9 @@ acgraph.vector.Text.prototype.serialize = function() {
   return data;
 };
 acgraph.vector.Text.prototype.disposeInternal = function() {
-  goog.disposeAll(this.segments_);
-  delete this.segments_;
+  goog.disposeAll(this.segments_, this.currentLine_);
+  this.segments_.length = 0;
+  this.currentLine_.length = 0;
   delete this.textLines_;
   delete this.bounds;
   goog.base(this, "disposeInternal");
@@ -15609,29 +15624,13 @@ acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
       additionWidth += spaceWidth || this.getSpaceBounds(style).width;
     }
   }
-  var cssString = "";
-  if (style["fontStyle"]) {
-    cssString += "font-style: " + style["fontStyle"] + ";";
-  }
-  if (style["fontVariant"]) {
-    cssString += "font-variant: " + style["fontVariant"] + ";";
-  }
-  if (style["fontFamily"]) {
-    cssString += "font-family: " + style["fontFamily"] + ";";
-  }
-  if (style["fontSize"]) {
-    cssString += "font-size: " + style["fontSize"] + ";";
-  }
-  if (style["fontWeight"]) {
-    cssString += "font-weight: " + style["fontWeight"] + ";";
-  }
-  if (style["letterSpacing"]) {
-    cssString += "letter-spacing: " + style["letterSpacing"] + ";";
-  }
-  if (style["decoration"]) {
-    cssString += "text-decoration: " + style["decoration"] + ";";
-  }
-  this.measurementText_.style.cssText = cssString;
+  style["fontStyle"] ? this.setAttr(this.measurementText_, "font-style", style["fontStyle"]) : this.removeAttr(this.measurementText_, "font-style");
+  style["fontVariant"] ? this.setAttr(this.measurementText_, "font-variant", style["fontVariant"]) : this.removeAttr(this.measurementText_, "font-variant");
+  style["fontFamily"] ? this.setAttr(this.measurementText_, "font-family", style["fontFamily"]) : this.removeAttr(this.measurementText_, "font-family");
+  style["fontSize"] ? this.setAttr(this.measurementText_, "font-size", style["fontSize"]) : this.removeAttr(this.measurementText_, "font-size");
+  style["fontWeight"] ? this.setAttr(this.measurementText_, "font-weight", style["fontWeight"]) : this.removeAttr(this.measurementText_, "font-weight");
+  style["letterSpacing"] ? this.setAttr(this.measurementText_, "letter-spacing", style["letterSpacing"]) : this.removeAttr(this.measurementText_, "letter-spacing");
+  style["decoration"] ? this.setAttr(this.measurementText_, "text-decoration", style["decoration"]) : this.removeAttr(this.measurementText_, "text-decoration");
   this.measurementTextNode_.nodeValue = text;
   var bbox = this.measurementText_["getBBox"]();
   if (style["fontVariant"] && goog.userAgent.OPERA) {

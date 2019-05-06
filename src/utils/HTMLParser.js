@@ -378,7 +378,7 @@ acgraph.utils.HTMLParser.NamedEntities = {
 
 /**
  * Instance of Text.
- * @type {acgraph.vector.Text}
+ * @type {acgraph.vector.IHtmlText}
  */
 acgraph.utils.HTMLParser.prototype.textElement = null;
 
@@ -695,13 +695,13 @@ acgraph.utils.HTMLParser.prototype.finalizeEntity_ = function(nextState, lastSym
  *     so there are two spaces in the segment #5. Normalizing everything is the best option, but all this stuff has quite
  *     a strict logic.
  *
- * @param {acgraph.vector.Text} textElem HTML string to be parsed.
+ * @param {acgraph.vector.IHtmlText} textElem - Text that contains HTML string to be parsed.
  */
 acgraph.utils.HTMLParser.prototype.parseText = function(textElem) {
   this.init_();
 
   this.textElement = textElem;
-  var text = textElem.text();
+  var text = /** @type {string} */ (textElem.text());
   var l = text.length, i = -1;
   var s = acgraph.utils.HTMLParser.State;
   var symbol;
