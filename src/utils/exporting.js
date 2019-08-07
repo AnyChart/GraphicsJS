@@ -9,12 +9,12 @@ goog.require('goog.style');
  * @type {Object.<string, {width: string, height: string}>}
  */
 acgraph.utils.exporting.PaperSize = {
-  'usletter': {width: '215.9mm', height: '279.4mm'},
+  'us-letter': {width: '215.9mm', height: '279.4mm'},
   'a0': {width: '841mm', height: '1189mm'},
   'a1': {width: '594mm', height: '841mm'},
   'a2': {width: '420mm', height: '594mm'},
   'a3': {width: '297mm', height: '420mm'},
-  'a4': {width: '210mm', height: '279mm'}, // Less than real A4 height (297mm) to fit page
+  'a4': {width: '210mm', height: '297mm'},
   'a5': {width: '148mm', height: '210mm'},
   'a6': {width: '105mm', height: '148mm'}
 };
@@ -137,6 +137,10 @@ acgraph.utils.exporting.fullPagePrint = function(stage, opt_paperSizeOrWidth, op
   //create hidden frame
   var iFrame = acgraph.utils.exporting.createPrint_();
   var iFrameDocument = iFrame['contentWindow'].document;
+
+  /* Force printing only one page. Fixes issues with some sizes and orientations (like Portrait A0)
+   * when content being printed goes several pixels out to second page.  */
+  acgraph.embedCss('html, body {height: 100%; overflow: hidden}', iFrameDocument);
 
   var div = goog.dom.createDom(goog.dom.TagName.DIV);
   goog.style.setStyle(div, {
