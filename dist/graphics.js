@@ -17618,7 +17618,7 @@ goog.provide("acgraph.utils.exporting");
 goog.require("goog.Timer");
 goog.require("goog.dom");
 goog.require("goog.style");
-acgraph.utils.exporting.PaperSize = {"usletter":{width:"215.9mm", height:"279.4mm"}, "a0":{width:"841mm", height:"1189mm"}, "a1":{width:"594mm", height:"841mm"}, "a2":{width:"420mm", height:"594mm"}, "a3":{width:"297mm", height:"420mm"}, "a4":{width:"210mm", height:"279mm"}, "a5":{width:"148mm", height:"210mm"}, "a6":{width:"105mm", height:"148mm"}};
+acgraph.utils.exporting.PaperSize = {"us-letter":{width:"215.9mm", height:"279.4mm"}, "a0":{width:"841mm", height:"1189mm"}, "a1":{width:"594mm", height:"841mm"}, "a2":{width:"420mm", height:"594mm"}, "a3":{width:"297mm", height:"420mm"}, "a4":{width:"210mm", height:"297mm"}, "a5":{width:"148mm", height:"210mm"}, "a6":{width:"105mm", height:"148mm"}};
 acgraph.utils.exporting.PdfPaperSize = {"a0":{width:2384, height:3370}, "a1":{width:1684, height:2384}, "a2":{width:1191, height:1684}, "a3":{width:842, height:1191}, "a4":{width:595, height:842}, "a5":{width:420, height:595}, "a6":{width:297, height:420}, "a7":{width:210, height:297}, "a8":{width:48, height:210}, "a9":{width:105, height:148}, "b0":{width:2834, height:4008}, "b1":{width:2004, height:2834}, "b2":{width:1417, height:2004}, "b3":{width:1000, height:1417}, "b4":{width:708, height:1000}, 
 "b5":{width:498, height:708}, "b6":{width:354, height:498}, "b7":{width:249, height:354}, "b8":{width:175, height:249}, "b9":{width:124, height:175}, "arch-a":{width:648, height:864}, "arch-b":{width:864, height:1296}, "arch-c":{width:1296, height:1728}, "arch-d":{width:1728, height:2592}, "arch-e":{width:2592, height:3456}, "crown-octavo":{width:348, height:527}, "crown-quarto":{width:535, height:697}, "demy-octavo":{width:391, height:612}, "demy-quarto":{width:620, height:782}, "royal-octavo":{width:442, 
 height:663}, "royal-quarto":{width:671, height:884}, "executive":{width:522, height:756}, "halfletter":{width:396, height:612}, "ledger":{width:1224, height:792}, "legal":{width:612, height:1008}, "letter":{width:612, height:792}, "tabloid":{width:792, height:1224}};
@@ -17657,6 +17657,7 @@ acgraph.utils.exporting.fullPagePrint = function(stage, opt_paperSizeOrWidth, op
   var size = acgraph.vector.normalizePageSize(opt_paperSizeOrWidth, opt_landscapeOrHeight, acgraph.vector.PaperSize.US_LETTER);
   var iFrame = acgraph.utils.exporting.createPrint_();
   var iFrameDocument = iFrame["contentWindow"].document;
+  acgraph.embedCss("html, body {height: 100%; overflow: hidden}", iFrameDocument);
   var div = goog.dom.createDom(goog.dom.TagName.DIV);
   goog.style.setStyle(div, {"width":size.width, "height":size.height});
   goog.dom.appendChild(iFrameDocument.body, div);
