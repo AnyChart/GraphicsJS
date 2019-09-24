@@ -818,10 +818,22 @@ acgraph.vector.svg.Renderer.prototype.setTextProperties = function(element) {
     }
   }
 
-  if (style['fontFamily'])
+  /*
+  ENV-1377
+  Font family is additionally written into style because there was a case when
+  chart was drawn inside an element with class .some-class and
+  <style> .some-class * {font-family: "Comic Sans"} </style>
+  And in this case css style takes precedence over the attribute declaration.
+  https://www.w3.org/TR/SVG11/styling.html#UsingPresentationAttributes
+   */
+  if (style['fontFamily']) {
     this.setAttr(domElement, 'font-family', style['fontFamily']);
-  else
+    domElement['style']['fontFamily'] = style['fontFamily'];
+  }
+  else {
     this.removeAttr(domElement, 'font-family');
+    domElement['style']['fontFamily'] = '';
+  }
 
   if (style['fontSize'])
     this.setAttr(domElement, 'font-size', style['fontSize']);
