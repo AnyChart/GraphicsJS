@@ -1099,7 +1099,7 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
   if (fill) {
     /** @type {!acgraph.vector.Defs} */
     var defs = element.getStage().getDefs();
-    var pathPrefix = 'url(' + acgraph.getReference() + '#';
+    var pathPrefix = 'url("' + acgraph.getReference() + '#';
 
     // DVF-1729 fix
     // because internet explorer converts fill-opacity "0.00001" to "1e-5" that is not css-compatible
@@ -1112,12 +1112,12 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
       this.removeAttr(element.domElement(), 'fill-opacity');
     } else if (goog.isArray(fill['keys']) && fill['cx'] && fill['cy']) {
       this.setAttr(element.domElement(), 'fill', pathPrefix +
-          this.renderRadialGradient(/** @type {acgraph.vector.RadialGradientFill} */(fill), defs) + ')');
+          this.renderRadialGradient(/** @type {acgraph.vector.RadialGradientFill} */(fill), defs) + '")');
       this.setAttr(element.domElement(), 'fill-opacity', goog.isDef(fill['opacity']) ? fill['opacity'] : 1);
     } else if (goog.isArray(fill['keys'])) {
       if (!element.getBounds()) return;
       this.setAttr(element.domElement(), 'fill',
-          pathPrefix + this.renderLinearGradient(/** @type {acgraph.vector.LinearGradientFill} */(fill), defs, element.getBounds()) + ')');
+          pathPrefix + this.renderLinearGradient(/** @type {acgraph.vector.LinearGradientFill} */(fill), defs, element.getBounds()) + '")');
       this.setAttr(element.domElement(), 'fill-opacity', goog.isDef(fill['opacity']) ? fill['opacity'] : 1);
     } else if (fill['src']) {
       var b = element.getBoundsWithoutTransform();
@@ -1134,14 +1134,14 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
         var callback = function(imageFill) {
           imageFill.id(); // if the identifier of the fill is still empty, it will be generated
           imageFill.parent(element.getStage()).render();
-          acgraph.getRenderer().setAttr(element.domElement(), 'fill', pathPrefix + imageFill.id() + ')');
+          acgraph.getRenderer().setAttr(element.domElement(), 'fill', pathPrefix + imageFill.id() + '")');
         };
         defs.getImageFill(fill['src'], b, fill['mode'], fill['opacity'], callback);
       } else {
         var imageFill = defs.getImageFill(fill['src'], b, fill['mode'], fill['opacity']);
         imageFill.id(); // if the identifier of the fill is still empty, it will be generated
         imageFill.parent(element.getStage()).render();
-        this.setAttr(element.domElement(), 'fill', pathPrefix + imageFill.id() + ')');
+        this.setAttr(element.domElement(), 'fill', pathPrefix + imageFill.id() + '")');
         this.setAttr(element.domElement(), 'fill-opacity', goog.isDef(fill['opacity']) ? fill['opacity'] : 1);
       }
     } else if (acgraph.utils.instanceOf(fill, acgraph.vector.HatchFill)) {
@@ -1149,13 +1149,13 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
       hatch = defs.getHatchFill(hatch.type, hatch.color, hatch.thickness, hatch.size);
       hatch.id(); // if the identifier of the fill is still empty, it will be generated
       hatch.parent(element.getStage()).render();
-      this.setAttr(element.domElement(), 'fill', pathPrefix + hatch.id() + ')');
+      this.setAttr(element.domElement(), 'fill', pathPrefix + hatch.id() + '")');
     } else if (acgraph.utils.instanceOf(fill, acgraph.vector.PatternFill)) {
       /** @type {acgraph.vector.PatternFill} */
       var pattern = /** @type {acgraph.vector.PatternFill} */(fill);
       pattern.id(); // if the identifier of the fill is still empty, it will be generated
       pattern.parent(element.getStage()).render();
-      this.setAttr(element.domElement(), 'fill', pathPrefix + pattern.id() + ')');
+      this.setAttr(element.domElement(), 'fill', pathPrefix + pattern.id() + '")');
     } else {
       this.setAttrs(element.domElement(), {
         'fill': (/** @type {acgraph.vector.SolidFill} */(fill))['color'],
@@ -1173,17 +1173,17 @@ acgraph.vector.svg.Renderer.prototype.applyStroke = function(element) {
   if (stroke) {
     var defs = element.getStage().getDefs();
     var domElement = element.domElement();
-    var pathPrefix = 'url(' + acgraph.getReference() + '#';
+    var pathPrefix = 'url("' + acgraph.getReference() + '#';
 
     if (goog.isString(stroke)) {
       this.setAttr(domElement, 'stroke', /** @type {string} */(stroke));
     } else if (goog.isArray(stroke['keys']) && stroke['cx'] && stroke['cy']) {
       this.setAttr(domElement, 'stroke', pathPrefix +
-          this.renderRadialGradient(/** @type {acgraph.vector.RadialGradientFill} */(stroke), defs) + ')');
+          this.renderRadialGradient(/** @type {acgraph.vector.RadialGradientFill} */(stroke), defs) + '")');
     } else if (goog.isArray(stroke['keys'])) {
       if (!element.getBounds()) return;
       this.setAttr(domElement, 'stroke',
-          pathPrefix + this.renderLinearGradient(/** @type {acgraph.vector.LinearGradientFill} */(stroke), defs, element.getBounds()) + ')');
+          pathPrefix + this.renderLinearGradient(/** @type {acgraph.vector.LinearGradientFill} */(stroke), defs, element.getBounds()) + '")');
     } else {
       this.setAttr(domElement, 'stroke', stroke['color']);
     }
@@ -1442,7 +1442,7 @@ acgraph.vector.svg.Renderer.prototype.disposeClip = function(clip) {
 acgraph.vector.svg.Renderer.prototype.addClip_ = function(element, clipId) {
   var pathPrefix = acgraph.getReference();
   this.setAttrs(element.domElement(), {
-    'clip-path': 'url(' + pathPrefix + '#' + clipId + ')',
+    'clip-path': 'url("' + pathPrefix + '#' + clipId + '")',
     'clipPathUnits': 'userSpaceOnUse'
   });
 };
