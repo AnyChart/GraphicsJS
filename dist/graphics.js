@@ -15978,8 +15978,10 @@ acgraph.vector.svg.Renderer.prototype.setTextProperties = function(element) {
   }
   if (style["fontFamily"]) {
     this.setAttr(domElement, "font-family", style["fontFamily"]);
+    domElement["style"]["fontFamily"] = style["fontFamily"];
   } else {
     this.removeAttr(domElement, "font-family");
+    domElement["style"]["fontFamily"] = "";
   }
   if (style["fontSize"]) {
     this.setAttr(domElement, "font-size", style["fontSize"]);
@@ -16145,7 +16147,7 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
   var fill = element.fill();
   if (fill) {
     var defs = element.getStage().getDefs();
-    var pathPrefix = "url(" + acgraph.getReference() + "#";
+    var pathPrefix = 'url("' + acgraph.getReference() + "#";
     if (fill && fill["opacity"] && fill["opacity"] <= 0.0001 && goog.userAgent.IE && goog.userAgent.isVersionOrHigher("9")) {
       fill["opacity"] = 0.0001;
     }
@@ -16154,14 +16156,14 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
       this.removeAttr(element.domElement(), "fill-opacity");
     } else {
       if (goog.isArray(fill["keys"]) && fill["cx"] && fill["cy"]) {
-        this.setAttr(element.domElement(), "fill", pathPrefix + this.renderRadialGradient(fill, defs) + ")");
+        this.setAttr(element.domElement(), "fill", pathPrefix + this.renderRadialGradient(fill, defs) + '")');
         this.setAttr(element.domElement(), "fill-opacity", goog.isDef(fill["opacity"]) ? fill["opacity"] : 1);
       } else {
         if (goog.isArray(fill["keys"])) {
           if (!element.getBounds()) {
             return;
           }
-          this.setAttr(element.domElement(), "fill", pathPrefix + this.renderLinearGradient(fill, defs, element.getBounds()) + ")");
+          this.setAttr(element.domElement(), "fill", pathPrefix + this.renderLinearGradient(fill, defs, element.getBounds()) + '")');
           this.setAttr(element.domElement(), "fill-opacity", goog.isDef(fill["opacity"]) ? fill["opacity"] : 1);
         } else {
           if (fill["src"]) {
@@ -16178,14 +16180,14 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
               var callback = function(imageFill) {
                 imageFill.id();
                 imageFill.parent(element.getStage()).render();
-                acgraph.getRenderer().setAttr(element.domElement(), "fill", pathPrefix + imageFill.id() + ")");
+                acgraph.getRenderer().setAttr(element.domElement(), "fill", pathPrefix + imageFill.id() + '")');
               };
               defs.getImageFill(fill["src"], b, fill["mode"], fill["opacity"], callback);
             } else {
               var imageFill = defs.getImageFill(fill["src"], b, fill["mode"], fill["opacity"]);
               imageFill.id();
               imageFill.parent(element.getStage()).render();
-              this.setAttr(element.domElement(), "fill", pathPrefix + imageFill.id() + ")");
+              this.setAttr(element.domElement(), "fill", pathPrefix + imageFill.id() + '")');
               this.setAttr(element.domElement(), "fill-opacity", goog.isDef(fill["opacity"]) ? fill["opacity"] : 1);
             }
           } else {
@@ -16194,13 +16196,13 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
               hatch = defs.getHatchFill(hatch.type, hatch.color, hatch.thickness, hatch.size);
               hatch.id();
               hatch.parent(element.getStage()).render();
-              this.setAttr(element.domElement(), "fill", pathPrefix + hatch.id() + ")");
+              this.setAttr(element.domElement(), "fill", pathPrefix + hatch.id() + '")');
             } else {
               if (acgraph.utils.instanceOf(fill, acgraph.vector.PatternFill)) {
                 var pattern = fill;
                 pattern.id();
                 pattern.parent(element.getStage()).render();
-                this.setAttr(element.domElement(), "fill", pathPrefix + pattern.id() + ")");
+                this.setAttr(element.domElement(), "fill", pathPrefix + pattern.id() + '")');
               } else {
                 this.setAttrs(element.domElement(), {"fill":fill["color"], "fill-opacity":fill["opacity"]});
               }
@@ -16216,18 +16218,18 @@ acgraph.vector.svg.Renderer.prototype.applyStroke = function(element) {
   if (stroke) {
     var defs = element.getStage().getDefs();
     var domElement = element.domElement();
-    var pathPrefix = "url(" + acgraph.getReference() + "#";
+    var pathPrefix = 'url("' + acgraph.getReference() + "#";
     if (goog.isString(stroke)) {
       this.setAttr(domElement, "stroke", stroke);
     } else {
       if (goog.isArray(stroke["keys"]) && stroke["cx"] && stroke["cy"]) {
-        this.setAttr(domElement, "stroke", pathPrefix + this.renderRadialGradient(stroke, defs) + ")");
+        this.setAttr(domElement, "stroke", pathPrefix + this.renderRadialGradient(stroke, defs) + '")');
       } else {
         if (goog.isArray(stroke["keys"])) {
           if (!element.getBounds()) {
             return;
           }
-          this.setAttr(domElement, "stroke", pathPrefix + this.renderLinearGradient(stroke, defs, element.getBounds()) + ")");
+          this.setAttr(domElement, "stroke", pathPrefix + this.renderLinearGradient(stroke, defs, element.getBounds()) + '")');
         } else {
           this.setAttr(domElement, "stroke", stroke["color"]);
         }
@@ -16397,7 +16399,7 @@ acgraph.vector.svg.Renderer.prototype.disposeClip = function(clip) {
 };
 acgraph.vector.svg.Renderer.prototype.addClip_ = function(element, clipId) {
   var pathPrefix = acgraph.getReference();
-  this.setAttrs(element.domElement(), {"clip-path":"url(" + pathPrefix + "#" + clipId + ")", "clipPathUnits":"userSpaceOnUse"});
+  this.setAttrs(element.domElement(), {"clip-path":'url("' + pathPrefix + "#" + clipId + '")', "clipPathUnits":"userSpaceOnUse"});
 };
 acgraph.vector.svg.Renderer.prototype.removeClip_ = function(element) {
   this.removeAttr(element.domElement(), "clip-path");
