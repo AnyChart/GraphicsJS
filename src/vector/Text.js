@@ -718,6 +718,20 @@ acgraph.vector.Text.prototype.textIndent = function(opt_value) {
 
 
 /**
+ Getter for text shadow.
+ Add css 'textShadow' style property to the text.
+ @param {(string|acgraph.vector.TextShadow)=} opt_value - textShadow settings represent as string or object.
+ @return {string|acgraph.vector.Text} - current textShadow setting or text instance.
+ */
+acgraph.vector.Text.prototype.textShadow = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    return /**@type {string|acgraph.vector.Text}*/ (this.setStyleProperty('textShadow', acgraph.vector.normalizeTextShadow(opt_value)));
+  }
+  return this.style_['textShadow'];
+};
+
+
+/**
  Getter for vertical align of text.
  @param {(acgraph.vector.Text.VAlign|string)=} opt_value .
  @return {acgraph.vector.Text.VAlign|string|acgraph.vector.Text}
