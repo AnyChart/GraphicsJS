@@ -906,6 +906,12 @@ acgraph.vector.svg.Renderer.prototype.setTextProperties = function(element) {
     domElement.style['opacity'] = style['opacity'];
   else
     domElement.style['opacity'] = '1';
+
+  var textShadow = style['textShadow'];
+  if (textShadow && textShadow != 'none')
+    domElement.style['textShadow'] = textShadow;
+  else
+    domElement.style['textShadow'] = '';
 };
 
 

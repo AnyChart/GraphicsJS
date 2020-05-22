@@ -2991,6 +2991,7 @@ acgraph.vector.SolidStroke;
 acgraph.vector.LinearGradientStroke;
 acgraph.vector.RadialGradientStroke;
 acgraph.vector.Stroke;
+acgraph.vector.TextShadow;
 acgraph.vector.AnyColor;
 acgraph.vector.TextStyle;
 acgraph.vector.TextSegmentStyle;
@@ -3325,6 +3326,20 @@ acgraph.vector.normalizeGradientMode = function(mode) {
   }
   return null;
 };
+acgraph.vector.normalizeTextShadow = function(textShadow) {
+  if (goog.typeOf(textShadow) === "object" && "offsetX" in textShadow && "offsetY" in textShadow) {
+    var offsetX = textShadow["offsetX"];
+    var offsetY = textShadow["offsetY"];
+    var blurRadius = textShadow["blurRadius"] || "0";
+    var color = textShadow["color"] || "";
+    return offsetX + " " + offsetY + " " + blurRadius + " " + color;
+  } else {
+    if (goog.isString(textShadow)) {
+      return textShadow;
+    }
+  }
+  return "none";
+};
 acgraph.vector.parseColor = function(color, forceObject) {
   var tmp = color.split(" ");
   var opacity = tmp.length > 1 ? goog.math.clamp(+tmp[tmp.length - 1], 0, 1) : NaN;
@@ -3364,6 +3379,7 @@ acgraph.vector.getThickness = function(stroke) {
   goog.exportSymbol("acgraph.vector.normalizeFill", acgraph.vector.normalizeFill);
   goog.exportSymbol("acgraph.vector.normalizeStroke", acgraph.vector.normalizeStroke);
   goog.exportSymbol("acgraph.vector.normalizeHatchFill", acgraph.vector.normalizeHatchFill);
+  goog.exportSymbol("acgraph.vector.normalizeTextShadow", acgraph.vector.normalizeTextShadow);
 })();
 goog.provide("acgraph.utils.IdGenerator");
 acgraph.utils.IdGenerator = function() {
@@ -14283,6 +14299,12 @@ acgraph.vector.Text.prototype.textIndent = function(opt_value) {
   }
   return this.setStyleProperty("textIndent", opt_value);
 };
+acgraph.vector.Text.prototype.textShadow = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    return this.setStyleProperty("textShadow", acgraph.vector.normalizeTextShadow(opt_value));
+  }
+  return this.style_["textShadow"];
+};
 acgraph.vector.Text.prototype.vAlign = function(opt_value) {
   if (goog.isDef(opt_value)) {
     if (opt_value == "center") {
@@ -16036,6 +16058,12 @@ acgraph.vector.svg.Renderer.prototype.setTextProperties = function(element) {
     domElement.style["opacity"] = style["opacity"];
   } else {
     domElement.style["opacity"] = "1";
+  }
+  var textShadow = style["textShadow"];
+  if (textShadow && textShadow != "none") {
+    domElement.style["textShadow"] = textShadow;
+  } else {
+    domElement.style["textShadow"] = "";
   }
 };
 acgraph.vector.svg.Renderer.prototype.setTextSegmentPosition = function(element) {

@@ -340,6 +340,18 @@ acgraph.vector.Stroke;
 
 
 /**
+ Text shadow settings definition.
+ @typedef {{
+    offsetX: string,
+    offsetY: string,
+    blurRadius: string,
+    color: string
+ }}
+ */
+acgraph.vector.TextShadow;
+
+
+/**
  * A shortcut for Fill or Stroke or PatternFill.
  * @typedef {acgraph.vector.Fill|acgraph.vector.Stroke|acgraph.vector.PatternFill}
  */
@@ -361,6 +373,7 @@ acgraph.vector.AnyColor;
     opacity: (number|undefined),
     lineHeight: (string|number|undefined),
     textIndent: (number|undefined),
+    textShadow: (string|undefined),
     vAlign: (acgraph.vector.Text.VAlign|string|undefined),
     hAlign: (acgraph.vector.Text.HAlign|string|undefined),
     width: (number|string|undefined),
@@ -944,6 +957,27 @@ acgraph.vector.normalizeGradientMode = function(mode) {
 
 
 /**
+ * Normalize textShadow style property into string.
+ *
+ * @param {*} textShadow - textShadow
+ * @return {string} - String style representation.
+ */
+acgraph.vector.normalizeTextShadow = function(textShadow) {
+  if (goog.typeOf(textShadow) === 'object' && 'offsetX' in textShadow && 'offsetY' in textShadow) {
+    var offsetX = textShadow['offsetX'];
+    var offsetY = textShadow['offsetY'];
+    var blurRadius = textShadow['blurRadius'] || '0';
+    var color = textShadow['color'] || ''; // If no color passed shadow color will be same as font color.
+
+    return offsetX + ' ' + offsetY + ' ' + blurRadius + ' ' + color;
+  } else if (goog.isString(textShadow)) {
+    return textShadow;
+  }
+
+  return 'none';
+};
+
+/**
  * @param {string} color Color as 'red' or 'red 0.5'.
  * @param {boolean} forceObject Alwasy return as acgraph.vector.SolidFill object or a string
  *    in case of simple color.
@@ -1011,4 +1045,5 @@ acgraph.vector.getThickness = function(stroke) {
   goog.exportSymbol('acgraph.vector.normalizeFill', acgraph.vector.normalizeFill);
   goog.exportSymbol('acgraph.vector.normalizeStroke', acgraph.vector.normalizeStroke);
   goog.exportSymbol('acgraph.vector.normalizeHatchFill', acgraph.vector.normalizeHatchFill);
+  goog.exportSymbol('acgraph.vector.normalizeTextShadow', acgraph.vector.normalizeTextShadow);
 })();
