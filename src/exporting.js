@@ -58,7 +58,7 @@ acgraph.sendRequestToExportServer = function(url, opt_arguments) {
  *
  * @param {boolean=} opt_value - Boolean flag whether to use anychart.exports.
  *  NOTE: if (anychart.exports is undefined, default stage exporting will be used).
- * @return {boolean} - Whether to use anychart.exports on export.
+ * @return {boolean|acgraph.vector.Stage} - Whether to use anychart.exports on export.
  */
 acgraph.vector.Stage.prototype.useAnychartExporting = function(opt_value) {
   if (goog.isDef(opt_value)) {
