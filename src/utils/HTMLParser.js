@@ -668,7 +668,7 @@ acgraph.utils.HTMLParser.prototype.finalizeEntity_ = function(nextState, lastSym
  * Parses a given string, assuming that it is HTML. Breaks the tree-like structure of HTML into a linear
  * sequence of segments – pieces of original text with the same style.
  * Then each piece with the associated style is passed to the acgraph.utils.HTMLParser.addSegment() method.
- * More about styles and text: {@see https://anychart.atlassian.net/wiki/pages/viewpage.action?pageId=360497}.
+ * More about styles and text: {@see https://docs.anychart.com/Graphics/Text_and_Fonts}.
  * Supported tags: {@see https://anychart.atlassian.net/wiki/pages/viewpage.action?pageId=360563}.
  * The styles available in the “style” attribute of the “span” node correspond with the fields of the acgraph.utils.Text.TextSegmentStyle type.
  * As a matter of fact, all possible stylization of a segment are also taken from fields of this type.
