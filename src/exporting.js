@@ -54,6 +54,25 @@ acgraph.sendRequestToExportServer = function(url, opt_arguments) {
 //
 //------------------------------------------------------------------------------
 /**
+ * DVF-4429. Sets stage exporting mode, whether to use anychart.exports on export.
+ *
+ * @param {boolean=} opt_value - Boolean flag whether to use anychart.exports.
+ *  NOTE: if (anychart.exports is undefined, default stage exporting will be used).
+ * @return {boolean|acgraph.vector.Stage} - Whether to use anychart.exports on export.
+ */
+acgraph.vector.Stage.prototype.useAnychartExporting = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    this.useAnychartExporting_ = !!opt_value;
+    this.externalExporter_ = this.useAnychartExporting_ ?
+        goog.global['anychart']['exports'] :
+        null;
+    return this;
+  }
+  return !!this.useAnychartExporting_;
+};
+
+
+/**
  * Normalize image size for export.
  * @param {number=} opt_width
  * @param {number=} opt_height
@@ -376,6 +395,7 @@ acgraph.vector.Stage.prototype.getSvgBase64String = function(onSuccess, opt_onEr
 
 /**
  * Returns base64 string for pdf.
+ *
  * @param {function(string)} onSuccess Function that will be called when sharing will complete.
  * @param {function(string)=} opt_onError Function that will be called when sharing will complete.
  * @param {(number|string)=} opt_paperSizeOrWidth Any paper format like 'a0', 'tabloid', 'b4', etc.
@@ -397,12 +417,13 @@ acgraph.vector.Stage.prototype.getPdfBase64String = function(onSuccess, opt_onEr
 
 /**
  * Save current stage as PNG Image.
+ *
  * @param {number=} opt_width Image width.
  * @param {number=} opt_height Image height.
  * @param {number=} opt_quality Image quality in ratio 0-1.
  * @param {string=} opt_filename file name to save.
  */
-acgraph.vector.Stage.prototype.saveAsPng = function(opt_width, opt_height, opt_quality, opt_filename) {
+acgraph.vector.Stage.prototype.defaultSaveAsPng = function(opt_width, opt_height, opt_quality, opt_filename) {
   var type = acgraph.type();
   if (type == acgraph.StageType.SVG) {
     var options = {};
@@ -416,13 +437,31 @@ acgraph.vector.Stage.prototype.saveAsPng = function(opt_width, opt_height, opt_q
 
 /**
  * Save current stage as PNG Image.
+ *
+ * @param {number=} opt_width Image width.
+ * @param {number=} opt_height Image height.
+ * @param {number=} opt_quality Image quality in ratio 0-1.
+ * @param {string=} opt_filename file name to save.
+ */
+acgraph.vector.Stage.prototype.saveAsPng = function(opt_width, opt_height, opt_quality, opt_filename) {
+  if (this.externalExporter_) {
+    this.externalExporter_.saveAsPng(this, this, opt_width, opt_height, opt_quality, opt_filename);
+  } else {
+    this.defaultSaveAsPng(opt_width, opt_height, opt_quality, opt_filename);
+  }
+};
+
+
+/**
+ * Save current stage as JPG Image.
+ *
  * @param {number=} opt_width Image width.
  * @param {number=} opt_height Image height.
  * @param {number=} opt_quality Image quality in ratio 0-1.
  * @param {boolean=} opt_forceTransparentWhite Define, should we force transparent to white background.
  * @param {string=} opt_filename file name to save.
  */
-acgraph.vector.Stage.prototype.saveAsJpg = function(opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename) {
+acgraph.vector.Stage.prototype.defaultSaveAsJpg = function(opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename) {
   var type = acgraph.type();
   if (type == acgraph.StageType.SVG) {
     var options = {};
@@ -435,14 +474,33 @@ acgraph.vector.Stage.prototype.saveAsJpg = function(opt_width, opt_height, opt_q
 
 
 /**
+ * Save current stage as JPG Image.
+ *
+ * @param {number=} opt_width Image width.
+ * @param {number=} opt_height Image height.
+ * @param {number=} opt_quality Image quality in ratio 0-1.
+ * @param {boolean=} opt_forceTransparentWhite Define, should we force transparent to white background.
+ * @param {string=} opt_filename file name to save.
+ */
+acgraph.vector.Stage.prototype.saveAsJpg = function(opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename) {
+  if (this.externalExporter_) {
+    this.externalExporter_['saveAsJpg'](this, this, opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename);
+  } else {
+    this.defaultSaveAsJpg(opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename);
+  }
+};
+
+
+/**
  * Save current stage as PDF Document.
+ *
  * @param {(number|string)=} opt_paperSizeOrWidth Any paper format like 'a0', 'tabloid', 'b4', etc.
  * @param {(number|boolean)=} opt_landscapeOrHeight Landscape or height.
  * @param {number=} opt_x Offset X.
  * @param {number=} opt_y Offset Y.
  * @param {string=} opt_filename file name to save.
  */
-acgraph.vector.Stage.prototype.saveAsPdf = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename) {
+acgraph.vector.Stage.prototype.defaultSaveAsPdf = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename) {
   var type = acgraph.type();
   if (type == acgraph.StageType.SVG) {
     var options = {};
@@ -455,12 +513,31 @@ acgraph.vector.Stage.prototype.saveAsPdf = function(opt_paperSizeOrWidth, opt_la
 
 
 /**
+ * Save current stage as PDF Document.
+ *
+ * @param {(number|string)=} opt_paperSizeOrWidth Any paper format like 'a0', 'tabloid', 'b4', etc.
+ * @param {(number|boolean)=} opt_landscapeOrHeight Landscape or height.
+ * @param {number=} opt_x Offset X.
+ * @param {number=} opt_y Offset Y.
+ * @param {string=} opt_filename file name to save.
+ */
+acgraph.vector.Stage.prototype.saveAsPdf = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename) {
+  if (this.externalExporter_) {
+    this.externalExporter_['saveAsPdf'](this, this, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename);
+  } else {
+    this.defaultSaveAsPdf(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename);
+  }
+};
+
+
+/**
  * Save stage as SVG Image.
+ *
  * @param {(string|number)=} opt_paperSizeOrWidth Paper Size or width.
  * @param {(boolean|string)=} opt_landscapeOrHeight Landscape or height.
  * @param {string=} opt_filename file name to save.
  */
-acgraph.vector.Stage.prototype.saveAsSvg = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename) {
+acgraph.vector.Stage.prototype.defaultSaveAsSvg = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename) {
   var type = acgraph.type();
   if (type == acgraph.StageType.SVG) {
     var options = {};
@@ -468,6 +545,22 @@ acgraph.vector.Stage.prototype.saveAsSvg = function(opt_paperSizeOrWidth, opt_la
     acgraph.sendRequestToExportServer(acgraph.exportServer + '/svg', options);
   } else {
     alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
+  }
+};
+
+
+/**
+ * Save stage as SVG Image.
+ *
+ * @param {(string|number)=} opt_paperSizeOrWidth Paper Size or width.
+ * @param {(boolean|string)=} opt_landscapeOrHeight Landscape or height.
+ * @param {string=} opt_filename file name to save.
+ */
+acgraph.vector.Stage.prototype.saveAsSvg = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename) {
+  if (this.externalExporter_) {
+    this.externalExporter_['saveAsSvg'](this, this, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename);
+  } else {
+    this.defaultSaveAsSvg(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename);
   }
 };
 
@@ -539,6 +632,7 @@ acgraph.vector.Stage.prototype.serializeToString_ = function(node) {
   goog.exportSymbol('acgraph.server', acgraph.server);
 
   var proto = acgraph.vector.Stage.prototype;
+  proto['useAnychartExporting'] = proto.useAnychartExporting;
   proto['saveAsPNG'] = proto.saveAsPng;
   proto['saveAsJPG'] = proto.saveAsJpg;
   proto['saveAsPDF'] = proto.saveAsPdf;
