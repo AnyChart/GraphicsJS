@@ -23339,6 +23339,14 @@ acgraph.server = function(opt_address) {
 acgraph.sendRequestToExportServer = function(url, opt_arguments) {
   goog.net.IframeIo.send(url, undefined, "POST", false, opt_arguments);
 };
+acgraph.vector.Stage.prototype.useAnychartExporting = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    this.useAnychartExporting_ = !!opt_value;
+    this.externalExporter_ = this.useAnychartExporting_ ? goog.global["anychart"]["exports"] : null;
+    return this;
+  }
+  return !!this.useAnychartExporting_;
+};
 acgraph.vector.Stage.prototype.normalizeImageSize_ = function(opt_width, opt_height) {
   var ratio = this.width() / this.height();
   opt_width = goog.isDef(opt_width) ? opt_width : opt_height ? Math.round(opt_height * ratio) : this.width();
@@ -23529,7 +23537,7 @@ acgraph.vector.Stage.prototype.getPdfBase64String = function(onSuccess, opt_onEr
     alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
   }
 };
-acgraph.vector.Stage.prototype.saveAsPng = function(opt_width, opt_height, opt_quality, opt_filename) {
+acgraph.vector.Stage.prototype.defaultSaveAsPng = function(opt_width, opt_height, opt_quality, opt_filename) {
   var type = acgraph.type();
   if (type == acgraph.StageType.SVG) {
     var options = {};
@@ -23539,7 +23547,14 @@ acgraph.vector.Stage.prototype.saveAsPng = function(opt_width, opt_height, opt_q
     alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
   }
 };
-acgraph.vector.Stage.prototype.saveAsJpg = function(opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename) {
+acgraph.vector.Stage.prototype.saveAsPng = function(opt_width, opt_height, opt_quality, opt_filename) {
+  if (this.externalExporter_) {
+    this.externalExporter_.saveAsPng(this, this, opt_width, opt_height, opt_quality, opt_filename);
+  } else {
+    this.defaultSaveAsPng(opt_width, opt_height, opt_quality, opt_filename);
+  }
+};
+acgraph.vector.Stage.prototype.defaultSaveAsJpg = function(opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename) {
   var type = acgraph.type();
   if (type == acgraph.StageType.SVG) {
     var options = {};
@@ -23549,7 +23564,14 @@ acgraph.vector.Stage.prototype.saveAsJpg = function(opt_width, opt_height, opt_q
     alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
   }
 };
-acgraph.vector.Stage.prototype.saveAsPdf = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename) {
+acgraph.vector.Stage.prototype.saveAsJpg = function(opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename) {
+  if (this.externalExporter_) {
+    this.externalExporter_["saveAsJpg"](this, this, opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename);
+  } else {
+    this.defaultSaveAsJpg(opt_width, opt_height, opt_quality, opt_forceTransparentWhite, opt_filename);
+  }
+};
+acgraph.vector.Stage.prototype.defaultSaveAsPdf = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename) {
   var type = acgraph.type();
   if (type == acgraph.StageType.SVG) {
     var options = {};
@@ -23559,7 +23581,14 @@ acgraph.vector.Stage.prototype.saveAsPdf = function(opt_paperSizeOrWidth, opt_la
     alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
   }
 };
-acgraph.vector.Stage.prototype.saveAsSvg = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename) {
+acgraph.vector.Stage.prototype.saveAsPdf = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename) {
+  if (this.externalExporter_) {
+    this.externalExporter_["saveAsPdf"](this, this, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename);
+  } else {
+    this.defaultSaveAsPdf(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_x, opt_y, opt_filename);
+  }
+};
+acgraph.vector.Stage.prototype.defaultSaveAsSvg = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename) {
   var type = acgraph.type();
   if (type == acgraph.StageType.SVG) {
     var options = {};
@@ -23567,6 +23596,13 @@ acgraph.vector.Stage.prototype.saveAsSvg = function(opt_paperSizeOrWidth, opt_la
     acgraph.sendRequestToExportServer(acgraph.exportServer + "/svg", options);
   } else {
     alert(acgraph.error.getErrorMessage(acgraph.error.Code.FEATURE_NOT_SUPPORTED_IN_VML));
+  }
+};
+acgraph.vector.Stage.prototype.saveAsSvg = function(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename) {
+  if (this.externalExporter_) {
+    this.externalExporter_["saveAsSvg"](this, this, opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename);
+  } else {
+    this.defaultSaveAsSvg(opt_paperSizeOrWidth, opt_landscapeOrHeight, opt_filename);
   }
 };
 acgraph.vector.Stage.prototype.print = function(opt_paperSizeOrWidth, opt_landscapeOrHeight) {
@@ -23604,6 +23640,7 @@ acgraph.vector.Stage.prototype.serializeToString_ = function(node) {
 (function() {
   goog.exportSymbol("acgraph.server", acgraph.server);
   var proto = acgraph.vector.Stage.prototype;
+  proto["useAnychartExporting"] = proto.useAnychartExporting;
   proto["saveAsPNG"] = proto.saveAsPng;
   proto["saveAsJPG"] = proto.saveAsJpg;
   proto["saveAsPDF"] = proto.saveAsPdf;
