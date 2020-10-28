@@ -61,13 +61,13 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
 
   this.renderAsync_ = goog.bind(this.renderAsync_, this);
   this.checkSize = goog.bind(this.checkSize, this);
-  var doc = goog.global['document'];
+  var doc = acgraph.window['document'];
 
-  if (!goog.global['acgraph'].stages)
-    goog.global['acgraph'].stages = {};
+  if (!acgraph.module.stages)
+    acgraph.module.stages = {};
 
   var id = acgraph.utils.IdGenerator.getInstance().identify(this, acgraph.utils.IdGenerator.ElementTypePrefix.STAGE);
-  goog.global['acgraph'].stages[id] = this;
+  acgraph.module.stages[id] = this;
 
   this.charts = {};
 
@@ -897,7 +897,7 @@ acgraph.vector.Stage.prototype.checkSize = function(opt_directCall, opt_silent) 
     if (!opt_silent)
       this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RESIZE);
   }
-  if (this.container_ && isDynamicSize && !goog.global['acgraph']['isNodeJS']) {
+  if (this.container_ && isDynamicSize && !acgraph.module['isNodeJS']) {
     this.checkSizeTimer_ = setTimeout(this.checkSize, this.maxResizeDelay_);
   }
 };
@@ -2188,7 +2188,7 @@ acgraph.vector.Stage.prototype.disposeInternal = function() {
   delete this.rootLayer_;
 
   var id = acgraph.utils.IdGenerator.getInstance().identify(this, acgraph.utils.IdGenerator.ElementTypePrefix.STAGE);
-  delete goog.global['acgraph'].stages[id];
+  delete acgraph.module.stages[id];
 
   acgraph.unregister(this);
 

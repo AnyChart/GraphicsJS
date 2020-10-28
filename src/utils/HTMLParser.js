@@ -505,12 +505,12 @@ acgraph.utils.HTMLParser.prototype.addStyleData_ = function(key, opt_value) {
 
     case 'font-family':
       this.prepareStyle_();
-      this.style.fontFamily = /** @type {string} */ (opt_value || goog.global['acgraph']['fontFamily']);
+      this.style.fontFamily = /** @type {string} */ (opt_value || acgraph.module['fontFamily']);
       break;
 
     case 'font-size':
       this.prepareStyle_();
-      this.style.fontSize = /** @type {string|number} */ (opt_value || goog.global['acgraph']['fontSize']);
+      this.style.fontSize = /** @type {string|number} */ (opt_value || acgraph.module['fontSize']);
       break;
 
     case 'font-weight':
@@ -520,7 +520,7 @@ acgraph.utils.HTMLParser.prototype.addStyleData_ = function(key, opt_value) {
 
     case 'color':
       this.prepareStyle_();
-      this.style.color = /** @type {string} */ (opt_value || goog.global['acgraph']['color']);
+      this.style.color = /** @type {string} */ (opt_value || acgraph.module['color']);
       break;
 
     case 'letter-spacing':

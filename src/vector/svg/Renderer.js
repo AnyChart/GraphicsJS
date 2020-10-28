@@ -101,7 +101,7 @@ acgraph.vector.svg.Renderer.prototype.imageLoader_ = null;
  * @private
  */
 acgraph.vector.svg.Renderer.prototype.createSVGElement_ = function(tag) {
-  return goog.global['document'].createElementNS(
+  return acgraph.window['document'].createElementNS(
       acgraph.vector.svg.Renderer.SVG_NS_,
       tag
   );
@@ -138,7 +138,7 @@ acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
     this.measurementGroupNode_ = this.createLayerElement();
     goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
 
-    goog.dom.appendChild(goog.global['document'].body, this.measurement_);
+    goog.dom.appendChild(acgraph.window['document'].body, this.measurement_);
   }
 
   return this.measurement_;
