@@ -1,4 +1,6 @@
 goog.provide('acgraph.vector.vml.Renderer');
+
+goog.require('acgraph');
 goog.require('acgraph.utils.IdGenerator');
 goog.require('acgraph.vector.LinearGradient');
 goog.require('acgraph.vector.PathBase');
@@ -99,7 +101,7 @@ acgraph.vector.vml.Renderer.VML_CLASS_ = 'any_vml';
  * IE8 mode indicator. IE8 treats VML differently, so we need to know if we are there.
  * @type {boolean}
  */
-acgraph.vector.vml.Renderer.IE8_MODE = goog.global.document && goog.global.document.documentMode && goog.global.document.documentMode >= 8;
+acgraph.vector.vml.Renderer.IE8_MODE = acgraph.window.document && acgraph.window.document.documentMode && acgraph.window.document.documentMode >= 8;
 
 
 /**

@@ -629,7 +629,7 @@ acgraph.vector.Renderer.prototype.isImageLoading = function() {
  */
 acgraph.vector.Renderer.prototype.getImageLoader = function() {
   if (!this.imageLoader_ || this.imageLoader_.isDisposed())
-    this.imageLoader_ = new goog.net.ImageLoader(/** @type {Element} */(goog.global['document']['body']));
+    this.imageLoader_ = new goog.net.ImageLoader(/** @type {Element} */(acgraph.window['document']['body']));
   return this.imageLoader_;
 };
 

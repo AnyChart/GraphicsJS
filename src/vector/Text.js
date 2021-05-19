@@ -204,10 +204,10 @@ acgraph.vector.Text = function(opt_x, opt_y) {
    * @private
    */
   this.defaultStyle_ = /** @type {acgraph.vector.TextStyle} **/ ({
-    'fontSize': goog.global['acgraph']['fontSize'],
-    'color': goog.global['acgraph']['fontColor'],
-    'fontFamily': goog.global['acgraph']['fontFamily'],
-    'direction': goog.global['acgraph']['textDirection'],
+    'fontSize': acgraph.module['fontSize'],
+    'color': acgraph.module['fontColor'],
+    'fontFamily': acgraph.module['fontFamily'],
+    'direction': acgraph.module['textDirection'],
     'textOverflow': acgraph.vector.Text.TextOverflow.CLIP,
     'wordBreak': acgraph.vector.Text.WordBreak.NORMAL,
     'wordWrap': acgraph.vector.Text.WordWrap.NORMAL,

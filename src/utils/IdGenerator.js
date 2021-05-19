@@ -70,6 +70,15 @@ acgraph.utils.IdGenerator.prototype.prefix_ = 'ac';
 
 
 /**
+ * Sequence of characters that uses as uniq prefix for id generation, represented as hex.
+ *
+ * @type {string}
+ * @private
+ */
+acgraph.utils.IdGenerator.prototype.uniq_prefix_ = ((Math.random() * 1e9) >>> 0).toString(16);
+
+
+/**
  * A name for an ID field. It is needed to avoid conflicts with other components.
  * @type {string}
  * @private
@@ -102,5 +111,10 @@ acgraph.utils.IdGenerator.prototype.identify = function(obj, opt_prefix) {
  */
 acgraph.utils.IdGenerator.prototype.generateId = function(obj, opt_prefix) {
   var typePrefix = goog.isDef(opt_prefix) ? opt_prefix : (obj.getElementTypePrefix ? obj.getElementTypePrefix() : '');
-  return [this.prefix_, typePrefix, (this.nextId_++).toString(36)].join('_');
+  return [
+      this.prefix_,
+      typePrefix,
+      this.uniq_prefix_,
+      (this.nextId_++).toString(36)
+  ].join('_');
 };

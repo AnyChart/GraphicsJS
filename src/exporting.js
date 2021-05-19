@@ -64,7 +64,7 @@ acgraph.vector.Stage.prototype.useAnychartExporting = function(opt_value) {
   if (goog.isDef(opt_value)) {
     this.useAnychartExporting_ = !!opt_value;
     this.externalExporter_ = this.useAnychartExporting_ ?
-        goog.global['anychart']['exports'] :
+        acgraph.module['anychart']['exports'] :
         null;
     return this;
   }
