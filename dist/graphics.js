@@ -3388,13 +3388,14 @@ goog.addSingletonGetter(acgraph.utils.IdGenerator);
 acgraph.utils.IdGenerator.ElementTypePrefix = {STAGE:"stage", FILL:"fill", FILL_PATTERN:"fill-pattern", HATCH_FILL:"hatch-fill", IMAGE_FILL:"image-fill", STROKE:"stroke", LAYER:"layer", UNMANAGEABLE_LAYER:"unmanageable-layer", RECT:"rect", CIRCLE:"circle", ELLIPSE:"ellipse", PATH:"path", GRADIENT_KEY:"g-key", LINEAR_GRADIENT:"linear-gradient", RADIAL_GRADIENT:"radial-gradient", TEXT:"text", SIMPLE_TEXT:"simple-text", TEXT_SEGMENT:"t-segment", IMAGE:"image", CLIP:"clip", SHAPE_TYPE:"shape-type"};
 acgraph.utils.IdGenerator.prototype.nextId_ = 0;
 acgraph.utils.IdGenerator.prototype.prefix_ = "ac";
+acgraph.utils.IdGenerator.prototype.uniq_prefix_ = (Math.random() * 1e9 >>> 0).toString(16);
 acgraph.utils.IdGenerator.prototype.uid_property_ = "ac_uid_" + (Math.random() * 1e9 >>> 0);
 acgraph.utils.IdGenerator.prototype.identify = function(obj, opt_prefix) {
   return obj[this.uid_property_] || (obj[this.uid_property_] = this.generateId(obj, opt_prefix));
 };
 acgraph.utils.IdGenerator.prototype.generateId = function(obj, opt_prefix) {
   var typePrefix = goog.isDef(opt_prefix) ? opt_prefix : obj.getElementTypePrefix ? obj.getElementTypePrefix() : "";
-  return [this.prefix_, typePrefix, (this.nextId_++).toString(36)].join("_");
+  return [this.prefix_, typePrefix, this.uniq_prefix_, (this.nextId_++).toString(36)].join("_");
 };
 goog.provide("goog.string");
 goog.provide("goog.string.Unicode");
@@ -13485,7 +13486,7 @@ acgraph.vector.Renderer.prototype.isImageLoading = function() {
 };
 acgraph.vector.Renderer.prototype.getImageLoader = function() {
   if (!this.imageLoader_ || this.imageLoader_.isDisposed()) {
-    this.imageLoader_ = new goog.net.ImageLoader(goog.global["document"]["body"]);
+    this.imageLoader_ = new goog.net.ImageLoader(acgraph.window["document"]["body"]);
   }
   return this.imageLoader_;
 };
@@ -13624,11 +13625,11 @@ acgraph.utils.HTMLParser.prototype.addStyleData_ = function(key, opt_value) {
       break;
     case "font-family":
       this.prepareStyle_();
-      this.style.fontFamily = opt_value || goog.global["acgraph"]["fontFamily"];
+      this.style.fontFamily = opt_value || acgraph.module["fontFamily"];
       break;
     case "font-size":
       this.prepareStyle_();
-      this.style.fontSize = opt_value || goog.global["acgraph"]["fontSize"];
+      this.style.fontSize = opt_value || acgraph.module["fontSize"];
       break;
     case "font-weight":
       this.prepareStyle_();
@@ -13636,7 +13637,7 @@ acgraph.utils.HTMLParser.prototype.addStyleData_ = function(key, opt_value) {
       break;
     case "color":
       this.prepareStyle_();
-      this.style.color = opt_value || goog.global["acgraph"]["color"];
+      this.style.color = opt_value || acgraph.module["color"];
       break;
     case "letter-spacing":
       this.prepareStyle_();
@@ -14136,7 +14137,7 @@ acgraph.vector.Text = function(opt_x, opt_y) {
   this.textIndent_ = 0;
   this.rtl = false;
   this.stopAddSegments_ = false;
-  this.defaultStyle_ = {"fontSize":goog.global["acgraph"]["fontSize"], "color":goog.global["acgraph"]["fontColor"], "fontFamily":goog.global["acgraph"]["fontFamily"], "direction":goog.global["acgraph"]["textDirection"], "textOverflow":acgraph.vector.Text.TextOverflow.CLIP, "wordBreak":acgraph.vector.Text.WordBreak.NORMAL, "wordWrap":acgraph.vector.Text.WordWrap.NORMAL, "selectable":true, "hAlign":acgraph.vector.Text.HAlign.START};
+  this.defaultStyle_ = {"fontSize":acgraph.module["fontSize"], "color":acgraph.module["fontColor"], "fontFamily":acgraph.module["fontFamily"], "direction":acgraph.module["textDirection"], "textOverflow":acgraph.vector.Text.TextOverflow.CLIP, "wordBreak":acgraph.vector.Text.WordBreak.NORMAL, "wordWrap":acgraph.vector.Text.WordWrap.NORMAL, "selectable":true, "hAlign":acgraph.vector.Text.HAlign.START};
   this.style_ = this.defaultStyle_;
   this.textPath = null;
   goog.base(this);
@@ -15594,7 +15595,7 @@ acgraph.vector.svg.Renderer.prototype.measurementTextNode_ = null;
 acgraph.vector.svg.Renderer.prototype.measurementGroupNode_ = null;
 acgraph.vector.svg.Renderer.prototype.imageLoader_ = null;
 acgraph.vector.svg.Renderer.prototype.createSVGElement_ = function(tag) {
-  return goog.global["document"].createElementNS(acgraph.vector.svg.Renderer.SVG_NS_, tag);
+  return acgraph.window["document"].createElementNS(acgraph.vector.svg.Renderer.SVG_NS_, tag);
 };
 acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
   if (!this.measurement_) {
@@ -15611,7 +15612,7 @@ acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
     this.measurement_.style.cssText = "position: absolute; left: -99999px; top: -99999px";
     this.measurementGroupNode_ = this.createLayerElement();
     goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
-    goog.dom.appendChild(goog.global["document"].body, this.measurement_);
+    goog.dom.appendChild(acgraph.window["document"].body, this.measurement_);
   }
   return this.measurement_;
 };
@@ -17728,7 +17729,7 @@ acgraph.utils.exporting.openPrint_ = function() {
     var iFrame = acgraph.utils.exporting.printIFrame_;
     var iFrameWindow = iFrame["contentWindow"];
     if (goog.userAgent.EDGE) {
-      acgraph.utils.exporting.printWindow_ = goog.global.open();
+      acgraph.utils.exporting.printWindow_ = acgraph.window.open();
       acgraph.utils.exporting.printWindow_.document.write(iFrameWindow.document.documentElement.innerHTML);
       acgraph.utils.exporting.disposePrint_();
       acgraph.utils.exporting.printWindow_["onafterprint"] = function() {
@@ -18254,12 +18255,12 @@ acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
   goog.base(this);
   this.renderAsync_ = goog.bind(this.renderAsync_, this);
   this.checkSize = goog.bind(this.checkSize, this);
-  var doc = goog.global["document"];
-  if (!goog.global["acgraph"].stages) {
-    goog.global["acgraph"].stages = {};
+  var doc = acgraph.window["document"];
+  if (!acgraph.module.stages) {
+    acgraph.module.stages = {};
   }
   var id = acgraph.utils.IdGenerator.getInstance().identify(this, acgraph.utils.IdGenerator.ElementTypePrefix.STAGE);
-  goog.global["acgraph"].stages[id] = this;
+  acgraph.module.stages[id] = this;
   this.charts = {};
   this.eventHandler_ = new goog.events.EventHandler(this);
   this.internalContainer_ = doc.createElement(goog.dom.TagName.DIV);
@@ -18570,7 +18571,7 @@ acgraph.vector.Stage.prototype.checkSize = function(opt_directCall, opt_silent) 
       this.dispatchEvent(acgraph.vector.Stage.EventType.STAGE_RESIZE);
     }
   }
-  if (this.container_ && isDynamicSize && !goog.global["acgraph"]["isNodeJS"]) {
+  if (this.container_ && isDynamicSize && !acgraph.module["isNodeJS"]) {
     this.checkSizeTimer_ = setTimeout(this.checkSize, this.maxResizeDelay_);
   }
 };
@@ -18954,7 +18955,7 @@ acgraph.vector.Stage.prototype.disposeInternal = function() {
   this.rootLayer_.finalizeDisposing();
   delete this.rootLayer_;
   var id = acgraph.utils.IdGenerator.getInstance().identify(this, acgraph.utils.IdGenerator.ElementTypePrefix.STAGE);
-  delete goog.global["acgraph"].stages[id];
+  delete acgraph.module.stages[id];
   acgraph.unregister(this);
   goog.dom.removeNode(this.internalContainer_);
   this.container_ = null;
@@ -19313,6 +19314,13 @@ goog.require("goog.dom");
 goog.require("goog.userAgent");
 acgraph.WRAPPER_ID_PROP_NAME_ = "data-ac-wrapper-id";
 acgraph.wrappers = {};
+acgraph.module = goog.global["acgraph"];
+if (goog.global["IS_ANYCHART_AMD"]) {
+  acgraph.window = window;
+} else {
+  acgraph.window = goog.global;
+  acgraph.window["acgraph"] = acgraph.window["acgraph"] || {};
+}
 acgraph.register = function(wrapper) {
   var node = wrapper.domElement();
   if (node) {
@@ -19355,7 +19363,7 @@ acgraph.renderer_;
 acgraph.getRenderer = function() {
   if (!acgraph.renderer_) {
     if (acgraph.type_ == acgraph.StageType.VML) {
-      var vml = goog.global["acgraph"]["vml"];
+      var vml = acgraph.module["vml"];
       if (vml) {
         acgraph.renderer_ = vml["getRenderer"]();
       } else {
@@ -19370,7 +19378,7 @@ acgraph.getRenderer = function() {
 acgraph.create = function(opt_container, opt_width, opt_height) {
   var stage;
   if (acgraph.type_ == acgraph.StageType.VML) {
-    var vml = goog.global["acgraph"]["vml"];
+    var vml = acgraph.module["vml"];
     if (vml) {
       stage = new vml["Stage"](opt_container, opt_width, opt_height);
     } else {
@@ -19382,7 +19390,7 @@ acgraph.create = function(opt_container, opt_width, opt_height) {
   return stage;
 };
 acgraph.getStage = function(id) {
-  return goog.global["acgraph"].stages[id];
+  return acgraph.module.stages[id];
 };
 acgraph.embedCss = function(css, opt_doc) {
   var styleElement = null;
@@ -19398,11 +19406,10 @@ acgraph.embedCss = function(css, opt_doc) {
   }
   return styleElement;
 };
-goog.global["acgraph"] = goog.global["acgraph"] || {};
-goog.global["acgraph"]["fontSize"] = "10px";
-goog.global["acgraph"]["fontColor"] = "#000";
-goog.global["acgraph"]["textDirection"] = acgraph.vector.Text.Direction.LTR;
-goog.global["acgraph"]["fontFamily"] = "Verdana";
+acgraph.module["fontSize"] = "10px";
+acgraph.module["fontColor"] = "#000";
+acgraph.module["textDirection"] = acgraph.vector.Text.Direction.LTR;
+acgraph.module["fontFamily"] = "Verdana";
 acgraph.rect = function(opt_x, opt_y, opt_width, opt_height) {
   return new acgraph.vector.Rect(opt_x, opt_y, opt_width, opt_height);
 };
@@ -19424,7 +19431,7 @@ acgraph.image = function(opt_src, opt_x, opt_y, opt_width, opt_height) {
 acgraph.text = function(opt_x, opt_y, opt_text, opt_style) {
   var text;
   if (acgraph.type_ == acgraph.StageType.VML) {
-    var vml = goog.global["acgraph"]["vml"];
+    var vml = acgraph.module["vml"];
     if (vml) {
       text = new vml["Text"](opt_x, opt_y);
     } else {
@@ -19456,7 +19463,7 @@ acgraph.patternFill = function(bounds) {
 };
 acgraph.clip = function(opt_leftOrShape, opt_top, opt_width, opt_height) {
   if (acgraph.type_ == acgraph.StageType.VML) {
-    var vml = goog.global["acgraph"]["vml"];
+    var vml = acgraph.module["vml"];
     if (vml) {
       return new vml["Clip"](null, opt_leftOrShape, opt_top, opt_width, opt_height);
     } else {
@@ -19484,7 +19491,7 @@ acgraph.getReference = function() {
   if (goog.userAgent.IE && goog.userAgent.isVersionOrHigher("9") && !goog.userAgent.isVersionOrHigher("10")) {
     return acgraph.getReferenceValue_ = "";
   }
-  return acgraph.getReferenceValue_ = acgraph.compatibility.USE_ABSOLUTE_REFERENCES || goog.isNull(acgraph.compatibility.USE_ABSOLUTE_REFERENCES) && goog.dom.getElementsByTagNameAndClass("base").length ? goog.global.location.origin + goog.global.location.pathname + goog.global.location.search : "";
+  return acgraph.getReferenceValue_ = acgraph.compatibility.USE_ABSOLUTE_REFERENCES || goog.isNull(acgraph.compatibility.USE_ABSOLUTE_REFERENCES) && goog.dom.getElementsByTagNameAndClass("base").length ? acgraph.window.location.origin + acgraph.window.location.pathname + acgraph.window.location.search : "";
 };
 acgraph.updateReferences = function() {
   var oldReference = acgraph.getReferenceValue_;
@@ -23342,7 +23349,7 @@ acgraph.sendRequestToExportServer = function(url, opt_arguments) {
 acgraph.vector.Stage.prototype.useAnychartExporting = function(opt_value) {
   if (goog.isDef(opt_value)) {
     this.useAnychartExporting_ = !!opt_value;
-    this.externalExporter_ = this.useAnychartExporting_ ? goog.global["anychart"]["exports"] : null;
+    this.externalExporter_ = this.useAnychartExporting_ ? acgraph.module["anychart"]["exports"] : null;
     return this;
   }
   return !!this.useAnychartExporting_;
@@ -24050,6 +24057,7 @@ goog.color.colorDiff_ = function(rgb1, rgb2) {
   return Math.abs(rgb1[0] - rgb2[0]) + Math.abs(rgb1[1] - rgb2[1]) + Math.abs(rgb1[2] - rgb2[2]);
 };
 goog.provide("acgraph.vector.vml.Renderer");
+goog.require("acgraph");
 goog.require("acgraph.utils.IdGenerator");
 goog.require("acgraph.vector.LinearGradient");
 goog.require("acgraph.vector.PathBase");
@@ -24089,7 +24097,7 @@ goog.addSingletonGetter(acgraph.vector.vml.Renderer);
 acgraph.vector.vml.Renderer.VML_NS_ = "urn:schemas-microsoft-com:vml";
 acgraph.vector.vml.Renderer.VML_PREFIX_ = "any_vml";
 acgraph.vector.vml.Renderer.VML_CLASS_ = "any_vml";
-acgraph.vector.vml.Renderer.IE8_MODE = goog.global.document && goog.global.document.documentMode && goog.global.document.documentMode >= 8;
+acgraph.vector.vml.Renderer.IE8_MODE = acgraph.window.document && acgraph.window.document.documentMode && acgraph.window.document.documentMode >= 8;
 acgraph.vector.vml.Renderer.COORD_MULTIPLIER_ = 100;
 acgraph.vector.vml.Renderer.SHIFT_ = 0;
 acgraph.vector.vml.Renderer.toCssSize_ = function(size) {
