@@ -405,6 +405,14 @@ acgraph.vector.Stage.prototype.asyncMode_ = false;
  */
 acgraph.vector.Stage.prototype.isRendering_ = false;
 
+/**
+ * Flag, whether to use page's style @font-faces for printing iFrame.
+ * 
+ * @type {boolean}
+ * @private
+ */
+acgraph.vector.Stage.prototype.usePrintingFontFaces_ = true;
+
 
 //endregion
 //region --- Published methods
@@ -818,6 +826,30 @@ acgraph.vector.Stage.prototype.fullScreen = function(opt_value) {
  */
 acgraph.vector.Stage.prototype.isFullScreenAvailable = function() {
   return goog.dom.fullscreen.isSupported();
+};
+
+
+/**
+ * Stage on print creates printing iframe, @see acgraph.utils.exporting.createPrint_.
+ * By default, printing iframe is created with copies of @font-face styles of parent page.
+ * 
+ * But for single page applications with baseURI modified, relative URL of font-face
+ * can produce bug with invalid custom font link like "src: url("../fonts/qlikview-sans.ttf")".
+ * 
+ * For this case we can deny usage of copied @font-faces and let browser to use
+ * font-family style defined on parent page.
+ * 
+ * @see https://anychart.atlassian.net/browse/TS-1017
+ * @param {boolean=} opt_value - Value to set.
+ * @return {boolean|acgraph.vector.Stage} - Value or self for chaining.
+ */
+acgraph.vector.Stage.prototype.usePrintingFontFaces = function (opt_value) {
+  if (goog.isDef(opt_value)) {
+    this.usePrintingFontFaces_ = !!opt_value;
+    return this;
+  }
+
+  return this.usePrintingFontFaces_;
 };
 
 
@@ -2304,5 +2336,6 @@ acgraph.vector.Stage.prototype.disposeInternal = function() {
   proto['getCharts'] = proto.getCharts;
   proto['fullScreen'] = proto.fullScreen;
   proto['isFullScreenAvailable'] = proto.isFullScreenAvailable;
+  proto['usePrintingFontFaces'] = proto.usePrintingFontFaces;
 })();
 //endregion

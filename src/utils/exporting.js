@@ -98,7 +98,7 @@ acgraph.utils.exporting.print = function(stage, opt_paperSizeOrWidth, opt_landsc
  */
 acgraph.utils.exporting.fitToPagePrint = function(stage) {
   //create hidden frame
-  var iFrame = acgraph.utils.exporting.createPrint_();
+  var iFrame = acgraph.utils.exporting.createPrint_(/** @type {boolean} */(stage.usePrintingFontFaces()));
   var iFrameDocument = iFrame['contentWindow'].document;
 
   //clone stage content
@@ -135,7 +135,7 @@ acgraph.utils.exporting.fitToPagePrint = function(stage) {
 acgraph.utils.exporting.fullPagePrint = function(stage, opt_paperSizeOrWidth, opt_landscapeOrHeight) {
   var size = acgraph.vector.normalizePageSize(opt_paperSizeOrWidth, opt_landscapeOrHeight, acgraph.vector.PaperSize.US_LETTER);
   //create hidden frame
-  var iFrame = acgraph.utils.exporting.createPrint_();
+  var iFrame = acgraph.utils.exporting.createPrint_(/** @type {boolean} */ (stage.usePrintingFontFaces()));
   var iFrameDocument = iFrame['contentWindow'].document;
 
   /* Force printing only one page. Fixes issues with some sizes and orientations (like Portrait A0)
@@ -174,10 +174,12 @@ acgraph.utils.exporting.fullPagePrint = function(stage, opt_paperSizeOrWidth, op
 
 /**
  * Create print iFrame.
+ * 
+ * @param {boolean} usePrintingFontFaces - Whether to copy parent page's @font-faces to iframe.
  * @return {Element}
  * @private
  */
-acgraph.utils.exporting.createPrint_ = function() {
+acgraph.utils.exporting.createPrint_ = function (usePrintingFontFaces) {
   if (!acgraph.utils.exporting.printIFrame_) {
     var iFrame = document.createElement('iframe');
     acgraph.utils.exporting.printIFrame_ = iFrame;
@@ -190,12 +192,14 @@ acgraph.utils.exporting.createPrint_ = function() {
     //append iFrame into main document
     goog.dom.appendChild(document.body, iFrame);
 
-    var rules = goog.cssom.getAllCssStyleRules();
-    var rule;
-    for (var i = 0, len = rules.length; i < len; i++) {
-      rule = rules[i];
-      if (rule.type == goog.cssom.CssRuleType.FONT_FACE) {
-        acgraph.embedCss(goog.cssom.getCssTextFromCssRule(/** @type {CSSRule} */(rule)), iFrame['contentWindow'].document);
+    if (usePrintingFontFaces) {
+      var rules = goog.cssom.getAllCssStyleRules();
+      var rule;
+      for (var i = 0, len = rules.length; i < len; i++) {
+        rule = rules[i];
+        if (rule.type == goog.cssom.CssRuleType.FONT_FACE) {
+          acgraph.embedCss(goog.cssom.getCssTextFromCssRule(/** @type {CSSRule} */(rule)), iFrame['contentWindow'].document);
+        }
       }
     }
 
