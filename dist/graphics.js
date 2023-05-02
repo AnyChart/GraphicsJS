@@ -17663,7 +17663,7 @@ acgraph.utils.exporting.print = function(stage, opt_paperSizeOrWidth, opt_landsc
   }
 };
 acgraph.utils.exporting.fitToPagePrint = function(stage) {
-  var iFrame = acgraph.utils.exporting.createPrint_();
+  var iFrame = acgraph.utils.exporting.createPrint_(stage.usePrintingFontFaces());
   var iFrameDocument = iFrame["contentWindow"].document;
   var stageClone;
   var stageDomClone;
@@ -17686,7 +17686,7 @@ acgraph.utils.exporting.fitToPagePrint = function(stage) {
 };
 acgraph.utils.exporting.fullPagePrint = function(stage, opt_paperSizeOrWidth, opt_landscapeOrHeight) {
   var size = acgraph.vector.normalizePageSize(opt_paperSizeOrWidth, opt_landscapeOrHeight, acgraph.vector.PaperSize.US_LETTER);
-  var iFrame = acgraph.utils.exporting.createPrint_();
+  var iFrame = acgraph.utils.exporting.createPrint_(stage.usePrintingFontFaces());
   var iFrameDocument = iFrame["contentWindow"].document;
   acgraph.embedCss("html, body {height: 100%; overflow: hidden}", iFrameDocument);
   var div = goog.dom.createDom(goog.dom.TagName.DIV);
@@ -17706,18 +17706,20 @@ acgraph.utils.exporting.fullPagePrint = function(stage, opt_paperSizeOrWidth, op
   stage.resize(sourceStageWidth, sourceStageHeight);
   acgraph.utils.exporting.openPrint_();
 };
-acgraph.utils.exporting.createPrint_ = function() {
+acgraph.utils.exporting.createPrint_ = function(usePrintingFontFaces) {
   if (!acgraph.utils.exporting.printIFrame_) {
     var iFrame = document.createElement("iframe");
     acgraph.utils.exporting.printIFrame_ = iFrame;
     goog.style.setStyle(iFrame, {"visibility":"hidden", "position":"fixed", "right":0, "bottom":0});
     goog.dom.appendChild(document.body, iFrame);
-    var rules = goog.cssom.getAllCssStyleRules();
-    var rule;
-    for (var i = 0, len = rules.length; i < len; i++) {
-      rule = rules[i];
-      if (rule.type == goog.cssom.CssRuleType.FONT_FACE) {
-        acgraph.embedCss(goog.cssom.getCssTextFromCssRule(rule), iFrame["contentWindow"].document);
+    if (usePrintingFontFaces) {
+      var rules = goog.cssom.getAllCssStyleRules();
+      var rule;
+      for (var i = 0, len = rules.length; i < len; i++) {
+        rule = rules[i];
+        if (rule.type == goog.cssom.CssRuleType.FONT_FACE) {
+          acgraph.embedCss(goog.cssom.getCssTextFromCssRule(rule), iFrame["contentWindow"].document);
+        }
       }
     }
     acgraph.embedCss("body{padding:0;margin:0;height:100%;}@page {size: auto; margin: 0; padding:0}", iFrame["contentWindow"].document);
@@ -18315,6 +18317,7 @@ acgraph.vector.Stage.prototype.descElement = null;
 acgraph.vector.Stage.prototype.descVal_ = void 0;
 acgraph.vector.Stage.prototype.asyncMode_ = false;
 acgraph.vector.Stage.prototype.isRendering_ = false;
+acgraph.vector.Stage.prototype.usePrintingFontFaces_ = true;
 acgraph.vector.Stage.prototype.id = function(opt_value) {
   if (goog.isDef(opt_value)) {
     var id = opt_value || "";
@@ -18526,6 +18529,13 @@ acgraph.vector.Stage.prototype.fullScreen = function(opt_value) {
 };
 acgraph.vector.Stage.prototype.isFullScreenAvailable = function() {
   return goog.dom.fullscreen.isSupported();
+};
+acgraph.vector.Stage.prototype.usePrintingFontFaces = function(opt_value) {
+  if (goog.isDef(opt_value)) {
+    this.usePrintingFontFaces_ = !!opt_value;
+    return this;
+  }
+  return this.usePrintingFontFaces_;
 };
 acgraph.vector.Stage.prototype.getElementTypePrefix = function() {
   return acgraph.utils.IdGenerator.ElementTypePrefix.STAGE;
@@ -19064,6 +19074,7 @@ acgraph.vector.Stage.prototype.disposeInternal = function() {
   proto["getCharts"] = proto.getCharts;
   proto["fullScreen"] = proto.fullScreen;
   proto["isFullScreenAvailable"] = proto.isFullScreenAvailable;
+  proto["usePrintingFontFaces"] = proto.usePrintingFontFaces;
 })();
 goog.provide("acgraph.vector.svg.Defs");
 goog.require("acgraph.vector.Defs");
