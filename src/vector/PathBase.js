@@ -144,7 +144,7 @@ acgraph.vector.PathBase.forEachSegment_ = function(callback, segments, count, po
  * @param {...number} var_args Segments coordinates.
  * @this {{rect: goog.math.Rect, transform: goog.math.AffineTransform}} Assumed context
  *      is a special object that contains a rectangle which is to be extended and which
- *      will contains the result, as well as trasformation object, if needed.
+ *      will contains the result, as well as transformation object, if needed.
  * @private
  */
 acgraph.vector.PathBase.calcLineBounds_ = function(var_args) {
@@ -177,7 +177,7 @@ acgraph.vector.PathBase.calcLineBounds_ = function(var_args) {
  * @param {number} endY Y coordinate of coordinate.
  * @this {{rect: goog.math.Rect, transform: goog.math.AffineTransform}} Assumed context
  *      is a special object that contains a rectangle which is to be extended and which
- *      will contains the result, as well as trasformation object, if needed.
+ *      will contains the result, as well as transformation object, if needed.
  * @private
  */
 acgraph.vector.PathBase.calcArcBounds_ = function(startX, startY, rx, ry, angle, extent, endX, endY) {
@@ -257,7 +257,7 @@ acgraph.vector.PathBase.calcArcBounds_ = function(startX, startY, rx, ry, angle,
  *      each including 2 control points and an endpoint. Each point is defined by a pair of coordinates – X and Y.
  * @this {{rect: goog.math.Rect, transform: goog.math.AffineTransform}} Assumed context
  *      is a special object that contains a rectangle which is to be extended and which
- *      will contains the result, as well as trasformation object, if needed.
+ *      will contains the result, as well as transformation object, if needed.
  * @private
  */
 acgraph.vector.PathBase.calcCurveBounds_ = function(var_args) {
@@ -275,7 +275,7 @@ acgraph.vector.PathBase.calcCurveBounds_ = function(var_args) {
  * Very rough calculation of bounding rectangle (as IE does in VML) for Bezier curves.
  * Each curve is defined by 3 points (6 coordinates) – 2 control points and an endpoint.
  *
- * Calculation is bazed on fact that any Bezier curve always contained withing trapeziod
+ * Calculation is bazed on fact that any Bezier curve always contained withing trapezoid
  * built on start and end points and two control points. So, we can just add all 4 points
  * into the boundin rectangle.
  *
@@ -283,7 +283,7 @@ acgraph.vector.PathBase.calcCurveBounds_ = function(var_args) {
  *      each including 2 control points and an endpoint. Each point is defined by a pair of coordinates – X and Y.
  * @this {{rect: goog.math.Rect, transform: goog.math.AffineTransform}} Assumed context
  *      is a special object that contains a rectangle which is to be extended and which
- *      will contains the result, as well as trasformation object, if needed.
+ *      will contains the result, as well as transformation object, if needed.
  * @private
  */
 acgraph.vector.PathBase.calcRoughCurveBounds_ = function(var_args) {
@@ -1002,7 +1002,7 @@ acgraph.vector.PathBase.boundsCalculationMap_ = (function() {
 
 
 /**
- * Path lenght.
+ * Path length.
  * @return {number} .
  */
 acgraph.vector.PathBase.prototype.getLength = function() {

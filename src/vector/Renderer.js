@@ -657,7 +657,7 @@ acgraph.vector.Renderer.prototype.setTransformation = goog.abstractMethod;
 
 
 /**
- * Sets transofrmatin to DOM path.
+ * Sets transformation to DOM path.
  * @param {!acgraph.vector.PathBase} element Element.
  */
 acgraph.vector.Renderer.prototype.setPathTransformation = goog.abstractMethod;
