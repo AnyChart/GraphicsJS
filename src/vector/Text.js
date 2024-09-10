@@ -1243,7 +1243,6 @@ acgraph.vector.Text.prototype.cutTextSegment_ = function(text, style, a, b, segm
 acgraph.vector.Text.prototype.createSegment_ = function(text, style, bounds, opt_shift) {
   // create segment object
   var segment = new acgraph.vector.TextSegment(text, style);
-  this.registerDisposable(segment);
   segment.baseLine = -bounds.top;
   segment.height = bounds.height;
   segment.width = bounds.width;
