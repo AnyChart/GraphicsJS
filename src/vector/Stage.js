@@ -991,7 +991,7 @@ acgraph.vector.Stage.prototype.getDefs = function() {
 
 
 /**
- TODO: We need to create method to clear SVG because there is no sence to clear defs only.<br/>
+ TODO: We need to create method to clear SVG because there is no sense to clear defs only.<br/>
  Destroy all content (e.g. gradients, some fill and etc.) in defs node.
  @deprecated used only in AnyChartHTML5 v6.
  */
@@ -1129,7 +1129,7 @@ acgraph.vector.Stage.prototype.acquireDomChange = function(changeType) {
 
 /**
  * Tries to reserve no more than one third of all available changes.
- * When rendering is async there is no sence in creating all elements and then hit the limit
+ * When rendering is async there is no sense in creating all elements and then hit the limit
  * of adding - it is better to take into account that adding will require the same number
  * of operations as creation.
  * @return {number} Number of changes allowed.

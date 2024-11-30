@@ -11,7 +11,7 @@ goog.require('acgraph.vector.vml.ShapeType');
  * is a critical task. The class palys the role of an element manager: elements can be
  * assigned to other VML elements (using a reference to their IDs), which will inherit their properties. In VML
  * ShapeType elements are used for that. They are hidden by default, but if a ShapeType element is
- * assigned using a reference to, for example, a Shape element, the latter inherits the ShapeType propeties and applies them to the shape. In a ShapeType
+ * assigned using a reference to, for example, a Shape element, the latter inherits the ShapeType properties and applies them to the shape. In a ShapeType
  * you can also define subnodes, such as fill, stroke, skew, textpath, and so on. A Shape element to which such a ShapeType
  * will be applied will inherit all its properties and will be painted with the given fill and stroke. Let us suppose there are 1000 Shape elements
  * with the same fill and stroke (that require DOM elements). Without a ShapeType, one would have to assign fill and stroke as DOM elements

@@ -783,7 +783,7 @@ acgraph.vector.Element.prototype.rotate = function(degrees, opt_cx, opt_cy) {
 
 /**
  Rotates a shape around the given anchor.
- @param {number} degrees Rotation angle in degress.
+ @param {number} degrees Rotation angle in degrees.
  @param {(acgraph.vector.Anchor|string)=} opt_anchor Rotation anchor.
  @return {!acgraph.vector.Element} {@link acgraph.vector.Element} instance for method chaining.
  */

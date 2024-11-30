@@ -29,7 +29,7 @@ goog.require('goog.math.Size');
  * @param {number} ry The Y-radius of the ellipse.
  * @param {number} fromAngle The starting angle of the arc (in degrees).
  * @param {number} extent The angular length of the arc (in degrees).
- * @param {boolean=} opt_addFirstPointToResult Defines whether the intial point is added to the result. It is “false”
+ * @param {boolean=} opt_addFirstPointToResult Defines whether the initial point is added to the result. It is “false”
  *    by default, and if it is set to “true”, the first pair of coordinates in the result will refer to the first point, and the curves, each defined by 3 pairs of coordinates,
  *    will start from the second index of the array.
  * @return {!Array.<number>} The array of the parameters of the curves related to the arc. One curve is defined by 3 pairs of
