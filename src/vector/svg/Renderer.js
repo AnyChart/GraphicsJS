@@ -1168,6 +1168,15 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
         'fill-opacity': (/** @type {acgraph.vector.SolidFill} */(fill))['opacity']
       });
     }
+  } else if (fill === '') {
+    // A9-401: symmetric to applyStroke — an empty-string fill means "no fill"
+    // and MUST clear stale fill attributes left by a previous state instead of
+    // being skipped by the truthy `if (fill)` guard. `removeAttr` restores the
+    // pristine "no attribute" DOM (SVG default), matching a never-set fill;
+    // `null`/`undefined` still fall through to a no-op (don't touch contract).
+    var emptyFillDom = element.domElement();
+    this.removeAttr(emptyFillDom, 'fill');
+    this.removeAttr(emptyFillDom, 'fill-opacity');
   }
 };
 
@@ -1214,6 +1223,22 @@ acgraph.vector.svg.Renderer.prototype.applyStroke = function(element) {
       this.setAttr(domElement, 'stroke-dasharray', stroke['dash']);
     else
       this.removeAttr(domElement, 'stroke-dasharray');
+  } else if (stroke === '') {
+    // A9-401: an empty-string stroke (produced when an empty-color {color:''}
+    // is normalized) means "no stroke" and MUST clear any stale stroke
+    // attributes left by a previous state. The truthy `if (stroke)` guard above
+    // skips '' (it is falsy), which is exactly how a hover stroke survived
+    // unhover forever. `removeAttr` restores the pristine "no attribute" DOM, so
+    // non-buggy snapshots are unaffected. IMPORTANT: only `=== ''` clears here;
+    // `null`/`undefined` keep the "do not touch the attribute" contract
+    // (setNullFillAndStroke / DVF-3872) by falling through to a no-op.
+    var emptyStrokeDom = element.domElement();
+    this.removeAttr(emptyStrokeDom, 'stroke');
+    this.removeAttr(emptyStrokeDom, 'stroke-width');
+    this.removeAttr(emptyStrokeDom, 'stroke-opacity');
+    this.removeAttr(emptyStrokeDom, 'stroke-linejoin');
+    this.removeAttr(emptyStrokeDom, 'stroke-linecap');
+    this.removeAttr(emptyStrokeDom, 'stroke-dasharray');
   }
 };
 
