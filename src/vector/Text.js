@@ -1011,6 +1011,14 @@ acgraph.vector.Text.prototype.init_ = function() {
   this.isWidthSet = this.path() || isWidthProp;
   var widthProp = isWidthProp ? parseFloat(this.style_['width']) : Number.POSITIVE_INFINITY;
   this.textWidthLimit = Math.max(this.path() ? Math.min(this.path().getLength(), widthProp) : this.width_, 0);
+
+  // AnyChart-9 A9-760: mirrors isWidthProp/isWidthSet above. Without this flag, every consumer of
+  // this.height_ as a "was a height explicitly requested" signal (finalizeTextLine's endOfText gate,
+  // textDefragmentation's own-value-vs-natural-value overwrite) can only test this.height_ for
+  // truthiness, which cannot tell a REAL, explicitly-set 0 apart from "no height was ever set" (0 is
+  // falsy either way). Width has no such hole because isWidthSet already answers that question with
+  // goog.isDefAndNotNull, not a truthiness check on the parsed number.
+  this.isHeightSet = goog.isDefAndNotNull(this.style_['height']);
 };
 
 
@@ -1476,7 +1484,11 @@ acgraph.vector.Text.prototype.finalizeTextLine = function() {
 
   // if textOverFlow (ellipsis) is set, height is set and integrated height + height of the line we finalize
   // is greater than height set - apply textOverflow.
-  var endOfText = this.height_ &&
+  // AnyChart-9 A9-760: gated on isHeightSet (goog.isDefAndNotNull), not on this.height_'s truthiness --
+  // an explicit height(0) is a real, deliberate constraint (0 rendered lines fit), and the old
+  // `this.height_ &&` check could never tell that apart from "no height was ever set" (both falsy),
+  // silently behaving as unconstrained and letting every additional line through uncapped.
+  var endOfText = this.isHeightSet &&
       (this.realHeight + this.currentLineHeight_ > this.height_) &&
       this.textLines_.length != 0;
 
@@ -1774,7 +1786,12 @@ acgraph.vector.Text.prototype.textDefragmentation = function() {
 
   // set text width and height. they are either set or calculated.
   if (!this.style_['width']) this.width_ = this.realWidth;
-  if (!this.style_['height']) this.height_ = this.realHeight;
+  // AnyChart-9 A9-760: gated on isHeightSet, not on this.style_['height']'s truthiness -- an explicit
+  // height(0) must be kept as the reported this.height_/bounds.height (a real, deliberate 0-height
+  // box), not silently replaced by the text's own natural realHeight because 0 reads as falsy. The
+  // width line above keeps its own (identical-shaped) truthiness check unchanged -- deliberately out
+  // of this ticket's scope; see isWidthSet's docblock in init_ for why width never manifested this.
+  if (!this.isHeightSet) this.height_ = this.realHeight;
 
   this.calculateX();
   this.calculateY();
