@@ -2664,15 +2664,8 @@ acgraph.math.getRotationAngle = function(transform) {
   }
 };
 acgraph.math.fitWithProportion = function(targetWidth, targetHeight, sourceWidth, sourceHeight) {
-  if (targetWidth < targetHeight) {
-    return [targetWidth, targetWidth / sourceWidth * sourceHeight];
-  } else {
-    if (targetWidth > targetHeight) {
-      return [targetHeight / sourceHeight * sourceWidth, targetHeight];
-    } else {
-      return [targetWidth, targetHeight];
-    }
-  }
+  var scale = Math.min(targetWidth / sourceWidth, targetHeight / sourceHeight);
+  return [sourceWidth * scale, sourceHeight * scale];
 };
 goog.math.Coordinate.prototype.getX = function() {
   return this.x;
