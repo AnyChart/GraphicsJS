@@ -10603,23 +10603,23 @@ acgraph.vector.Element.prototype.dispatchEvent = function(e) {
       e.type = String(e.type).toLowerCase();
     }
   }
-  return goog.base(this, "dispatchEvent", e);
+  return goog.events.EventTarget.prototype.dispatchEvent.call(this, e);
 };
 acgraph.vector.Element.prototype.listen = function(type, listener, opt_useCapture, opt_listenerScope) {
-  return goog.base(this, "listen", String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
+  return goog.events.EventTarget.prototype.listen.call(this, String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
 };
 acgraph.vector.Element.prototype.listenOnce = function(type, listener, opt_useCapture, opt_listenerScope) {
-  return goog.base(this, "listenOnce", String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
+  return goog.events.EventTarget.prototype.listenOnce.call(this, String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
 };
 acgraph.vector.Element.prototype.unlisten = function(type, listener, opt_useCapture, opt_listenerScope) {
-  return goog.base(this, "unlisten", String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
+  return goog.events.EventTarget.prototype.unlisten.call(this, String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
 };
 acgraph.vector.Element.prototype.unlistenByKey;
 acgraph.vector.Element.prototype.removeAllListeners = function(opt_type) {
   if (goog.isDef(opt_type)) {
     opt_type = String(opt_type).toLowerCase();
   }
-  return goog.base(this, "removeAllListeners", opt_type);
+  return goog.events.EventTarget.prototype.removeAllListeners.call(this, opt_type);
 };
 acgraph.vector.Element.prototype.zIndex = function(opt_value) {
   if (goog.isDef(opt_value)) {
@@ -10896,7 +10896,7 @@ acgraph.vector.Shape = function() {
   this.fill_ = "none";
   this.stroke_ = "black";
   this.boundsAffectedColors_ = 0;
-  goog.base(this);
+  acgraph.vector.Element.call(this);
 };
 goog.inherits(acgraph.vector.Shape, acgraph.vector.Element);
 acgraph.vector.Shape.prototype.SUPPORTED_DIRTY_STATES = acgraph.vector.Element.prototype.SUPPORTED_DIRTY_STATES | acgraph.vector.Element.DirtyState.FILL | acgraph.vector.Element.DirtyState.STROKE;
@@ -10957,7 +10957,7 @@ acgraph.vector.Shape.prototype.beforeRenderInternal = function() {
   }
 };
 acgraph.vector.Shape.prototype.renderInternal = function() {
-  goog.base(this, "renderInternal");
+  acgraph.vector.Element.prototype.renderInternal.call(this);
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.FILL) || this.hasDirtyState(acgraph.vector.Element.DirtyState.STROKE)) {
     this.renderFillAndStroke();
   }
@@ -10992,10 +10992,10 @@ acgraph.vector.Shape.prototype.deserialize = function(data) {
   if ("stroke" in data) {
     this.stroke(data["stroke"]);
   }
-  goog.base(this, "deserialize", data);
+  acgraph.vector.Element.prototype.deserialize.call(this, data);
 };
 acgraph.vector.Shape.prototype.serialize = function() {
-  var data = goog.base(this, "serialize");
+  var data = acgraph.vector.Element.prototype.serialize.call(this);
   if (this.fill_) {
     var fillData, tmpFill, tmpStroke;
     if (acgraph.utils.instanceOf(this.fill_, acgraph.vector.HatchFill)) {
@@ -11043,7 +11043,7 @@ acgraph.vector.Shape.prototype.serialize = function() {
 acgraph.vector.Shape.prototype.disposeInternal = function() {
   delete this.fill_;
   delete this.stroke_;
-  goog.base(this, "disposeInternal");
+  acgraph.vector.Element.prototype.disposeInternal.call(this);
 };
 (function() {
   var proto = acgraph.vector.Shape.prototype;
@@ -11061,7 +11061,7 @@ acgraph.vector.Ellipse = function(opt_cx, opt_cy, opt_rx, opt_ry) {
   this.center_ = new goog.math.Coordinate(opt_cx || 0, opt_cy || 0);
   this.radiusX_ = opt_rx || 0;
   this.radiusY_ = opt_ry || 0;
-  goog.base(this);
+  acgraph.vector.Shape.call(this);
 };
 goog.inherits(acgraph.vector.Ellipse, acgraph.vector.Shape);
 acgraph.vector.Ellipse.prototype.SUPPORTED_DIRTY_STATES = acgraph.vector.Shape.prototype.SUPPORTED_DIRTY_STATES | acgraph.vector.Element.DirtyState.DATA;
@@ -11153,7 +11153,7 @@ acgraph.vector.Ellipse.prototype.renderInternal = function() {
       this.setDirtyState(acgraph.vector.Element.DirtyState.FILL);
     }
   }
-  goog.base(this, "renderInternal");
+  acgraph.vector.Shape.prototype.renderInternal.call(this);
 };
 acgraph.vector.Ellipse.prototype.renderTransformation = function() {
   acgraph.getRenderer().setEllipseTransformation(this);
@@ -11172,10 +11172,10 @@ acgraph.vector.Ellipse.prototype.deserialize = function(data) {
   if ("ry" in data) {
     this.radiusY(data["ry"]);
   }
-  goog.base(this, "deserialize", data);
+  acgraph.vector.Shape.prototype.deserialize.call(this, data);
 };
 acgraph.vector.Ellipse.prototype.serialize = function() {
-  var data = goog.base(this, "serialize");
+  var data = acgraph.vector.Shape.prototype.serialize.call(this);
   data["type"] = "ellipse";
   data["cx"] = this.centerX();
   data["cy"] = this.centerY();
@@ -11186,7 +11186,7 @@ acgraph.vector.Ellipse.prototype.serialize = function() {
 acgraph.vector.Ellipse.prototype.disposeInternal = function() {
   this.dropBoundsCache();
   this.center_ = null;
-  goog.base(this, "disposeInternal");
+  acgraph.vector.Shape.prototype.disposeInternal.call(this);
 };
 (function() {
   goog.exportSymbol("acgraph.vector.Ellipse", acgraph.vector.Ellipse);
@@ -11253,7 +11253,7 @@ acgraph.vector.PathBase = function() {
   this.segments_ = [];
   this.count_ = [];
   this.arguments_ = [];
-  goog.base(this);
+  acgraph.vector.Shape.call(this);
 };
 goog.inherits(acgraph.vector.PathBase, acgraph.vector.Shape);
 acgraph.vector.PathBase.Segment = {MOVETO:1, LINETO:2, CURVETO:3, ARCTO:4, CLOSE:5};
@@ -11619,11 +11619,11 @@ acgraph.vector.PathBase.prototype.getClosePoint = function() {
   return null;
 };
 acgraph.vector.PathBase.prototype.transformationChanged = function() {
-  goog.base(this, "transformationChanged");
+  acgraph.vector.Shape.prototype.transformationChanged.call(this);
   this.transformedPathCache_ = null;
 };
 acgraph.vector.PathBase.prototype.parentTransformationChanged = function() {
-  goog.base(this, "parentTransformationChanged");
+  acgraph.vector.Shape.prototype.parentTransformationChanged.call(this);
   this.transformedPathCache_ = null;
 };
 acgraph.vector.PathBase.prototype.renderTransformation = function() {
@@ -11635,7 +11635,7 @@ acgraph.vector.PathBase.prototype.createDomInternal = function() {
   return acgraph.getRenderer().createPathElement();
 };
 acgraph.vector.PathBase.prototype.renderInternal = function() {
-  goog.base(this, "renderInternal");
+  acgraph.vector.Shape.prototype.renderInternal.call(this);
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
     this.renderPath();
   }
@@ -11712,10 +11712,10 @@ acgraph.vector.PathBase.prototype.deserialize = function(data) {
   this.count_ = data["count"];
   this.arguments_ = data["arguments"];
   this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
-  goog.base(this, "deserialize", data);
+  acgraph.vector.Shape.prototype.deserialize.call(this, data);
 };
 acgraph.vector.PathBase.prototype.serialize = function() {
-  var data = goog.base(this, "serialize");
+  var data = acgraph.vector.Shape.prototype.serialize.call(this);
   data["type"] = "path";
   data = this.serializePathArgs(data);
   return data;
@@ -11728,7 +11728,7 @@ acgraph.vector.PathBase.prototype.disposeInternal = function() {
   delete this.segments_;
   delete this.count_;
   delete this.arguments_;
-  goog.base(this, "disposeInternal");
+  acgraph.vector.Shape.prototype.disposeInternal.call(this);
 };
 acgraph.vector.PathBase.prototype.clearInternal_ = function() {
   this.segments_.length = 0;
@@ -11744,7 +11744,7 @@ acgraph.vector.PathBase.prototype.clearInternal_ = function() {
 goog.provide("acgraph.vector.Path");
 goog.require("acgraph.vector.PathBase");
 acgraph.vector.Path = function() {
-  goog.base(this);
+  acgraph.vector.PathBase.call(this);
 };
 goog.inherits(acgraph.vector.Path, acgraph.vector.PathBase);
 acgraph.vector.Path.prototype.clear = function() {
@@ -11804,7 +11804,7 @@ acgraph.vector.Rect = function(opt_x, opt_y, opt_width, opt_height) {
   this.rect_ = new goog.math.Rect(opt_x || 0, opt_y || 0, opt_width || 0, opt_height || 0);
   this.cornerTypes_ = [];
   this.cornerSizes_ = [0, 0, 0, 0];
-  goog.base(this);
+  acgraph.vector.PathBase.call(this);
   this.drawRect_();
 };
 goog.inherits(acgraph.vector.Rect, acgraph.vector.PathBase);
@@ -11966,7 +11966,7 @@ acgraph.vector.Rect.prototype.cut = function(radiusAllOrLeftTop, opt_radiusRight
   return this;
 };
 acgraph.vector.Rect.prototype.deserialize = function(data) {
-  goog.base(this, "deserialize", data);
+  acgraph.vector.PathBase.prototype.deserialize.call(this, data);
   this.setX(data["x"]).setY(data["y"]).setWidth(data["width"]).setHeight(data["height"]);
   if (data["cornerTypes"]) {
     this.cornerTypes_ = goog.string.splitLimit(data["cornerTypes"], " ", 4);
@@ -11979,7 +11979,7 @@ acgraph.vector.Rect.prototype.deserialize = function(data) {
   }
 };
 acgraph.vector.Rect.prototype.serialize = function() {
-  var data = goog.base(this, "serialize");
+  var data = acgraph.vector.PathBase.prototype.serialize.call(this);
   data["type"] = "rect";
   data["x"] = this.rect_.left;
   data["y"] = this.rect_.top;
@@ -11994,7 +11994,7 @@ acgraph.vector.Rect.prototype.disposeInternal = function() {
   this.cornerTypes_ = null;
   this.rect_ = null;
   this.dropBoundsCache();
-  goog.base(this, "disposeInternal");
+  acgraph.vector.PathBase.prototype.disposeInternal.call(this);
 };
 (function() {
   var proto = acgraph.vector.Rect.prototype;
@@ -12208,7 +12208,7 @@ goog.require("goog.math.Rect");
 acgraph.vector.Layer = function() {
   this.children = [];
   this.domChildren = [];
-  goog.base(this);
+  acgraph.vector.Element.call(this);
 };
 goog.inherits(acgraph.vector.Layer, acgraph.vector.Element);
 acgraph.vector.Layer.prototype.getElementTypePrefix = function() {
@@ -12457,7 +12457,7 @@ acgraph.vector.Layer.prototype.renderInternal = function() {
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.CHILDREN)) {
     this.renderChildren();
   }
-  goog.base(this, "renderInternal");
+  acgraph.vector.Element.prototype.renderInternal.call(this);
 };
 acgraph.vector.Layer.prototype.cursorChanged = function() {
   acgraph.vector.Layer.base(this, "cursorChanged");
@@ -12622,11 +12622,11 @@ acgraph.vector.Layer.prototype.beforeTransformationChanged = function() {
   }
 };
 acgraph.vector.Layer.prototype.transformationChanged = function() {
-  goog.base(this, "transformationChanged");
+  acgraph.vector.Element.prototype.transformationChanged.call(this);
   this.propagateTransform();
 };
 acgraph.vector.Layer.prototype.parentTransformationChanged = function() {
-  goog.base(this, "parentTransformationChanged");
+  acgraph.vector.Element.prototype.parentTransformationChanged.call(this);
   this.propagateTransform();
 };
 acgraph.vector.Layer.prototype.propagateTransform = function() {
@@ -12677,10 +12677,10 @@ acgraph.vector.Layer.prototype.deserialize = function(data) {
       primitive.deserialize(item);
     }
   }, this);
-  goog.base(this, "deserialize", data);
+  acgraph.vector.Element.prototype.deserialize.call(this, data);
 };
 acgraph.vector.Layer.prototype.serialize = function() {
-  var data = goog.base(this, "serialize");
+  var data = acgraph.vector.Element.prototype.serialize.call(this);
   var childrenData = [];
   this.forEachChild(function(child) {
     childrenData.push(child.serialize());
@@ -12691,13 +12691,15 @@ acgraph.vector.Layer.prototype.serialize = function() {
 };
 acgraph.vector.Layer.prototype.disposeInternal = function() {
   if (this.children) {
-    goog.disposeAll.apply(null, this.children);
+    for (var disposeIndex = 0, disposeCount = this.children.length; disposeIndex < disposeCount; disposeIndex++) {
+      goog.dispose(this.children[disposeIndex]);
+    }
   }
   if (this.domChildren) {
     delete this.domChildren;
   }
   this.dropBoundsCache();
-  goog.base(this, "disposeInternal");
+  acgraph.vector.Element.prototype.disposeInternal.call(this);
 };
 acgraph.vector.Layer.prototype.finalizeDisposing = function() {
   if (this.children) {
@@ -12707,7 +12709,7 @@ acgraph.vector.Layer.prototype.finalizeDisposing = function() {
   }
   delete this.domChildren;
   delete this.children;
-  goog.base(this, "finalizeDisposing");
+  acgraph.vector.Element.prototype.finalizeDisposing.call(this);
 };
 (function() {
   var proto = acgraph.vector.Layer.prototype;
@@ -12760,7 +12762,7 @@ goog.require("acgraph.vector.Layer");
 acgraph.vector.PatternFill = function(bounds) {
   this.bounds = bounds;
   this.rendered = false;
-  goog.base(this);
+  acgraph.vector.Layer.call(this);
 };
 goog.inherits(acgraph.vector.PatternFill, acgraph.vector.Layer);
 acgraph.vector.PatternFill.prototype.SUPPORTED_DIRTY_STATES = acgraph.vector.Element.DirtyState.DOM_MISSING | acgraph.vector.Element.DirtyState.TRANSFORMATION | acgraph.vector.Element.DirtyState.ID | acgraph.vector.Element.DirtyState.CHILDREN | acgraph.vector.Element.DirtyState.CHILDREN_SET | acgraph.vector.Element.DirtyState.DATA;
@@ -12776,7 +12778,7 @@ acgraph.vector.PatternFill.prototype.parent = function(opt_value) {
     }
     return this;
   }
-  return goog.base(this, "parent");
+  return acgraph.vector.Layer.prototype.parent.call(this);
 };
 acgraph.vector.PatternFill.prototype.getBoundsWithoutTransform = function() {
   return this.bounds.clone();
@@ -12793,7 +12795,7 @@ acgraph.vector.PatternFill.prototype.renderInternal = function() {
     goog.dom.appendChild(this.getStage().getDefs().domElement(), this.domElement());
   }
   this.rendered = true;
-  goog.base(this, "renderInternal");
+  acgraph.vector.Layer.prototype.renderInternal.call(this);
 };
 acgraph.vector.PatternFill.prototype.renderTransformation = function() {
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION)) {
@@ -12802,10 +12804,10 @@ acgraph.vector.PatternFill.prototype.renderTransformation = function() {
   this.clearDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
 };
 acgraph.vector.PatternFill.prototype.deserialize = function(data) {
-  goog.base(this, "deserialize", data);
+  acgraph.vector.Layer.prototype.deserialize.call(this, data);
 };
 acgraph.vector.PatternFill.prototype.serialize = function() {
-  var data = goog.base(this, "serialize");
+  var data = acgraph.vector.Layer.prototype.serialize.call(this);
   var bounds = this.getBoundsWithoutTransform();
   data["type"] = "pattern";
   data["bounds"] = bounds;
@@ -12814,7 +12816,7 @@ acgraph.vector.PatternFill.prototype.serialize = function() {
 acgraph.vector.PatternFill.prototype.disposeInternal = function() {
   goog.dom.removeNode(this.domElement());
   this.bounds_ = null;
-  goog.base(this, "disposeInternal");
+  acgraph.vector.Layer.prototype.disposeInternal.call(this);
 };
 (function() {
   var proto = acgraph.vector.PatternFill.prototype;
@@ -13018,7 +13020,7 @@ acgraph.vector.HatchFill.prototype.disposeInternal = function() {
   if (this.getStage()) {
     this.getStage().getDefs().removeHatchFill(this);
   }
-  goog.base(this, "disposeInternal");
+  acgraph.vector.PatternFill.prototype.disposeInternal.call(this);
 };
 (function() {
   var proto = acgraph.vector.HatchFill.prototype;
@@ -13034,7 +13036,7 @@ acgraph.vector.Image = function(opt_src, opt_x, opt_y, opt_width, opt_height, op
   this.fittingMode_ = opt_fittingMode || acgraph.vector.Image.Fitting.MEET;
   this.bounds_ = new goog.math.Rect(opt_x || 0, opt_y || 0, opt_width || 0, opt_height || 0);
   this.opacity_ = 1;
-  goog.base(this);
+  acgraph.vector.Element.call(this);
 };
 goog.inherits(acgraph.vector.Image, acgraph.vector.Element);
 acgraph.vector.Image.Fitting = {MEET:"meet", SLICE:"slice"};
@@ -13140,7 +13142,7 @@ acgraph.vector.Image.prototype.renderInternal = function() {
     }
     this.renderData();
   }
-  goog.base(this, "renderInternal");
+  acgraph.vector.Element.prototype.renderInternal.call(this);
 };
 acgraph.vector.Image.prototype.renderTransformation = function() {
   acgraph.getRenderer().setImageTransformation(this);
@@ -13154,10 +13156,10 @@ acgraph.vector.Image.prototype.renderData = function() {
 acgraph.vector.Image.prototype.deserialize = function(data) {
   var bounds = data["bounds"];
   this.x(bounds.left).y(bounds.top).width(bounds.width).height(bounds.height).src(data["src"]).align(data["align"]).fittingMode(data["fittingMode"]);
-  goog.base(this, "deserialize", data);
+  acgraph.vector.Element.prototype.deserialize.call(this, data);
 };
 acgraph.vector.Image.prototype.serialize = function() {
-  var data = goog.base(this, "serialize");
+  var data = acgraph.vector.Element.prototype.serialize.call(this);
   data["type"] = "image";
   data["bounds"] = this.getBoundsWithoutTransform();
   data["src"] = this.src();
@@ -13168,7 +13170,7 @@ acgraph.vector.Image.prototype.serialize = function() {
 acgraph.vector.Image.prototype.disposeInternal = function() {
   this.bounds_ = null;
   this.dropBoundsCache();
-  goog.base(this, "disposeInternal");
+  acgraph.vector.Element.prototype.disposeInternal.call(this);
 };
 (function() {
   goog.exportSymbol("acgraph.vector.Image", acgraph.vector.Image);
@@ -13515,7 +13517,7 @@ goog.require("acgraph.vector.Element");
 goog.require("goog.math.Rect");
 acgraph.vector.SimpleText = function() {
   this.bounds = new goog.math.Rect(0, 0, 0, 0);
-  goog.base(this);
+  acgraph.vector.Element.call(this);
 };
 goog.inherits(acgraph.vector.SimpleText, acgraph.vector.Element);
 acgraph.vector.SimpleText.prototype.text_ = null;
@@ -13551,7 +13553,7 @@ acgraph.vector.SimpleText.prototype.renderInternal = function() {
     acgraph.getRenderer().setTextData(this);
     this.clearDirtyState(acgraph.vector.Element.DirtyState.DATA);
   }
-  goog.base(this, "renderInternal");
+  acgraph.vector.Element.prototype.renderInternal.call(this);
 };
 acgraph.vector.SimpleText.prototype.renderTransformation = function() {
   this.clearDirtyState(acgraph.vector.Element.DirtyState.TRANSFORMATION);
@@ -14046,7 +14048,7 @@ goog.provide("acgraph.vector.TextSegment");
 goog.require("acgraph.utils.IdGenerator");
 goog.require("goog.Disposable");
 acgraph.vector.TextSegment = function(text, style) {
-  goog.base(this);
+  goog.Disposable.call(this);
   this.style_ = style || {};
   this.text = text;
   this.firstInLine = false;
@@ -14101,7 +14103,7 @@ acgraph.vector.TextSegment.prototype.renderData = function() {
 acgraph.vector.TextSegment.prototype.disposeInternal = function() {
   goog.dom.removeNode(this.domElement_);
   this.domElement_ = null;
-  goog.base(this, "disposeInternal");
+  goog.Disposable.prototype.disposeInternal.call(this);
 };
 goog.provide("acgraph.vector.Text");
 goog.provide("acgraph.vector.Text.TextOverflow");
@@ -14140,7 +14142,7 @@ acgraph.vector.Text = function(opt_x, opt_y) {
   this.defaultStyle_ = {"fontSize":acgraph.module["fontSize"], "color":acgraph.module["fontColor"], "fontFamily":acgraph.module["fontFamily"], "direction":acgraph.module["textDirection"], "textOverflow":acgraph.vector.Text.TextOverflow.CLIP, "wordBreak":acgraph.vector.Text.WordBreak.NORMAL, "wordWrap":acgraph.vector.Text.WordWrap.NORMAL, "selectable":true, "hAlign":acgraph.vector.Text.HAlign.START};
   this.style_ = this.defaultStyle_;
   this.textPath = null;
-  goog.base(this);
+  acgraph.vector.Shape.call(this);
   this.setNullFillAndStroke();
 };
 goog.inherits(acgraph.vector.Text, acgraph.vector.Shape);
@@ -14570,7 +14572,7 @@ acgraph.vector.Text.prototype.getOriginalBounds = function() {
   return new goog.math.Rect(0, 0, 0, 0);
 };
 acgraph.vector.Text.prototype.dropBoundsCache = function() {
-  goog.base(this, "dropBoundsCache");
+  acgraph.vector.Shape.prototype.dropBoundsCache.call(this);
   this.textByPathBoundsCache = null;
 };
 acgraph.vector.Text.prototype.isHtml = function() {
@@ -15077,7 +15079,7 @@ acgraph.vector.Text.prototype.renderInternal = function() {
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.POSITION)) {
     this.renderPosition();
   }
-  goog.base(this, "renderInternal");
+  acgraph.vector.Shape.prototype.renderInternal.call(this);
 };
 acgraph.vector.Text.prototype.renderTextPath = function() {
   if (this.path_ && !this.textPath) {
@@ -15122,10 +15124,10 @@ acgraph.vector.Text.prototype.renderTransformation = function() {
 acgraph.vector.Text.prototype.deserialize = function(data) {
   this.x(data["x"]).y(data["y"]).style(data["style"]);
   data["html"] ? this.htmlText(data["text"]) : this.text(data["text"]);
-  goog.base(this, "deserialize", data);
+  acgraph.vector.Shape.prototype.deserialize.call(this, data);
 };
 acgraph.vector.Text.prototype.serialize = function() {
-  var data = goog.base(this, "serialize");
+  var data = acgraph.vector.Shape.prototype.serialize.call(this);
   data["type"] = "text";
   data["x"] = this.x();
   data["y"] = this.y();
@@ -15140,7 +15142,7 @@ acgraph.vector.Text.prototype.disposeInternal = function() {
   this.currentLine_.length = 0;
   delete this.textLines_;
   delete this.bounds;
-  goog.base(this, "disposeInternal");
+  acgraph.vector.Shape.prototype.disposeInternal.call(this);
 };
 (function() {
   var proto = acgraph.vector.Text.prototype;
@@ -15178,7 +15180,7 @@ goog.provide("acgraph.vector.UnmanagedLayer");
 goog.require("acgraph.utils.IdGenerator");
 goog.require("acgraph.vector.Element");
 acgraph.vector.UnmanagedLayer = function(opt_content) {
-  goog.base(this);
+  acgraph.vector.Element.call(this);
   this.content_ = goog.isDef(opt_content) ? opt_content : "";
 };
 goog.inherits(acgraph.vector.UnmanagedLayer, acgraph.vector.Element);
@@ -15200,7 +15202,7 @@ acgraph.vector.UnmanagedLayer.prototype.createDomInternal = function() {
   return acgraph.getRenderer().createLayerElement();
 };
 acgraph.vector.UnmanagedLayer.prototype.renderInternal = function() {
-  goog.base(this, "renderInternal");
+  acgraph.vector.Element.prototype.renderInternal.call(this);
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
     var domelement = this.domElement();
     goog.dom.removeChildren(domelement);
@@ -15219,10 +15221,10 @@ acgraph.vector.UnmanagedLayer.prototype.deserialize = function(data) {
   if ("content" in data) {
     this.content(data["content"]);
   }
-  goog.base(this, "deserialize", data);
+  acgraph.vector.Element.prototype.deserialize.call(this, data);
 };
 acgraph.vector.UnmanagedLayer.prototype.serialize = function() {
-  var data = goog.base(this, "serialize");
+  var data = acgraph.vector.Element.prototype.serialize.call(this);
   data["content"] = goog.isString(this.content_) ? this.content_ : this.content_.outerHTML;
   return data;
 };
@@ -15612,8 +15614,22 @@ acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
     this.measurementGroupNode_ = this.createLayerElement();
     goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
     goog.dom.appendChild(acgraph.window["document"].body, this.measurement_);
+  } else {
+    if (!this.isMeasurementAttached_()) {
+      goog.dom.appendChild(acgraph.window["document"].body, this.measurement_);
+      this.textBoundsCache = {};
+    }
   }
   return this.measurement_;
+};
+acgraph.vector.svg.Renderer.prototype.isMeasurementAttached_ = function() {
+  var doc = acgraph.window["document"];
+  var body = doc ? doc.body : null;
+  var node = this.measurement_;
+  if (!node || !body) {
+    return false;
+  }
+  return body.contains ? body.contains(node) : node.parentNode == body;
 };
 acgraph.vector.svg.Renderer.prototype.disposeMeasurement = function() {
   goog.dom.removeNode(this.measurementText_);
@@ -15628,6 +15644,7 @@ acgraph.vector.svg.Renderer.prototype.disposeMeasurement = function() {
   this.measurementLayerForBBox_ = null;
   this.measurementGroupNode_ = null;
   this.measurement_ = null;
+  this.textBoundsCache = {};
 };
 acgraph.vector.svg.Renderer.prototype.measure = function(text, style) {
   this.createMeasurement();
@@ -15733,7 +15750,11 @@ acgraph.vector.svg.Renderer.prototype.getBBox = function(element, text, style) {
     }
     var x = element.getAttribute("x") || 0;
     var y = element.getAttribute("y") || 0;
-    return styleCache[text] = new goog.math.Rect(bbox.x - x, bbox.y - y, bbox.width + additionWidth, bbox.height);
+    var rect = new goog.math.Rect(bbox.x - x, bbox.y - y, bbox.width + additionWidth, bbox.height);
+    if (!bbox.width && !bbox.height) {
+      return rect;
+    }
+    return styleCache[text] = rect;
   }
 };
 acgraph.vector.svg.Renderer.prototype.measureElement = function(element) {
@@ -16239,6 +16260,12 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
         }
       }
     }
+  } else {
+    if (fill === "") {
+      var emptyFillDom = element.domElement();
+      this.removeAttr(emptyFillDom, "fill");
+      this.removeAttr(emptyFillDom, "fill-opacity");
+    }
   }
 };
 acgraph.vector.svg.Renderer.prototype.applyStroke = function(element) {
@@ -16287,6 +16314,16 @@ acgraph.vector.svg.Renderer.prototype.applyStroke = function(element) {
       this.setAttr(domElement, "stroke-dasharray", stroke["dash"]);
     } else {
       this.removeAttr(domElement, "stroke-dasharray");
+    }
+  } else {
+    if (stroke === "") {
+      var emptyStrokeDom = element.domElement();
+      this.removeAttr(emptyStrokeDom, "stroke");
+      this.removeAttr(emptyStrokeDom, "stroke-width");
+      this.removeAttr(emptyStrokeDom, "stroke-opacity");
+      this.removeAttr(emptyStrokeDom, "stroke-linejoin");
+      this.removeAttr(emptyStrokeDom, "stroke-linecap");
+      this.removeAttr(emptyStrokeDom, "stroke-dasharray");
     }
   }
 };
@@ -16401,6 +16438,9 @@ acgraph.vector.svg.Renderer.prototype.createClip_ = function(element, clipElemen
   clipElement.stage(element.getStage());
   clipElement.id(id);
   var clipShape = clipElement.shape();
+  if (!clipShape.domElement()) {
+    clipShape.createDom(true);
+  }
   clipShape.render();
   clipShapeElement = clipShape.domElement();
   if (clipShapeElement) {
@@ -16486,7 +16526,7 @@ acgraph.vector.svg.Renderer.prototype.setPrintAttributes = function(element, sta
 goog.provide("acgraph.events.BrowserEvent");
 goog.require("goog.events.Event");
 acgraph.events.BrowserEvent = function(e, stage) {
-  goog.base(this, e.type);
+  goog.events.Event.call(this, e.type);
   this["target"] = acgraph.getWrapperForDOM(e.target, stage) || e.target;
   this["relatedTarget"] = acgraph.getWrapperForDOM(e.relatedTarget || null, stage) || e.relatedTarget;
   this["offsetX"] = e.offsetX;
@@ -16509,11 +16549,11 @@ acgraph.events.BrowserEvent = function(e, stage) {
 goog.inherits(acgraph.events.BrowserEvent, goog.events.Event);
 acgraph.events.BrowserEvent.MouseButton = {LEFT:"left", MIDDLE:"middle", RIGHT:"right", NONE:"none"};
 acgraph.events.BrowserEvent.prototype.preventDefault = function() {
-  goog.base(this, "preventDefault");
+  goog.events.Event.prototype.preventDefault.call(this);
   this.event_.preventDefault();
 };
 acgraph.events.BrowserEvent.prototype.stopPropagation = function() {
-  goog.base(this, "stopPropagation");
+  goog.events.Event.prototype.stopPropagation.call(this);
   this.event_.stopPropagation();
 };
 acgraph.events.BrowserEvent.prototype.stopWrapperPropagation = function() {
@@ -17705,6 +17745,36 @@ acgraph.utils.exporting.fullPagePrint = function(stage, opt_paperSizeOrWidth, op
   stage.resize(sourceStageWidth, sourceStageHeight);
   acgraph.utils.exporting.openPrint_();
 };
+acgraph.utils.exporting.embedFontFace_ = function(rule, doc) {
+  var cssText = goog.cssom.getCssTextFromCssRule(rule);
+  if (acgraph.embedCss(cssText, doc, true)) {
+    return;
+  }
+  var win = doc["defaultView"];
+  var FontFaceCtor = win && win["FontFace"];
+  var fonts = doc["fonts"];
+  var declaration = rule.style;
+  if (FontFaceCtor && fonts && fonts["add"] && declaration) {
+    try {
+      var family = declaration.getPropertyValue("font-family");
+      var source = declaration.getPropertyValue("src");
+      if (family && source) {
+        var descriptors = {};
+        var descriptorNames = [["font-style", "style"], ["font-weight", "weight"], ["font-stretch", "stretch"], ["unicode-range", "unicodeRange"], ["font-variant", "variant"], ["font-feature-settings", "featureSettings"], ["font-display", "display"]];
+        for (var i = 0; i < descriptorNames.length; i++) {
+          var value = declaration.getPropertyValue(descriptorNames[i][0]);
+          if (value) {
+            descriptors[descriptorNames[i][1]] = value;
+          }
+        }
+        fonts["add"](new FontFaceCtor(family, source, descriptors));
+        return;
+      }
+    } catch (e) {
+    }
+  }
+  acgraph.embedCss(cssText, doc);
+};
 acgraph.utils.exporting.createPrint_ = function(usePrintingFontFaces) {
   if (!acgraph.utils.exporting.printIFrame_) {
     var iFrame = document.createElement("iframe");
@@ -17717,7 +17787,7 @@ acgraph.utils.exporting.createPrint_ = function(usePrintingFontFaces) {
       for (var i = 0, len = rules.length; i < len; i++) {
         rule = rules[i];
         if (rule.type == goog.cssom.CssRuleType.FONT_FACE) {
-          acgraph.embedCss(goog.cssom.getCssTextFromCssRule(rule), iFrame["contentWindow"].document);
+          acgraph.utils.exporting.embedFontFace_(rule, iFrame["contentWindow"].document);
         }
       }
     }
@@ -17772,7 +17842,7 @@ goog.provide("acgraph.vector.LinearGradient");
 goog.require("acgraph.utils.IdGenerator");
 goog.require("goog.Disposable");
 acgraph.vector.LinearGradient = function(keys, opt_opacity, opt_angle, opt_mode, opt_transform) {
-  goog.base(this);
+  goog.Disposable.call(this);
   this.keys = keys;
   this.opacity = goog.isDefAndNotNull(opt_opacity) ? goog.math.clamp(opt_opacity, 0, 1) : 1;
   this.angle = goog.isDefAndNotNull(opt_angle) ? goog.math.standardAngle(opt_angle) : 0;
@@ -17805,7 +17875,7 @@ acgraph.vector.LinearGradient.prototype.getElementTypePrefix = function() {
   return acgraph.utils.IdGenerator.ElementTypePrefix.LINEAR_GRADIENT;
 };
 acgraph.vector.LinearGradient.prototype.dispose = function() {
-  goog.base(this, "dispose");
+  goog.Disposable.prototype.dispose.call(this);
 };
 acgraph.vector.LinearGradient.prototype.disposeInternal = function() {
   if (this.defs) {
@@ -17816,7 +17886,7 @@ acgraph.vector.LinearGradient.prototype.disposeInternal = function() {
   this.transform = null;
   delete this.keys;
   this.mode = false;
-  goog.base(this, "disposeInternal");
+  goog.Disposable.prototype.disposeInternal.call(this);
 };
 (function() {
   var proto = acgraph.vector.LinearGradient.prototype;
@@ -17826,7 +17896,7 @@ goog.provide("acgraph.vector.RadialGradient");
 goog.require("acgraph.utils.IdGenerator");
 goog.require("goog.Disposable");
 acgraph.vector.RadialGradient = function(keys, cx, cy, fx, fy, opt_opacity, opt_mode, opt_transform) {
-  goog.base(this);
+  goog.Disposable.call(this);
   this.cx = cx;
   this.cy = cy;
   this.fx = fx;
@@ -17857,7 +17927,7 @@ acgraph.vector.RadialGradient.prototype.getElementTypePrefix = function() {
   return acgraph.utils.IdGenerator.ElementTypePrefix.RADIAL_GRADIENT;
 };
 acgraph.vector.RadialGradient.prototype.dispose = function() {
-  goog.base(this, "dispose");
+  goog.Disposable.prototype.dispose.call(this);
 };
 acgraph.vector.RadialGradient.prototype.disposeInternal = function() {
   if (this.defs) {
@@ -17867,7 +17937,7 @@ acgraph.vector.RadialGradient.prototype.disposeInternal = function() {
   this.bounds = null;
   this.transform = null;
   delete this.keys;
-  goog.base(this, "disposeInternal");
+  goog.Disposable.prototype.disposeInternal.call(this);
 };
 (function() {
   var proto = acgraph.vector.RadialGradient.prototype;
@@ -17882,7 +17952,7 @@ goog.require("acgraph.vector.RadialGradient");
 goog.require("goog.Disposable");
 goog.require("goog.math.Rect");
 acgraph.vector.Defs = function(stage) {
-  goog.base(this);
+  goog.Disposable.call(this);
   this.linearGradients_ = {};
   this.radialGradients_ = {};
   this.hatchFills_ = {};
@@ -18253,7 +18323,7 @@ goog.require("goog.math.Rect");
 goog.require("goog.math.Size");
 goog.require("goog.style");
 acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
-  goog.base(this);
+  goog.events.EventTarget.call(this);
   this.renderAsync_ = goog.bind(this.renderAsync_, this);
   this.checkSize = goog.bind(this.checkSize, this);
   var doc = acgraph.window["document"];
@@ -18701,6 +18771,7 @@ acgraph.vector.Stage.prototype.updateContainer_ = function() {
   }
 };
 acgraph.vector.Stage.prototype.renderAsync_ = function() {
+  this.currentDomChangesCount = 0;
   this.renderInternal();
   if (this.isDirty()) {
     setTimeout(this.renderAsync_, 0);
@@ -18888,23 +18959,23 @@ acgraph.vector.Stage.prototype.dispatchEvent = function(e) {
       e.type = String(e.type).toLowerCase();
     }
   }
-  return goog.base(this, "dispatchEvent", e);
+  return goog.events.EventTarget.prototype.dispatchEvent.call(this, e);
 };
 acgraph.vector.Stage.prototype.listen = function(type, listener, opt_useCapture, opt_listenerScope) {
-  return goog.base(this, "listen", String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
+  return goog.events.EventTarget.prototype.listen.call(this, String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
 };
 acgraph.vector.Stage.prototype.listenOnce = function(type, listener, opt_useCapture, opt_listenerScope) {
-  return goog.base(this, "listenOnce", String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
+  return goog.events.EventTarget.prototype.listenOnce.call(this, String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
 };
 acgraph.vector.Stage.prototype.unlisten = function(type, listener, opt_useCapture, opt_listenerScope) {
-  return goog.base(this, "unlisten", String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
+  return goog.events.EventTarget.prototype.unlisten.call(this, String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
 };
 acgraph.vector.Stage.prototype.unlistenByKey;
 acgraph.vector.Stage.prototype.removeAllListeners = function(opt_type) {
   if (goog.isDef(opt_type)) {
     opt_type = String(opt_type).toLowerCase();
   }
-  return goog.base(this, "removeAllListeners", opt_type);
+  return goog.events.EventTarget.prototype.removeAllListeners.call(this, opt_type);
 };
 acgraph.vector.Stage.prototype.handleMouseEvent_ = function(e) {
   var event = new acgraph.events.BrowserEvent(e, this);
@@ -19078,14 +19149,14 @@ acgraph.vector.Stage.prototype.disposeInternal = function() {
 goog.provide("acgraph.vector.svg.Defs");
 goog.require("acgraph.vector.Defs");
 acgraph.vector.svg.Defs = function(stage) {
-  goog.base(this, stage);
+  acgraph.vector.Defs.call(this, stage);
   this.clips_ = {};
 };
 goog.inherits(acgraph.vector.svg.Defs, acgraph.vector.Defs);
 acgraph.vector.svg.Defs.CLIP_FRACTION_DIGITS = 4;
 acgraph.vector.svg.Defs.prototype.clear = function() {
   goog.object.clear(this.clips_);
-  goog.base(this, "clear");
+  acgraph.vector.Defs.prototype.clear.call(this);
 };
 acgraph.vector.svg.Defs.prototype.getClipPathElement = function(clipShape) {
   var id = acgraph.utils.IdGenerator.getInstance().identify(clipShape);
@@ -19096,7 +19167,7 @@ acgraph.vector.svg.Defs.prototype.getClipPathElement = function(clipShape) {
   return res;
 };
 acgraph.vector.svg.Defs.prototype.disposeInternal = function() {
-  goog.base(this, "disposeInternal");
+  acgraph.vector.Defs.prototype.disposeInternal.call(this);
   for (var i in this.clips_) {
     delete this.clips_[i];
   }
@@ -19106,7 +19177,7 @@ goog.provide("acgraph.vector.svg.Stage");
 goog.require("acgraph.vector.Stage");
 goog.require("acgraph.vector.svg.Defs");
 acgraph.vector.svg.Stage = function(opt_container, opt_width, opt_height) {
-  goog.base(this, opt_container, opt_width, opt_height);
+  acgraph.vector.Stage.call(this, opt_container, opt_width, opt_height);
 };
 goog.inherits(acgraph.vector.svg.Stage, acgraph.vector.Stage);
 acgraph.vector.svg.Stage.prototype.createDefs = function() {
@@ -19402,17 +19473,42 @@ acgraph.create = function(opt_container, opt_width, opt_height) {
 acgraph.getStage = function(id) {
   return acgraph.module.stages[id];
 };
-acgraph.embedCss = function(css, opt_doc) {
+acgraph.embedCss = function(css, opt_doc, opt_styleOnly) {
   var styleElement = null;
   if (css) {
-    styleElement = goog.dom.createDom(goog.dom.TagName.STYLE);
-    styleElement.type = "text/css";
-    if (styleElement.styleSheet) {
-      styleElement["styleSheet"]["cssText"] = css;
-    } else {
-      goog.dom.appendChild(styleElement, goog.dom.createTextNode(css));
+    var targetDoc = opt_doc || document;
+    var insertElement = function() {
+      var element = goog.dom.createDom(goog.dom.TagName.STYLE);
+      element.type = "text/css";
+      goog.dom.appendChild(element, goog.dom.createTextNode(css));
+      goog.dom.insertChildAt(goog.dom.getElementsByTagNameAndClass("head", undefined, opt_doc)[0], element, 0);
+      return element;
+    };
+    if (!targetDoc["anychartStyleElementRefused"]) {
+      styleElement = insertElement();
+      if (styleElement.sheet) {
+        return styleElement;
+      }
+      goog.dom.removeNode(styleElement);
+      styleElement = null;
+      targetDoc["anychartStyleElementRefused"] = true;
     }
-    goog.dom.insertChildAt(goog.dom.getElementsByTagNameAndClass("head", undefined, opt_doc)[0], styleElement, 0);
+    if (!opt_styleOnly) {
+      var targetWin = targetDoc["defaultView"];
+      var SheetCtor = targetWin && targetWin["CSSStyleSheet"];
+      if (SheetCtor && SheetCtor.prototype && SheetCtor.prototype["replaceSync"] && "adoptedStyleSheets" in targetDoc) {
+        try {
+          var constructed = new SheetCtor;
+          constructed["replaceSync"](css);
+          var adopted = Array.prototype.slice.call(targetDoc["adoptedStyleSheets"]);
+          adopted.push(constructed);
+          targetDoc["adoptedStyleSheets"] = adopted;
+          return null;
+        } catch (e) {
+        }
+      }
+      styleElement = insertElement();
+    }
   }
   return styleElement;
 };
@@ -23680,7 +23776,7 @@ acgraph.vector.Stage.prototype.serializeToString_ = function(node) {
 goog.provide("acgraph.vector.vml.Clip");
 goog.require("acgraph.vector.Clip");
 acgraph.vector.vml.Clip = function(stage, opt_leftOrRect, opt_top, opt_width, opt_height) {
-  goog.base(this, stage, opt_leftOrRect, opt_top, opt_width, opt_height);
+  acgraph.vector.Clip.call(this, stage, opt_leftOrRect, opt_top, opt_width, opt_height);
 };
 goog.inherits(acgraph.vector.vml.Clip, acgraph.vector.Clip);
 acgraph.vector.vml.Clip.prototype.render = function() {
@@ -23700,7 +23796,7 @@ goog.exportSymbol("acgraph.vml.Clip", acgraph.vector.vml.Clip);
 goog.provide("acgraph.vector.vml.RadialGradient");
 goog.require("acgraph.vector.RadialGradient");
 acgraph.vector.vml.RadialGradient = function(keys, cx, cy, size_x, size_y, opt_opacity, opt_mode) {
-  goog.base(this, keys, cx, cy, cx, cx, opt_opacity, opt_mode);
+  acgraph.vector.RadialGradient.call(this, keys, cx, cy, cx, cx, opt_opacity, opt_mode);
   this.size_x = size_x;
   this.size_y = size_y;
 };
@@ -24130,6 +24226,7 @@ acgraph.vector.vml.Renderer.prototype.createDiv_ = function() {
   return goog.dom.createElement("div");
 };
 acgraph.vector.vml.Renderer.prototype.createMeasurement = function() {
+  this.textBoundsCache = {};
   this.measurementVMLShape_ = this.createTextSegmentElement();
   this.setPositionAndSize_(this.measurementVMLShape_, 0, 0, 1, 1);
   this.measurementVMLShape_.style["display"] = "none";
@@ -24154,8 +24251,16 @@ acgraph.vector.vml.Renderer.prototype.createMeasurement = function() {
   this.measurementGroupNode_ = goog.dom.createDom(goog.dom.TagName.DIV);
   goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
 };
+acgraph.vector.vml.Renderer.prototype.isMeasurementAttached_ = function() {
+  var body = document.body;
+  var node = this.measurement_;
+  if (!node || !body) {
+    return false;
+  }
+  return body.contains ? body.contains(node) : node.parentNode == body;
+};
 acgraph.vector.vml.Renderer.prototype.measuringImage = function(src) {
-  if (!this.measurement_) {
+  if (!this.measurement_ || !this.isMeasurementAttached_()) {
     this.createMeasurement();
   }
   this.setAttr(this.measurementImage_, "src", src);
@@ -24165,7 +24270,7 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
   if (text == "") {
     return new goog.math.Rect(0, 0, 0, 0);
   }
-  if (!this.measurement_) {
+  if (!this.measurement_ || !this.isMeasurementAttached_()) {
     this.createMeasurement();
   }
   goog.dom.removeNode(this.measurementVMLTextPath_);
@@ -24236,7 +24341,7 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
   return boundsTargetText;
 };
 acgraph.vector.vml.Renderer.prototype.measuringSimpleText = function(text, segmentStyle, textStyle) {
-  if (!this.measurement_) {
+  if (!this.measurement_ || !this.isMeasurementAttached_()) {
     this.createMeasurement();
   }
   this.measurementSimpleText_.style.cssText = "";
@@ -24280,7 +24385,7 @@ acgraph.vector.vml.Renderer.prototype.measuringSimpleText = function(text, segme
   return boundsTargetText;
 };
 acgraph.vector.vml.Renderer.prototype.measureElement = function(element) {
-  if (!this.measurement_) {
+  if (!this.measurement_ || !this.isMeasurementAttached_()) {
     this.createMeasurement();
   }
   if (goog.isString(element)) {
@@ -25155,7 +25260,7 @@ goog.provide("acgraph.vector.vml.ShapeType");
 goog.require("acgraph.utils.IdGenerator");
 goog.require("goog.Disposable");
 acgraph.vector.vml.ShapeType = function(fill, stroke) {
-  goog.base(this);
+  goog.Disposable.call(this);
   this.fill_ = fill;
   this.stroke_ = stroke;
 };
@@ -25190,7 +25295,7 @@ goog.require("acgraph.vector.Defs");
 goog.require("acgraph.vector.vml.RadialGradient");
 goog.require("acgraph.vector.vml.ShapeType");
 acgraph.vector.vml.Defs = function(stage) {
-  goog.base(this, stage);
+  acgraph.vector.Defs.call(this, stage);
   this.shapeTypes_ = {};
   this.radialVMLGradients_ = {};
 };
@@ -25198,7 +25303,7 @@ goog.inherits(acgraph.vector.vml.Defs, acgraph.vector.Defs);
 acgraph.vector.vml.Defs.prototype.clear = function() {
   goog.object.clear(this.shapeTypes_);
   goog.object.clear(this.radialVMLGradients_);
-  goog.base(this, "clear");
+  acgraph.vector.Defs.prototype.clear.call(this);
 };
 acgraph.vector.vml.Defs.prototype.getShapeType = function(fill, stroke) {
   var shapeTypeId = this.serializeFill(fill) + this.serializeStroke(stroke);
@@ -25284,14 +25389,14 @@ acgraph.vector.vml.Defs.prototype.disposeInternal = function() {
     goog.dispose(this.shapeTypes_[i]);
   }
   this.shapeTypes_ = null;
-  goog.base(this, "disposeInternal");
+  acgraph.vector.Defs.prototype.disposeInternal.call(this);
 };
 goog.provide("acgraph.vector.vml.Stage");
 goog.require("acgraph.vector.Stage");
 goog.require("acgraph.vector.vml.Clip");
 goog.require("acgraph.vector.vml.Defs");
 acgraph.vector.vml.Stage = function(opt_container, opt_width, opt_height) {
-  goog.base(this, opt_container, opt_width, opt_height);
+  acgraph.vector.Stage.call(this, opt_container, opt_width, opt_height);
 };
 goog.inherits(acgraph.vector.vml.Stage, acgraph.vector.Stage);
 acgraph.vector.vml.Stage.prototype.createDefs = function() {
@@ -25305,7 +25410,7 @@ goog.provide("acgraph.vector.vml.Text");
 goog.require("acgraph.vector.Text");
 goog.require("goog.math.Rect");
 acgraph.vector.vml.Text = function(opt_x, opt_y) {
-  goog.base(this, opt_x, opt_y);
+  acgraph.vector.Text.call(this, opt_x, opt_y);
   this.simpleText_ = null;
   this.isComplex_ = false;
   this.transformationCache = null;
@@ -25319,7 +25424,7 @@ acgraph.vector.vml.Text.prototype.textOverflow = function(opt_value) {
   if (opt_value) {
     this.isComplex_ = true;
   }
-  return goog.base(this, "textOverflow", opt_value);
+  return acgraph.vector.Text.prototype.textOverflow.call(this, opt_value);
 };
 acgraph.vector.vml.Text.prototype.opacity = function(opt_value) {
   if (goog.isDefAndNotNull(opt_value)) {
@@ -25384,7 +25489,7 @@ acgraph.vector.vml.Text.prototype.getBoundsWithTransform = function(transform) {
   return acgraph.vector.vml.Text.base(this, "getBoundsWithTransform", transform);
 };
 acgraph.vector.vml.Text.prototype.render = function() {
-  goog.base(this, "render");
+  acgraph.vector.Text.prototype.render.call(this);
   if (this.isScaleOrShearChanged() || this.textOverflow()) {
     acgraph.getRenderer().textEarsFeint(this);
   }
@@ -25395,7 +25500,7 @@ acgraph.vector.vml.Text.prototype.renderTextPath = function() {
 };
 acgraph.vector.vml.Text.prototype.renderPosition = function() {
   if (this.isComplex_) {
-    goog.base(this, "renderPosition");
+    acgraph.vector.Text.prototype.renderPosition.call(this);
   } else {
     acgraph.getRenderer().setTextPosition(this);
     this.clearDirtyState(acgraph.vector.Element.DirtyState.POSITION);
@@ -25403,14 +25508,14 @@ acgraph.vector.vml.Text.prototype.renderPosition = function() {
 };
 acgraph.vector.vml.Text.prototype.renderData = function() {
   if (this.isComplex_) {
-    goog.base(this, "renderData");
+    acgraph.vector.Text.prototype.renderData.call(this);
   } else {
     this.clearDirtyState(acgraph.vector.Element.DirtyState.DATA);
   }
 };
 acgraph.vector.vml.Text.prototype.textDefragmentation = function() {
   if (this.isComplex_) {
-    goog.base(this, "textDefragmentation");
+    acgraph.vector.Text.prototype.textDefragmentation.call(this);
   } else {
     if (goog.isDefAndNotNull(this.direction())) {
       this.rtl = this.direction() == acgraph.vector.Text.Direction.RTL;
@@ -25426,7 +25531,7 @@ acgraph.vector.vml.Text.prototype.textDefragmentation = function() {
 };
 acgraph.vector.vml.Text.prototype.getTextBounds = function(text, segmentStyle) {
   if (this.isComplex_) {
-    return goog.base(this, "getTextBounds", text, segmentStyle);
+    return acgraph.vector.Text.prototype.getTextBounds.call(this, text, segmentStyle);
   } else {
     var bounds = acgraph.getRenderer().measuringSimpleText(text, segmentStyle, this.style());
     bounds.left = this.x();
@@ -25488,11 +25593,11 @@ acgraph.vector.vml.Text.prototype.transformationChanged_ = function() {
   }
 };
 acgraph.vector.vml.Text.prototype.parentTransformationChanged = function() {
-  goog.base(this, "parentTransformationChanged");
+  acgraph.vector.Text.prototype.parentTransformationChanged.call(this);
   this.transformationChanged_();
 };
 acgraph.vector.vml.Text.prototype.transformationChanged = function() {
-  goog.base(this, "transformationChanged");
+  acgraph.vector.Text.prototype.transformationChanged.call(this);
   this.transformationChanged_();
   if (acgraph.vector.vml.Renderer.IE8_MODE && this.isScaleOrShearChanged()) {
     var stageSuspended = !this.getStage() || this.getStage().isSuspended();
@@ -25512,7 +25617,7 @@ acgraph.vector.vml.Text.prototype.transformationChanged = function() {
 };
 acgraph.vector.vml.Text.prototype.disposeInternal = function() {
   delete this.transformationCache;
-  goog.base(this, "disposeInternal");
+  acgraph.vector.Text.prototype.disposeInternal.call(this);
 };
 (function() {
   var proto = acgraph.vector.vml.Text.prototype;
