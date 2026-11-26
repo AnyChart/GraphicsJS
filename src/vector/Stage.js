@@ -1195,6 +1195,9 @@ acgraph.vector.Stage.prototype.updateContainer_ = function() {
  * @private
  */
 acgraph.vector.Stage.prototype.renderAsync_ = function() {
+  // A9-1024: a fresh quota for every step. The counter was zeroed only in render(), so after the first step it
+  // stayed at maxDomChanges, no step wrote anything and the stage never finished.
+  this.currentDomChangesCount = 0;
   // Calling internal rendering.
   this.renderInternal();
   // If state is still dirty, make browser handle the sequence of events and call again.
