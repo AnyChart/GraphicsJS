@@ -1236,7 +1236,11 @@ acgraph.vector.Layer.prototype.serialize = function() {
 /** @inheritDoc */
 acgraph.vector.Layer.prototype.disposeInternal = function() {
   if (this.children) {
-    goog.disposeAll.apply(null, this.children);
+    // A9-994: NOT goog.disposeAll.apply(null, this.children) - apply() with ~100k+ arguments throws
+    // "Maximum call stack size exceeded", and a layer of a big SVG series has one child per point.
+    for (var disposeIndex = 0, disposeCount = this.children.length; disposeIndex < disposeCount; disposeIndex++) {
+      goog.dispose(this.children[disposeIndex]);
+    }
   }
   if (this.domChildren) {
     delete this.domChildren;
