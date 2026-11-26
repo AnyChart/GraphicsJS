@@ -25,7 +25,7 @@ goog.require('acgraph.vector.RadialGradient');
  * @constructor
  */
 acgraph.vector.vml.RadialGradient = function(keys, cx, cy, size_x, size_y, opt_opacity, opt_mode) {
-  goog.base(this, keys, cx, cy, cx, cx, opt_opacity, opt_mode);
+  acgraph.vector.RadialGradient.call(this,  keys, cx, cy, cx, cx, opt_opacity, opt_mode);
   /**
    * The size of the radial gradient along the X-axis.
    * @type {number}

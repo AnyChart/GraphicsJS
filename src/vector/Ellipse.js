@@ -45,7 +45,7 @@ acgraph.vector.Ellipse = function(opt_cx, opt_cy, opt_rx, opt_ry) {
    */
   this.radiusY_ = opt_ry || 0;
 
-  goog.base(this);
+  acgraph.vector.Shape.call(this);
 };
 goog.inherits(acgraph.vector.Ellipse, acgraph.vector.Shape);
 
@@ -232,7 +232,7 @@ acgraph.vector.Ellipse.prototype.renderInternal = function() {
     }
   }
 
-  goog.base(this, 'renderInternal');
+  acgraph.vector.Shape.prototype.renderInternal.call(this);
 };
 
 
@@ -267,13 +267,13 @@ acgraph.vector.Ellipse.prototype.deserialize = function(data) {
   this.centerX(data['cx']).centerY(data['cy']);
   if ('rx' in data) this.radiusX(data['rx']);
   if ('ry' in data) this.radiusY(data['ry']);
-  goog.base(this, 'deserialize', data);
+  acgraph.vector.Shape.prototype.deserialize.call(this,  data);
 };
 
 
 /** @inheritDoc */
 acgraph.vector.Ellipse.prototype.serialize = function() {
-  var data = goog.base(this, 'serialize');
+  var data = acgraph.vector.Shape.prototype.serialize.call(this);
   data['type'] = 'ellipse';
   data['cx'] = this.centerX();
   data['cy'] = this.centerY();
@@ -293,7 +293,7 @@ acgraph.vector.Ellipse.prototype.disposeInternal = function() {
   this.dropBoundsCache();
   this.center_ = null;
 
-  goog.base(this, 'disposeInternal');
+  acgraph.vector.Shape.prototype.disposeInternal.call(this);
 };
 
 

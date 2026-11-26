@@ -25,7 +25,7 @@ goog.require('acgraph.vector.vml.ShapeType');
  * @constructor
  */
 acgraph.vector.vml.Defs = function(stage) {
-  goog.base(this, stage);
+  acgraph.vector.Defs.call(this,  stage);
   /**
    * An object for caching ShapeType elements.
    * @type {Object.<string, !acgraph.vector.vml.ShapeType>}
@@ -47,7 +47,7 @@ acgraph.vector.vml.Defs.prototype.clear = function() {
   goog.object.clear(this.shapeTypes_);
   goog.object.clear(this.radialVMLGradients_);
 
-  goog.base(this, 'clear');
+  acgraph.vector.Defs.prototype.clear.call(this);
 };
 
 
@@ -189,5 +189,5 @@ acgraph.vector.vml.Defs.prototype.disposeInternal = function() {
     goog.dispose(this.shapeTypes_[i]);
   this.shapeTypes_ = null;
 
-  goog.base(this, 'disposeInternal');
+  acgraph.vector.Defs.prototype.disposeInternal.call(this);
 };

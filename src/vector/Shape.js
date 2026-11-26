@@ -37,7 +37,7 @@ acgraph.vector.Shape = function() {
    */
   this.boundsAffectedColors_ = 0;
 
-  goog.base(this);
+  acgraph.vector.Element.call(this);
 };
 goog.inherits(acgraph.vector.Shape, acgraph.vector.Element);
 
@@ -172,7 +172,7 @@ acgraph.vector.Shape.prototype.beforeRenderInternal = function() {
 
 /** @inheritDoc */
 acgraph.vector.Shape.prototype.renderInternal = function() {
-  goog.base(this, 'renderInternal');
+  acgraph.vector.Element.prototype.renderInternal.call(this);
 
   // Apply stroke and fill settings if they were changed
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.FILL) ||
@@ -223,13 +223,13 @@ acgraph.vector.Shape.prototype.deserialize = function(data) {
   }
   if ('stroke' in data)
     this.stroke(data['stroke']);
-  goog.base(this, 'deserialize', data);
+  acgraph.vector.Element.prototype.deserialize.call(this,  data);
 };
 
 
 /** @inheritDoc */
 acgraph.vector.Shape.prototype.serialize = function() {
-  var data = goog.base(this, 'serialize');
+  var data = acgraph.vector.Element.prototype.serialize.call(this);
 
   if (this.fill_) {
     var fillData, tmpFill, tmpStroke;
@@ -285,7 +285,7 @@ acgraph.vector.Shape.prototype.disposeInternal = function() {
   delete this.fill_;
   delete this.stroke_;
 
-  goog.base(this, 'disposeInternal');
+  acgraph.vector.Element.prototype.disposeInternal.call(this);
 };
 
 

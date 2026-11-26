@@ -16,7 +16,7 @@ goog.require('goog.events.MouseWheelHandler');
  * @extends {goog.events.MouseWheelHandler}
  */
 acgraph.events.MouseWheelHandler = function(element, opt_capture, opt_isPreventDefault) {
-  goog.base(this, element, opt_capture);
+  goog.events.MouseWheelHandler.call(this,  element, opt_capture);
 
   /**
    * Map.
@@ -32,7 +32,7 @@ goog.inherits(acgraph.events.MouseWheelHandler, goog.events.MouseWheelHandler);
 acgraph.events.MouseWheelHandler.prototype.handleEvent = function(e) {
   if (this.isPreventDefault_(e)) {
     e.preventDefault();
-    goog.base(this, 'handleEvent', e);
+    goog.events.MouseWheelHandler.prototype.handleEvent.call(this,  e);
   }
 };
 

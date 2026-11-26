@@ -38,7 +38,7 @@ acgraph.vector.PathBase = function() {
    */
   this.arguments_ = [];
 
-  goog.base(this);
+  acgraph.vector.Shape.call(this);
 };
 goog.inherits(acgraph.vector.PathBase, acgraph.vector.Shape);
 
@@ -902,14 +902,14 @@ acgraph.vector.PathBase.prototype.getClosePoint = function() {
 
 /** @inheritDoc */
 acgraph.vector.PathBase.prototype.transformationChanged = function() {
-  goog.base(this, 'transformationChanged');
+  acgraph.vector.Shape.prototype.transformationChanged.call(this);
   this.transformedPathCache_ = null;
 };
 
 
 /** @inheritDoc */
 acgraph.vector.PathBase.prototype.parentTransformationChanged = function() {
-  goog.base(this, 'parentTransformationChanged');
+  acgraph.vector.Shape.prototype.parentTransformationChanged.call(this);
   this.transformedPathCache_ = null;
 };
 
@@ -942,7 +942,7 @@ acgraph.vector.PathBase.prototype.createDomInternal = function() {
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.PathBase.prototype.renderInternal = function() {
-  goog.base(this, 'renderInternal');
+  acgraph.vector.Shape.prototype.renderInternal.call(this);
   // If data is unsync  - recreate path data attribute
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
     this.renderPath();
@@ -1084,13 +1084,13 @@ acgraph.vector.PathBase.prototype.deserialize = function(data) {
   this.count_ = data['count'];
   this.arguments_ = data['arguments'];
   this.setDirtyState(acgraph.vector.Element.DirtyState.DATA);
-  goog.base(this, 'deserialize', data);
+  acgraph.vector.Shape.prototype.deserialize.call(this,  data);
 };
 
 
 /** @inheritDoc */
 acgraph.vector.PathBase.prototype.serialize = function() {
-  var data = goog.base(this, 'serialize');
+  var data = acgraph.vector.Shape.prototype.serialize.call(this);
   data['type'] = 'path';
   data = this.serializePathArgs(data);
   return data;
@@ -1111,7 +1111,7 @@ acgraph.vector.PathBase.prototype.disposeInternal = function() {
   delete this.segments_;
   delete this.count_;
   delete this.arguments_;
-  goog.base(this, 'disposeInternal');
+  acgraph.vector.Shape.prototype.disposeInternal.call(this);
 };
 
 

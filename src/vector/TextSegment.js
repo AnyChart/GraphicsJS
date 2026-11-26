@@ -18,7 +18,7 @@ goog.require('goog.Disposable');
  *
  */
 acgraph.vector.TextSegment = function(text, style) {
-  goog.base(this);
+  goog.Disposable.call(this);
 
   /**
    * Segment style.
@@ -194,5 +194,5 @@ acgraph.vector.TextSegment.prototype.disposeInternal = function() {
   goog.dom.removeNode(this.domElement_);
   this.domElement_ = null;
 
-  goog.base(this, 'disposeInternal');
+  goog.Disposable.prototype.disposeInternal.call(this);
 };
