@@ -244,6 +244,11 @@ acgraph.vector.vml.Renderer.prototype.createDiv_ = function() {
  * Desc.
  */
 acgraph.vector.vml.Renderer.prototype.createMeasurement = function() {
+  // A9-739: this builds a brand new set of measurement nodes, so anything the bounds cache holds
+  // was measured through the previous set - which, if we got here from the liveness guard at the
+  // call sites, was detached from the document and answering with zeroes. On the very first call
+  // the cache is empty and this costs nothing.
+  this.textBoundsCache = {};
 
   //Text bounds
 
@@ -297,12 +302,29 @@ acgraph.vector.vml.Renderer.prototype.createMeasurement = function() {
 
 
 /**
+ * A9-739: whether the measurement root is still part of the document.
+ *
+ * Deliberately reads the bare `document`, matching what createMeasurement() above appends to in
+ * this file. The liveness test must interrogate the same document the append targeted, so it
+ * follows this renderer's convention rather than the SVG renderer's acgraph.window indirection.
+ * @return {boolean}
+ * @private
+ */
+acgraph.vector.vml.Renderer.prototype.isMeasurementAttached_ = function() {
+  var body = document.body;
+  var node = this.measurement_;
+  if (!node || !body) return false;
+  return body.contains ? body.contains(node) : node.parentNode == body;
+};
+
+
+/**
  * Measures bounds of image.
  * @param {string} src URI image.
  * @return {goog.math.Rect} Image bounds.
  */
 acgraph.vector.vml.Renderer.prototype.measuringImage = function(src) {
-  if (!this.measurement_) this.createMeasurement();
+  if (!this.measurement_ || !this.isMeasurementAttached_()) this.createMeasurement();
   this.setAttr(this.measurementImage_, 'src', src);
   return goog.style.getBounds(this.measurementImage_);
 };
@@ -316,7 +338,7 @@ acgraph.vector.vml.Renderer.prototype.measuringImage = function(src) {
  */
 acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
   if (text == '') return new goog.math.Rect(0, 0, 0, 0);
-  if (!this.measurement_) this.createMeasurement();
+  if (!this.measurement_ || !this.isMeasurementAttached_()) this.createMeasurement();
 
   goog.dom.removeNode(this.measurementVMLTextPath_);
   this.measurementVMLTextPath_ = /** @type {Element} */ (this.createTextNode(''));
@@ -405,7 +427,7 @@ acgraph.vector.vml.Renderer.prototype.measure = function(text, style) {
  * @return {goog.math.Rect} Text bounds.
  */
 acgraph.vector.vml.Renderer.prototype.measuringSimpleText = function(text, segmentStyle, textStyle) {
-  if (!this.measurement_) this.createMeasurement();
+  if (!this.measurement_ || !this.isMeasurementAttached_()) this.createMeasurement();
 
   this.measurementSimpleText_.style.cssText = '';
 
@@ -452,7 +474,7 @@ acgraph.vector.vml.Renderer.prototype.measuringSimpleText = function(text, segme
  * @return {goog.math.Rect} .
  */
 acgraph.vector.vml.Renderer.prototype.measureElement = function(element) {
-  if (!this.measurement_) this.createMeasurement();
+  if (!this.measurement_ || !this.isMeasurementAttached_()) this.createMeasurement();
 
   if (goog.isString(element)) {
     this.measurementGroupNode_.innerHTML = element;

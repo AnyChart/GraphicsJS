@@ -139,9 +139,36 @@ acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
     goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
 
     goog.dom.appendChild(acgraph.window['document'].body, this.measurement_);
+  } else if (!this.isMeasurementAttached_()) {
+    // A9-739: the node exists but no longer lives in the document - the host page replaced its
+    // body and took the measurement <svg> along. Re-attach it, and drop the bounds cache: every
+    // entry added since the detachment was measured against a node with no layout, including the
+    // ones acgraph.vector.Renderer#textBounds cached on our behalf for spaces and empty strings.
+    goog.dom.appendChild(acgraph.window['document'].body, this.measurement_);
+    this.textBoundsCache = {};
   }
 
   return this.measurement_;
+};
+
+
+/**
+ * A9-739: whether the measurement root is still part of the document it was appended to.
+ *
+ * `measurement_` being non-null only proves the node was built once. A host page that swaps its
+ * body carries the node off with it, and every getBBox() taken through it after that returns 0x0.
+ * The acgraph.window['document'] indirection is load-bearing - a stage may render into another
+ * window (an iframe, a popped-out panel), and the liveness test has to interrogate the same
+ * document createMeasurement() appends to, not whichever one this script happens to run in.
+ * @return {boolean}
+ * @private
+ */
+acgraph.vector.svg.Renderer.prototype.isMeasurementAttached_ = function() {
+  var doc = acgraph.window['document'];
+  var body = doc ? doc.body : null;
+  var node = this.measurement_;
+  if (!node || !body) return false;
+  return body.contains ? body.contains(node) : node.parentNode == body;
 };
 
 
@@ -162,6 +189,10 @@ acgraph.vector.svg.Renderer.prototype.disposeMeasurement = function() {
   this.measurementLayerForBBox_ = null;
   this.measurementGroupNode_ = null;
   this.measurement_ = null;
+  // A9-739: bounds measured through the node we just destroyed must not outlive it. The next
+  // createMeasurement() builds a fresh node in a possibly different document; values keyed only
+  // by (styleHash, text) would silently carry the old one forward.
+  this.textBoundsCache = {};
 };
 
 
@@ -325,7 +356,13 @@ acgraph.vector.svg.Renderer.prototype.getBBox = function(element, text, style) {
 
     var x = element.getAttribute('x') || 0;
     var y = element.getAttribute('y') || 0;
-    return styleCache[text] = new goog.math.Rect(bbox.x - x, bbox.y - y, bbox.width + additionWidth, bbox.height);
+    var rect = new goog.math.Rect(bbox.x - x, bbox.y - y, bbox.width + additionWidth, bbox.height);
+    // A9-739: a zero-area box is not a measurement, it is the absence of one - a detached
+    // measurement root, a display:none ancestor, a font that has not resolved yet. Answer with it
+    // for this call, but never cache it: cached, it makes one bad frame permanent for this
+    // text+style pair and no later redraw can recover.
+    if (!bbox.width && !bbox.height) return rect;
+    return styleCache[text] = rect;
   }
 };
 
