@@ -173,6 +173,51 @@ acgraph.utils.exporting.fullPagePrint = function(stage, opt_paperSizeOrWidth, op
 
 
 /**
+ * Copies one @font-face rule of the page into the print document (A9-193 / TS-1195). As before, first as a <style>
+ * element; when a CSP style-src without 'unsafe-inline' refuses it, through the FontFace API (not a <style> element);
+ * as the last resort through acgraph.embedCss with the rule text (adopted sheet).
+ * @param {CSSRule} rule - CSSFontFaceRule.
+ * @param {Document} doc - Print document.
+ * @private
+ */
+acgraph.utils.exporting.embedFontFace_ = function(rule, doc) {
+  var cssText = goog.cssom.getCssTextFromCssRule(rule);
+  if (acgraph.embedCss(cssText, doc, true)) return;
+  var win = doc['defaultView'];
+  var FontFaceCtor = win && win['FontFace'];
+  var fonts = doc['fonts'];
+  var declaration = rule.style;
+  if (FontFaceCtor && fonts && fonts['add'] && declaration) {
+    try {
+      var family = declaration.getPropertyValue('font-family');
+      var source = declaration.getPropertyValue('src');
+      if (family && source) {
+        var descriptors = {};
+        var descriptorNames = [
+          ['font-style', 'style'],
+          ['font-weight', 'weight'],
+          ['font-stretch', 'stretch'],
+          ['unicode-range', 'unicodeRange'],
+          ['font-variant', 'variant'],
+          ['font-feature-settings', 'featureSettings'],
+          ['font-display', 'display']
+        ];
+        for (var i = 0; i < descriptorNames.length; i++) {
+          var value = declaration.getPropertyValue(descriptorNames[i][0]);
+          if (value) descriptors[descriptorNames[i][1]] = value;
+        }
+        fonts['add'](new FontFaceCtor(family, source, descriptors));
+        return;
+      }
+    } catch (e) {
+      // fall through to the rule text
+    }
+  }
+  acgraph.embedCss(cssText, doc);
+};
+
+
+/**
  * Create print iFrame.
  * 
  * @param {boolean} usePrintingFontFaces - Whether to copy parent page's @font-faces to iframe.
@@ -198,7 +243,7 @@ acgraph.utils.exporting.createPrint_ = function (usePrintingFontFaces) {
       for (var i = 0, len = rules.length; i < len; i++) {
         rule = rules[i];
         if (rule.type == goog.cssom.CssRuleType.FONT_FACE) {
-          acgraph.embedCss(goog.cssom.getCssTextFromCssRule(/** @type {CSSRule} */(rule)), iFrame['contentWindow'].document);
+          acgraph.utils.exporting.embedFontFace_(/** @type {CSSRule} */(rule), iFrame['contentWindow'].document);
         }
       }
     }
