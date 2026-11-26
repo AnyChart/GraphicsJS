@@ -10,7 +10,7 @@ goog.require('acgraph.vector.Element');
  @extends {acgraph.vector.Element}
  */
 acgraph.vector.UnmanagedLayer = function(opt_content) {
-  goog.base(this);
+  acgraph.vector.Element.call(this);
 
   /**
    * @type {string|Element}
@@ -75,7 +75,7 @@ acgraph.vector.UnmanagedLayer.prototype.createDomInternal = function() {
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.UnmanagedLayer.prototype.renderInternal = function() {
-  goog.base(this, 'renderInternal');
+  acgraph.vector.Element.prototype.renderInternal.call(this);
 
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.DATA)) {
     var domelement = this.domElement();
@@ -107,13 +107,13 @@ acgraph.vector.UnmanagedLayer.prototype.deserialize = function(data) {
   if ('content' in data)
     this.content(data['content']);
 
-  goog.base(this, 'deserialize', data);
+  acgraph.vector.Element.prototype.deserialize.call(this,  data);
 };
 
 
 /** @inheritDoc */
 acgraph.vector.UnmanagedLayer.prototype.serialize = function() {
-  var data = goog.base(this, 'serialize');
+  var data = acgraph.vector.Element.prototype.serialize.call(this);
 
   data['content'] = goog.isString(this.content_) ? this.content_ : this.content_.outerHTML;
 

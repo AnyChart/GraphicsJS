@@ -38,7 +38,7 @@ acgraph.vector.Layer = function() {
    */
   this.domChildren = [];
 
-  goog.base(this);
+  acgraph.vector.Element.call(this);
 };
 goog.inherits(acgraph.vector.Layer, acgraph.vector.Element);
 
@@ -868,7 +868,7 @@ acgraph.vector.Layer.prototype.renderInternal = function() {
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.CHILDREN))
     this.renderChildren();
 
-  goog.base(this, 'renderInternal');
+  acgraph.vector.Element.prototype.renderInternal.call(this);
 };
 
 
@@ -1131,14 +1131,14 @@ acgraph.vector.Layer.prototype.beforeTransformationChanged = function() {
 
 /** @inheritDoc */
 acgraph.vector.Layer.prototype.transformationChanged = function() {
-  goog.base(this, 'transformationChanged');
+  acgraph.vector.Element.prototype.transformationChanged.call(this);
   this.propagateTransform();
 };
 
 
 /** @inheritDoc */
 acgraph.vector.Layer.prototype.parentTransformationChanged = function() {
-  goog.base(this, 'parentTransformationChanged');
+  acgraph.vector.Element.prototype.parentTransformationChanged.call(this);
   this.propagateTransform();
 };
 
@@ -1206,13 +1206,13 @@ acgraph.vector.Layer.prototype.deserialize = function(data) {
 
     if (primitive) primitive.deserialize(item);
   }, this);
-  goog.base(this, 'deserialize', data);
+  acgraph.vector.Element.prototype.deserialize.call(this,  data);
 };
 
 
 /** @inheritDoc */
 acgraph.vector.Layer.prototype.serialize = function() {
-  var data = goog.base(this, 'serialize');
+  var data = acgraph.vector.Element.prototype.serialize.call(this);
 
   var childrenData = [];
   this.forEachChild(function(child) {
@@ -1236,7 +1236,11 @@ acgraph.vector.Layer.prototype.serialize = function() {
 /** @inheritDoc */
 acgraph.vector.Layer.prototype.disposeInternal = function() {
   if (this.children) {
-    goog.disposeAll.apply(null, this.children);
+    // A9-994: NOT goog.disposeAll.apply(null, this.children) - apply() with ~100k+ arguments throws
+    // "Maximum call stack size exceeded", and a layer of a big SVG series has one child per point.
+    for (var disposeIndex = 0, disposeCount = this.children.length; disposeIndex < disposeCount; disposeIndex++) {
+      goog.dispose(this.children[disposeIndex]);
+    }
   }
   if (this.domChildren) {
     delete this.domChildren;
@@ -1244,7 +1248,7 @@ acgraph.vector.Layer.prototype.disposeInternal = function() {
 
   this.dropBoundsCache();
 
-  goog.base(this, 'disposeInternal');
+  acgraph.vector.Element.prototype.disposeInternal.call(this);
 };
 
 
@@ -1262,7 +1266,7 @@ acgraph.vector.Layer.prototype.finalizeDisposing = function() {
   delete this.domChildren;
   delete this.children;
 
-  goog.base(this, 'finalizeDisposing');
+  acgraph.vector.Element.prototype.finalizeDisposing.call(this);
 };
 //endregion
 

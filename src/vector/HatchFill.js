@@ -433,7 +433,7 @@ acgraph.vector.HatchFill.prototype.disposeInternal = function() {
   if (this.getStage())
     this.getStage().getDefs().removeHatchFill(this);
 
-  goog.base(this, 'disposeInternal');
+  acgraph.vector.PatternFill.prototype.disposeInternal.call(this);
 };
 
 

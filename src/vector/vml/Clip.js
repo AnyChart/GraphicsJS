@@ -15,7 +15,7 @@ goog.require('acgraph.vector.Clip');
  * @extends {acgraph.vector.Clip}
  */
 acgraph.vector.vml.Clip = function(stage, opt_leftOrRect, opt_top, opt_width, opt_height) {
-  goog.base(this, stage, opt_leftOrRect, opt_top, opt_width, opt_height);
+  acgraph.vector.Clip.call(this,  stage, opt_leftOrRect, opt_top, opt_width, opt_height);
 };
 goog.inherits(acgraph.vector.vml.Clip, acgraph.vector.Clip);
 

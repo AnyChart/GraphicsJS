@@ -27,7 +27,7 @@ acgraph.vector.SimpleText = function() {
    */
   this.bounds = new goog.math.Rect(0, 0, 0, 0);
 
-  goog.base(this);
+  acgraph.vector.Element.call(this);
 };
 goog.inherits(acgraph.vector.SimpleText, acgraph.vector.Element);
 
@@ -99,7 +99,7 @@ acgraph.vector.SimpleText.prototype.renderInternal = function() {
     this.clearDirtyState(acgraph.vector.Element.DirtyState.DATA);
   }
 
-  goog.base(this, 'renderInternal');
+  acgraph.vector.Element.prototype.renderInternal.call(this);
 };
 
 

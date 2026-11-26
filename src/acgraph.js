@@ -233,20 +233,49 @@ acgraph.getStage = function(id) {
  * Embeds default anychart style node.
  * @param {string} css - CSS string to be embedded.
  * @param {Document=} opt_doc Optional element to insert in.
- * @return {?Element} Inserted Style element.
+ * @param {boolean=} opt_styleOnly Do not fall back to an adopted style sheet when the <style> element is refused (A9-193).
+ * @return {?Element} Inserted Style element (null when the css went into an adopted sheet or was refused).
  */
-acgraph.embedCss = function(css, opt_doc) {
+acgraph.embedCss = function(css, opt_doc, opt_styleOnly) {
   var styleElement = null;
   if (css) {
-    styleElement = goog.dom.createDom(goog.dom.TagName.STYLE);
-    styleElement.type = 'text/css';
-
-    if (styleElement.styleSheet)
-      styleElement['styleSheet']['cssText'] = css;
-    else
-      goog.dom.appendChild(styleElement, goog.dom.createTextNode(css));
-
-    goog.dom.insertChildAt(goog.dom.getElementsByTagNameAndClass('head', undefined, opt_doc)[0], styleElement, 0);
+    // A9-193 / TS-1195: CSSOM fallback. A nonce-less <style> element is refused under a CSP style-src without
+    // 'unsafe-inline' (its sheet stays null, and every refusal is a violation report): the document then remembers it and
+    // takes a constructed sheet adopted by the document, which CSP does not check. The sheet must be created by the
+    // window of the TARGET document (the print iframe), otherwise the document refuses to adopt it.
+    var targetDoc = opt_doc || document;
+    var insertElement = function() {
+      var element = goog.dom.createDom(goog.dom.TagName.STYLE);
+      element.type = 'text/css';
+      goog.dom.appendChild(element, goog.dom.createTextNode(css));
+      goog.dom.insertChildAt(goog.dom.getElementsByTagNameAndClass('head', undefined, opt_doc)[0], element, 0);
+      return element;
+    };
+    if (!targetDoc['anychartStyleElementRefused']) {
+      styleElement = insertElement();
+      if (styleElement.sheet) return styleElement;
+      goog.dom.removeNode(styleElement);
+      styleElement = null;
+      targetDoc['anychartStyleElementRefused'] = true;
+    }
+    if (!opt_styleOnly) {
+      var targetWin = targetDoc['defaultView'];
+      var SheetCtor = targetWin && targetWin['CSSStyleSheet'];
+      if (SheetCtor && SheetCtor.prototype && SheetCtor.prototype['replaceSync'] && 'adoptedStyleSheets' in targetDoc) {
+        try {
+          var constructed = new SheetCtor();
+          constructed['replaceSync'](css);
+          var adopted = Array.prototype.slice.call(targetDoc['adoptedStyleSheets']);
+          adopted.push(constructed);
+          targetDoc['adoptedStyleSheets'] = adopted;
+          return null;
+        } catch (e) {
+          // fall through to the inert element
+        }
+      }
+      // nothing can carry the css in this engine: the element stays, as before
+      styleElement = insertElement();
+    }
   }
   return styleElement;
 };

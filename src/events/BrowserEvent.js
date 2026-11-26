@@ -13,7 +13,7 @@ goog.require('goog.events.Event');
  * @extends {goog.events.Event}
  */
 acgraph.events.BrowserEvent = function(e, stage) {
-  goog.base(this, e.type);
+  goog.events.Event.call(this,  e.type);
 
   this['target'] = acgraph.getWrapperForDOM(/** @type {Element} **/(e.target), stage) || e.target;
   this['relatedTarget'] = acgraph.getWrapperForDOM(/** @type {Element} **/(e.relatedTarget || null), stage) || e.relatedTarget;
@@ -64,7 +64,7 @@ acgraph.events.BrowserEvent.MouseButton = {
  * Prevents DOM event default action.
  */
 acgraph.events.BrowserEvent.prototype.preventDefault = function() {
-  goog.base(this, 'preventDefault');
+  goog.events.Event.prototype.preventDefault.call(this);
   this.event_.preventDefault();
 };
 
@@ -73,7 +73,7 @@ acgraph.events.BrowserEvent.prototype.preventDefault = function() {
  * Stops both DOM and wrapper event propagation.
  */
 acgraph.events.BrowserEvent.prototype.stopPropagation = function() {
-  goog.base(this, 'stopPropagation');
+  goog.events.Event.prototype.stopPropagation.call(this);
   this.event_.stopPropagation();
 };
 

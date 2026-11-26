@@ -21,7 +21,7 @@ goog.require('acgraph.vector.PathBase');
  @extends {acgraph.vector.PathBase}
  */
 acgraph.vector.Path = function() {
-  goog.base(this);
+  acgraph.vector.PathBase.call(this);
 };
 goog.inherits(acgraph.vector.Path, acgraph.vector.PathBase);
 

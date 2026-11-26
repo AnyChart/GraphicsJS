@@ -18,7 +18,7 @@ goog.require('goog.Disposable');
  * @constructor
  */
 acgraph.vector.RadialGradient = function(keys, cx, cy, fx, fy, opt_opacity, opt_mode, opt_transform) {
-  goog.base(this);
+  goog.Disposable.call(this);
   /**
    * Center X.
    * @type {number}
@@ -167,7 +167,7 @@ acgraph.vector.RadialGradient.prototype.getElementTypePrefix = function() {
  * removes from DOM structure.
  */
 acgraph.vector.RadialGradient.prototype.dispose = function() {
-  goog.base(this, 'dispose');
+  goog.Disposable.prototype.dispose.call(this);
 };
 
 
@@ -180,7 +180,7 @@ acgraph.vector.RadialGradient.prototype.disposeInternal = function() {
   this.bounds = null;
   this.transform = null;
   delete this.keys;
-  goog.base(this, 'disposeInternal');
+  goog.Disposable.prototype.disposeInternal.call(this);
 };
 
 

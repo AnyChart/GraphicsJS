@@ -219,7 +219,7 @@ acgraph.vector.Text = function(opt_x, opt_y) {
 
   this.textPath = null;
 
-  goog.base(this);
+  acgraph.vector.Shape.call(this);
   this.setNullFillAndStroke();
 };
 goog.inherits(acgraph.vector.Text, acgraph.vector.Shape);
@@ -1084,7 +1084,7 @@ acgraph.vector.Text.prototype.getOriginalBounds = function() {
 
 /** @inheritDoc */
 acgraph.vector.Text.prototype.dropBoundsCache = function() {
-  goog.base(this, 'dropBoundsCache');
+  acgraph.vector.Shape.prototype.dropBoundsCache.call(this);
   this.textByPathBoundsCache = null;
 };
 
@@ -1818,7 +1818,7 @@ acgraph.vector.Text.prototype.renderInternal = function() {
   if (this.hasDirtyState(acgraph.vector.Element.DirtyState.POSITION))
     this.renderPosition();
 
-  goog.base(this, 'renderInternal');
+  acgraph.vector.Shape.prototype.renderInternal.call(this);
 };
 
 
@@ -1897,13 +1897,13 @@ acgraph.vector.Text.prototype.renderTransformation = function() {
 acgraph.vector.Text.prototype.deserialize = function(data) {
   this.x(data['x']).y(data['y']).style(data['style']);
   data['html'] ? this.htmlText(data['text']) : this.text(data['text']);
-  goog.base(this, 'deserialize', data);
+  acgraph.vector.Shape.prototype.deserialize.call(this,  data);
 };
 
 
 /** @inheritDoc */
 acgraph.vector.Text.prototype.serialize = function() {
-  var data = goog.base(this, 'serialize');
+  var data = acgraph.vector.Shape.prototype.serialize.call(this);
   data['type'] = 'text';
   data['x'] = this.x();
   data['y'] = this.y();
@@ -1926,7 +1926,7 @@ acgraph.vector.Text.prototype.disposeInternal = function() {
   this.currentLine_.length = 0;
   delete this.textLines_;
   delete this.bounds;
-  goog.base(this, 'disposeInternal');
+  acgraph.vector.Shape.prototype.disposeInternal.call(this);
 };
 
 

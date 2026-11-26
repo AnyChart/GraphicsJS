@@ -23,7 +23,7 @@ goog.require('goog.Disposable');
  * @extends {goog.Disposable}
  */
 acgraph.vector.vml.ShapeType = function(fill, stroke) {
-  goog.base(this);
+  goog.Disposable.call(this);
 
   /**
    * A fill for a shape.

@@ -139,9 +139,36 @@ acgraph.vector.svg.Renderer.prototype.createMeasurement = function() {
     goog.dom.appendChild(this.measurement_, this.measurementGroupNode_);
 
     goog.dom.appendChild(acgraph.window['document'].body, this.measurement_);
+  } else if (!this.isMeasurementAttached_()) {
+    // A9-739: the node exists but no longer lives in the document - the host page replaced its
+    // body and took the measurement <svg> along. Re-attach it, and drop the bounds cache: every
+    // entry added since the detachment was measured against a node with no layout, including the
+    // ones acgraph.vector.Renderer#textBounds cached on our behalf for spaces and empty strings.
+    goog.dom.appendChild(acgraph.window['document'].body, this.measurement_);
+    this.textBoundsCache = {};
   }
 
   return this.measurement_;
+};
+
+
+/**
+ * A9-739: whether the measurement root is still part of the document it was appended to.
+ *
+ * `measurement_` being non-null only proves the node was built once. A host page that swaps its
+ * body carries the node off with it, and every getBBox() taken through it after that returns 0x0.
+ * The acgraph.window['document'] indirection is load-bearing - a stage may render into another
+ * window (an iframe, a popped-out panel), and the liveness test has to interrogate the same
+ * document createMeasurement() appends to, not whichever one this script happens to run in.
+ * @return {boolean}
+ * @private
+ */
+acgraph.vector.svg.Renderer.prototype.isMeasurementAttached_ = function() {
+  var doc = acgraph.window['document'];
+  var body = doc ? doc.body : null;
+  var node = this.measurement_;
+  if (!node || !body) return false;
+  return body.contains ? body.contains(node) : node.parentNode == body;
 };
 
 
@@ -162,6 +189,10 @@ acgraph.vector.svg.Renderer.prototype.disposeMeasurement = function() {
   this.measurementLayerForBBox_ = null;
   this.measurementGroupNode_ = null;
   this.measurement_ = null;
+  // A9-739: bounds measured through the node we just destroyed must not outlive it. The next
+  // createMeasurement() builds a fresh node in a possibly different document; values keyed only
+  // by (styleHash, text) would silently carry the old one forward.
+  this.textBoundsCache = {};
 };
 
 
@@ -325,7 +356,13 @@ acgraph.vector.svg.Renderer.prototype.getBBox = function(element, text, style) {
 
     var x = element.getAttribute('x') || 0;
     var y = element.getAttribute('y') || 0;
-    return styleCache[text] = new goog.math.Rect(bbox.x - x, bbox.y - y, bbox.width + additionWidth, bbox.height);
+    var rect = new goog.math.Rect(bbox.x - x, bbox.y - y, bbox.width + additionWidth, bbox.height);
+    // A9-739: a zero-area box is not a measurement, it is the absence of one - a detached
+    // measurement root, a display:none ancestor, a font that has not resolved yet. Answer with it
+    // for this call, but never cache it: cached, it makes one bad frame permanent for this
+    // text+style pair and no later redraw can recover.
+    if (!bbox.width && !bbox.height) return rect;
+    return styleCache[text] = rect;
   }
 };
 
@@ -1168,6 +1205,15 @@ acgraph.vector.svg.Renderer.prototype.applyFill = function(element) {
         'fill-opacity': (/** @type {acgraph.vector.SolidFill} */(fill))['opacity']
       });
     }
+  } else if (fill === '') {
+    // A9-401: symmetric to applyStroke - an empty-string fill means "no fill"
+    // and MUST clear stale fill attributes left by a previous state instead of
+    // being skipped by the truthy `if (fill)` guard. `removeAttr` restores the
+    // pristine "no attribute" DOM (SVG default), matching a never-set fill;
+    // `null`/`undefined` still fall through to a no-op (don't touch contract).
+    var emptyFillDom = element.domElement();
+    this.removeAttr(emptyFillDom, 'fill');
+    this.removeAttr(emptyFillDom, 'fill-opacity');
   }
 };
 
@@ -1214,6 +1260,22 @@ acgraph.vector.svg.Renderer.prototype.applyStroke = function(element) {
       this.setAttr(domElement, 'stroke-dasharray', stroke['dash']);
     else
       this.removeAttr(domElement, 'stroke-dasharray');
+  } else if (stroke === '') {
+    // A9-401: an empty-string stroke (produced when an empty-color {color:''}
+    // is normalized) means "no stroke" and MUST clear any stale stroke
+    // attributes left by a previous state. The truthy `if (stroke)` guard above
+    // skips '' (it is falsy), which is exactly how a hover stroke survived
+    // unhover forever. `removeAttr` restores the pristine "no attribute" DOM, so
+    // non-buggy snapshots are unaffected. IMPORTANT: only `=== ''` clears here;
+    // `null`/`undefined` keep the "do not touch the attribute" contract
+    // (setNullFillAndStroke / DVF-3872) by falling through to a no-op.
+    var emptyStrokeDom = element.domElement();
+    this.removeAttr(emptyStrokeDom, 'stroke');
+    this.removeAttr(emptyStrokeDom, 'stroke-width');
+    this.removeAttr(emptyStrokeDom, 'stroke-opacity');
+    this.removeAttr(emptyStrokeDom, 'stroke-linejoin');
+    this.removeAttr(emptyStrokeDom, 'stroke-linecap');
+    this.removeAttr(emptyStrokeDom, 'stroke-dasharray');
   }
 };
 
@@ -1404,6 +1466,9 @@ acgraph.vector.svg.Renderer.prototype.createClip_ = function(element, clipElemen
   clipElement.id(id);
 
   var clipShape = clipElement.shape();
+  // A9-1024: the clip already has its id, so createClip_ is never called for it again. If the async quota of this
+  // step is spent, render() would leave the shape without a DOM element and clip-path would point at nothing.
+  if (!clipShape.domElement()) clipShape.createDom(true);
   clipShape.render();
   clipShapeElement = clipShape.domElement();
 

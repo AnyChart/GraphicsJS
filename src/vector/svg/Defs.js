@@ -13,7 +13,7 @@ goog.require('acgraph.vector.Defs');
  * @constructor
  */
 acgraph.vector.svg.Defs = function(stage) {
-  goog.base(this, stage);
+  acgraph.vector.Defs.call(this,  stage);
 
   /**
    * A hash of created clip rectangles
@@ -37,7 +37,7 @@ acgraph.vector.svg.Defs.CLIP_FRACTION_DIGITS = 4;
 acgraph.vector.svg.Defs.prototype.clear = function() {
   goog.object.clear(this.clips_);
 
-  goog.base(this, 'clear');
+  acgraph.vector.Defs.prototype.clear.call(this);
 };
 
 
@@ -60,7 +60,7 @@ acgraph.vector.svg.Defs.prototype.getClipPathElement = function(clipShape) {
 
 /** @inheritDoc */
 acgraph.vector.svg.Defs.prototype.disposeInternal = function() {
-  goog.base(this, 'disposeInternal');
+  acgraph.vector.Defs.prototype.disposeInternal.call(this);
 
   // It appears that there is no sense in destroying the whole structure – it is enough to delete the Defs root in the parent from the DOM.
   for (var i in this.clips_) {
