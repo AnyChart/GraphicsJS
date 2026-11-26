@@ -1466,6 +1466,9 @@ acgraph.vector.svg.Renderer.prototype.createClip_ = function(element, clipElemen
   clipElement.id(id);
 
   var clipShape = clipElement.shape();
+  // A9-1024: the clip already has its id, so createClip_ is never called for it again. If the async quota of this
+  // step is spent, render() would leave the shape without a DOM element and clip-path would point at nothing.
+  if (!clipShape.domElement()) clipShape.createDom(true);
   clipShape.render();
   clipShapeElement = clipShape.domElement();
 
