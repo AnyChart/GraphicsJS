@@ -17,7 +17,7 @@ goog.require('acgraph.vector.vml.Defs');
  * @extends {acgraph.vector.Stage}
  */
 acgraph.vector.vml.Stage = function(opt_container, opt_width, opt_height) {
-  goog.base(this, opt_container, opt_width, opt_height);
+  acgraph.vector.Stage.call(this,  opt_container, opt_width, opt_height);
 };
 goog.inherits(acgraph.vector.vml.Stage, acgraph.vector.Stage);
 

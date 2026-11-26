@@ -57,7 +57,7 @@ acgraph.vector.Image = function(opt_src, opt_x, opt_y, opt_width, opt_height, op
    */
   this.opacity_ = 1;
 
-  goog.base(this);
+  acgraph.vector.Element.call(this);
 };
 goog.inherits(acgraph.vector.Image, acgraph.vector.Element);
 
@@ -343,7 +343,7 @@ acgraph.vector.Image.prototype.renderInternal = function() {
     this.renderData();
   }
 
-  goog.base(this, 'renderInternal');
+  acgraph.vector.Element.prototype.renderInternal.call(this);
 };
 
 
@@ -384,13 +384,13 @@ acgraph.vector.Image.prototype.deserialize = function(data) {
       .src(data['src'])
       .align(data['align'])
       .fittingMode(data['fittingMode']);
-  goog.base(this, 'deserialize', data);
+  acgraph.vector.Element.prototype.deserialize.call(this,  data);
 };
 
 
 /** @inheritDoc */
 acgraph.vector.Image.prototype.serialize = function() {
-  var data = goog.base(this, 'serialize');
+  var data = acgraph.vector.Element.prototype.serialize.call(this);
   data['type'] = 'image';
   data['bounds'] = this.getBoundsWithoutTransform();
   data['src'] = this.src();
@@ -410,7 +410,7 @@ acgraph.vector.Image.prototype.disposeInternal = function() {
   this.bounds_ = null;
   this.dropBoundsCache();
 
-  goog.base(this, 'disposeInternal');
+  acgraph.vector.Element.prototype.disposeInternal.call(this);
 };
 
 

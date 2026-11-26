@@ -39,7 +39,7 @@ goog.require('goog.Disposable');
  * @extends {goog.Disposable}
  */
 acgraph.vector.LinearGradient = function(keys, opt_opacity, opt_angle, opt_mode, opt_transform) {
-  goog.base(this);
+  goog.Disposable.call(this);
   /**
    * Gradient keys.
    * @type {!Array.<acgraph.vector.GradientKey>}
@@ -194,7 +194,7 @@ acgraph.vector.LinearGradient.prototype.getElementTypePrefix = function() {
  * removes from DOM structure.
  */
 acgraph.vector.LinearGradient.prototype.dispose = function() {
-  goog.base(this, 'dispose');
+  goog.Disposable.prototype.dispose.call(this);
 };
 
 
@@ -208,7 +208,7 @@ acgraph.vector.LinearGradient.prototype.disposeInternal = function() {
   this.transform = null;
   delete this.keys;
   this.mode = false;
-  goog.base(this, 'disposeInternal');
+  goog.Disposable.prototype.disposeInternal.call(this);
 };
 
 

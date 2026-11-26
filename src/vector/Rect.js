@@ -47,7 +47,7 @@ acgraph.vector.Rect = function(opt_x, opt_y, opt_width, opt_height) {
    */
   this.cornerSizes_ = [0, 0, 0, 0];
 
-  goog.base(this);
+  acgraph.vector.PathBase.call(this);
   this.drawRect_();
 };
 goog.inherits(acgraph.vector.Rect, acgraph.vector.PathBase);
@@ -341,7 +341,7 @@ acgraph.vector.Rect.prototype.cut = function(radiusAllOrLeftTop, opt_radiusRight
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.Rect.prototype.deserialize = function(data) {
-  goog.base(this, 'deserialize', data);
+  acgraph.vector.PathBase.prototype.deserialize.call(this,  data);
 
   this.setX(data['x']).setY(data['y']).setWidth(data['width']).setHeight(data['height']);
 
@@ -359,7 +359,7 @@ acgraph.vector.Rect.prototype.deserialize = function(data) {
 
 /** @inheritDoc */
 acgraph.vector.Rect.prototype.serialize = function() {
-  var data = goog.base(this, 'serialize');
+  var data = acgraph.vector.PathBase.prototype.serialize.call(this);
   data['type'] = 'rect';
   data['x'] = this.rect_.left;
   data['y'] = this.rect_.top;
@@ -383,7 +383,7 @@ acgraph.vector.Rect.prototype.disposeInternal = function() {
   this.rect_ = null;
   this.dropBoundsCache();
 
-  goog.base(this, 'disposeInternal');
+  acgraph.vector.PathBase.prototype.disposeInternal.call(this);
 };
 
 

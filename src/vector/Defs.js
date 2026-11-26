@@ -18,7 +18,7 @@ goog.require('goog.math.Rect');
  * @implements {acgraph.vector.ILayer}
  */
 acgraph.vector.Defs = function(stage) {
-  goog.base(this);
+  goog.Disposable.call(this);
 
   /**
    * Existing linear gradients.

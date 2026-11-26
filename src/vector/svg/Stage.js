@@ -13,7 +13,7 @@ goog.require('acgraph.vector.svg.Defs');
  * @extends {acgraph.vector.Stage}
  */
 acgraph.vector.svg.Stage = function(opt_container, opt_width, opt_height) {
-  goog.base(this, opt_container, opt_width, opt_height);
+  acgraph.vector.Stage.call(this,  opt_container, opt_width, opt_height);
 };
 goog.inherits(acgraph.vector.svg.Stage, acgraph.vector.Stage);
 

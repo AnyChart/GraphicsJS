@@ -27,7 +27,7 @@ acgraph.vector.PatternFill = function(bounds) {
    */
   this.rendered = false;
 
-  goog.base(this);
+  acgraph.vector.Layer.call(this);
 };
 goog.inherits(acgraph.vector.PatternFill, acgraph.vector.Layer);
 
@@ -67,7 +67,7 @@ acgraph.vector.PatternFill.prototype.parent = function(opt_value) {
       this.remove();
     return this;
   }
-  return goog.base(this, 'parent');
+  return acgraph.vector.Layer.prototype.parent.call(this);
 };
 
 
@@ -102,7 +102,7 @@ acgraph.vector.PatternFill.prototype.renderInternal = function() {
 
   this.rendered = true;
 
-  goog.base(this, 'renderInternal');
+  acgraph.vector.Layer.prototype.renderInternal.call(this);
 };
 
 
@@ -123,13 +123,13 @@ acgraph.vector.PatternFill.prototype.renderTransformation = function() {
 //----------------------------------------------------------------------------------------------------------------------
 /** @inheritDoc */
 acgraph.vector.PatternFill.prototype.deserialize = function(data) {
-  goog.base(this, 'deserialize', data);
+  acgraph.vector.Layer.prototype.deserialize.call(this,  data);
 };
 
 
 /** @inheritDoc */
 acgraph.vector.PatternFill.prototype.serialize = function() {
-  var data = goog.base(this, 'serialize');
+  var data = acgraph.vector.Layer.prototype.serialize.call(this);
 
   var bounds = this.getBoundsWithoutTransform();
   data['type'] = 'pattern';
@@ -148,7 +148,7 @@ acgraph.vector.PatternFill.prototype.serialize = function() {
 acgraph.vector.PatternFill.prototype.disposeInternal = function() {
   goog.dom.removeNode(this.domElement());
   this.bounds_ = null;
-  goog.base(this, 'disposeInternal');
+  acgraph.vector.Layer.prototype.disposeInternal.call(this);
 };
 
 

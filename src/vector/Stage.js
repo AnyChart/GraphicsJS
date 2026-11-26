@@ -57,7 +57,7 @@ goog.require('goog.style');
  @implements {goog.events.Listenable}
  */
 acgraph.vector.Stage = function(opt_container, opt_width, opt_height) {
-  goog.base(this);
+  goog.events.EventTarget.call(this);
 
   this.renderAsync_ = goog.bind(this.renderAsync_, this);
   this.checkSize = goog.bind(this.checkSize, this);
@@ -2042,7 +2042,7 @@ acgraph.vector.Stage.prototype.dispatchEvent = function(e) {
   } else if ('type' in e) {
     e.type = String(e.type).toLowerCase();
   }
-  return goog.base(this, 'dispatchEvent', e);
+  return goog.events.EventTarget.prototype.dispatchEvent.call(this,  e);
 };
 
 
@@ -2064,7 +2064,7 @@ acgraph.vector.Stage.prototype.dispatchEvent = function(e) {
  * @template SCOPE,EVENTOBJ
  */
 acgraph.vector.Stage.prototype.listen = function(type, listener, opt_useCapture, opt_listenerScope) {
-  return /** @type {!goog.events.ListenableKey} */(goog.base(this, 'listen', String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope));
+  return /** @type {!goog.events.ListenableKey} */(goog.events.EventTarget.prototype.listen.call(this,  String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope));
 };
 
 
@@ -2090,7 +2090,7 @@ acgraph.vector.Stage.prototype.listen = function(type, listener, opt_useCapture,
  * @template SCOPE,EVENTOBJ
  */
 acgraph.vector.Stage.prototype.listenOnce = function(type, listener, opt_useCapture, opt_listenerScope) {
-  return /** @type {!goog.events.ListenableKey} */(goog.base(this, 'listenOnce', String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope));
+  return /** @type {!goog.events.ListenableKey} */(goog.events.EventTarget.prototype.listenOnce.call(this,  String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope));
 };
 
 
@@ -2108,7 +2108,7 @@ acgraph.vector.Stage.prototype.listenOnce = function(type, listener, opt_useCapt
  * @template SCOPE,EVENTOBJ
  */
 acgraph.vector.Stage.prototype.unlisten = function(type, listener, opt_useCapture, opt_listenerScope) {
-  return goog.base(this, 'unlisten', String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
+  return goog.events.EventTarget.prototype.unlisten.call(this,  String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
 };
 
 
@@ -2134,7 +2134,7 @@ acgraph.vector.Stage.prototype.unlistenByKey;
  */
 acgraph.vector.Stage.prototype.removeAllListeners = function(opt_type) {
   if (goog.isDef(opt_type)) opt_type = String(opt_type).toLowerCase();
-  return goog.base(this, 'removeAllListeners', opt_type);
+  return goog.events.EventTarget.prototype.removeAllListeners.call(this,  opt_type);
 };
 
 

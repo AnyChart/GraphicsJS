@@ -1272,7 +1272,7 @@ acgraph.vector.Element.prototype.dispatchEvent = function(e) {
   } else if ('type' in e) {
     e.type = String(e.type).toLowerCase();
   }
-  return goog.base(this, 'dispatchEvent', e);
+  return goog.events.EventTarget.prototype.dispatchEvent.call(this,  e);
 };
 
 
@@ -1294,7 +1294,7 @@ acgraph.vector.Element.prototype.dispatchEvent = function(e) {
  * @template SCOPE,EVENTOBJ
  */
 acgraph.vector.Element.prototype.listen = function(type, listener, opt_useCapture, opt_listenerScope) {
-  return /** @type {!goog.events.ListenableKey} */(goog.base(this, 'listen', String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope));
+  return /** @type {!goog.events.ListenableKey} */(goog.events.EventTarget.prototype.listen.call(this,  String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope));
 };
 
 
@@ -1320,7 +1320,7 @@ acgraph.vector.Element.prototype.listen = function(type, listener, opt_useCaptur
  * @template SCOPE,EVENTOBJ
  */
 acgraph.vector.Element.prototype.listenOnce = function(type, listener, opt_useCapture, opt_listenerScope) {
-  return /** @type {!goog.events.ListenableKey} */(goog.base(this, 'listenOnce', String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope));
+  return /** @type {!goog.events.ListenableKey} */(goog.events.EventTarget.prototype.listenOnce.call(this,  String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope));
 };
 
 
@@ -1338,7 +1338,7 @@ acgraph.vector.Element.prototype.listenOnce = function(type, listener, opt_useCa
  * @template SCOPE,EVENTOBJ
  */
 acgraph.vector.Element.prototype.unlisten = function(type, listener, opt_useCapture, opt_listenerScope) {
-  return goog.base(this, 'unlisten', String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
+  return goog.events.EventTarget.prototype.unlisten.call(this,  String(type).toLowerCase(), listener, opt_useCapture, opt_listenerScope);
 };
 
 
@@ -1364,7 +1364,7 @@ acgraph.vector.Element.prototype.unlistenByKey;
  */
 acgraph.vector.Element.prototype.removeAllListeners = function(opt_type) {
   if (goog.isDef(opt_type)) opt_type = String(opt_type).toLowerCase();
-  return goog.base(this, 'removeAllListeners', opt_type);
+  return goog.events.EventTarget.prototype.removeAllListeners.call(this,  opt_type);
 };
 
 

@@ -15,7 +15,7 @@ goog.require('goog.math.Rect');
  * @extends {acgraph.vector.Text}
  */
 acgraph.vector.vml.Text = function(opt_x, opt_y) {
-  goog.base(this, opt_x, opt_y);
+  acgraph.vector.Text.call(this,  opt_x, opt_y);
 
   /**
    * If text is simple (does not have the <b>transformation</b> or <b>text overflow</b> properties), it will be used for text rendering.
@@ -60,7 +60,7 @@ acgraph.vector.vml.Text.prototype.getSimpleText = function() {
 /** @inheritDoc */
 acgraph.vector.vml.Text.prototype.textOverflow = function(opt_value) {
   if (opt_value) this.isComplex_ = true;
-  return goog.base(this, 'textOverflow', opt_value);
+  return acgraph.vector.Text.prototype.textOverflow.call(this,  opt_value);
 };
 
 
@@ -148,7 +148,7 @@ acgraph.vector.vml.Text.prototype.getBoundsWithTransform = function(transform) {
 
 /** @inheritDoc */
 acgraph.vector.vml.Text.prototype.render = function() {
-  goog.base(this, 'render');
+  acgraph.vector.Text.prototype.render.call(this);
   if (this.isScaleOrShearChanged() || this.textOverflow()) acgraph.getRenderer().textEarsFeint(this);
   return this;
 };
@@ -163,7 +163,7 @@ acgraph.vector.vml.Text.prototype.renderTextPath = function() {
 /** @inheritDoc */
 acgraph.vector.vml.Text.prototype.renderPosition = function() {
   if (this.isComplex_) {
-    goog.base(this, 'renderPosition');
+    acgraph.vector.Text.prototype.renderPosition.call(this);
   } else {
     acgraph.getRenderer().setTextPosition(this);
     this.clearDirtyState(acgraph.vector.Element.DirtyState.POSITION);
@@ -174,7 +174,7 @@ acgraph.vector.vml.Text.prototype.renderPosition = function() {
 /** @inheritDoc */
 acgraph.vector.vml.Text.prototype.renderData = function() {
   if (this.isComplex_) {
-    goog.base(this, 'renderData');
+    acgraph.vector.Text.prototype.renderData.call(this);
   } else {
     this.clearDirtyState(acgraph.vector.Element.DirtyState.DATA);
   }
@@ -184,7 +184,7 @@ acgraph.vector.vml.Text.prototype.renderData = function() {
 /** @inheritDoc */
 acgraph.vector.vml.Text.prototype.textDefragmentation = function() {
   if (this.isComplex_) {
-    goog.base(this, 'textDefragmentation');
+    acgraph.vector.Text.prototype.textDefragmentation.call(this);
   } else {
     if (goog.isDefAndNotNull(this.direction()))
       this.rtl = this.direction() == acgraph.vector.Text.Direction.RTL;
@@ -199,7 +199,7 @@ acgraph.vector.vml.Text.prototype.textDefragmentation = function() {
 /** @inheritDoc */
 acgraph.vector.vml.Text.prototype.getTextBounds = function(text, segmentStyle) {
   if (this.isComplex_) {
-    return goog.base(this, 'getTextBounds', text, segmentStyle);
+    return acgraph.vector.Text.prototype.getTextBounds.call(this,  text, segmentStyle);
   } else {
     var bounds = acgraph.getRenderer().measuringSimpleText(text, segmentStyle, this.style());
     bounds.left = this.x();
@@ -274,14 +274,14 @@ acgraph.vector.vml.Text.prototype.transformationChanged_ = function() {
 
 /** @inheritDoc */
 acgraph.vector.vml.Text.prototype.parentTransformationChanged = function() {
-  goog.base(this, 'parentTransformationChanged');
+  acgraph.vector.Text.prototype.parentTransformationChanged.call(this);
   this.transformationChanged_();
 };
 
 
 /** @inheritDoc */
 acgraph.vector.vml.Text.prototype.transformationChanged = function() {
-  goog.base(this, 'transformationChanged');
+  acgraph.vector.Text.prototype.transformationChanged.call(this);
   this.transformationChanged_();
 
   //this mess needs to be refactored
@@ -307,7 +307,7 @@ acgraph.vector.vml.Text.prototype.transformationChanged = function() {
 /** @inheritDoc */
 acgraph.vector.vml.Text.prototype.disposeInternal = function() {
   delete this.transformationCache;
-  goog.base(this, 'disposeInternal');
+  acgraph.vector.Text.prototype.disposeInternal.call(this);
 };
 
 
